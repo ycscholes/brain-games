@@ -1,0 +1,22 @@
+{
+  "git.ignoreLimitWarning": true,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.addMissingImports": "explicit",
+    "source.removeUnusedImports": "explicit",
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "todohighlight.keywords": ["NOTICE:", "IMPORTANT:", "JIRA:"],
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "files.associations": {
+    "*.json": "jsonc"
+  },
+  "typescript.preferences.autoImportFileExcludePatterns": [],
+  "java.configuration.updateBuildConfiguration": "disabled"
+}
