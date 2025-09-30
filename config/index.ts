@@ -47,6 +47,10 @@ export default defineConfig<"webpack5">(async (merge) => {
           },
         },
       },
+      optimizeMainPackage: {
+        enable: true,
+        exclude: ['antd-mobile']
+      },
       webpackChain(chain) {
         chain.merge({
           plugin: {

@@ -1,6 +1,35 @@
 @use 'tailwindcss/base';
 @use 'tailwindcss/components';
 @use 'tailwindcss/utilities';
-@use "~taro-ui/dist/style/components/button.scss";
-@use "~taro-ui/dist/style/components/radio.scss";
-@use "~taro-ui/dist/style/components/icon.scss";
+
+.radio {
+  display: flex;
+  align-items: center;
+  margin: 10px 0;
+  
+  radio {
+    margin-right: 8px;
+  }
+}
+
+.game-button {
+  margin: 20px;
+  padding: 15px 30px;
+  font-size: 18px;
+  font-weight: bold;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 25px;
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}

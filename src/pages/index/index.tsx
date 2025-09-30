@@ -1,65 +1,41 @@
 import { View, Text, Button } from "@tarojs/components";
-import { useLoad } from "@tarojs/taro";
+import Taro from "@tarojs/taro";
 import { useState } from "react";
-import { Radio } from "@nutui/nutui-react";
 import "./index.scss";
 
-let count = 0;
-let time;
-
 export default function Index() {
-  useLoad(() => {
-    console.log("Page loaded.");
-  });
+  const [selectedValue, setSelectedValue] = useState("1");
 
-  const [formula, setFormula] = useState("");
-  const [mode, setMode] = useState(10);
-  const generateFormula = () => {
-    if (count > 80) {
-      setFormula(`${(Date.now() - time) / 1000}s`);
-    } else {
-      const a = Math.round(Math.random() * 10);
-      const o = Math.random() > 0.5 ? "+" : "-";
-      const b =
-        o === "+"
-          ? Math.round(Math.random() * (10 - a))
-          : Math.round(Math.random() * a);
-
-      setFormula(`${a} ${o} ${b} =`);
-      count += 1;
-    }
+  const handleChange = (value: string) => {
+    setSelectedValue(value);
   };
 
-  const handleStart = () => {
-    generateFormula();
-    time = Date.now();
+  const navigateToBubbleGame = () => {
+    Taro.navigateTo({
+      url: '/pages/bubble/index'
+    });
   };
 
   return (
-    <View className="mx-4">
-      <View>
-        <Radio.Group
-          direction="horizontal"
-          value={mode}
-          onChange={(v) => {
-            setMode(Number(v));
-          }}
-        >
-          <Radio value="10">10以内</Radio>
-          <Radio value="20">20以内</Radio>
-          <Radio value="100">100以内</Radio>
-        </Radio.Group>
+    <View className="index">
+      <Text>Hello world!</Text>
+      <View className="radio">
+        <Text>选择一个选项：</Text>
+        <View>
+          <Text>选项1</Text>
+          <Text>选项2</Text>
+          <Text>选项3</Text>
+        </View>
+        <Text>当前选择：{selectedValue}</Text>
       </View>
-      <View
-        className="index h-screen flex items-center justify-center"
-        onClick={generateFormula}
+      
+      <Button 
+        className="game-button" 
+        onClick={navigateToBubbleGame}
+        type="primary"
       >
-        {!formula ? (
-          <Button type="primary">开始</Button>
-        ) : (
-          <Text className="text-6xl">{formula}</Text>
-        )}
-      </View>
+        开始气球计算游戏
+      </Button>
     </View>
   );
 }
