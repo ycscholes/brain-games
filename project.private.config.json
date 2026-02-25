@@ -4,11 +4,18 @@
     "miniprogram": {
       "list": [
         {
-          "name": "首页",
-          "pathName": "pages/index/index",
+          "name": "奇趣图形记忆",
+          "pathName": "pages/memory-challenge/index",
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "首页",
+          "pathName": "pages/index/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
         },
         {
           "name": "气球算术游戏",

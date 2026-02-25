@@ -1,3 +1,4 @@
+import path from "path";
 import { defineConfig, type UserConfigExport } from "@tarojs/cli";
 import TsconfigPathsPlugin from "tsconfig-paths-webpack-plugin";
 import { UnifiedWebpackPluginV5 } from "weapp-tailwindcss/webpack";
@@ -34,6 +35,12 @@ export default defineConfig<"webpack5">(async (merge) => {
       enable: false, // Webpack 持久化缓存配置，建议开启。默认配置请参考：https://docs.taro.zone/docs/config-detail#cache
     },
     mini: {
+      compiler: {
+        type: "webpack5",
+        prebundle: {
+          enable: false,
+        },
+      },
       postcss: {
         pxtransform: {
           enable: true,
@@ -49,7 +56,7 @@ export default defineConfig<"webpack5">(async (merge) => {
       },
       optimizeMainPackage: {
         enable: true,
-        exclude: ['antd-mobile']
+        exclude: ["antd-mobile"],
       },
       webpackChain(chain) {
         chain.merge({
@@ -61,6 +68,7 @@ export default defineConfig<"webpack5">(async (merge) => {
                   appType: "taro",
                   // 下面个配置，会开启 rem -> rpx 的转化
                   rem2rpx: true,
+                  cssEntries: [path.resolve(__dirname, "..", "src/app.scss")],
                 },
               ],
             },

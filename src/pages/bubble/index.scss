@@ -1,20 +1,16 @@
-@use "tailwindcss/base";
-@use "tailwindcss/components";
-@use "tailwindcss/utilities";
-
 .bubble-game {
+  position: relative;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
-  position: relative;
   padding: 0; // 移除内边距，确保撑满屏幕
   margin: 0; // 移除外边距
+  overflow: hidden;
 }
 
 .game-background {
+  position: relative;
   width: 100%;
   height: 100%;
-  position: relative;
   background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
 }
 
@@ -27,24 +23,24 @@
   background: linear-gradient(to bottom, #87CEEB 0%, #B0E0E6 100%);
 
   &::before {
-    content: '';
     position: absolute;
     top: 20px;
     left: 50px;
     width: 60px;
     height: 60px;
+    content: '';
     background: #FFD700;
     border-radius: 50%;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 20px rgb(255 215 0 / 50%);
   }
 
   &::after {
-    content: '';
     position: absolute;
     top: 40px;
     right: 80px;
     width: 40px;
     height: 20px;
+    content: '';
     background: white;
     border-radius: 20px;
     box-shadow:
@@ -56,19 +52,19 @@
 .game-info {
   position: absolute;
   top: 20px;
-  left: 20px;
   right: 20px;
+  left: 20px;
+  z-index: 10;
   display: flex;
   justify-content: space-between;
-  z-index: 10;
 
   .time-left, .progress, .best-time {
-    background: rgba(255, 255, 255, 0.9);
     padding: 8px 16px;
-    border-radius: 20px;
     font-weight: bold;
     color: #333;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: rgb(255 255 255 / 90%);
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
   }
 
   .time-left {
@@ -82,13 +78,13 @@
 
 .balloons-container {
   position: relative;
+  left: 0; // 确保从屏幕最左侧开始
   display: flex;
   align-items: flex-start;
-  height: 300px;
   width: 100%;
-  transition: transform 0.5s ease;
-  left: 0; // 确保从屏幕最左侧开始
+  height: 300px;
   padding-left: 0; // 移除左侧内边距
+  transition: transform 0.5s ease;
 }
 
 .balloon-wrapper {
@@ -108,14 +104,14 @@
     position: absolute;
     top: 160px; // 调整位置，让人物更靠近气球
     left: 50%;
-    transform: translateX(-50%);
+    z-index: 10;
     width: 45px; // 增大小人尺寸
     height: 45px;
     background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    border-radius: 50% / 60% 60% 40% 40%;
+    box-shadow: 0 4px 8px rgb(0 0 0 / 20%); // 添加阴影
+    transform: translateX(-50%);
     transition: all 0.5s ease;
-    z-index: 10;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); // 添加阴影
 
     &.jumping {
       animation: characterJump 0.5s ease-in-out;
@@ -123,12 +119,12 @@
 
     // 小人眼睛
     &::before {
-      content: '';
       position: absolute;
       top: 10px;
       left: 14px;
       width: 5px;
       height: 5px;
+      content: '';
       background: white;
       border-radius: 50%;
       box-shadow: 14px 0 white;
@@ -136,12 +132,12 @@
 
     // 小人嘴巴
     &::after {
-      content: '';
       position: absolute;
       top: 24px;
       left: 17px;
       width: 12px;
       height: 7px;
+      content: '';
       background: white;
       border-radius: 0 0 12px 12px;
     }
@@ -151,40 +147,40 @@
       position: absolute;
       top: -25px; // 调整手臂位置
       left: 50%;
-      transform: translateX(-50%);
+      z-index: -1;
       width: 3px; // 与气球线同宽
       height: 25px;
       background: linear-gradient(to bottom, #ff6b6b, #ee5a24); // 与小人同色
-      z-index: -1;
       border-radius: 2px;
+      transform: translateX(-50%);
 
       // 手臂连接点
       &::before {
-        content: '';
         position: absolute;
         top: -3px;
         left: 50%;
-        transform: translateX(-50%);
         width: 6px;
         height: 6px;
+        content: '';
         background: #ee5a24;
         border-radius: 50%;
+        transform: translateX(-50%);
       }
     }
   }
 
 .balloon {
   position: relative;
-  width: 100px; // 增大气球宽度
-  height: 120px; // 增大气球高度
-  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100px; // 增大气球宽度
+  height: 120px; // 增大气球高度
+  cursor: pointer;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  border-radius: 50% / 60% 60% 40% 40%;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+  transition: all 0.3s ease;
 
   &.with-character {
     background: linear-gradient(135deg, #4facfe, #00f2fe);
@@ -195,50 +191,50 @@
   }
 
   .balloon-text {
-    color: white;
+    z-index: 2;
     font-size: 20px; // 增大算术题目字体
     font-weight: bold;
-    text-align: center;
-    z-index: 2;
     line-height: 1.2; // 改善行高
+    color: white;
+    text-align: center;
   }
 
   .balloon-string {
     position: absolute;
     top: 120px; // 调整到新的气球高度
     left: 50%;
-    transform: translateX(-50%);
+    z-index: 1;
     width: 3px; // 增加线的粗细
     height: 60px; // 缩短绳子长度，让气球和人物更紧密连接
     background: linear-gradient(to bottom, #8B4513, #654321); // 渐变色
-    z-index: 1;
-    transition: all 0.3s ease;
     border-radius: 2px; // 圆角线条
+    transform: translateX(-50%);
+    transition: all 0.3s ease;
 
     &::before {
-      content: '';
       position: absolute;
       top: -6px;
       left: 50%;
-      transform: translateX(-50%);
       width: 8px;
       height: 8px;
+      content: '';
       background: #654321;
       border-radius: 50%;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); // 添加阴影
+      box-shadow: 0 2px 4px rgb(0 0 0 / 20%); // 添加阴影
+      transform: translateX(-50%);
     }
 
     &::after {
-      content: '';
       position: absolute;
       bottom: -4px;
       left: 50%;
-      transform: translateX(-50%);
       width: 6px;
       height: 6px;
+      content: '';
       background: #654321;
       border-radius: 50%;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); // 添加阴影
+      box-shadow: 0 2px 4px rgb(0 0 0 / 20%); // 添加阴影
+      transform: translateX(-50%);
     }
   }
 }
@@ -247,9 +243,11 @@
   0%, 20%, 50%, 80%, 100% {
     transform: translateY(0) translateX(-50%);
   }
+
   40% {
     transform: translateY(-10px) translateX(-50%);
   }
+
   60% {
     transform: translateY(-5px) translateX(-50%);
   }
@@ -260,27 +258,27 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  width: 100vw;
+  height: 100vh;
+  background: rgb(0 0 0 / 50%);
 
   .difficulty-modal {
+    min-width: 320px;
+    padding: 25px; // 减小内边距
+    text-align: center;
     background: white;
     border-radius: 20px;
-    padding: 25px; // 减小内边距
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    text-align: center;
-    min-width: 320px;
+    box-shadow: 0 10px 30px rgb(0 0 0 / 30%);
 
     .difficulty-title {
+      margin-bottom: 20px; // 减小底部间距
       font-size: 24px; // 减小标题字体
       font-weight: bold;
       color: #333;
-      margin-bottom: 20px; // 减小底部间距
     }
 
     .difficulty-options {
@@ -289,28 +287,27 @@
       gap: 15px; // 减小选项间距
 
       .difficulty-btn {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        padding: 15px; // 减小按钮内边距
         color: white;
+        cursor: pointer;
+        user-select: none;
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         border: none;
         border-radius: 15px;
-        padding: 15px; // 减小按钮内边距
-        cursor: pointer;
+        box-shadow: 0 4px 12px rgb(79 172 254 / 30%);
         transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
-        user-select: none;
-        -webkit-user-select: none;
         -webkit-tap-highlight-color: transparent;
 
         &:hover {
+          box-shadow: 0 6px 16px rgb(79 172 254 / 40%);
           transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(79, 172, 254, 0.4);
         }
 
         .difficulty-name {
-          font-size: 20px; // 减小难度名称字体
-          font-weight: bold;
           display: block;
           margin-bottom: 6px; // 减小间距
+          font-size: 20px; // 减小难度名称字体
+          font-weight: bold;
         }
 
         .difficulty-desc {
@@ -326,21 +323,21 @@
   position: absolute;
   bottom: 220px; // 增加与按钮的距离
   left: 50%;
-  transform: translateX(-50%);
   display: flex;
-  align-items: center;
   gap: 16px;
+  align-items: center;
+  transform: translateX(-50%);
 
   .answer-box {
-    width: 140px; // 增大宽度
-    height: 80px; // 增大高度
-    background: rgba(255, 255, 255, 0.95);
-    border: 4px solid #4facfe; // 增加边框厚度
-    border-radius: 20px; // 增大圆角
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15); // 增强阴影
+    width: 140px; // 增大宽度
+    height: 80px; // 增大高度
+    background: rgb(255 255 255 / 95%);
+    border: 4px solid #4facfe; // 增加边框厚度
+    border-radius: 20px; // 增大圆角
+    box-shadow: 0 6px 16px rgb(0 0 0 / 15%); // 增强阴影
 
     .answer-text {
       font-size: 36px; // 增大字体
@@ -354,29 +351,28 @@
   position: absolute;
   bottom: 60px; // 增加底部距离
   left: 50%;
-  transform: translateX(-50%);
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 20px; // 增加按钮间距
   width: 450px; // 增加整体宽度
+  transform: translateX(-50%);
 
   .number-btn {
-    width: 85px; // 进一步增大按钮尺寸
-    height: 85px;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: white;
-    border: none;
-    border-radius: 20px; // 增大圆角
-    font-size: 32px; // 增大字体
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 6px 16px rgba(79, 172, 254, 0.4); // 增强阴影
     display: flex;
     align-items: center;
     justify-content: center;
-    user-select: none; // 防止文本选择
-    -webkit-user-select: none;
+    width: 85px; // 进一步增大按钮尺寸
+    height: 85px;
+    font-size: 32px; // 增大字体
+    font-weight: bold;
+    color: white;
+    cursor: pointer; // 防止文本选择
+    user-select: none;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border: none;
+    border-radius: 20px; // 增大圆角
+    box-shadow: 0 6px 16px rgb(79 172 254 / 40%); // 增强阴影
+    transition: all 0.3s ease;
     -webkit-tap-highlight-color: transparent; // 移除移动端点击高亮
 
     &.large {
@@ -387,8 +383,8 @@
     }
 
     &:hover {
+      box-shadow: 0 8px 20px rgb(79 172 254 / 50%);
       transform: translateY(-3px); // 增加悬停效果
-      box-shadow: 0 8px 20px rgba(79, 172, 254, 0.5);
     }
 
     &:active {
@@ -396,8 +392,8 @@
     }
 
     &:disabled {
-      opacity: 0.5;
       cursor: not-allowed;
+      opacity: 0.5;
       transform: none;
     }
   }
@@ -407,66 +403,65 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  width: 100%;
+  height: 100%;
+  background: rgb(0 0 0 / 50%);
 
   .modal-content {
-    background: white;
-    padding: 50px 40px; // 增大内边距
-    border-radius: 25px; // 增大圆角
-    text-align: center;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); // 增强阴影
-    animation: modalShow 0.3s ease-out;
     min-width: 320px; // 设置最小宽度
+    padding: 50px 40px; // 增大内边距
+    text-align: center;
+    background: white;
+    border-radius: 25px; // 增大圆角
+    box-shadow: 0 10px 40px rgb(0 0 0 / 30%); // 增强阴影
+    animation: modalShow 0.3s ease-out;
 
     .modal-title {
+      margin-bottom: 20px; // 增加间距
       font-size: 32px; // 增大标题字体
       font-weight: bold;
       color: #333;
-      margin-bottom: 20px; // 增加间距
     }
 
     .modal-text {
-      font-size: 20px; // 增大文本字体
-      color: #666;
       margin-bottom: 30px; // 增加间距
+      font-size: 20px; // 增大文本字体
       line-height: 1.4; // 增加行高
+      color: #666;
 
       &.new-record {
-        color: #FFD93D;
         font-weight: bold;
+        color: #FFD93D;
         animation: glow 1s ease-in-out infinite alternate;
       }
     }
 
     .modal-button {
-      width: 160px; // 增大按钮宽度
-      height: 60px; // 增大按钮高度
-      background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
-      color: white;
-      border: none;
-      border-radius: 30px; // 增大圆角
-      font-size: 20px; // 增大字体
-      font-weight: bold;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); // 增强阴影
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 160px; // 增大按钮宽度
+      height: 60px; // 增大按钮高度
       margin: 0 auto; // 居中显示
+      font-size: 20px; // 增大字体
+      font-weight: bold;
+      color: white;
       cursor: pointer;
-      transition: all 0.3s ease;
       user-select: none;
-      -webkit-user-select: none;
+      background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+      border: none;
+      border-radius: 30px; // 增大圆角
+      box-shadow: 0 6px 16px rgb(0 0 0 / 20%); // 增强阴影
+      transition: all 0.3s ease;
       -webkit-tap-highlight-color: transparent;
 
       &:hover {
+        box-shadow: 0 8px 20px rgb(0 0 0 / 30%);
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
       }
 
       &:active {
@@ -481,6 +476,7 @@
     opacity: 0;
     transform: scale(0.8);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -491,6 +487,7 @@
   from {
     text-shadow: 0 0 5px #FFD93D, 0 0 10px #FFD93D, 0 0 15px #FFD93D;
   }
+
   to {
     text-shadow: 0 0 10px #FFD93D, 0 0 20px #FFD93D, 0 0 30px #FFD93D;
   }
@@ -498,8 +495,9 @@
 
 @keyframes balloonFloat {
   0%, 100% {
-    transform: translateY(0px);
+    transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -509,9 +507,10 @@
   from {
     transform: translateY(0);
   }
+
   to {
-    transform: translateY(400px);
     opacity: 0.3;
+    transform: translateY(400px);
   }
 }
 
@@ -519,15 +518,19 @@
   0% {
     transform: translateX(-50%) translateY(0) scale(1);
   }
+
   25% {
     transform: translateX(-50%) translateY(-15px) scale(1.1);
   }
+
   50% {
     transform: translateX(-50%) translateY(-30px) scale(1.05);
   }
+
   75% {
     transform: translateX(-50%) translateY(-15px) scale(1.1);
   }
+
   100% {
     transform: translateX(-50%) translateY(0) scale(1);
   }
@@ -536,39 +539,44 @@
 /* 小人跳跃到下一个气球的动画 */
 @keyframes jumpToNextBalloon {
   0% {
+    opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
-    opacity: 1;
   }
+
   20% {
+    opacity: 1;
     transform: translateX(-50%) translateY(-40px) scale(1.2);
-    opacity: 1;
   }
+
   40% {
+    opacity: 0.9;
     transform: translateX(-30%) translateY(-60px) scale(1.1);
-    opacity: 0.9;
   }
+
   60% {
-    transform: translateX(30%) translateY(-40px) scale(1.1);
     opacity: 0.9;
+    transform: translateX(30%) translateY(-40px) scale(1.1);
   }
+
   80% {
+    opacity: 1;
     transform: translateX(50%) translateY(-20px) scale(1.05);
-    opacity: 1;
   }
+
   100% {
-    transform: translateX(50%) translateY(0) scale(1);
     opacity: 1;
+    transform: translateX(50%) translateY(0) scale(1);
   }
 }
 
 /* 移动端适配 */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .bubble-game {
     padding: 10px;
 
     .game-info {
-      font-size: 14px;
       padding: 8px 12px;
+      font-size: 14px;
 
       .progress-text {
         font-size: 12px;
@@ -589,9 +597,9 @@
     }
 
     .character {
+      top: 170px;
       width: 40px;
       height: 40px;
-      top: 170px;
 
       &::before {
         top: 8px;
@@ -609,8 +617,8 @@
       }
 
       .character-arm {
-        height: 20px;
         top: -20px;
+        height: 20px;
       }
     }
 
@@ -641,8 +649,8 @@
 
     .difficulty-selection {
       .difficulty-title {
-        font-size: 20px;
         margin-bottom: 20px;
+        font-size: 20px;
       }
 
       .difficulty-options {
@@ -656,17 +664,17 @@
     }
 
     .modal-content {
-      padding: 20px;
       min-width: 280px;
+      padding: 20px;
 
       .modal-title {
-        font-size: 18px;
         margin-bottom: 12px;
+        font-size: 18px;
       }
 
       .modal-text {
-        font-size: 14px;
         margin-bottom: 16px;
+        font-size: 14px;
       }
 
       .modal-button {
@@ -679,7 +687,7 @@
 }
 
 /* 小屏幕设备进一步优化 */
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .bubble-game {
     .balloon {
       width: 70px;
@@ -720,10 +728,12 @@
     }
   }
 }
+
 @keyframes balloonFall {
   from {
     transform: translateY(0);
   }
+
   to {
     transform: translateY(200px);
   }
@@ -734,6 +744,7 @@
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(-120px);
   }
