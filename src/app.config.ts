@@ -1,7 +1,8 @@
 export default defineAppConfig({
   pages: [
     'pages/index/index',
-    'pages/bubble/index'
+    'pages/bubble/index',
+    'pages/memory-challenge/index'
   ],
   window: {
     backgroundTextStyle: 'light',

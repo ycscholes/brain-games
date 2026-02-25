@@ -1,0 +1,12 @@
+echo "Checking project rules compliance..."
+# Get staged files
+staged_files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx)$')
+
+if [ -n "$staged_files" ]; then
+  for file in $staged_files; do
+    node .trae/rules/project_rules_validator.js "$file" "no-explicit-any" || exit 1
+    node .trae/rules/project_rules_validator.js "$file" "async-try-catch" || exit 1
+  done
+fi
+
+echo "Rules check passed!"
