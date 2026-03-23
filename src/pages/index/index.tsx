@@ -6,6 +6,7 @@ import "./index.scss";
 interface ScoreSummary {
   best: number;
   recent: number;
+  played: boolean;
 }
 
 interface GameItem {
@@ -70,33 +71,44 @@ function readNumberScore(key: string) {
   return Number.isFinite(raw) ? raw : 0;
 }
 
+function hasStorageValue(key: string) {
+  const raw = Taro.getStorageSync(key);
+  return raw !== "" && raw !== null && raw !== undefined;
+}
+
 function getMemorySummary(): ScoreSummary {
   let best = 0;
+  let played = hasStorageValue("memory_last_score");
 
   for (let timeDifficulty = 1; timeDifficulty <= 4; timeDifficulty += 1) {
     for (let memoryDifficulty = 1; memoryDifficulty <= 4; memoryDifficulty += 1) {
       const key = `memory_highscore_T${timeDifficulty}M${memoryDifficulty}`;
       best = Math.max(best, readJSONScore(key));
+      played = played || hasStorageValue(key);
     }
   }
 
   return {
     best,
     recent: readNumberScore("memory_last_score"),
+    played,
   };
 }
 
 function getRpsSummary(): ScoreSummary {
   let best = 0;
+  let played = hasStorageValue("rps_last_score");
 
   for (let difficulty = 1; difficulty <= 4; difficulty += 1) {
     const key = `rps_highscore_D${difficulty}`;
     best = Math.max(best, readJSONScore(key));
+    played = played || hasStorageValue(key);
   }
 
   return {
     best,
     recent: readNumberScore("rps_last_score"),
+    played,
   };
 }
 
@@ -104,13 +116,18 @@ function getDualTaskSummary(): ScoreSummary {
   const modes = ["alternating", "simultaneous", "stroop"];
   let best = 0;
   let recent = 0;
+  let played = false;
 
   modes.forEach((mode) => {
-    best = Math.max(best, readNumberScore(`dual_task_best_${mode}`));
-    recent = Math.max(recent, readNumberScore(`dual_task_last_${mode}`));
+    const bestKey = `dual_task_best_${mode}`;
+    const lastKey = `dual_task_last_${mode}`;
+
+    best = Math.max(best, readNumberScore(bestKey));
+    recent = Math.max(recent, readNumberScore(lastKey));
+    played = played || hasStorageValue(bestKey) || hasStorageValue(lastKey);
   });
 
-  return { best, recent };
+  return { best, recent, played };
 }
 
 export default function Index() {
@@ -191,7 +208,12 @@ export default function Index() {
                 <View className="game-icon" style={{ background: game.accent }}>
                   <Text className="game-icon-text">{game.emoji}</Text>
                 </View>
-                <Text className="game-badge">{game.badge}</Text>
+                <View className="game-card-tags">
+                  <Text className={`play-state-pill ${game.summary.played ? "is-played" : "is-unplayed"}`}>
+                    {game.summary.played ? "已玩" : "未玩"}
+                  </Text>
+                  <Text className="game-badge">{game.badge}</Text>
+                </View>
               </View>
 
               <View className="game-copy">
