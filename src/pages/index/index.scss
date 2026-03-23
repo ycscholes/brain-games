@@ -193,6 +193,13 @@
   gap: 12px;
 }
 
+.game-card-tags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
 .game-icon {
   width: 60px;
   height: 60px;
@@ -213,6 +220,23 @@
   border-radius: 999px;
   font-size: 12px;
   background: rgba(20, 33, 61, 0.07);
+}
+
+.play-state-pill {
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.play-state-pill.is-played {
+  background: rgba(77, 186, 135, 0.16);
+  color: #20845b;
+}
+
+.play-state-pill.is-unplayed {
+  background: rgba(255, 122, 89, 0.16);
+  color: #c85a3e;
 }
 
 .game-copy {
@@ -294,6 +318,10 @@
 
   .game-title {
     font-size: 22px;
+  }
+
+  .game-card-tags {
+    gap: 6px;
   }
 
   .game-meta-grid {
