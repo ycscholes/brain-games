@@ -1,0 +1,767 @@
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(217, 75, 88, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 0 12px rgba(217, 75, 88, 0.12);
+  }
+}
+
+.rps-game {
+  --bg-ink: #14213d;
+  --bg-deep: #182848;
+  --bg-soft: #f6f3ea;
+  --card: rgba(248, 244, 234, 0.92);
+  --card-strong: #fffaf0;
+  --line: rgba(20, 33, 61, 0.12);
+  --text-main: #1d2b45;
+  --text-sub: #5d6981;
+  --accent: #ff7a59;
+  --accent-2: #5f6fff;
+  --success: #4dba87;
+  --danger: #d94b58;
+  --warning: #f2b544;
+  min-height: 100vh;
+  padding: 18px 16px calc(20px + env(safe-area-inset-bottom));
+  padding-top: calc(16px + env(safe-area-inset-top));
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at top right, rgba(255, 122, 89, 0.28), transparent 30%),
+    radial-gradient(circle at top left, rgba(95, 111, 255, 0.18), transparent 24%),
+    linear-gradient(180deg, var(--bg-ink) 0%, var(--bg-deep) 52%, #22325e 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.ambient {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(8px);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.ambient-one {
+  width: 180px;
+  height: 180px;
+  top: -40px;
+  right: -30px;
+  background: rgba(255, 160, 122, 0.24);
+}
+
+.ambient-two {
+  width: 220px;
+  height: 220px;
+  left: -90px;
+  bottom: 120px;
+  background: rgba(95, 111, 255, 0.2);
+}
+
+.ambient-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 70%);
+  pointer-events: none;
+}
+
+.screen {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  animation: riseIn 0.32s ease-out;
+}
+
+.start-screen,
+.gameover-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.play-screen {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  gap: 12px;
+}
+
+.panel-card {
+  background: var(--card);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 14px 36px rgba(8, 15, 36, 0.24);
+  backdrop-filter: blur(18px);
+}
+
+.hero-card,
+.quick-guide-card,
+.difficulty-card,
+.play-top,
+.play-main,
+.timer-card,
+.result-hero,
+.result-tip-card,
+.result-stat {
+  border-radius: 28px;
+}
+
+.hero-card {
+  padding: 22px;
+}
+
+.hero-mark {
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffd29b 0%, #ff7a59 100%);
+  margin-bottom: 16px;
+  box-shadow: 0 12px 24px rgba(255, 122, 89, 0.25);
+}
+
+.hero-mark-text,
+.metric-value,
+.game-title,
+.section-title,
+.compact-stat-value,
+.round-label,
+.opponent-name,
+.target-badge-text,
+.timer-value,
+.hand-option-name,
+.result-score,
+.result-stat-value,
+.primary-button-text,
+.secondary-button-text,
+.ghost-button-text {
+  font-weight: 700;
+}
+
+.hero-mark-text {
+  font-size: 26px;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+
+.hero-eyebrow,
+.section-kicker,
+.result-kicker {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--text-sub);
+}
+
+.game-title {
+  display: block;
+  margin-top: 8px;
+  font-size: 34px;
+  line-height: 1.05;
+  color: var(--text-main);
+}
+
+.game-subtitle,
+.memory-tip-text,
+.difficulty-desc,
+.coach-text,
+.coach-answer,
+.result-tip-text,
+.primary-button-subtext,
+.hand-option-hint,
+.guide-text,
+.compact-stat-label,
+.metric-label,
+.result-caption,
+.result-stat-label,
+.timer-label,
+.target-strip-label,
+.opponent-caption,
+.secondary-button-text,
+.ghost-button-text {
+  color: var(--text-sub);
+}
+
+.game-subtitle {
+  display: block;
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.hero-metrics {
+  display: grid;
+  grid-template-columns: 1.25fr 0.9fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.metric-card {
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(20, 33, 61, 0.06);
+}
+
+.metric-card-highlight {
+  background: linear-gradient(135deg, rgba(255, 122, 89, 0.16), rgba(255, 210, 155, 0.46));
+}
+
+.metric-label {
+  display: block;
+  font-size: 12px;
+}
+
+.metric-value {
+  display: block;
+  margin-top: 6px;
+  font-size: 28px;
+  color: var(--text-main);
+}
+
+.quick-guide-card,
+.difficulty-card,
+.play-main,
+.timer-card,
+.result-tip-card,
+.result-stat,
+.play-top {
+  padding: 18px;
+}
+
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.section-title {
+  font-size: 22px;
+  color: var(--text-main);
+}
+
+.guide-track {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-step {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.guide-index {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #5f6fff 0%, #8390ff 100%);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guide-text {
+  font-size: 14px;
+  line-height: 1.5;
+  padding-top: 4px;
+}
+
+.memory-tip {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(20, 33, 61, 0.05);
+  border: 1px solid rgba(20, 33, 61, 0.06);
+}
+
+.memory-tip-label,
+.coach-title,
+.action-dock-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.memory-tip-text,
+.coach-text,
+.coach-answer,
+.result-tip-text {
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.difficulty-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.difficulty-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1.5px solid transparent;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.difficulty-item-selected {
+  border-color: rgba(95, 111, 255, 0.58);
+  background: linear-gradient(135deg, rgba(95, 111, 255, 0.08), rgba(255, 255, 255, 0.72));
+  box-shadow: inset 0 0 0 1px rgba(95, 111, 255, 0.06);
+}
+
+.difficulty-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.difficulty-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.7);
+  flex-shrink: 0;
+}
+
+.difficulty-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.difficulty-label {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.difficulty-desc {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.difficulty-time-badge {
+  padding: 10px 12px;
+  min-width: 58px;
+  text-align: center;
+  border-radius: 16px;
+  background: rgba(20, 33, 61, 0.08);
+}
+
+.difficulty-time-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.start-action,
+.result-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.primary-button,
+.secondary-button,
+.ghost-button {
+  border-radius: 24px;
+  text-align: center;
+}
+
+.primary-button {
+  padding: 18px 20px;
+  background: linear-gradient(135deg, #ff9f6a 0%, #ff7a59 52%, #ff5e5b 100%);
+  box-shadow: 0 18px 30px rgba(255, 122, 89, 0.25);
+}
+
+.primary-button-text {
+  display: block;
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.primary-button-subtext {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.play-top {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.compact-stat {
+  min-width: 0;
+  padding: 10px 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.52);
+  text-align: center;
+}
+
+.compact-stat-tight {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.compact-stat-label {
+  display: block;
+  font-size: 11px;
+}
+
+.compact-stat-value {
+  display: block;
+  margin-top: 4px;
+  font-size: 24px;
+  color: var(--text-main);
+}
+
+.compact-stat-value-small {
+  font-size: 18px;
+}
+
+.play-main {
+  flex: 1;
+}
+
+.round-label {
+  display: inline-flex;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(20, 33, 61, 0.08);
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.opponent-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.opponent-caption,
+.target-strip-label {
+  font-size: 13px;
+}
+
+.opponent-hand {
+  margin-top: 10px;
+  font-size: 80px;
+  line-height: 1;
+}
+
+.opponent-name {
+  margin-top: 8px;
+  font-size: 30px;
+  color: var(--text-main);
+}
+
+.target-strip {
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 22px;
+  border: 1.5px solid;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.target-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 16px;
+  border-radius: 999px;
+}
+
+.target-badge-icon,
+.target-badge-text {
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.coach-card {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(20, 33, 61, 0.05));
+  border: 1px solid rgba(20, 33, 61, 0.06);
+}
+
+.coach-answer {
+  margin-top: 6px;
+}
+
+.timer-card {
+  gap: 10px;
+}
+
+.timer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.timer-value {
+  font-size: 32px;
+  color: var(--text-main);
+}
+
+.timer-track {
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(20, 33, 61, 0.1);
+}
+
+.timer-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4dba87 0%, #f2b544 60%, #d94b58 100%);
+  transition: width 0.1s linear;
+}
+
+.timer-card.is-warning .timer-value {
+  color: var(--warning);
+}
+
+.timer-card.is-critical {
+  animation: pulseGlow 0.9s ease-in-out infinite;
+}
+
+.timer-card.is-critical .timer-value {
+  color: var(--danger);
+}
+
+.action-dock {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: 16px 14px calc(10px + env(safe-area-inset-bottom));
+  border-radius: 28px 28px 0 0;
+  background: rgba(11, 18, 36, 0.78);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 -12px 28px rgba(5, 10, 22, 0.28);
+}
+
+.action-dock-title {
+  margin-bottom: 10px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.hand-option {
+  min-height: 120px;
+  padding: 14px 10px;
+  border-radius: 22px;
+  background: rgba(255, 250, 240, 0.96);
+  border: 1.5px solid transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.hand-option:active {
+  transform: scale(0.97);
+}
+
+.hand-option-correct {
+  background: rgba(77, 186, 135, 0.2);
+  border-color: rgba(77, 186, 135, 0.9);
+}
+
+.hand-option-wrong {
+  background: rgba(217, 75, 88, 0.16);
+  border-color: rgba(217, 75, 88, 0.88);
+}
+
+.hand-option-emoji {
+  font-size: 44px;
+  line-height: 1;
+}
+
+.hand-option-copy {
+  text-align: center;
+}
+
+.hand-option-name {
+  display: block;
+  font-size: 17px;
+  color: var(--text-main);
+}
+
+.hand-option-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+}
+
+.result-hero {
+  padding: 26px 18px;
+  text-align: center;
+}
+
+.result-kicker {
+  display: block;
+}
+
+.result-score {
+  display: block;
+  margin-top: 10px;
+  font-size: 68px;
+  line-height: 1;
+  color: var(--text-main);
+}
+
+.result-caption {
+  display: block;
+  margin-top: 8px;
+  font-size: 15px;
+}
+
+.record-badge {
+  display: inline-flex;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 159, 106, 0.22), rgba(255, 122, 89, 0.28));
+}
+
+.record-badge-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.result-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.result-stat {
+  text-align: center;
+}
+
+.result-stat-label {
+  display: block;
+  font-size: 12px;
+}
+
+.result-stat-value {
+  display: block;
+  margin-top: 6px;
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--text-main);
+}
+
+.result-tip-card {
+  padding-top: 16px;
+}
+
+.secondary-button {
+  padding: 16px 18px;
+  background: rgba(248, 244, 234, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.secondary-button-text {
+  font-size: 16px;
+  color: var(--text-main);
+}
+
+.ghost-button {
+  padding: 15px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ghost-button-text {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+@media (max-width: 360px) {
+  .rps-game {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .game-title {
+    font-size: 30px;
+  }
+
+  .hero-metrics,
+  .result-stats,
+  .play-top,
+  .action-grid {
+    gap: 8px;
+  }
+
+  .metric-value,
+  .result-stat-value,
+  .compact-stat-value {
+    font-size: 22px;
+  }
+
+  .opponent-hand {
+    font-size: 72px;
+  }
+
+  .opponent-name {
+    font-size: 26px;
+  }
+
+  .hand-option {
+    min-height: 108px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .hand-option-emoji {
+    font-size: 40px;
+  }
+}

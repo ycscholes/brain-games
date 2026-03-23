@@ -308,6 +308,7 @@ export default function MemoryChallenge() {
 
   const handleGameOver = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    Taro.setStorageSync("memory_last_score", score);
     setGameState("gameover");
     // 更新当前难度组合的最高分
     updateHighScore(score);
