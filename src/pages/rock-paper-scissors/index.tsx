@@ -218,28 +218,25 @@ export default function RockPaperScissors() {
         <View className="screen start-screen">
           <View className="hero-card panel-card">
             <View className="hero-mark">
-              <Text className="hero-mark-text">RPS</Text>
+              <Text className="hero-mark-text">✊</Text>
             </View>
-            <Text className="hero-eyebrow">REVERSE MODE</Text>
             <Text className="game-title">逆向猜拳</Text>
-            <Text className="game-subtitle">看目标结果倒推手势，重点不是会猜拳，而是够不够快。</Text>
+            <Text className="game-subtitle">看结果倒推手势，挑战你的反应和逆向判断！</Text>
 
-            <View className="hero-metrics">
-              <View className="metric-card metric-card-highlight">
-                <Text className="metric-label">当前难度最高分</Text>
-                <Text className="metric-value">{highScore}</Text>
+            <View className="high-score-badge-rps">
+              <View className="high-score-icon-rps">
+                <Text className="high-score-icon-text-rps">🏆</Text>
               </View>
-              <View className="metric-card">
-                <Text className="metric-label">本轮时限</Text>
-                <Text className="metric-value">{DIFFICULTY_CONFIG[difficulty].time}s</Text>
+              <View className="high-score-content-rps">
+                <Text className="high-score-label-rps">当前难度最高分</Text>
+                <Text className="high-score-value-rps">{highScore}</Text>
               </View>
             </View>
           </View>
 
           <View className="panel-card quick-guide-card">
             <View className="section-head">
-              <Text className="section-kicker">操作说明</Text>
-              <Text className="section-title">三步完成判断</Text>
+              <Text className="section-title">游戏规则</Text>
             </View>
             <View className="guide-track">
               <View className="guide-step">
@@ -252,7 +249,7 @@ export default function RockPaperScissors() {
               </View>
               <View className="guide-step">
                 <Text className="guide-index">3</Text>
-                <Text className="guide-text">点底部大按钮直接作答</Text>
+                <Text className="guide-text">选出正确手势，答错或超时结束</Text>
               </View>
             </View>
             <View className="memory-tip">
@@ -263,8 +260,7 @@ export default function RockPaperScissors() {
 
           <View className="panel-card difficulty-card">
             <View className="section-head">
-              <Text className="section-kicker">难度选择</Text>
-              <Text className="section-title">按手速挑节奏</Text>
+              <Text className="section-title">答题时间</Text>
             </View>
             <View className="difficulty-list">
               {([1, 2, 3, 4] as Difficulty[]).map((d) => {
@@ -276,15 +272,15 @@ export default function RockPaperScissors() {
                     className={`difficulty-item ${isSelected ? "difficulty-item-selected" : ""}`}
                     onClick={() => setDifficulty(d)}
                   >
-                    <View className="difficulty-main">
-                      <View className="difficulty-dot" style={{ backgroundColor: config.color }} />
-                      <View className="difficulty-copy">
-                        <Text className="difficulty-label">{config.label}</Text>
-                        <Text className="difficulty-desc">{config.description}</Text>
-                      </View>
+                    <View
+                      className="difficulty-badge-rps"
+                      style={{ backgroundColor: config.color }}
+                    >
+                      <Text className="difficulty-badge-text-rps">{config.time}s</Text>
                     </View>
-                    <View className="difficulty-time-badge">
-                      <Text className="difficulty-time-text">{config.time}s</Text>
+                    <View className="difficulty-copy-rps">
+                      <Text className="difficulty-label">{config.label}</Text>
+                      <Text className="difficulty-desc">{config.description}</Text>
                     </View>
                   </View>
                 );
@@ -294,8 +290,7 @@ export default function RockPaperScissors() {
 
           <View className="start-action">
             <View className="primary-button" onClick={startGame}>
-              <Text className="primary-button-text">开始挑战</Text>
-              <Text className="primary-button-subtext">拇指直接点按即可开始</Text>
+              <Text className="primary-button-text">开始游戏</Text>
             </View>
           </View>
         </View>
@@ -305,23 +300,21 @@ export default function RockPaperScissors() {
         <View className="screen play-screen">
           <View className="play-top panel-card">
             <View className="compact-stat">
-              <Text className="compact-stat-label">得分</Text>
-              <Text className="compact-stat-value">{score}</Text>
+              <Text className="compact-stat-label">👁️</Text>
+              <Text className="compact-stat-value">第 {Math.floor(score / 10) + 1} 题</Text>
             </View>
             <View className="compact-stat">
-              <Text className="compact-stat-label">连胜</Text>
-              <Text className="compact-stat-value">{streak}</Text>
-            </View>
-            <View className="compact-stat compact-stat-tight">
-              <Text className="compact-stat-label">难度</Text>
-              <Text className="compact-stat-value compact-stat-value-small">{DIFFICULTY_CONFIG[difficulty].label}</Text>
+              <Text className="compact-stat-label">🏆</Text>
+              <Text className="compact-stat-value">{score} 分</Text>
             </View>
           </View>
 
           <View className="play-main panel-card">
-            <Text className="round-label">第 {Math.floor(score / 10) + 1} 轮</Text>
+            <View className="status-badge-rps">
+              <Text className="status-badge-text-rps">请选择正确手势</Text>
+            </View>
             <View className="opponent-stage">
-              <Text className="opponent-caption">电脑出</Text>
+              <Text className="opponent-caption">电脑出的是</Text>
               <Text className="opponent-hand">{HAND_CONFIG[currentHand].emoji}</Text>
               <Text className="opponent-name">{HAND_CONFIG[currentHand].name}</Text>
             </View>
@@ -332,13 +325,10 @@ export default function RockPaperScissors() {
                 <Text className="target-badge-icon">{OUTCOME_CONFIG[targetOutcome].emoji}</Text>
                 <Text className="target-badge-text">{OUTCOME_CONFIG[targetOutcome].name}</Text>
               </View>
+              <Text className="target-strip-hint">{OUTCOME_CONFIG[targetOutcome].prompt}</Text>
             </View>
 
-            <View className="coach-card">
-              <Text className="coach-title">提示思路</Text>
-              <Text className="coach-text">{OUTCOME_CONFIG[targetOutcome].prompt}</Text>
-              <Text className="coach-answer">{coachDetail}</Text>
-            </View>
+            <Text className="coach-inline">{coachDetail}</Text>
           </View>
 
           <View className={`timer-card panel-card ${urgencyClass}`}>
@@ -385,7 +375,7 @@ export default function RockPaperScissors() {
             <Text className="result-caption">最终得分</Text>
             {isNewRecord && score > 0 && (
               <View className="record-badge">
-                <Text className="record-badge-text">刷新当前难度纪录</Text>
+                <Text className="record-badge-text">✨ 新纪录 NEW RECORD ✨</Text>
               </View>
             )}
           </View>
@@ -414,7 +404,6 @@ export default function RockPaperScissors() {
           <View className="result-actions">
             <View className="primary-button" onClick={startGame}>
               <Text className="primary-button-text">再来一局</Text>
-              <Text className="primary-button-subtext">保持当前难度继续挑战</Text>
             </View>
             <View className="secondary-button" onClick={() => setGameState("start")}>
               <Text className="secondary-button-text">重新选择难度</Text>

@@ -65,10 +65,6 @@ $color-expert: #EF4444;
 .game-container {
   min-height: 100vh;
   background-color: $color-bg-page;
-  padding-top: constant(safe-area-inset-top);
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: constant(safe-area-inset-bottom);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 // Toast 提示
