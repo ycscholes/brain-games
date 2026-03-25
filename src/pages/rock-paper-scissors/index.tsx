@@ -223,7 +223,6 @@ export default function RockPaperScissors() {
               <Text className="hero-mark-emoji hero-mark-emoji-scissors">✌️</Text>
             </View>
             <Text className="game-title">逆向猜拳</Text>
-            <Text className="game-subtitle">看结果倒推手势，挑战你的反应和逆向判断！</Text>
 
             <View className="high-score-badge-rps">
               <View className="high-score-icon-rps">
@@ -253,10 +252,6 @@ export default function RockPaperScissors() {
                 <Text className="guide-index">3</Text>
                 <Text className="guide-text">选出正确手势，答错或超时结束</Text>
               </View>
-            </View>
-            <View className="memory-tip">
-              <Text className="memory-tip-label">口诀</Text>
-              <Text className="memory-tip-text">想赢就克制它，想平就跟它一样，想输就故意被它克制。</Text>
             </View>
           </View>
 
