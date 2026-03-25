@@ -218,7 +218,9 @@ export default function RockPaperScissors() {
         <View className="screen start-screen">
           <View className="hero-card panel-card">
             <View className="hero-mark">
-              <Text className="hero-mark-text">✊</Text>
+              <Text className="hero-mark-emoji hero-mark-emoji-rock">✊</Text>
+              <Text className="hero-mark-emoji hero-mark-emoji-paper">📄</Text>
+              <Text className="hero-mark-emoji hero-mark-emoji-scissors">✌️</Text>
             </View>
             <Text className="game-title">逆向猜拳</Text>
             <Text className="game-subtitle">看结果倒推手势，挑战你的反应和逆向判断！</Text>
@@ -262,7 +264,7 @@ export default function RockPaperScissors() {
             <View className="section-head">
               <Text className="section-title">答题时间</Text>
             </View>
-            <View className="difficulty-list">
+            <View className="difficulty-grid-rps">
               {([1, 2, 3, 4] as Difficulty[]).map((d) => {
                 const isSelected = difficulty === d;
                 const config = DIFFICULTY_CONFIG[d];
@@ -311,7 +313,9 @@ export default function RockPaperScissors() {
 
           <View className="play-main panel-card">
             <View className="status-badge-rps">
-              <Text className="status-badge-text-rps">请选择正确手势</Text>
+              <Text className="status-badge-text-rps">
+                {feedback === "correct" ? "回答正确" : feedback === "wrong" ? "回答错误" : "请选择正确手势"}
+              </Text>
             </View>
             <View className="opponent-stage">
               <Text className="opponent-caption">电脑出的是</Text>
@@ -328,7 +332,10 @@ export default function RockPaperScissors() {
               <Text className="target-strip-hint">{OUTCOME_CONFIG[targetOutcome].prompt}</Text>
             </View>
 
-            <Text className="coach-inline">{coachDetail}</Text>
+            <View className="coach-panel">
+              <Text className="coach-panel-label">判断提示</Text>
+              <Text className="coach-inline">{coachDetail}</Text>
+            </View>
           </View>
 
           <View className={`timer-card panel-card ${urgencyClass}`}>
