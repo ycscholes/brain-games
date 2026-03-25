@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
 import "./index.scss";
@@ -200,11 +200,6 @@ export default function RockPaperScissors() {
     };
   }, [gameState, feedback, handleGameOver]);
 
-  const coachDetail = useMemo(() => {
-    if (!currentHand) return "先判断相同、克制它、被它克制这三种关系，再匹配目标。";
-    return `面对${HAND_CONFIG[currentHand].name}时，先想“跟它一样、克制它、被它克制”三种关系，再选符合目标的那个。`;
-  }, [currentHand]);
-
   const progressPercent = Math.max(0, (timeLeft / DIFFICULTY_CONFIG[difficulty].time) * 100);
   const urgencyClass = timeLeft <= 1.5 ? "is-critical" : timeLeft <= 2.5 ? "is-warning" : "";
 
@@ -216,13 +211,16 @@ export default function RockPaperScissors() {
 
       {gameState === "start" && (
         <View className="screen start-screen">
-          <View className="hero-card panel-card">
-            <View className="hero-mark">
-              <Text className="hero-mark-emoji hero-mark-emoji-rock">✊</Text>
-              <Text className="hero-mark-emoji hero-mark-emoji-paper">📄</Text>
-              <Text className="hero-mark-emoji hero-mark-emoji-scissors">✌️</Text>
+          <View className="header-section-rps">
+            <View className="logo-container-rps">
+              <View className="logo-icon-rps">
+                <Text className="hero-mark-emoji hero-mark-emoji-rock">✊</Text>
+                <Text className="hero-mark-emoji hero-mark-emoji-paper">📄</Text>
+                <Text className="hero-mark-emoji hero-mark-emoji-scissors">✌️</Text>
+              </View>
             </View>
-            <Text className="game-title">逆向猜拳</Text>
+            <Text className="game-title-rps">逆向猜拳</Text>
+            <Text className="game-subtitle-rps">根据目标结果倒推答案，挑战你的反应和判断！</Text>
 
             <View className="high-score-badge-rps">
               <View className="high-score-icon-rps">
@@ -235,29 +233,35 @@ export default function RockPaperScissors() {
             </View>
           </View>
 
-          <View className="panel-card quick-guide-card">
-            <View className="section-head">
-              <Text className="section-title">游戏规则</Text>
+          <View className="rules-card-rps">
+            <View className="rules-header-rps">
+              <View className="rules-icon-rps">
+                <Text className="rules-icon-text-rps">📋</Text>
+              </View>
+              <Text className="rules-title-rps">游戏规则</Text>
             </View>
-            <View className="guide-track">
-              <View className="guide-step">
-                <Text className="guide-index">1</Text>
-                <Text className="guide-text">先看电脑出的手势</Text>
+            <View className="rules-list-rps">
+              <View className="rule-item-rps">
+                <Text className="rule-number-rps">1.</Text>
+                <Text className="rule-text-rps">先看电脑出的手势</Text>
               </View>
-              <View className="guide-step">
-                <Text className="guide-index">2</Text>
-                <Text className="guide-text">再看本轮要求你赢、平或输</Text>
+              <View className="rule-item-rps">
+                <Text className="rule-number-rps">2.</Text>
+                <Text className="rule-text-rps">再看本轮要求你赢、平或输</Text>
               </View>
-              <View className="guide-step">
-                <Text className="guide-index">3</Text>
-                <Text className="guide-text">选出正确手势，答错或超时结束</Text>
+              <View className="rule-item-rps">
+                <Text className="rule-number-rps">3.</Text>
+                <Text className="rule-text-rps">选出正确手势，答错或超时结束</Text>
               </View>
             </View>
           </View>
 
-          <View className="panel-card difficulty-card">
-            <View className="section-head">
-              <Text className="section-title">答题时间</Text>
+          <View className="difficulty-section-rps">
+            <View className="difficulty-header-rps">
+              <View className="difficulty-icon-rps">
+                <Text className="difficulty-icon-text-rps">⏱️</Text>
+              </View>
+              <Text className="difficulty-title-rps">答题时间</Text>
             </View>
             <View className="difficulty-grid-rps">
               {([1, 2, 3, 4] as Difficulty[]).map((d) => {
@@ -269,15 +273,11 @@ export default function RockPaperScissors() {
                     className={`difficulty-item ${isSelected ? "difficulty-item-selected" : ""}`}
                     onClick={() => setDifficulty(d)}
                   >
-                    <View
-                      className="difficulty-badge-rps"
-                      style={{ backgroundColor: config.color }}
-                    >
+                    <View className="difficulty-badge-rps" style={{ backgroundColor: config.color }}>
                       <Text className="difficulty-badge-text-rps">{config.time}s</Text>
                     </View>
                     <View className="difficulty-copy-rps">
                       <Text className="difficulty-label">{config.label}</Text>
-                      <Text className="difficulty-desc">{config.description}</Text>
                     </View>
                   </View>
                 );
@@ -285,9 +285,9 @@ export default function RockPaperScissors() {
             </View>
           </View>
 
-          <View className="start-action">
-            <View className="primary-button" onClick={startGame}>
-              <Text className="primary-button-text">开始游戏</Text>
+          <View className="start-button-container-rps">
+            <View className="start-button-rps" onClick={startGame}>
+              <Text className="start-button-text-rps">开始游戏</Text>
             </View>
           </View>
         </View>
@@ -295,18 +295,22 @@ export default function RockPaperScissors() {
 
       {gameState === "playing" && currentHand && targetOutcome && (
         <View className="screen play-screen">
-          <View className="play-top panel-card">
-            <View className="compact-stat">
-              <Text className="compact-stat-label">👁️</Text>
-              <Text className="compact-stat-value">第 {Math.floor(score / 10) + 1} 题</Text>
+          <View className="top-bar-rps">
+            <View className="top-bar-item-rps">
+              <View className="top-bar-icon-rps top-bar-icon-eye-rps">
+                <Text className="top-bar-icon-text-rps">👁️</Text>
+              </View>
+              <Text className="top-bar-text-rps">题目 {Math.floor(score / 10) + 1}</Text>
             </View>
-            <View className="compact-stat">
-              <Text className="compact-stat-label">🏆</Text>
-              <Text className="compact-stat-value">{score} 分</Text>
+            <View className="top-bar-item-rps">
+              <View className="top-bar-icon-rps top-bar-icon-trophy-rps">
+                <Text className="top-bar-icon-text-rps">🏆</Text>
+              </View>
+              <Text className="top-bar-text-rps">{score} 分</Text>
             </View>
           </View>
 
-          <View className="play-main panel-card">
+          <View className="main-card-rps">
             <View className="status-badge-rps">
               <Text className="status-badge-text-rps">
                 {feedback === "correct" ? "回答正确" : feedback === "wrong" ? "回答错误" : "请选择正确手势"}
@@ -318,7 +322,7 @@ export default function RockPaperScissors() {
               <Text className="opponent-name">{HAND_CONFIG[currentHand].name}</Text>
             </View>
 
-            <View className="target-strip" style={{ borderColor: OUTCOME_CONFIG[targetOutcome].color }}>
+            <View className="target-strip" style={{ backgroundColor: `${OUTCOME_CONFIG[targetOutcome].color}16` }}>
               <Text className="target-strip-label">你的目标</Text>
               <View className="target-badge" style={{ backgroundColor: OUTCOME_CONFIG[targetOutcome].color }}>
                 <Text className="target-badge-icon">{OUTCOME_CONFIG[targetOutcome].emoji}</Text>
@@ -327,25 +331,16 @@ export default function RockPaperScissors() {
               <Text className="target-strip-hint">{OUTCOME_CONFIG[targetOutcome].prompt}</Text>
             </View>
 
-            <View className="coach-panel">
-              <Text className="coach-panel-label">判断提示</Text>
-              <Text className="coach-inline">{coachDetail}</Text>
+            <View className="countdown-rps">
+              <Text className={`countdown-text-rps ${urgencyClass}`}>{timeLeft.toFixed(1)}</Text>
+            </View>
+
+            <View className="progress-bar-rps">
+              <View className="progress-bar-fill-rps" style={{ width: `${progressPercent}%` }} />
             </View>
           </View>
 
-          <View className={`timer-card panel-card ${urgencyClass}`}>
-            <View className="timer-head">
-              <Text className="timer-label">剩余时间</Text>
-              <Text className="timer-value">{timeLeft.toFixed(1)}s</Text>
-            </View>
-            <View className="timer-track">
-              <View className="timer-fill" style={{ width: `${progressPercent}%` }} />
-            </View>
-          </View>
-
-          <View className="action-dock">
-            <Text className="action-dock-title">选择你的手势</Text>
-            <View className="action-grid">
+          <View className="options-grid-rps">
               {(Object.keys(HAND_CONFIG) as HandType[]).map((hand) => {
                 const isSelected = selectedHand === hand;
                 let itemClass = "hand-option";
@@ -355,64 +350,65 @@ export default function RockPaperScissors() {
                 }
 
                 return (
-                  <View key={hand} className={itemClass} onClick={() => handleSelect(hand)}>
-                    <Text className="hand-option-emoji">{HAND_CONFIG[hand].emoji}</Text>
-                    <View className="hand-option-copy">
-                      <Text className="hand-option-name">{HAND_CONFIG[hand].name}</Text>
-                      <Text className="hand-option-hint">点按作答</Text>
+                    <View key={hand} className={itemClass} onClick={() => handleSelect(hand)}>
+                      <Text className="hand-option-emoji">{HAND_CONFIG[hand].emoji}</Text>
+                      <View className="hand-option-copy">
+                        <Text className="hand-option-name">{HAND_CONFIG[hand].name}</Text>
+                      </View>
                     </View>
-                  </View>
                 );
               })}
-            </View>
           </View>
         </View>
       )}
 
       {gameState === "gameover" && (
         <View className="screen gameover-screen">
-          <View className="result-hero panel-card">
-            <Text className="result-kicker">本局结束</Text>
-            <Text className="result-score">{score}</Text>
-            <Text className="result-caption">最终得分</Text>
+          <View className="score-card-rps">
+            <Text className="score-label-rps">最终得分</Text>
+            <Text className="score-value-rps">{score}</Text>
             {isNewRecord && score > 0 && (
-              <View className="record-badge">
-                <Text className="record-badge-text">✨ 新纪录 NEW RECORD ✨</Text>
+              <View className="new-record-badge-rps">
+                <Text className="new-record-text-rps">✨ 新纪录 NEW RECORD ✨</Text>
               </View>
             )}
           </View>
 
-          <View className="result-stats">
-            <View className="result-stat panel-card">
-              <Text className="result-stat-label">最高连胜</Text>
-              <Text className="result-stat-value">{bestStreak}</Text>
+          <View className="stats-grid-rps">
+            <View className="stat-item-rps">
+              <Text className="stat-label-rps">最高连胜</Text>
+              <Text className="stat-value-rps">{bestStreak}</Text>
             </View>
-            <View className="result-stat panel-card">
-              <Text className="result-stat-label">本局难度</Text>
-              <Text className="result-stat-value">{DIFFICULTY_CONFIG[difficulty].label}</Text>
+            <View className="stat-item-rps">
+              <Text className="stat-label-rps">本局难度</Text>
+              <Text className="stat-value-rps">{DIFFICULTY_CONFIG[difficulty].label}</Text>
             </View>
-            <View className="result-stat panel-card">
-              <Text className="result-stat-label">当前最高分</Text>
-              <Text className="result-stat-value">{highScoreRecord?.score ?? highScore}</Text>
+            <View className="stat-item-rps">
+              <Text className="stat-label-rps">当前最高分</Text>
+              <Text className="stat-value-rps">{highScoreRecord?.score ?? highScore}</Text>
             </View>
           </View>
 
-          <View className="panel-card result-tip-card">
-            <Text className="section-kicker">复盘建议</Text>
-            <Text className="section-title">继续提速的关键</Text>
-            <Text className="result-tip-text">把判断顺序固定成“看电脑 -> 看目标 -> 直接点答案”，不要在脑中重复完整规则。</Text>
+          <View className="tips-card-rps">
+            <View className="tips-header-rps">
+              <Text className="tips-icon-rps">💡</Text>
+              <Text className="tips-title-rps">提升技巧</Text>
+            </View>
+            <View className="tips-list-rps">
+              <Text className="tips-item-rps">• 先固定判断顺序：看电脑 -> 看目标 -> 点答案</Text>
+              <Text className="tips-item-rps">• 把赢平输转换成“克制、相同、被克制”三类关系</Text>
+            </View>
           </View>
 
-          <View className="result-actions">
-            <View className="primary-button" onClick={startGame}>
-              <Text className="primary-button-text">再来一局</Text>
-            </View>
-            <View className="secondary-button" onClick={() => setGameState("start")}>
-              <Text className="secondary-button-text">重新选择难度</Text>
-            </View>
-            <View className="ghost-button" onClick={() => Taro.reLaunch({ url: "/pages/index/index" })}>
-              <Text className="ghost-button-text">返回游戏主页</Text>
-            </View>
+          <View className="restart-button-rps" onClick={startGame}>
+            <Text className="restart-button-text-rps">再来一局</Text>
+          </View>
+
+          <View className="back-button-rps" onClick={() => setGameState("start")}>
+            <Text className="back-button-text-rps">重新选择难度</Text>
+          </View>
+          <View className="back-home-button-rps" onClick={() => Taro.reLaunch({ url: "/pages/index/index" })}>
+            <Text className="back-home-button-text-rps">返回游戏主页</Text>
           </View>
         </View>
       )}
