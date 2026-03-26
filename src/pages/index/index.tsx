@@ -73,7 +73,11 @@ function getMemorySummary(): ScoreSummary {
   let played = hasStorageValue("memory_last_score");
 
   for (let timeDifficulty = 1; timeDifficulty <= 4; timeDifficulty += 1) {
-    for (let memoryDifficulty = 1; memoryDifficulty <= 4; memoryDifficulty += 1) {
+    for (
+      let memoryDifficulty = 1;
+      memoryDifficulty <= 4;
+      memoryDifficulty += 1
+    ) {
       const key = `memory_highscore_T${timeDifficulty}M${memoryDifficulty}`;
       best = Math.max(best, readJSONScore(key));
       played = played || hasStorageValue(key);
@@ -161,7 +165,7 @@ export default function Index() {
 
       <View className="hub-shell">
         <View className="top-bar">
-          <Text className="page-title">小游戏实验室</Text>
+          <Text className="page-title">脑力游戏实验室</Text>
           <View className="profile-button">
             <Text className="profile-icon">◔</Text>
           </View>
@@ -169,7 +173,11 @@ export default function Index() {
 
         <View className="game-list">
           {games.map((game) => (
-            <View key={game.id} className={`game-card ${game.cardClass}`} onClick={() => navigateTo(game.url)}>
+            <View
+              key={game.id}
+              className={`game-card ${game.cardClass}`}
+              onClick={() => navigateTo(game.url)}
+            >
               <View className="game-icon">
                 <Text className="game-icon-text">{game.icon}</Text>
               </View>
@@ -180,7 +188,9 @@ export default function Index() {
 
               <View className="game-meta">
                 <Text className="game-badge">{game.badge}</Text>
-                <Text className="score-line">最高分：{game.summary.best} 🏆</Text>
+                <Text className="score-line">
+                  最高分：{game.summary.best} 🏆
+                </Text>
               </View>
 
               <View className="game-footer">

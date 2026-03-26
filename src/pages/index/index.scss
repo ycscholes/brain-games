@@ -1,6 +1,6 @@
 .game-hub {
   min-height: 100vh;
-  padding: calc(20px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  padding: calc(20px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
   box-sizing: border-box;
   position: relative;
   overflow-x: hidden;
@@ -235,26 +235,3 @@
   letter-spacing: 0.4px;
 }
 
-@media (max-width: 390px) {
-  .game-hub {
-    padding-left: 14px;
-    padding-right: 14px;
-  }
-
-  .game-list {
-    gap: 16px;
-  }
-
-  .game-card {
-    min-height: 238px;
-    padding: 16px;
-  }
-
-  .page-title {
-    font-size: 38px;
-  }
-
-  .game-title {
-    font-size: 30px;
-  }
-}
