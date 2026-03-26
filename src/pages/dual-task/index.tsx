@@ -49,10 +49,10 @@ interface DifficultyConfig {
 }
 
 const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
-  easy: { label: "简单", gapTime: 1800, taskTimeLimit: 5200, timeoutPenalty: 10, chipColor: "#34C759" },
-  normal: { label: "普通", gapTime: 1400, taskTimeLimit: 4200, timeoutPenalty: 20, chipColor: "#4A90D9" },
-  hard: { label: "困难", gapTime: 1000, taskTimeLimit: 3200, timeoutPenalty: 30, chipColor: "#FF9500" },
-  expert: { label: "专家", gapTime: 700, taskTimeLimit: 2600, timeoutPenalty: 35, chipColor: "#FF3B30" },
+  easy: { label: "简单", gapTime: 1800, taskTimeLimit: 5000, timeoutPenalty: 10, chipColor: "#34C759" },
+  normal: { label: "普通", gapTime: 1400, taskTimeLimit: 4000, timeoutPenalty: 20, chipColor: "#4A90D9" },
+  hard: { label: "困难", gapTime: 1000, taskTimeLimit: 3000, timeoutPenalty: 30, chipColor: "#FF9500" },
+  expert: { label: "专家", gapTime: 700, taskTimeLimit: 2000, timeoutPenalty: 35, chipColor: "#FF3B30" },
 };
 
 const MODE_CONFIG: Record<Mode, { title: string; subtitle: string; icon: string }> = {
@@ -232,7 +232,7 @@ function makeStroopTask(type: "stroop_read" | "stroop_color", baseTimeLimit: num
     question: word,
     options: COLOR_WORDS,
     correctAnswer: COLOR_WORDS.indexOf(type === "stroop_read" ? word : ink),
-    timeLimit: Math.round(baseTimeLimit * 1.2),
+    timeLimit: baseTimeLimit,
     pointValue: 150,
     inkColor: COLOR_HEX[ink],
   };
@@ -621,8 +621,6 @@ export default function DualTaskGame() {
     return Math.min(1, Math.max(0, taskTimeLeftMs / currentTaskLimit));
   }, [currentTaskLimit, taskTimeLeftMs]);
 
-  const completedRounds = correctCount + wrongCount + timeoutCount;
-
   const renderTask = (task: Task, side: TaskSide) => {
     const answered = side === "A" ? taskAAnswered : taskBAnswered;
     const answer = side === "A" ? taskAAnswer : taskBAnswer;
@@ -693,7 +691,7 @@ export default function DualTaskGame() {
             </View>
             <View className="hero-metrics">
               <View className="hero-metric">
-                <Text className="hero-metric-value">{(difficultyMeta.taskTimeLimit / 1000).toFixed(1)}s</Text>
+                <Text className="hero-metric-value">{difficultyMeta.taskTimeLimit / 1000}s</Text>
                 <Text className="hero-metric-label">单题时限</Text>
               </View>
               <View className="hero-metric">
@@ -735,16 +733,11 @@ export default function DualTaskGame() {
                     className={`chip ${config.difficulty === difficulty ? "chip-active" : ""}`}
                     onClick={() => setConfig((prev) => ({ ...prev, difficulty }))}
                   >
-                    <Text className="chip-text">
-                      {DIFFICULTY_CONFIG[difficulty].label} · {(
-                        DIFFICULTY_CONFIG[difficulty].taskTimeLimit / 1000
-                      ).toFixed(1)}
-                      s
-                    </Text>
+                    <Text className="chip-text">{DIFFICULTY_CONFIG[difficulty].label}</Text>
+                    <Text className="chip-meta">{DIFFICULTY_CONFIG[difficulty].taskTimeLimit / 1000}s</Text>
                   </View>
                 ))}
               </View>
-              <Text className="panel-hint">答错或超时立即结束，难度越高单题时间越短。</Text>
             </View>
           </View>
 
@@ -773,12 +766,12 @@ export default function DualTaskGame() {
 
             <View className="top-bar">
               <View className="stat-cell">
-                <Text className="stat-label">🧮 题数</Text>
-                <Text className="stat-value">{completedRounds}</Text>
+                <Text className="stat-label">🎯 难度</Text>
+                <Text className="stat-value">{DIFFICULTY_CONFIG[config.difficulty].label}</Text>
               </View>
               <View className="stat-cell">
                 <Text className="stat-label">🏆 得分</Text>
-                <Text className="stat-value">{score}</Text>
+                <Text className="stat-value">{score} 分</Text>
               </View>
               <View className="stat-cell">
                 <Text className="stat-label">🔥 连击</Text>

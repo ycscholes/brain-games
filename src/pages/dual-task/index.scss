@@ -257,7 +257,16 @@ $color-border: #E2E8F0;
   font-size: 22px;
   font-weight: 700;
   color: $color-text-primary;
-  line-height: 1.35;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.chip-meta {
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 700;
+  color: $color-text-secondary;
+  line-height: 1;
   text-align: center;
 }
 
@@ -372,9 +381,10 @@ $color-border: #E2E8F0;
 
 .stat-value {
   display: block;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
   color: $color-text-primary;
+  text-align: center;
 }
 
 .feedback {
