@@ -682,9 +682,9 @@ export default function DualTaskGame() {
       {gameStatus === "start" && (
         <View className="start-screen">
           <View className="hero-card">
-            <Text className="hero-kicker">DUAL TASK TRAINER</Text>
+            <Text className="hero-kicker">双线专注训练</Text>
             <Text className="hero-icon">🧩</Text>
-            <Text className="hero-title">双重任务 Dual Task</Text>
+            <Text className="hero-title">双重任务</Text>
             <Text className="hero-subtitle">切换注意力并保持稳定准确率。</Text>
             <View className="best-chip">
               <Text className="best-chip-text">
