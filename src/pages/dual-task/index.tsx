@@ -6,7 +6,6 @@ import "./index.scss";
 type GameStatus = "start" | "playing" | "finished";
 type Mode = "alternating" | "simultaneous" | "stroop";
 type Difficulty = "easy" | "normal" | "hard" | "expert";
-type Duration = 45 | 60 | 90;
 type TaskSide = "A" | "B";
 
 type TaskType =
@@ -22,7 +21,6 @@ type TaskType =
 interface GameConfig {
   mode: Mode;
   difficulty: Difficulty;
-  duration: Duration;
 }
 
 interface Task {
@@ -69,7 +67,6 @@ const MODE_HINTS: Record<Mode, string> = {
   stroop: "看清字义与颜色冲突，优先保持准确率。",
 };
 
-const DURATION_OPTIONS: Duration[] = [45, 60, 90];
 const COLOR_WORDS = ["红", "蓝", "黄", "绿"];
 const COLOR_HEX: Record<string, string> = {
   红: "#FF3B30",
@@ -270,10 +267,8 @@ export default function DualTaskGame() {
   const [config, setConfig] = useState<GameConfig>({
     mode: "alternating",
     difficulty: "normal",
-    duration: 60,
   });
 
-  const [timeRemaining, setTimeRemaining] = useState(60);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
@@ -294,17 +289,12 @@ export default function DualTaskGame() {
 
   const [lastFeedback, setLastFeedback] = useState<"correct" | "wrong" | "timeout" | "none">("none");
 
-  const gameTickerRef = useRef<NodeJS.Timeout | null>(null);
   const questionTickerRef = useRef<NodeJS.Timeout | null>(null);
   const roundTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const difficultyMeta = DIFFICULTY_CONFIG[config.difficulty];
 
   const clearAllTimers = () => {
-    if (gameTickerRef.current) {
-      clearInterval(gameTickerRef.current);
-      gameTickerRef.current = null;
-    }
     if (questionTickerRef.current) {
       clearInterval(questionTickerRef.current);
       questionTickerRef.current = null;
@@ -353,16 +343,17 @@ export default function DualTaskGame() {
     setLastFeedback("none");
   }, [config]);
 
-  const finishGame = useCallback(() => {
+  const finishGame = useCallback((finalScore?: number) => {
     clearAllTimers();
-    Taro.setStorageSync(`dual_task_last_${config.mode}`, score);
+    const settledScore = finalScore ?? score;
+    Taro.setStorageSync(`dual_task_last_${config.mode}`, settledScore);
     setGameStatus("finished");
 
     const key = getStorageKey(config.mode);
     const currentBest = Number(Taro.getStorageSync(key) || 0);
-    if (score > currentBest) {
-      Taro.setStorageSync(key, score);
-      setBestScore(score);
+    if (settledScore > currentBest) {
+      Taro.setStorageSync(key, settledScore);
+      setBestScore(settledScore);
     } else {
       setBestScore(currentBest);
     }
@@ -375,13 +366,17 @@ export default function DualTaskGame() {
         20,
         Math.round((isTimeout ? difficultyMeta.timeoutPenalty : WRONG_PENALTY_BASE) * multiplier),
       );
-      setScore((prev) => clampScore(prev - penalty));
+      const nextScore = clampScore(score - penalty);
+      setScore(nextScore);
       setStreak(0);
       if (isTimeout) setTimeoutCount((prev) => prev + 1);
       else setWrongCount((prev) => prev + 1);
       setLastFeedback(isTimeout ? "timeout" : "wrong");
+      roundTimerRef.current = setTimeout(() => {
+        finishGame(nextScore);
+      }, 420);
     },
-    [difficultyMeta.timeoutPenalty, streak],
+    [difficultyMeta.timeoutPenalty, finishGame, score, streak],
   );
 
   const addCorrectScore = useCallback(
@@ -411,6 +406,14 @@ export default function DualTaskGame() {
         addCorrectScore(100, elapsed, task.timeLimit);
       } else {
         applyPenalty(timeout);
+        if (side === "A") {
+          setTaskAAnswered(true);
+          setTaskAAnswer(answer);
+        } else {
+          setTaskBAnswered(true);
+          setTaskBAnswer(answer);
+        }
+        return;
       }
 
       if (side === "A") {
@@ -448,13 +451,20 @@ export default function DualTaskGame() {
           addCorrectScore(200, elapsed, timeLimit);
         } else {
           applyPenalty(false);
+          return;
         }
       } else {
         if (aCorrect) addCorrectScore(pair.taskA.pointValue, elapsed, timeLimit);
-        else applyPenalty(false);
+        else {
+          applyPenalty(false);
+          return;
+        }
 
         if (bCorrect) addCorrectScore(pair.taskB.pointValue, elapsed, timeLimit);
-        else applyPenalty(false);
+        else {
+          applyPenalty(false);
+          return;
+        }
       }
 
       roundTimerRef.current = setTimeout(() => {
@@ -484,38 +494,26 @@ export default function DualTaskGame() {
       return;
     }
 
+    const task = side === "A" ? pair.taskA : pair.taskB;
+    const isCorrect = optionIndex === task.correctAnswer;
+
     if (side === "A") {
       if (taskAAnswered) return;
       setTaskAAnswered(true);
       setTaskAAnswer(optionIndex);
+      if (!isCorrect) {
+        applyPenalty(false);
+        return;
+      }
     } else {
       if (taskBAnswered) return;
       setTaskBAnswered(true);
       setTaskBAnswer(optionIndex);
+      if (!isCorrect) {
+        applyPenalty(false);
+      }
     }
   };
-
-  useEffect(() => {
-    if (gameStatus !== "playing") return;
-
-    if (gameTickerRef.current) clearInterval(gameTickerRef.current);
-    gameTickerRef.current = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          finishGame();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      if (gameTickerRef.current) {
-        clearInterval(gameTickerRef.current);
-        gameTickerRef.current = null;
-      }
-    };
-  }, [gameStatus, finishGame]);
 
   useEffect(() => {
     if (gameStatus !== "playing") return;
@@ -574,11 +572,12 @@ export default function DualTaskGame() {
 
   useEffect(() => {
     if (gameStatus !== "playing" || config.mode === "alternating") return;
+    if (lastFeedback !== "none") return;
     if (taskAAnswered && taskBAnswered) {
       const forcedTimeout = taskAAnswer === null || taskBAnswer === null;
       resolveSimultaneousPair(forcedTimeout);
     }
-  }, [config.mode, gameStatus, resolveSimultaneousPair, taskAAnswer, taskAAnswered, taskBAnswer, taskBAnswered]);
+  }, [config.mode, gameStatus, lastFeedback, resolveSimultaneousPair, taskAAnswer, taskAAnswered, taskBAnswer, taskBAnswered]);
 
   useEffect(() => {
     return () => {
@@ -589,7 +588,6 @@ export default function DualTaskGame() {
   const startGame = () => {
     clearAllTimers();
     setGameStatus("playing");
-    setTimeRemaining(config.duration);
     setScore(0);
     setStreak(0);
     setMaxStreak(0);
@@ -622,6 +620,8 @@ export default function DualTaskGame() {
     if (!currentTaskLimit) return 0;
     return Math.min(1, Math.max(0, taskTimeLeftMs / currentTaskLimit));
   }, [currentTaskLimit, taskTimeLeftMs]);
+
+  const completedRounds = correctCount + wrongCount + timeoutCount;
 
   const renderTask = (task: Task, side: TaskSide) => {
     const answered = side === "A" ? taskAAnswered : taskBAnswered;
@@ -697,8 +697,8 @@ export default function DualTaskGame() {
                 <Text className="hero-metric-label">单题时限</Text>
               </View>
               <View className="hero-metric">
-                <Text className="hero-metric-value">{config.duration}s</Text>
-                <Text className="hero-metric-label">整局时长</Text>
+                <Text className="hero-metric-value">失误即止</Text>
+                <Text className="hero-metric-label">当前规则</Text>
               </View>
               <View className="hero-metric">
                 <Text className="hero-metric-value">{difficultyMeta.label}</Text>
@@ -744,21 +744,7 @@ export default function DualTaskGame() {
                   </View>
                 ))}
               </View>
-            </View>
-
-            <View className="panel">
-              <Text className="panel-title">时长</Text>
-              <View className="chip-row">
-                {DURATION_OPTIONS.map((duration) => (
-                  <View
-                    key={`${duration}`}
-                    className={`chip ${config.duration === duration ? "chip-active" : ""}`}
-                    onClick={() => setConfig((prev) => ({ ...prev, duration }))}
-                  >
-                    <Text className="chip-text">{duration}s</Text>
-                  </View>
-                ))}
-              </View>
+              <Text className="panel-hint">答错或超时立即结束，难度越高单题时间越短。</Text>
             </View>
           </View>
 
@@ -787,8 +773,8 @@ export default function DualTaskGame() {
 
             <View className="top-bar">
               <View className="stat-cell">
-                <Text className="stat-label">⏱️ 剩余</Text>
-                <Text className="stat-value">{timeRemaining}s</Text>
+                <Text className="stat-label">🧮 题数</Text>
+                <Text className="stat-value">{completedRounds}</Text>
               </View>
               <View className="stat-cell">
                 <Text className="stat-label">🏆 得分</Text>
