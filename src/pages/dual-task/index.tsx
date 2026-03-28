@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
+import { addPointsToPet } from "../../utils/petStorage";
 import "./index.scss";
 
 type GameStatus = "start" | "playing" | "finished";
@@ -347,6 +348,7 @@ export default function DualTaskGame() {
     clearAllTimers();
     const settledScore = finalScore ?? score;
     Taro.setStorageSync(`dual_task_last_${config.mode}`, settledScore);
+    addPointsToPet("dual-task", settledScore);
     setGameStatus("finished");
 
     const key = getStorageKey(config.mode);

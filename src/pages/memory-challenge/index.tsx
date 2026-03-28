@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, Image } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
+import { addPointsToPet } from "../../utils/petStorage";
 import "./index.scss";
 
 // Import Shapes
@@ -309,6 +310,7 @@ export default function MemoryChallenge() {
   const handleGameOver = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     Taro.setStorageSync("memory_last_score", score);
+    addPointsToPet("memory-challenge", score);
     setGameState("gameover");
     // 更新当前难度组合的最高分
     updateHighScore(score);

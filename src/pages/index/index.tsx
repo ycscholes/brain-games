@@ -1,6 +1,7 @@
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { useCallback, useState } from "react";
+import { readPetData } from "../../utils/petStorage";
 import "./index.scss";
 
 interface ScoreSummary {
@@ -43,6 +44,46 @@ const BASE_GAMES = [
     icon: "◉",
     cardClass: "card-dual",
     url: "/pages/dual-task/index",
+  },
+  {
+    id: "mental-math",
+    title: "速算挑战",
+    badge: "计算",
+    icon: "🧮",
+    cardClass: "card-mental",
+    url: "/pages/mental-math/index",
+  },
+  {
+    id: "digit-span",
+    title: "数字广度记忆",
+    badge: "记忆",
+    icon: "123",
+    cardClass: "card-digit",
+    url: "/pages/digit-span/index",
+  },
+  {
+    id: "mot",
+    title: "追踪任务",
+    badge: "注意",
+    icon: "◎",
+    cardClass: "card-mot",
+    url: "/pages/multiple-object-tracking/index",
+  },
+  {
+    id: "pattern",
+    title: "找规律",
+    badge: "推理",
+    icon: "△",
+    cardClass: "card-pattern",
+    url: "/pages/pattern-completion/index",
+  },
+  {
+    id: "pet",
+    title: "我的宠物",
+    badge: "养成",
+    icon: "🐾",
+    cardClass: "card-pet",
+    url: "/pages/pet/index",
   },
 ] as const;
 
@@ -126,6 +167,41 @@ function getDualTaskSummary(): ScoreSummary {
   return { best, recent, played };
 }
 
+function getMentalMathSummary(): ScoreSummary {
+  const bestTimed = readJSONScore("mental_math_high_score_timed");
+  const bestDeath = readJSONScore("mental_math_high_score_death");
+  const best = Math.max(bestTimed, bestDeath);
+  const recent = readNumberScore("mental_math_last_score");
+  const played = hasStorageValue("mental_math_high_score_timed") || hasStorageValue("mental_math_high_score_death");
+  return { best, recent, played };
+}
+
+function getDigitSpanSummary(): ScoreSummary {
+  const best = readNumberScore("digit_span_best");
+  const played = hasStorageValue("digit_span_best");
+  return { best, recent: 0, played };
+}
+
+function getMotSummary(): ScoreSummary {
+  const best = readNumberScore("mot_best");
+  const played = hasStorageValue("mot_best");
+  return { best, recent: 0, played };
+}
+
+function getPatternCompletionSummary(): ScoreSummary {
+  const best = readNumberScore("pattern_completion_best");
+  const played = hasStorageValue("pattern_completion_best");
+  return { best, recent: 0, played };
+}
+
+function getPetSummary(): ScoreSummary {
+  const data = readPetData();
+  let best = data.balance;
+  let recent = data.pets.length;
+  let played = data.pets.length > 0;
+  return { best, recent, played };
+}
+
 export default function Index() {
   const [games, setGames] = useState<GameItem[]>([]);
 
@@ -146,6 +222,26 @@ export default function Index() {
       {
         ...BASE_GAMES[2],
         summary: getDualTaskSummary(),
+      },
+      {
+        ...BASE_GAMES[3],
+        summary: getMentalMathSummary(),
+      },
+      {
+        ...BASE_GAMES[4],
+        summary: getDigitSpanSummary(),
+      },
+      {
+        ...BASE_GAMES[5],
+        summary: getMotSummary(),
+      },
+      {
+        ...BASE_GAMES[6],
+        summary: getPatternCompletionSummary(),
+      },
+      {
+        ...BASE_GAMES[7],
+        summary: getPetSummary(),
       },
     ]);
   }, []);
@@ -178,10 +274,6 @@ export default function Index() {
               className={`game-card ${game.cardClass}`}
               onClick={() => navigateTo(game.url)}
             >
-              <View className="game-icon">
-                <Text className="game-icon-text">{game.icon}</Text>
-              </View>
-
               <View className="game-copy">
                 <Text className="game-title">{game.title}</Text>
               </View>
@@ -189,7 +281,9 @@ export default function Index() {
               <View className="game-meta">
                 <Text className="game-badge">{game.badge}</Text>
                 <Text className="score-line">
-                  最高分：{game.summary.best} 🏆
+                  {game.id === "pet"
+                    ? `宠物：${game.summary.recent} · 积分：${game.summary.best}`
+                    : `最高分：${game.summary.best}`}
                 </Text>
               </View>
 

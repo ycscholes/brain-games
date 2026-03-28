@@ -78,7 +78,6 @@
 }
 
 .game-card {
-  min-height: 254px;
   padding: 18px 18px 16px;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.7);
@@ -111,6 +110,36 @@
 .card-dual {
   background:
     radial-gradient(circle at 64% 30%, rgba(87, 166, 255, 0.18), transparent 34%),
+    rgba(255, 255, 255, 0.74);
+}
+
+.card-mental {
+  background:
+    radial-gradient(circle at 40% 28%, rgba(14, 165, 233, 0.18), transparent 34%),
+    rgba(255, 255, 255, 0.74);
+}
+
+.card-digit {
+  background:
+    radial-gradient(circle at 38% 26%, rgba(37, 99, 235, 0.18), transparent 34%),
+    rgba(255, 255, 255, 0.74);
+}
+
+.card-mot {
+  background:
+    radial-gradient(circle at 42% 24%, rgba(16, 185, 129, 0.18), transparent 34%),
+    rgba(255, 255, 255, 0.74);
+}
+
+.card-pattern {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(244, 114, 182, 0.18), transparent 34%),
+    rgba(255, 255, 255, 0.74);
+}
+
+.card-pet {
+  background:
+    radial-gradient(circle at 45% 28%, rgba(139, 92, 246, 0.18), transparent 34%),
     rgba(255, 255, 255, 0.74);
 }
 
@@ -192,6 +221,31 @@
   color: #2d73d7;
 }
 
+.card-mental .game-badge {
+  background: rgba(14, 165, 233, 0.18);
+  color: #0284c7;
+}
+
+.card-digit .game-badge {
+  background: rgba(37, 99, 235, 0.18);
+  color: #1d4ed8;
+}
+
+.card-mot .game-badge {
+  background: rgba(16, 185, 129, 0.18);
+  color: #059669;
+}
+
+.card-pattern .game-badge {
+  background: rgba(244, 114, 182, 0.18);
+  color: #ec4899;
+}
+
+.card-pet .game-badge {
+  background: rgba(139, 92, 246, 0.18);
+  color: #8b5cf6;
+}
+
 .score-line {
   display: block;
   font-size: 24px;
@@ -226,6 +280,22 @@
 
 .card-dual .enter-button {
   background: linear-gradient(90deg, #1557bf 0%, #2f85f5 100%);
+}
+
+.card-mental .enter-button {
+  background: linear-gradient(90deg, #0284c7 0%, #0ea5e9 100%);
+}
+
+.card-digit .enter-button {
+  background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.card-mot .enter-button {
+  background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+}
+
+.card-pattern .enter-button {
+  background: linear-gradient(90deg, #ec4899 0%, #f472b6 100%);
 }
 
 .enter-button-text {

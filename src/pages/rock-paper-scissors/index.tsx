@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
+import { addPointsToPet } from "../../utils/petStorage";
 import "./index.scss";
 
 type GameState = "start" | "playing" | "gameover";
@@ -144,6 +145,7 @@ export default function RockPaperScissors() {
   const handleGameOver = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     Taro.setStorageSync("rps_last_score", score);
+    addPointsToPet("rock-paper-scissors", score);
     setGameState("gameover");
     updateHighScore(score);
   }, [score]);
@@ -395,7 +397,7 @@ export default function RockPaperScissors() {
               <Text className="tips-title-rps">提升技巧</Text>
             </View>
             <View className="tips-list-rps">
-              <Text className="tips-item-rps">• 先固定判断顺序：看电脑 -> 看目标 -> 点答案</Text>
+              <Text className="tips-item-rps">• 先固定判断顺序：看电脑 -&gt; 看目标 -&gt; 点答案</Text>
               <Text className="tips-item-rps">• 把赢平输转换成“克制、相同、被克制”三类关系</Text>
             </View>
           </View>
