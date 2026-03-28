@@ -3,7 +3,12 @@ export default defineAppConfig({
     'pages/index/index',
     'pages/memory-challenge/index',
     'pages/rock-paper-scissors/index',
-    'pages/dual-task/index'
+    'pages/dual-task/index',
+    'pages/mental-math/index',
+    'pages/digit-span/index',
+    'pages/multiple-object-tracking/index',
+    'pages/pattern-completion/index',
+    'pages/pet/index'
   ],
   window: {
     backgroundTextStyle: 'light',
