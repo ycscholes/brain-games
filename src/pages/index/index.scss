@@ -305,3 +305,178 @@
   letter-spacing: 0.4px;
 }
 
+// Full-width pet hero banner
+.pet-hero-banner {
+  margin-bottom: 18px;
+  padding: 20px 20px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 45% 28%, rgba(139, 92, 246, 0.18), transparent 34%),
+    rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  box-shadow:
+    0 14px 30px rgba(207, 212, 223, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+
+  &:active {
+    transform: scale(0.985);
+  }
+}
+
+.pet-hero-content {
+  width: 100%;
+}
+
+.pet-hero-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pet-emoji {
+  font-size: 64px;
+  line-height: 1;
+}
+
+.pet-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pet-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pet-name {
+  font-size: 38px;
+  font-weight: 800;
+  color: #171717;
+  line-height: 1.1;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.pet-level {
+  font-size: 24px;
+  color: #7c7c7c;
+  font-weight: 500;
+}
+
+.hunger-section {
+  margin-top: 16px;
+}
+
+.hunger-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.hunger-label-text {
+  font-size: 24px;
+  color: #525252;
+  font-weight: 600;
+}
+
+.hunger-percent {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.hunger-bar-container {
+  width: 100%;
+  height: 16px;
+  background-color: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.hunger-bar-fill {
+  height: 100%;
+  border-radius: 999px 0 0 999px;
+  transition: width 0.3s ease;
+}
+
+.pet-stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.pet-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pet-stat-label {
+  font-size: 22px;
+  color: #7c7c7c;
+  font-weight: 500;
+}
+
+.pet-stat-value {
+  font-size: 28px;
+  color: #171717;
+  font-weight: 700;
+}
+
+.pet-stat-hint {
+  text-align: right;
+  display: flex;
+  align-items: flex-end;
+}
+
+.pet-stat-hint-text {
+  font-size: 24px;
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+.pet-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+  gap: 8px;
+}
+
+.pet-empty-emoji {
+  font-size: 64px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.pet-empty-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #171717;
+}
+
+.pet-empty-hint {
+  font-size: 24px;
+  color: #7c7c7c;
+  margin-top: 4px;
+}
+
