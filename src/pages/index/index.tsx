@@ -2,20 +2,36 @@ import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { useCallback, useState } from "react";
 import { readPetData, syncPetData } from "../../utils/petStorage";
+import {
+  readDashboardStats,
+  readTrainingRecords,
+  readTrainingSummary,
+  recommendNextGame,
+  type TrainingGameId,
+  type TrainingRecord,
+} from "../../utils/trainingStorage";
 import { PetData, PetStorageData, PET_SKIN_EMOJI, MAX_HUNGER } from "../../pages/pet/types";
 import "./index.scss";
+
+interface DashboardView {
+  todaySessions: number;
+  totalSessions: number;
+  streakDays: number;
+  activeDaysLast7: number;
+  totalAwardedPoints: number;
+}
 
 interface ScoreSummary {
   best: number;
   recent: number;
   played: boolean;
+  totalSessions: number;
 }
 
 interface GameItem {
-  id: string;
+  id: TrainingGameId;
   title: string;
   badge: string;
-  icon: string;
   cardClass: string;
   url: string;
   summary: ScoreSummary;
@@ -26,7 +42,6 @@ const BASE_GAMES = [
     id: "memory",
     title: "记忆图形",
     badge: "记忆",
-    icon: "◫",
     cardClass: "card-memory",
     url: "/pages/memory-challenge/index",
   },
@@ -34,7 +49,6 @@ const BASE_GAMES = [
     id: "rps",
     title: "逆向猜拳",
     badge: "反应",
-    icon: "✋",
     cardClass: "card-rps",
     url: "/pages/rock-paper-scissors/index",
   },
@@ -42,7 +56,6 @@ const BASE_GAMES = [
     id: "dual-task",
     title: "多任务处理",
     badge: "协作",
-    icon: "◉",
     cardClass: "card-dual",
     url: "/pages/dual-task/index",
   },
@@ -50,7 +63,6 @@ const BASE_GAMES = [
     id: "mental-math",
     title: "速算挑战",
     badge: "计算",
-    icon: "🧮",
     cardClass: "card-mental",
     url: "/pages/mental-math/index",
   },
@@ -58,7 +70,6 @@ const BASE_GAMES = [
     id: "digit-span",
     title: "数字广度记忆",
     badge: "记忆",
-    icon: "123",
     cardClass: "card-digit",
     url: "/pages/digit-span/index",
   },
@@ -66,7 +77,6 @@ const BASE_GAMES = [
     id: "mot",
     title: "追踪任务",
     badge: "注意",
-    icon: "◎",
     cardClass: "card-mot",
     url: "/pages/multiple-object-tracking/index",
   },
@@ -74,137 +84,53 @@ const BASE_GAMES = [
     id: "pattern",
     title: "找规律",
     badge: "推理",
-    icon: "△",
     cardClass: "card-pattern",
     url: "/pages/pattern-completion/index",
   },
-  {
-    id: "pet",
-    title: "我的宠物",
-    badge: "养成",
-    icon: "🐾",
-    cardClass: "card-pet",
-    url: "/pages/pet/index",
-  },
 ] as const;
 
-function readJSONScore(key: string) {
-  const raw = Taro.getStorageSync(key);
-  if (!raw) return 0;
+const GAME_TITLES: Record<TrainingGameId, string> = {
+  memory: "记忆图形",
+  rps: "逆向猜拳",
+  "dual-task": "多任务处理",
+  "mental-math": "速算挑战",
+  "digit-span": "数字广度记忆",
+  mot: "追踪任务",
+  pattern: "找规律",
+};
 
-  try {
-    const parsed = JSON.parse(raw);
-    return typeof parsed?.score === "number" ? parsed.score : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function readNumberScore(key: string) {
-  const raw = Number(Taro.getStorageSync(key) || 0);
-  return Number.isFinite(raw) ? raw : 0;
-}
-
-function hasStorageValue(key: string) {
-  const raw = Taro.getStorageSync(key);
-  return raw !== "" && raw !== null && raw !== undefined;
-}
-
-function getMemorySummary(): ScoreSummary {
-  let best = 0;
-  let played = hasStorageValue("memory_last_score");
-
-  for (let timeDifficulty = 1; timeDifficulty <= 4; timeDifficulty += 1) {
-    for (
-      let memoryDifficulty = 1;
-      memoryDifficulty <= 4;
-      memoryDifficulty += 1
-    ) {
-      const key = `memory_highscore_T${timeDifficulty}M${memoryDifficulty}`;
-      best = Math.max(best, readJSONScore(key));
-      played = played || hasStorageValue(key);
-    }
+function formatPlayedAt(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "刚刚";
   }
 
-  return {
-    best,
-    recent: readNumberScore("memory_last_score"),
-    played,
-  };
-}
-
-function getRpsSummary(): ScoreSummary {
-  let best = 0;
-  let played = hasStorageValue("rps_last_score");
-
-  for (let difficulty = 1; difficulty <= 4; difficulty += 1) {
-    const key = `rps_highscore_D${difficulty}`;
-    best = Math.max(best, readJSONScore(key));
-    played = played || hasStorageValue(key);
+  const now = Date.now();
+  const diffMinutes = Math.max(1, Math.floor((now - date.getTime()) / (1000 * 60)));
+  if (diffMinutes < 60) {
+    return `${diffMinutes} 分钟前`;
   }
 
-  return {
-    best,
-    recent: readNumberScore("rps_last_score"),
-    played,
-  };
-}
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours} 小时前`;
+  }
 
-function getDualTaskSummary(): ScoreSummary {
-  const modes = ["alternating", "simultaneous", "stroop"];
-  let best = 0;
-  let recent = 0;
-  let played = false;
-
-  modes.forEach((mode) => {
-    const bestKey = `dual_task_best_${mode}`;
-    const lastKey = `dual_task_last_${mode}`;
-
-    best = Math.max(best, readNumberScore(bestKey));
-    recent = Math.max(recent, readNumberScore(lastKey));
-    played = played || hasStorageValue(bestKey) || hasStorageValue(lastKey);
-  });
-
-  return { best, recent, played };
-}
-
-function getMentalMathSummary(): ScoreSummary {
-  const bestTimed = readJSONScore("mental_math_high_score_timed");
-  const bestDeath = readJSONScore("mental_math_high_score_death");
-  const best = Math.max(bestTimed, bestDeath);
-  const recent = readNumberScore("mental_math_last_score");
-  const played = hasStorageValue("mental_math_high_score_timed") || hasStorageValue("mental_math_high_score_death");
-  return { best, recent, played };
-}
-
-function getDigitSpanSummary(): ScoreSummary {
-  const best = readNumberScore("digit_span_best");
-  const played = hasStorageValue("digit_span_best");
-  return { best, recent: 0, played };
-}
-
-function getMotSummary(): ScoreSummary {
-  const best = readNumberScore("mot_best");
-  const played = hasStorageValue("mot_best");
-  return { best, recent: 0, played };
-}
-
-function getPatternCompletionSummary(): ScoreSummary {
-  const best = readNumberScore("pattern_completion_best");
-  const played = hasStorageValue("pattern_completion_best");
-  return { best, recent: 0, played };
-}
-
-function getPetSummary(): ScoreSummary {
-  const data = readPetData();
-  let best = data.balance;
-  let recent = data.pets.length;
-  let played = data.pets.length > 0;
-  return { best, recent, played };
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} 天前`;
 }
 
 export default function Index() {
   const [games, setGames] = useState<GameItem[]>([]);
+  const [dashboard, setDashboard] = useState<DashboardView>({
+    todaySessions: 0,
+    totalSessions: 0,
+    streakDays: 0,
+    activeDaysLast7: 0,
+    totalAwardedPoints: 0,
+  });
+  const [recentRecords, setRecentRecords] = useState<TrainingRecord[]>([]);
+  const [recommendedGameId, setRecommendedGameId] = useState<TrainingGameId>("memory");
   const [petData, setPetData] = useState<PetStorageData | null>(null);
   const [activePet, setActivePet] = useState<PetData | null>(null);
   const [aliveCount, setAliveCount] = useState<number>(0);
@@ -215,6 +141,10 @@ export default function Index() {
 
   const navigateToPet = () => {
     navigateTo("/pages/pet/index");
+  };
+
+  const navigateToSettings = () => {
+    navigateTo("/pages/settings/index");
   };
 
   const getStatusLabel = (status: PetData["status"]): string => {
@@ -262,48 +192,37 @@ export default function Index() {
     }
   };
 
-  const refreshSummaries = useCallback(() => {
-    // Load full pet data for hero banner
-    const data = syncPetData();
-    setPetData(data);
-    const pet = data.pets.find(p => p.id === data.activePetId) ?? null;
-    setActivePet(pet);
-    const alive = data.pets.filter(p => p.status !== "dead").length;
-    setAliveCount(alive);
+  const refreshDashboard = useCallback(() => {
+    const nextPetData = syncPetData();
+    setPetData(nextPetData);
+    setActivePet(nextPetData.pets.find((pet) => pet.id === nextPetData.activePetId) ?? null);
+    setAliveCount(nextPetData.pets.filter((pet) => pet.status !== "dead").length);
 
-    // Filter pet out of grid since it's now in hero banner
-    const gameList = BASE_GAMES.filter(g => g.id !== "pet").map(game => ({
-      ...game,
-      summary: (() => {
-        switch (game.id) {
-          case "memory":
-            return getMemorySummary();
-          case "rps":
-            return getRpsSummary();
-          case "dual-task":
-            return getDualTaskSummary();
-          case "mental-math":
-            return getMentalMathSummary();
-          case "digit-span":
-            return getDigitSpanSummary();
-          case "mot":
-            return getMotSummary();
-          case "pattern":
-            return getPatternCompletionSummary();
-          default:
-            return { best: 0, recent: 0, played: false };
-        }
-      })(),
-    }));
-    setGames(gameList);
+    setDashboard(readDashboardStats());
+    const nextGames = BASE_GAMES.map((game) => {
+      const summary = readTrainingSummary(game.id);
+      return {
+        ...game,
+        summary: {
+          best: summary.best,
+          recent: summary.recent,
+          played: summary.played,
+          totalSessions: summary.totalSessions,
+        },
+      };
+    });
+
+    setGames(nextGames);
+    setRecentRecords(readTrainingRecords().slice(0, 3));
+    setRecommendedGameId(recommendNextGame(BASE_GAMES.map((game) => game.id)));
   }, []);
 
   useLoad(() => {
-    refreshSummaries();
+    refreshDashboard();
   });
 
   useDidShow(() => {
-    refreshSummaries();
+    refreshDashboard();
   });
 
   const renderActivePet = () => {
@@ -387,17 +306,109 @@ export default function Index() {
 
       <View className="hub-shell">
         <View className="top-bar">
-          <Text className="page-title">脑力游戏实验室</Text>
-          <View className="profile-button">
-            <Text className="profile-icon">◔</Text>
+          <View>
+            <Text className="page-eyebrow">Brain Yard</Text>
+            <Text className="page-title">今日训练中枢</Text>
+          </View>
+          <View className="profile-button" onClick={navigateToSettings}>
+            <Text className="profile-icon">≡</Text>
           </View>
         </View>
 
-        <View
-          className="pet-hero-banner"
-          onClick={navigateToPet}
-        >
+        <View className="overview-card">
+          <View className="overview-head">
+            <View>
+              <Text className="overview-title">训练仪表盘</Text>
+              <Text className="overview-subtitle">
+                今天已训练 {dashboard.todaySessions} 次，最近 7 天活跃 {dashboard.activeDaysLast7} 天
+              </Text>
+            </View>
+            <View className="overview-badge">
+              <Text className="overview-badge-text">{dashboard.streakDays} 天连续</Text>
+            </View>
+          </View>
+
+          <View className="overview-grid">
+            <View className="overview-item">
+              <Text className="overview-value">{dashboard.totalSessions}</Text>
+              <Text className="overview-label">累计训练</Text>
+            </View>
+            <View className="overview-item">
+              <Text className="overview-value">{dashboard.totalAwardedPoints}</Text>
+              <Text className="overview-label">累计奖励</Text>
+            </View>
+            <View className="overview-item">
+              <Text className="overview-value">{petData?.balance ?? 0}</Text>
+              <Text className="overview-label">当前积分</Text>
+            </View>
+            <View className="overview-item">
+              <Text className="overview-value">{aliveCount}</Text>
+              <Text className="overview-label">宠物陪伴中</Text>
+            </View>
+          </View>
+        </View>
+
+        <View className="pet-hero-banner" onClick={navigateToPet}>
           {activePet ? renderActivePet() : renderEmptyState()}
+        </View>
+
+        <View className="focus-card">
+          <View className="section-header">
+            <View>
+              <Text className="section-title">下一练建议</Text>
+              <Text className="section-subtitle">
+                优先补齐最近少练或尚未开始的项目，保持训练面均衡。
+              </Text>
+            </View>
+          </View>
+
+          <View className="focus-body">
+            <View className="focus-main">
+              <Text className="focus-name">{GAME_TITLES[recommendedGameId]}</Text>
+              <Text className="focus-copy">
+                推荐你先完成这一项，持续拉齐不同认知维度的训练记录。
+              </Text>
+            </View>
+            <View
+              className="focus-action"
+              onClick={() => navigateTo(BASE_GAMES.find((game) => game.id === recommendedGameId)?.url || "/pages/index/index")}
+            >
+              <Text className="focus-action-text">立即开始</Text>
+            </View>
+          </View>
+        </View>
+
+        <View className="records-card">
+          <View className="section-header">
+            <View>
+              <Text className="section-title">最近成绩</Text>
+              <Text className="section-subtitle">统一记录每次训练的得分和奖励积分。</Text>
+            </View>
+          </View>
+
+          {recentRecords.length > 0 ? (
+            <View className="record-list">
+              {recentRecords.map((record) => (
+                <View key={record.id} className="record-item">
+                  <View>
+                    <Text className="record-title">{GAME_TITLES[record.gameId]}</Text>
+                    <Text className="record-meta">
+                      {record.outcome === "completed" ? "正常完成" : "中途返回"} · {formatPlayedAt(record.playedAt)}
+                    </Text>
+                  </View>
+                  <View className="record-score-block">
+                    <Text className="record-score">{record.score}</Text>
+                    <Text className="record-points">+{record.awardedPoints} 积分</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View className="empty-records">
+              <Text className="empty-records-title">还没有训练记录</Text>
+              <Text className="empty-records-copy">从任意一项游戏开始，首页会自动汇总你的训练轨迹。</Text>
+            </View>
+          )}
         </View>
 
         <View className="game-list">
@@ -413,8 +424,11 @@ export default function Index() {
 
               <View className="game-meta">
                 <Text className="game-badge">{game.badge}</Text>
-                <Text className="score-line">
-                  {`最高分：${game.summary.best}`}
+                <Text className="score-line">{`最高分：${game.summary.best}`}</Text>
+                <Text className="score-line score-line-secondary">
+                  {game.summary.played
+                    ? `最近 ${game.summary.recent} · 共 ${game.summary.totalSessions} 次`
+                    : "还没有新的统一记录"}
                 </Text>
               </View>
 

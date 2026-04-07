@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
+import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
 import {
   PATTERN_QUESTION_BANK,
   type PatternOption,
@@ -148,6 +149,13 @@ export default function PatternCompletion() {
       setTimeBonus(settledTimeBonus);
       setFinalScore(settledFinalScore);
       addPointsToPet("pattern-completion", settledFinalScore);
+      recordTrainingSession({
+        gameId: "pattern",
+        score: settledFinalScore,
+        awardedPoints: getAwardedPoints("pattern-completion", settledFinalScore),
+        durationSeconds: Math.round(settledElapsedMs / 1000),
+        outcome: "completed",
+      });
       setPhase("finished");
 
       if (settledFinalScore > best) {

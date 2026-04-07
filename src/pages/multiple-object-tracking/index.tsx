@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
+import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 type Phase = "start" | "preview" | "tracking" | "selecting" | "roundResult" | "finished";
@@ -341,6 +342,12 @@ export default function MultipleObjectTracking() {
     clearRoundRuntime();
     if (phase !== "start" && phase !== "finished") {
       addPointsToPet("multiple-object-tracking", score);
+      recordTrainingSession({
+        gameId: "mot",
+        score,
+        awardedPoints: getAwardedPoints("multiple-object-tracking", score),
+        outcome: "interrupted",
+      });
     }
     setPhase("start");
     setScore(0);
@@ -407,6 +414,12 @@ export default function MultipleObjectTracking() {
 
     setRoundMessage("本轮未能完整锁定全部目标");
     addPointsToPet("multiple-object-tracking", score);
+    recordTrainingSession({
+      gameId: "mot",
+      score,
+      awardedPoints: getAwardedPoints("multiple-object-tracking", score),
+      outcome: "completed",
+    });
     setPhase("finished");
   };
 

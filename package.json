@@ -10,12 +10,21 @@
     "framework": "React"
   },
   "scripts": {
+    "lint": "npm run lint:code && npm run lint:rules",
+    "lint:code": "eslint src config .trae/rules --max-warnings=0",
+    "lint:rules": "find src -name '*.ts' -o -name '*.tsx' | while read file; do node .trae/rules/project_rules_validator.js \"$file\" \"no-explicit-any\" || exit 1; node .trae/rules/project_rules_validator.js \"$file\" \"async-try-catch\" || exit 1; done",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --runInBand",
     "build:weapp": "taro build --type weapp",
     "build:h5": "taro build --type h5",
+    "build:ci": "npm run build:weapp",
     "dev:weapp": "npm run build:weapp -- --watch",
     "dev:h5": "npm run build:h5 -- --watch",
     "postinstall": "weapp-tw patch",
     "prepare": "husky"
+  },
+  "engines": {
+    "node": ">=18 <21"
   },
   "browserslist": [
     "defaults and fully supports es6-module",

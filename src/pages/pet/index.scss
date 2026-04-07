@@ -152,8 +152,18 @@
   box-shadow: inset 0 0 0 1px rgba(154, 52, 18, 0.08);
 }
 
-.hero-badge-emoji {
-  font-size: 52px;
+.hero-badge .pet-avatar {
+  --pet-avatar-size: 76px;
+}
+
+.pet-avatar-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 
 .hero-stats {
@@ -221,9 +231,17 @@
   opacity: 0.66;
 }
 
-.pet-chip-emoji {
-  font-size: 42px;
-  line-height: 1;
+.pet-chip-avatar {
+  width: 60px;
+  height: 60px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pet-chip-avatar .pet-avatar {
+  --pet-avatar-size: 54px;
 }
 
 .pet-chip-copy {
@@ -262,6 +280,16 @@
   color: var(--pet-subtle);
   font-size: 16px;
   margin-bottom: 6px;
+}
+
+.hero-current-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hero-current-row .pet-avatar {
+  --pet-avatar-size: 40px;
 }
 
 .hero-current-value {
@@ -332,8 +360,8 @@
   background: #ffe8c5;
 }
 
-.skin-emoji {
-  font-size: 38px;
+.skin-item .pet-avatar {
+  --pet-avatar-size: 52px;
 }
 
 .skin-name {
@@ -457,10 +485,17 @@
   font-size: 20px;
 }
 
-.detail-emoji {
-  font-size: 88px;
-  line-height: 1;
-  animation: pulse 3s ease-in-out infinite;
+.detail-avatar-shell {
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.detail-avatar-shell .pet-avatar {
+  --pet-avatar-size: 220px;
 }
 
 .detail-progress {
@@ -594,11 +629,19 @@
   text-align: center;
 }
 
-.memorial-emoji,
-.empty-emoji {
-  display: block;
-  font-size: 72px;
+.memorial-avatar-shell,
+.empty-pet {
+  display: flex;
+  justify-content: center;
   margin-bottom: 14px;
+}
+
+.memorial-avatar-shell .pet-avatar {
+  --pet-avatar-size: 160px;
+}
+
+.empty-pet .pet-avatar {
+  --pet-avatar-size: 168px;
 }
 
 .memorial-title,
@@ -653,6 +696,23 @@
   .hero-badge {
     width: 80px;
     height: 80px;
+  }
+
+  .detail-avatar-shell {
+    width: 180px;
+    height: 180px;
+  }
+
+  .detail-avatar-shell .pet-avatar {
+    --pet-avatar-size: 180px;
+  }
+
+  .empty-pet .pet-avatar {
+    --pet-avatar-size: 150px;
+  }
+
+  .memorial-avatar-shell .pet-avatar {
+    --pet-avatar-size: 140px;
   }
 
   .pet-chip {

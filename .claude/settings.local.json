@@ -7,7 +7,8 @@
       "Bash(mkdir -p /Users/chen.yu/.claude/plans)",
       "Bash(/Users/chen.yu/.claude/plans/atomic-snuggling-fern-agent-a66034e7468176ba.md:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm list:*)"
     ]
   }
 }

@@ -8,7 +8,8 @@ export default defineAppConfig({
     'pages/digit-span/index',
     'pages/multiple-object-tracking/index',
     'pages/pattern-completion/index',
-    'pages/pet/index'
+    'pages/pet/index',
+    'pages/settings/index'
   ],
   window: {
     backgroundTextStyle: 'light',
