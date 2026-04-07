@@ -1,7 +1,7 @@
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { useCallback, useState } from "react";
-import { readPetData } from "../../utils/petStorage";
+import { readPetData, syncPetData } from "../../utils/petStorage";
 import { PetData, PetStorageData, PET_SKIN_EMOJI, MAX_HUNGER } from "../../pages/pet/types";
 import "./index.scss";
 
@@ -264,7 +264,7 @@ export default function Index() {
 
   const refreshSummaries = useCallback(() => {
     // Load full pet data for hero banner
-    const data = readPetData();
+    const data = syncPetData();
     setPetData(data);
     const pet = data.pets.find(p => p.id === data.activePetId) ?? null;
     setActivePet(pet);
@@ -394,7 +394,7 @@ export default function Index() {
         </View>
 
         <View
-          className="pet-hero-banner card-pet"
+          className="pet-hero-banner"
           onClick={navigateToPet}
         >
           {activePet ? renderActivePet() : renderEmptyState()}

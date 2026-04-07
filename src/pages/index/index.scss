@@ -307,28 +307,47 @@
 
 // Full-width pet hero banner
 .pet-hero-banner {
-  margin-bottom: 18px;
-  padding: 20px 20px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 22px;
+  min-height: 220px;
+  padding: 24px 22px;
   border-radius: 22px;
   background:
-    radial-gradient(circle at 45% 28%, rgba(139, 92, 246, 0.18), transparent 34%),
-    rgba(255, 255, 255, 0.74);
-  border: 1px solid rgba(255, 255, 255, 0.76);
+    radial-gradient(circle at 88% 18%, rgba(139, 92, 246, 0.24), transparent 24%),
+    radial-gradient(circle at 12% 82%, rgba(255, 183, 77, 0.18), transparent 30%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(250, 245, 255, 0.86) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.84);
   box-shadow:
-    0 14px 30px rgba(207, 212, 223, 0.32),
+    0 18px 36px rgba(207, 212, 223, 0.36),
     inset 0 1px 0 rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  justify-content: center;
 
   &:active {
     transform: scale(0.985);
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    right: -28px;
+    bottom: -36px;
+    width: 132px;
+    height: 132px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.18) 0%, rgba(139, 92, 246, 0) 72%);
+    pointer-events: none;
   }
 }
 
 .pet-hero-content {
   width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .pet-hero-header {
@@ -419,6 +438,7 @@
 .pet-stats-row {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   align-items: center;
   margin-top: 16px;
 }
@@ -426,6 +446,7 @@
 .pet-stat-item {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 2px;
 }
 
@@ -444,6 +465,7 @@
 .pet-stat-hint {
   text-align: right;
   display: flex;
+  flex: 0 0 auto;
   align-items: flex-end;
 }
 
@@ -460,6 +482,8 @@
   justify-content: center;
   padding: 20px 0;
   gap: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .pet-empty-emoji {
