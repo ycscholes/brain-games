@@ -1,10 +1,10 @@
 import Taro from "@tarojs/taro";
 import type { PetData, PetSkin, PetStorageData } from "../pages/pet/types";
+import { getAwardedPoints } from "./trainingStorage";
 import {
   HUNGER_POINT_PER_MINUTE,
   MAX_HUNGER,
   HOURS_AFTER_ZERO_BEFORE_DEATH,
-  POINTS_CONVERSION_RATES,
   PET_ADOPTION_COST,
 } from "../pages/pet/types";
 
@@ -280,8 +280,7 @@ export function adoptPet(
 export function addPointsToPet(gameId: string, score: number): void {
   // First sync all pets to update hunger decay before adding points
   const data = syncPetData();
-  const rate = POINTS_CONVERSION_RATES[gameId] || 0;
-  const pointsToAdd = Math.floor(score * rate);
+  const pointsToAdd = getAwardedPoints(gameId, score);
 
   if (pointsToAdd <= 0) {
     return;

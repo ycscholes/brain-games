@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
+import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 type Phase = "start" | "showing" | "input" | "finished";
@@ -58,6 +59,12 @@ export default function DigitSpan() {
       clearTimers();
       setScore(finalScore);
       addPointsToPet("digit-span", finalScore);
+      recordTrainingSession({
+        gameId: "digit-span",
+        score: finalScore,
+        awardedPoints: getAwardedPoints("digit-span", finalScore),
+        outcome: "completed",
+      });
       setPhase("finished");
 
       if (finalScore > best) {

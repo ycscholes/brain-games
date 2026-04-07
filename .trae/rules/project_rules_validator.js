@@ -36,6 +36,12 @@ function validateRules(code, ruleName) {
       const hasUseLoad = /useLoad\s*\(/.test(code);
       return !(hasUseEffect && !hasUseLoad);
 
+    case "no-magic-numbers":
+      // Ignore CSS units and allow trivial numeric literals often used in loops or indexes.
+      const sanitizedCode = code.replace(/(["'`])(?:\\.|(?!\1).)*\1/g, "");
+      const numericMatches = sanitizedCode.match(/(?<![\w.])-?\b\d+(?:\.\d+)?\b(?!\s*(px|rpx|rem|em|%|vh|vw))/g) || [];
+      return numericMatches.every((value) => ["0", "1", "-1"].includes(value));
+
     default:
       return true;
   }

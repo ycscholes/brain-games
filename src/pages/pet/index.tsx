@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, Input, ScrollView } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import {
@@ -13,10 +13,11 @@ import {
   PetStorageData,
   PetSkin,
   FOOD_ITEMS,
-  PET_SKIN_EMOJI,
   PET_SKIN_NAME,
   MAX_HUNGER,
 } from "./types";
+import PetAvatar from "./components/PetAvatar";
+import type { PetAvatarMood } from "./components/PetAvatar/types";
 import "./index.scss";
 
 export default function PetPage() {
@@ -24,6 +25,27 @@ export default function PetPage() {
   const [newName, setNewName] = useState("");
   const [selectedSkin, setSelectedSkin] = useState<PetSkin>("cat");
   const [showAdoptionPanel, setShowAdoptionPanel] = useState(false);
+  const [petMotion, setPetMotion] = useState<PetAvatarMood>("idle");
+  const petMotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPetMotionTimer = useCallback(() => {
+    if (petMotionTimerRef.current) {
+      clearTimeout(petMotionTimerRef.current);
+      petMotionTimerRef.current = null;
+    }
+  }, []);
+
+  const playPetMotion = useCallback(
+    (motion: PetAvatarMood, duration = 900) => {
+      clearPetMotionTimer();
+      setPetMotion(motion);
+      petMotionTimerRef.current = setTimeout(() => {
+        setPetMotion("idle");
+        petMotionTimerRef.current = null;
+      }, duration);
+    },
+    [clearPetMotionTimer],
+  );
 
   const loadAndRefreshPets = useCallback(() => {
     const nextData = syncPetData();
@@ -47,6 +69,18 @@ export default function PetPage() {
   const deadCount = pets.length - aliveCount;
   const nextAdoptionCost = getNextAdoptionCost(storageData);
 
+  useEffect(() => {
+    return () => {
+      clearPetMotionTimer();
+    };
+  }, [clearPetMotionTimer]);
+
+  useEffect(() => {
+    if (activePet) {
+      playPetMotion(activePet.status === "dead" ? "idle" : "cuddle", 720);
+    }
+  }, [activePet?.id, activePet?.status, playPetMotion]);
+
   const handleSelectPet = useCallback((petId: string) => {
     setStorageData((prev) => {
       const nextData = {
@@ -56,7 +90,8 @@ export default function PetPage() {
       Taro.setStorageSync("pet_data", JSON.stringify(nextData));
       return nextData;
     });
-  }, []);
+    playPetMotion("cuddle", 720);
+  }, [playPetMotion]);
 
   const handleAdoptPet = useCallback(() => {
     if (!newName.trim()) {
@@ -76,11 +111,12 @@ export default function PetPage() {
     setStorageData(result.data);
     setNewName("");
     setShowAdoptionPanel(false);
+    playPetMotion("cuddle", 820);
     Taro.showToast({
       title: result.cost === 0 ? "第一只宠物免费领养成功" : `${result.pet?.name} 加入了小院`,
       icon: "success",
     });
-  }, [newName, selectedSkin]);
+  }, [newName, playPetMotion, selectedSkin]);
 
   const handleFeed = useCallback((foodId: string) => {
     if (!activePet) {
@@ -106,11 +142,12 @@ export default function PetPage() {
     }
 
     setStorageData(result.data);
+    playPetMotion("feed", 760);
     Taro.showToast({
       title: `${result.pet?.name} 吃完了 ${food.name}`,
       icon: "success",
     });
-  }, [activePet]);
+  }, [activePet, playPetMotion]);
 
   const getHungerPercent = (pet: PetData | null) => {
     if (!pet) return 0;
@@ -157,13 +194,13 @@ export default function PetPage() {
 
       <Text className="minor-title">选择外观</Text>
       <View className="skin-grid">
-        {(Object.keys(PET_SKIN_EMOJI) as PetSkin[]).map((skin) => (
+        {(Object.keys(PET_SKIN_NAME) as PetSkin[]).map((skin) => (
           <View
             key={skin}
             className={`skin-item ${selectedSkin === skin ? "skin-item-selected" : ""}`}
             onClick={() => setSelectedSkin(skin)}
           >
-            <Text className="skin-emoji">{PET_SKIN_EMOJI[skin]}</Text>
+            <PetAvatar skin={skin} size="sm" selected={selectedSkin === skin} />
             <Text className="skin-name">{PET_SKIN_NAME[skin]}</Text>
           </View>
         ))}
@@ -191,7 +228,9 @@ export default function PetPage() {
 
   const renderEmptyState = () => (
     <View className="empty-card">
-      <Text className="empty-emoji">🐾</Text>
+      <View className="empty-pet">
+        <PetAvatar skin={selectedSkin} size="lg" mood="idle" />
+      </View>
       <Text className="empty-title">小院里还没有宠物</Text>
       <Text className="empty-desc">先领养第一只宠物，之后可以继续扩充你的陪伴阵容。</Text>
     </View>
@@ -208,7 +247,17 @@ export default function PetPage() {
           </Text>
         </View>
         <View className="hero-badge">
-          <Text className="hero-badge-emoji">🐾</Text>
+          <View
+            className="pet-avatar-action"
+            onClick={() => activePet && activePet.status !== "dead" && playPetMotion("cuddle", 760)}
+          >
+            <PetAvatar
+              skin={activePet?.skin ?? selectedSkin}
+              size="sm"
+              mood={activePet ? petMotion : "idle"}
+              status={activePet?.status}
+            />
+          </View>
         </View>
       </View>
 
@@ -242,7 +291,15 @@ export default function PetPage() {
                 }`}
                 onClick={() => handleSelectPet(pet.id)}
               >
-                <Text className="pet-chip-emoji">{PET_SKIN_EMOJI[pet.skin]}</Text>
+                <View className="pet-chip-avatar">
+                  <PetAvatar
+                    skin={pet.skin}
+                    size="sm"
+                    status={pet.status}
+                    mood={storageData.activePetId === pet.id ? petMotion : "idle"}
+                    selected={storageData.activePetId === pet.id}
+                  />
+                </View>
                 <View className="pet-chip-copy">
                   <Text className="pet-chip-name">{pet.name}</Text>
                   <Text className="pet-chip-meta">{getStatusText(pet)}</Text>
@@ -262,9 +319,16 @@ export default function PetPage() {
         {activePet ? (
           <View className="hero-current">
             <Text className="hero-current-label">当前查看</Text>
-            <Text className="hero-current-value">
-              {PET_SKIN_EMOJI[activePet.skin]} {activePet.name}
-            </Text>
+            <View className="hero-current-row">
+              <PetAvatar
+                skin={activePet.skin}
+                size="xs"
+                status={activePet.status}
+                mood={petMotion}
+                selected
+              />
+              <Text className="hero-current-value">{activePet.name}</Text>
+            </View>
           </View>
         ) : null}
       </View>
@@ -292,7 +356,18 @@ export default function PetPage() {
                 Lv.{activePet.level} · {PET_SKIN_NAME[activePet.skin]}
               </Text>
             </View>
-            <Text className="detail-emoji">{PET_SKIN_EMOJI[activePet.skin]}</Text>
+            <View
+              className="detail-avatar-shell pet-avatar-action"
+              onClick={() => activePet.status !== "dead" && playPetMotion("cuddle", 820)}
+            >
+              <PetAvatar
+                skin={activePet.skin}
+                size="xl"
+                status={activePet.status}
+                mood={petMotion}
+                selected
+              />
+            </View>
           </View>
 
           <View className="detail-progress">
@@ -330,7 +405,9 @@ export default function PetPage() {
 
         {activePet.status === "dead" ? (
           <View className="detail-card memorial-card">
-            <Text className="memorial-emoji">💔</Text>
+            <View className="memorial-avatar-shell">
+              <PetAvatar skin={activePet.skin} size="lg" status="dead" mood="idle" />
+            </View>
             <Text className="memorial-title">{activePet.name} 已离开小院</Text>
             <Text className="memorial-desc">
               你仍然保留全部共享积分，可以继续领养新的宠物。
