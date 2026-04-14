@@ -1,0 +1,120 @@
+.pet-sprite {
+  --pet-sprite-size: 168px;
+  position: relative;
+  width: var(--pet-sprite-size);
+  height: var(--pet-sprite-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pet-sprite-idle 3.8s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.pet-sprite--xs {
+  --pet-sprite-size: 40px;
+}
+
+.pet-sprite--sm {
+  --pet-sprite-size: 76px;
+}
+
+.pet-sprite--md {
+  --pet-sprite-size: 126px;
+}
+
+.pet-sprite--lg {
+  --pet-sprite-size: 172px;
+}
+
+.pet-sprite--xl {
+  --pet-sprite-size: 220px;
+}
+
+.pet-sprite__glow {
+  position: absolute;
+  inset: 10% 14%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 142, 0.42), rgba(255, 215, 142, 0));
+  filter: blur(12px);
+  opacity: 0.42;
+}
+
+.pet-sprite__shadow {
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  bottom: 6%;
+  height: 14%;
+  border-radius: 50%;
+  background: rgba(74, 49, 28, 0.12);
+  filter: blur(5px);
+}
+
+.pet-sprite__image {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.pet-sprite--selected .pet-sprite__glow {
+  opacity: 0.9;
+}
+
+.pet-sprite--feed {
+  animation:
+    pet-sprite-idle 3.8s ease-in-out infinite,
+    pet-sprite-feed 0.72s ease-in-out 2;
+}
+
+.pet-sprite--cuddle {
+  animation:
+    pet-sprite-idle 3.8s ease-in-out infinite,
+    pet-sprite-cuddle 0.82s ease-in-out 2;
+}
+
+.pet-sprite--dead {
+  filter: grayscale(0.9) saturate(0.5);
+  opacity: 0.72;
+}
+
+@keyframes pet-sprite-idle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -4px, 0) scale(1.01);
+  }
+}
+
+@keyframes pet-sprite-feed {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  40% {
+    transform: translate3d(0, -8px, 0) scale(1.04);
+  }
+
+  70% {
+    transform: translate3d(0, 2px, 0) scale(0.98);
+  }
+}
+
+@keyframes pet-sprite-cuddle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  25% {
+    transform: translate3d(-6px, -6px, 0) rotate(-3deg) scale(1.02);
+  }
+
+  75% {
+    transform: translate3d(6px, 0, 0) rotate(3deg) scale(1.02);
+  }
+}

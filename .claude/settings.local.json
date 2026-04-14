@@ -8,7 +8,10 @@
       "Bash(/Users/chen.yu/.claude/plans/atomic-snuggling-fern-agent-a66034e7468176ba.md:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(npm list:*)"
+      "Bash(npm list:*)",
+      "Bash(/Users/chen.yu/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh:*)",
+      "Bash(cat:*)",
+      "Bash(file:*)"
     ]
   }
 }

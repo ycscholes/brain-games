@@ -1,6 +1,11 @@
 import { View, Text, Switch } from "@tarojs/components";
-import Taro, { useDidShow, useLoad } from "@tarojs/taro";
+import Taro, { useDidShow } from "@tarojs/taro";
 import { useCallback, useState } from "react";
+import { readCloudSyncMeta } from "../../services/user-data/local/cloudSyncMetaStore";
+import { useCloudSyncStatusChange } from "../../services/user-data/hooks/useCloudSyncStatusChange";
+import { useUserDataChange } from "../../services/user-data/hooks/useUserDataChange";
+import { getCloudSyncStatusText } from "../../services/user-data/sync/userDataSyncService";
+import type { CloudSyncMeta } from "../../services/user-data/types";
 import { readPetData } from "../../utils/petStorage";
 import {
   clearProductData,
@@ -22,20 +27,21 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState(() => readAppSettings());
   const [dashboard, setDashboard] = useState<DashboardSnapshot>(() => readDashboardStats());
   const [petCount, setPetCount] = useState(0);
+  const [cloudMeta, setCloudMeta] = useState<CloudSyncMeta>(() => readCloudSyncMeta());
 
   const refresh = useCallback(() => {
     setSettings(readAppSettings());
     setDashboard(readDashboardStats());
     setPetCount(readPetData().pets.length);
+    setCloudMeta(readCloudSyncMeta());
   }, []);
-
-  useLoad(() => {
-    refresh();
-  });
 
   useDidShow(() => {
     refresh();
   });
+
+  useUserDataChange(refresh);
+  useCloudSyncStatusChange(refresh);
 
   const handleToggle = (field: "soundEnabled" | "vibrationEnabled" | "reducedMotion") => {
     const nextSettings = saveAppSettings({
@@ -135,11 +141,17 @@ export default function SettingsPage() {
       <View className="settings-card">
         <Text className="card-title">数据与隐私</Text>
         <Text className="paragraph">
-          当前版本默认只使用本地存储，保存训练记录、各玩法最高分、宠物状态和体验设置，不会自动上传到云端。
+          当前版本采用本地优先 + 云端备份，核心数据会在后台自动同步到微信云开发，离线时仍以本地数据为准。
         </Text>
         <Text className="paragraph">
-          你可以通过本页清除全部本地数据。正式提审前应将这段说明同步到隐私政策和用户协议入口。
+          清除本地数据不会自动删除云端备份；如云端已有快照，后续重新进入应用时可能自动恢复核心进度。
         </Text>
+        <View className={`privacy-badge ${cloudMeta.cloudEnabled ? "privacy-badge-accepted" : ""}`}>
+          <Text className="privacy-badge-text">{getCloudSyncStatusText(cloudMeta)}</Text>
+        </View>
+        {cloudMeta.openid ? (
+          <Text className="paragraph">云端身份已建立：{cloudMeta.openid}</Text>
+        ) : null}
         <View className={`privacy-badge ${settings.privacyAccepted ? "privacy-badge-accepted" : ""}`}>
           <Text className="privacy-badge-text">
             {settings.privacyAccepted ? "已确认本地数据说明" : "尚未确认本地数据说明"}

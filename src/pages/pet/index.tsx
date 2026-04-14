@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, Input, ScrollView } from "@tarojs/components";
-import Taro, { useDidShow, useLoad } from "@tarojs/taro";
+import Taro, { useDidShow } from "@tarojs/taro";
+import { useUserDataChange } from "../../services/user-data/hooks/useUserDataChange";
 import {
   readPetData,
   syncPetData,
@@ -16,8 +17,8 @@ import {
   PET_SKIN_NAME,
   MAX_HUNGER,
 } from "./types";
-import PetAvatar from "./components/PetAvatar";
-import type { PetAvatarMood } from "./components/PetAvatar/types";
+import PetSprite from "./components/PetSprite";
+import type { PetSpriteMood } from "./components/PetSprite/types";
 import "./index.scss";
 
 export default function PetPage() {
@@ -25,7 +26,7 @@ export default function PetPage() {
   const [newName, setNewName] = useState("");
   const [selectedSkin, setSelectedSkin] = useState<PetSkin>("cat");
   const [showAdoptionPanel, setShowAdoptionPanel] = useState(false);
-  const [petMotion, setPetMotion] = useState<PetAvatarMood>("idle");
+  const [petMotion, setPetMotion] = useState<PetSpriteMood>("idle");
   const petMotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearPetMotionTimer = useCallback(() => {
@@ -36,7 +37,7 @@ export default function PetPage() {
   }, []);
 
   const playPetMotion = useCallback(
-    (motion: PetAvatarMood, duration = 900) => {
+    (motion: PetSpriteMood, duration = 900) => {
       clearPetMotionTimer();
       setPetMotion(motion);
       petMotionTimerRef.current = setTimeout(() => {
@@ -47,21 +48,28 @@ export default function PetPage() {
     [clearPetMotionTimer],
   );
 
-  const loadAndRefreshPets = useCallback(() => {
-    const nextData = syncPetData();
+  const loadAndRefreshPets = useCallback((options?: { syncPets?: boolean }) => {
+    const nextData = options?.syncPets
+      ? syncPetData({ markChanged: false })
+      : readPetData();
     setStorageData(nextData);
     if (nextData.pets.length === 0) {
       setShowAdoptionPanel(true);
     }
   }, []);
 
-  useLoad(() => {
+  const loadAndRefreshPetsDeferred = useCallback(() => {
     loadAndRefreshPets();
-  });
+    setTimeout(() => {
+      loadAndRefreshPets({ syncPets: true });
+    }, 300);
+  }, [loadAndRefreshPets]);
 
   useDidShow(() => {
-    loadAndRefreshPets();
+    loadAndRefreshPetsDeferred();
   });
+
+  useUserDataChange(loadAndRefreshPets);
 
   const pets = storageData.pets;
   const activePet = pets.find((pet) => pet.id === storageData.activePetId) || null;
@@ -200,7 +208,7 @@ export default function PetPage() {
             className={`skin-item ${selectedSkin === skin ? "skin-item-selected" : ""}`}
             onClick={() => setSelectedSkin(skin)}
           >
-            <PetAvatar skin={skin} size="sm" selected={selectedSkin === skin} />
+            <PetSprite skin={skin} size="sm" selected={selectedSkin === skin} />
             <Text className="skin-name">{PET_SKIN_NAME[skin]}</Text>
           </View>
         ))}
@@ -229,7 +237,7 @@ export default function PetPage() {
   const renderEmptyState = () => (
     <View className="empty-card">
       <View className="empty-pet">
-        <PetAvatar skin={selectedSkin} size="lg" mood="idle" />
+        <PetSprite skin={selectedSkin} size="lg" mood="idle" />
       </View>
       <Text className="empty-title">小院里还没有宠物</Text>
       <Text className="empty-desc">先领养第一只宠物，之后可以继续扩充你的陪伴阵容。</Text>
@@ -248,10 +256,10 @@ export default function PetPage() {
         </View>
         <View className="hero-badge">
           <View
-            className="pet-avatar-action"
+            className="pet-sprite-action"
             onClick={() => activePet && activePet.status !== "dead" && playPetMotion("cuddle", 760)}
           >
-            <PetAvatar
+            <PetSprite
               skin={activePet?.skin ?? selectedSkin}
               size="sm"
               mood={activePet ? petMotion : "idle"}
@@ -292,7 +300,7 @@ export default function PetPage() {
                 onClick={() => handleSelectPet(pet.id)}
               >
                 <View className="pet-chip-avatar">
-                  <PetAvatar
+                  <PetSprite
                     skin={pet.skin}
                     size="sm"
                     status={pet.status}
@@ -320,7 +328,7 @@ export default function PetPage() {
           <View className="hero-current">
             <Text className="hero-current-label">当前查看</Text>
             <View className="hero-current-row">
-              <PetAvatar
+              <PetSprite
                 skin={activePet.skin}
                 size="xs"
                 status={activePet.status}
@@ -357,10 +365,10 @@ export default function PetPage() {
               </Text>
             </View>
             <View
-              className="detail-avatar-shell pet-avatar-action"
+              className="detail-avatar-shell pet-sprite-action"
               onClick={() => activePet.status !== "dead" && playPetMotion("cuddle", 820)}
             >
-              <PetAvatar
+              <PetSprite
                 skin={activePet.skin}
                 size="xl"
                 status={activePet.status}
@@ -406,7 +414,7 @@ export default function PetPage() {
         {activePet.status === "dead" ? (
           <View className="detail-card memorial-card">
             <View className="memorial-avatar-shell">
-              <PetAvatar skin={activePet.skin} size="lg" status="dead" mood="idle" />
+              <PetSprite skin={activePet.skin} size="lg" status="dead" mood="idle" />
             </View>
             <Text className="memorial-title">{activePet.name} 已离开小院</Text>
             <Text className="memorial-desc">

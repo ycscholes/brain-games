@@ -1,0 +1,98 @@
+<h2>宠物形象重新生成 - 风格选择</h2>
+<p class="subtitle">当前项目已有 5 种宠物（猫、狗、兔、熊、熊猫），每种宠物需要 3 种动作姿态（idle/feed/cuddle）。请选择您希望的生成风格。</p>
+
+<div class="section">
+  <h3>当前风格参考</h3>
+  <div class="current-preview">
+    <img src="file:///Users/chen.yu/workspace/paul/xiaoyuyuan/src/assets/pets/pet-sheet-preview.png" alt="当前宠物预览" style="max-width: 100%; border-radius: 12px;" />
+    <p class="subtitle">当前：可爱扁平化柔和渐变风格</p>
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card" data-choice="vector-cute" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background: linear-gradient(135deg, #f5f5f0 0%, #e8e8e0 100%); padding: 40px; border-radius: 8px; text-align: center;">
+        <div style="font-size: 64px;">🐱</div>
+        <p style="margin-top: 16px;"><strong>现代矢量可爱风</strong></p>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>选项 A - 现代矢量可爱风</h3>
+      <p>干净的矢量线条，扁平化设计，配色清新明亮，适合小程序界面。文件体积小，缩放清晰。</p>
+      <ul>
+        <li>清晰轮廓线条</li>
+        <li>纯色块+简单渐变</li>
+        <li>文件体积小</li>
+        <li>适合各种尺寸显示</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" data-choice="soft-pixel" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%); padding: 40px; border-radius: 8px; text-align: center;">
+        <div style="font-size: 64px;">👾</div>
+        <p style="margin-top: 16px; color: #fff;"><strong>柔和像素风格</strong></p>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>选项 B - 柔和像素风格</h3>
+      <p>复古像素艺术风格，但使用柔和过渡，不会太刺眼。有怀旧感，独特辨识度高。</p>
+      <ul>
+        <li>独特复古质感</li>
+        <li>高辨识度</li>
+        <li>格子纹理特色</li>
+        <li>文件体积适中</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" data-choice="watercolor" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background: linear-gradient(135deg, #e0f4f0 0%, #f0f8e8 100%); padding: 40px; border-radius: 8px; text-align: center;">
+        <div style="font-size: 64px;">🎨</div>
+        <p style="margin-top: 16px;"><strong>水彩手绘风格</strong></p>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>选项 C - 水彩手绘风格</h3>
+      <p>温暖的水彩手绘质感，边缘柔和自然，色彩通透，给人温馨治愈感觉。</p>
+      <ul>
+        <li>温暖治愈质感</li>
+        <li>自然手绘感</li>
+        <li>色彩柔和通透</li>
+        <li>氛围更温馨</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" data-choice="3d-soft" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background: linear-gradient(135deg, #f0f0f8 0%, #e8e8f0 100%); padding: 40px; border-radius: 8px; text-align: center;">
+        <div style="font-size: 64px;">🐻</div>
+        <p style="margin-top: 16px;"><strong>软萌3D黏土风</strong></p>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>选项 D - 软萌3D黏土风</h3>
+      <p>模拟黏土/软胶3D效果，圆润可爱，有体积感和光影层次，视觉效果更丰富。</p>
+      <ul>
+        <li>立体圆润可爱</li>
+        <li>光影层次丰富</li>
+        <li>质感柔软Q弹</li>
+        <li>视觉吸引力强</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>输出规格说明（所有选项都遵循）</h3>
+  <ul>
+    <li>每种宠物：PNG 透明背景，尺寸建议 512x512 px</li>
+    <li>每个宠物 3 个动作：idle（待机）、feed（吃东西）、cuddle（抱抱/互动）</li>
+    <li>总共：5 种宠物 × 3 个动作 = 15 张图片</li>
+    <li>保持一致的构图比例，方便在组件中切换动画</li>
+  </ul>
+</div>

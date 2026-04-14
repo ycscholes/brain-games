@@ -1,4 +1,6 @@
 import Taro from "@tarojs/taro";
+import { emitUserDataChanged } from "../services/user-data/local/changeNotifier";
+import { resetCloudSyncMeta } from "./cloudSyncMeta";
 
 export type TrainingGameId =
   | "memory"
@@ -264,8 +266,16 @@ export function readTrainingRecords(): TrainingRecord[] {
   }
 }
 
-export function saveTrainingRecords(records: TrainingRecord[]) {
+export function saveTrainingRecords(
+  records: TrainingRecord[],
+  options?: {
+    markChanged?: boolean;
+  },
+) {
   Taro.setStorageSync(TRAINING_STORAGE_KEY, JSON.stringify(records.slice(0, MAX_RECORDS)));
+  if (options?.markChanged !== false) {
+    emitUserDataChanged();
+  }
 }
 
 export function recordTrainingSession(record: Omit<TrainingRecord, "id" | "playedAt">) {
@@ -363,15 +373,31 @@ export function readAppSettings(): AppSettings {
   }
 }
 
-export function saveAppSettings(settings: Partial<AppSettings>) {
-  const nextSettings = {
-    ...readAppSettings(),
-    ...settings,
-    version: SETTINGS_VERSION,
-    updatedAt: new Date().toISOString(),
-  };
+export function saveAppSettings(
+  settings: Partial<AppSettings> | AppSettings,
+  options?: {
+    markChanged?: boolean;
+    replace?: boolean;
+  },
+) {
+  const nextSettings = options?.replace
+    ? {
+        ...getDefaultSettings(),
+        ...(settings as AppSettings),
+        version: SETTINGS_VERSION,
+        updatedAt: (settings as AppSettings).updatedAt || new Date().toISOString(),
+      }
+    : {
+        ...readAppSettings(),
+        ...settings,
+        version: SETTINGS_VERSION,
+        updatedAt: new Date().toISOString(),
+      };
 
   Taro.setStorageSync(SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings));
+  if (options?.markChanged !== false) {
+    emitUserDataChanged();
+  }
   return nextSettings;
 }
 
@@ -396,4 +422,5 @@ export function clearProductData() {
   [...LEGACY_KEYS, ...gameSpecificKeys, TRAINING_STORAGE_KEY, SETTINGS_STORAGE_KEY].forEach((key) => {
     Taro.removeStorageSync(key);
   });
+  resetCloudSyncMeta();
 }
