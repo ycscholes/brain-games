@@ -1,12 +1,43 @@
 import path from "path";
+import fs from "fs";
 import { defineConfig, type UserConfigExport } from "@tarojs/cli";
 import TsconfigPathsPlugin from "tsconfig-paths-webpack-plugin";
 import { UnifiedWebpackPluginV5 } from "weapp-tailwindcss/webpack";
 import devConfig from "./dev";
 import prodConfig from "./prod";
 
+function readEnvValue(filePath: string, key: string): string {
+  if (!fs.existsSync(filePath)) {
+    return "";
+  }
+
+  const line = fs
+    .readFileSync(filePath, "utf8")
+    .split(/\r?\n/)
+    .find((item) => item.startsWith(`${key}=`));
+
+  if (!line) {
+    return "";
+  }
+
+  return line
+    .slice(key.length + 1)
+    .trim()
+    .replace(/^["']|["']$/g, "");
+}
+
+function resolveCloudEnvId(): string {
+  if (process.env.TARO_CLOUD_ENV_ID) {
+    return process.env.TARO_CLOUD_ENV_ID;
+  }
+
+  const envFileName = process.env.NODE_ENV === "development" ? ".env.development" : ".env.production";
+  return readEnvValue(path.resolve(__dirname, "..", envFileName), "TARO_CLOUD_ENV_ID");
+}
+
 // https://taro-docs.jd.com/docs/next/config#defineconfig-辅助函数
 export default defineConfig<"webpack5">(async (merge) => {
+  const cloudEnvId = resolveCloudEnvId();
   const baseConfig: UserConfigExport<"webpack5"> = {
     projectName: "cici-brain-training",
     date: "2024-11-19",
@@ -24,7 +55,12 @@ export default defineConfig<"webpack5">(async (merge) => {
     // sass: {
     //   data: `@use "@nutui/nutui-taro/dist/styles/variables.scss";`,
     // },
-    defineConstants: {},
+    defineConstants: {
+      __CLOUD_ENV_ID__: JSON.stringify(cloudEnvId),
+    },
+    env: {
+      TARO_CLOUD_ENV_ID: JSON.stringify(cloudEnvId),
+    },
     copy: {
       patterns: [],
       options: {},

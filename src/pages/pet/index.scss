@@ -152,11 +152,11 @@
   box-shadow: inset 0 0 0 1px rgba(154, 52, 18, 0.08);
 }
 
-.hero-badge .pet-avatar {
-  --pet-avatar-size: 76px;
+.hero-badge .pet-sprite {
+  --pet-sprite-size: 76px;
 }
 
-.pet-avatar-action {
+.pet-sprite-action {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -240,8 +240,8 @@
   justify-content: center;
 }
 
-.pet-chip-avatar .pet-avatar {
-  --pet-avatar-size: 54px;
+.pet-chip-avatar .pet-sprite {
+  --pet-sprite-size: 54px;
 }
 
 .pet-chip-copy {
@@ -288,8 +288,8 @@
   gap: 10px;
 }
 
-.hero-current-row .pet-avatar {
-  --pet-avatar-size: 40px;
+.hero-current-row .pet-sprite {
+  --pet-sprite-size: 40px;
 }
 
 .hero-current-value {
@@ -360,8 +360,8 @@
   background: #ffe8c5;
 }
 
-.skin-item .pet-avatar {
-  --pet-avatar-size: 52px;
+.skin-item .pet-sprite {
+  --pet-sprite-size: 52px;
 }
 
 .skin-name {
@@ -494,8 +494,8 @@
   flex: 0 0 auto;
 }
 
-.detail-avatar-shell .pet-avatar {
-  --pet-avatar-size: 220px;
+.detail-avatar-shell .pet-sprite {
+  --pet-sprite-size: 220px;
 }
 
 .detail-progress {
@@ -636,12 +636,12 @@
   margin-bottom: 14px;
 }
 
-.memorial-avatar-shell .pet-avatar {
-  --pet-avatar-size: 160px;
+.memorial-avatar-shell .pet-sprite {
+  --pet-sprite-size: 160px;
 }
 
-.empty-pet .pet-avatar {
-  --pet-avatar-size: 168px;
+.empty-pet .pet-sprite {
+  --pet-sprite-size: 168px;
 }
 
 .memorial-title,
@@ -703,16 +703,16 @@
     height: 180px;
   }
 
-  .detail-avatar-shell .pet-avatar {
-    --pet-avatar-size: 180px;
+  .detail-avatar-shell .pet-sprite {
+    --pet-sprite-size: 180px;
   }
 
-  .empty-pet .pet-avatar {
-    --pet-avatar-size: 150px;
+  .empty-pet .pet-sprite {
+    --pet-sprite-size: 150px;
   }
 
-  .memorial-avatar-shell .pet-avatar {
-    --pet-avatar-size: 140px;
+  .memorial-avatar-shell .pet-sprite {
+    --pet-sprite-size: 140px;
   }
 
   .pet-chip {

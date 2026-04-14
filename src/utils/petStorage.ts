@@ -1,5 +1,6 @@
 import Taro from "@tarojs/taro";
 import type { PetData, PetSkin, PetStorageData } from "../pages/pet/types";
+import { emitUserDataChanged } from "../services/user-data/local/changeNotifier";
 import { getAwardedPoints } from "./trainingStorage";
 import {
   HUNGER_POINT_PER_MINUTE,
@@ -92,9 +93,28 @@ function migratePetStorage(raw: string): PetStorageData {
   }
 }
 
-export function savePetData(data: PetStorageData): void {
+export function savePetData(
+  data: PetStorageData,
+  options?: {
+    markChanged?: boolean;
+  },
+): void {
   try {
     Taro.setStorageSync(STORAGE_KEY, JSON.stringify(data));
+    if (options?.markChanged !== false) {
+      emitUserDataChanged();
+    }
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function persistMigratedPetData(raw: string, data: PetStorageData): void {
+  try {
+    const nextRaw = JSON.stringify(data);
+    if (nextRaw !== raw) {
+      Taro.setStorageSync(STORAGE_KEY, nextRaw);
+    }
   } catch {
     // ignore storage failures
   }
@@ -107,7 +127,7 @@ export function readPetData(): PetStorageData {
   }
 
   const migrated = migratePetStorage(raw);
-  savePetData(migrated);
+  persistMigratedPetData(raw, migrated);
   return migrated;
 }
 
@@ -173,6 +193,9 @@ export function killPet(pet: PetData): PetData {
 }
 
 function refreshAllPets(data: PetStorageData): PetStorageData {
+  const now = new Date().toISOString();
+  let hasChanged = false;
+
   const pets = data.pets.map((pet) => {
     if (pet.status === "dead") {
       return pet;
@@ -183,15 +206,22 @@ function refreshAllPets(data: PetStorageData): PetStorageData {
       pet.lastUpdated
     );
 
+    if (newHunger === pet.hunger && !shouldDie) {
+      const nextPet = updatePetStatus(pet);
+      const statusChanged = nextPet.status !== pet.status;
+      hasChanged = hasChanged || statusChanged;
+      return statusChanged ? nextPet : pet;
+    }
+
+    hasChanged = true;
     let updated = {
       ...pet,
       hunger: newHunger,
     };
 
-    // Only update lastUpdated when hunger is still > 0
-    // If hunger is 0, keep the original lastUpdated (when it first reached 0) for death timing
+    // Only move the decay baseline when hunger actually changes and remains above 0.
     if (newHunger > 0) {
-      updated.lastUpdated = new Date().toISOString();
+      updated.lastUpdated = now;
     }
 
     if (shouldDie && updated.status !== "dead") {
@@ -201,18 +231,29 @@ function refreshAllPets(data: PetStorageData): PetStorageData {
     return updatePetStatus(updated);
   });
 
+  const activePetId = getValidActivePetId(pets, data.activePetId);
+  hasChanged = hasChanged || activePetId !== data.activePetId;
+
+  if (!hasChanged) {
+    return data;
+  }
+
   return {
     ...data,
     pets,
-    activePetId: getValidActivePetId(pets, data.activePetId),
-    lastCheckTime: new Date().toISOString(),
+    activePetId,
+    lastCheckTime: now,
   };
 }
 
-export function syncPetData(): PetStorageData {
+export function syncPetData(options?: {
+  markChanged?: boolean;
+}): PetStorageData {
   const data = readPetData();
   const refreshed = refreshAllPets(data);
-  savePetData(refreshed);
+  if (refreshed !== data) {
+    savePetData(refreshed, options);
+  }
   return refreshed;
 }
 

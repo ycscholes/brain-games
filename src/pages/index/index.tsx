@@ -1,7 +1,8 @@
 import { View, Text } from "@tarojs/components";
-import Taro, { useDidShow, useLoad } from "@tarojs/taro";
+import Taro, { useDidShow } from "@tarojs/taro";
 import { useCallback, useState } from "react";
 import { readPetData, syncPetData } from "../../utils/petStorage";
+import { useUserDataChange } from "../../services/user-data/hooks/useUserDataChange";
 import {
   readDashboardStats,
   readTrainingRecords,
@@ -192,8 +193,10 @@ export default function Index() {
     }
   };
 
-  const refreshDashboard = useCallback(() => {
-    const nextPetData = syncPetData();
+  const refreshDashboard = useCallback((options?: { syncPets?: boolean }) => {
+    const nextPetData = options?.syncPets
+      ? syncPetData({ markChanged: false })
+      : readPetData();
     setPetData(nextPetData);
     setActivePet(nextPetData.pets.find((pet) => pet.id === nextPetData.activePetId) ?? null);
     setAliveCount(nextPetData.pets.filter((pet) => pet.status !== "dead").length);
@@ -217,13 +220,18 @@ export default function Index() {
     setRecommendedGameId(recommendNextGame(BASE_GAMES.map((game) => game.id)));
   }, []);
 
-  useLoad(() => {
+  const refreshDashboardDeferred = useCallback(() => {
     refreshDashboard();
-  });
+    setTimeout(() => {
+      refreshDashboard({ syncPets: true });
+    }, 300);
+  }, [refreshDashboard]);
 
   useDidShow(() => {
-    refreshDashboard();
+    refreshDashboardDeferred();
   });
+
+  useUserDataChange(refreshDashboard);
 
   const renderActivePet = () => {
     if (!activePet) return null;
