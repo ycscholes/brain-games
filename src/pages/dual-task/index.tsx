@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
+import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 type GameStatus = "start" | "playing" | "finished";
@@ -33,7 +33,6 @@ interface Task {
   options: string[];
   correctAnswer: number;
   timeLimit: number;
-  pointValue: number;
   inkColor?: string;
 }
 
@@ -51,10 +50,17 @@ interface DifficultyConfig {
 }
 
 const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
-  easy: { label: "简单", gapTime: 1800, taskTimeLimit: 5000, timeoutPenalty: 10, chipColor: "#34C759" },
-  normal: { label: "普通", gapTime: 1400, taskTimeLimit: 4000, timeoutPenalty: 20, chipColor: "#4A90D9" },
-  hard: { label: "困难", gapTime: 1000, taskTimeLimit: 3000, timeoutPenalty: 30, chipColor: "#FF9500" },
-  expert: { label: "专家", gapTime: 700, taskTimeLimit: 2000, timeoutPenalty: 35, chipColor: "#FF3B30" },
+  easy: { label: "简单", gapTime: 1800, taskTimeLimit: 5000, timeoutPenalty: 2, chipColor: "#34C759" },
+  normal: { label: "普通", gapTime: 1400, taskTimeLimit: 4000, timeoutPenalty: 3, chipColor: "#4A90D9" },
+  hard: { label: "困难", gapTime: 1000, taskTimeLimit: 3000, timeoutPenalty: 4, chipColor: "#FF9500" },
+  expert: { label: "专家", gapTime: 700, taskTimeLimit: 2000, timeoutPenalty: 5, chipColor: "#FF3B30" },
+};
+
+const DIFFICULTY_POINTS: Record<Difficulty, number> = {
+  easy: 2,
+  normal: 3,
+  hard: 4,
+  expert: 5,
 };
 
 const MODE_CONFIG: Record<Mode, { title: string; subtitle: string; icon: string }> = {
@@ -79,7 +85,7 @@ const COLOR_HEX: Record<string, string> = {
 const COLOR_BLOCKS = ["🟥", "🟦", "🟨", "🟩"];
 const SHAPES = ["●", "■", "▲", "★"];
 const SHAPE_LABELS = ["圆形", "方形", "三角", "五角星"];
-const WRONG_PENALTY_BASE = 35;
+const WRONG_PENALTY = 2;
 
 const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 const pickOne = <T,>(list: T[]) => list[randomInt(0, list.length - 1)];
@@ -101,24 +107,6 @@ function getDifficultyNumberRange(difficulty: Difficulty) {
   }
 }
 
-function speedMultiplier(remainingRatio: number) {
-  if (remainingRatio > 0.7) return 1.5;
-  if (remainingRatio > 0.4) return 1.2;
-  if (remainingRatio > 0.2) return 1.0;
-  return 0.8;
-}
-
-function streakMultiplier(streak: number) {
-  if (streak >= 20) return 2.0;
-  if (streak >= 10) return 1.5;
-  if (streak >= 5) return 1.3;
-  return 1.0;
-}
-
-function clampScore(score: number) {
-  return Math.max(0, Math.round(score));
-}
-
 function makeOddEvenTask(difficulty: Difficulty, baseTimeLimit: number): Task {
   const range = getDifficultyNumberRange(difficulty);
   const n = randomInt(range.min, range.max);
@@ -130,7 +118,6 @@ function makeOddEvenTask(difficulty: Difficulty, baseTimeLimit: number): Task {
     options: ["奇数", "偶数"],
     correctAnswer: n % 2 === 0 ? 1 : 0,
     timeLimit: baseTimeLimit,
-    pointValue: 100,
   };
 }
 
@@ -146,7 +133,6 @@ function makeGreaterThanTask(difficulty: Difficulty, baseTimeLimit: number): Tas
     options: ["是", "否"],
     correctAnswer: n > threshold ? 0 : 1,
     timeLimit: baseTimeLimit,
-    pointValue: 100,
   };
 }
 
@@ -173,7 +159,6 @@ function makeSimpleMathTask(difficulty: Difficulty, baseTimeLimit: number): Task
     options: shuffled,
     correctAnswer: shuffled.findIndex((item) => item === `${result}`),
     timeLimit: baseTimeLimit,
-    pointValue: 100,
   };
 }
 
@@ -187,7 +172,6 @@ function makeColorTask(baseTimeLimit: number): Task {
     options: COLOR_WORDS,
     correctAnswer: idx,
     timeLimit: baseTimeLimit,
-    pointValue: 100,
   };
 }
 
@@ -201,7 +185,6 @@ function makeShapeTask(baseTimeLimit: number): Task {
     options: SHAPE_LABELS,
     correctAnswer: idx,
     timeLimit: baseTimeLimit,
-    pointValue: 100,
   };
 }
 
@@ -217,7 +200,6 @@ function makeFindSameTask(baseTimeLimit: number): Task {
     options: COLOR_WORDS,
     correctAnswer: correctIdx,
     timeLimit: baseTimeLimit,
-    pointValue: 100,
   };
 }
 
@@ -235,7 +217,6 @@ function makeStroopTask(type: "stroop_read" | "stroop_color", baseTimeLimit: num
     options: COLOR_WORDS,
     correctAnswer: COLOR_WORDS.indexOf(type === "stroop_read" ? word : ink),
     timeLimit: baseTimeLimit,
-    pointValue: 150,
     inkColor: COLOR_HEX[ink],
   };
 }
@@ -347,13 +328,13 @@ export default function DualTaskGame() {
 
   const finishGame = useCallback((finalScore?: number) => {
     clearAllTimers();
-    const settledScore = finalScore ?? score;
+    const settledScore = Math.min(MAX_POINTS_PER_SESSION, Math.max(0, Math.round(finalScore ?? score)));
     Taro.setStorageSync(`dual_task_last_${config.mode}`, settledScore);
     addPointsToPet("dual-task", settledScore);
     recordTrainingSession({
       gameId: "dual-task",
       score: settledScore,
-      awardedPoints: getAwardedPoints("dual-task", settledScore),
+      awardedPoints: settledScore,
       mode: `${config.mode}:${config.difficulty}`,
       outcome: "completed",
     });
@@ -371,12 +352,8 @@ export default function DualTaskGame() {
 
   const applyPenalty = useCallback(
     (isTimeout: boolean) => {
-      const multiplier = streakMultiplier(streak);
-      const penalty = Math.max(
-        20,
-        Math.round((isTimeout ? difficultyMeta.timeoutPenalty : WRONG_PENALTY_BASE) * multiplier),
-      );
-      const nextScore = clampScore(score - penalty);
+      const penalty = isTimeout ? difficultyMeta.timeoutPenalty : WRONG_PENALTY;
+      const nextScore = Math.max(0, score - penalty);
       setScore(nextScore);
       setStreak(0);
       if (isTimeout) setTimeoutCount((prev) => prev + 1);
@@ -386,34 +363,29 @@ export default function DualTaskGame() {
         finishGame(nextScore);
       }, 420);
     },
-    [difficultyMeta.timeoutPenalty, finishGame, score, streak],
+    [difficultyMeta.timeoutPenalty, finishGame, score],
   );
 
-  const addCorrectScore = useCallback(
-    (basePoint: number, elapsedMs: number, timeLimit: number) => {
-      const remainingRatio = Math.max(0, (timeLimit - elapsedMs) / timeLimit);
-      const total = Math.round(basePoint * speedMultiplier(remainingRatio) * streakMultiplier(streak));
-      setScore((prev) => clampScore(prev + total));
-      setStreak((prev) => {
-        const next = prev + 1;
-        setMaxStreak((m) => Math.max(m, next));
-        return next;
-      });
-      setCorrectCount((prev) => prev + 1);
-      setLastFeedback("correct");
-    },
-    [streak],
-  );
+  const addCorrectScore = useCallback(() => {
+    const pts = DIFFICULTY_POINTS[config.difficulty];
+    setScore((prev) => prev + pts);
+    setStreak((prev) => {
+      const next = prev + 1;
+      setMaxStreak((m) => Math.max(m, next));
+      return next;
+    });
+    setCorrectCount((prev) => prev + 1);
+    setLastFeedback("correct");
+  }, [config.difficulty]);
 
   const resolveAlternatingTask = useCallback(
     (side: TaskSide, answer: number | null, timeout = false) => {
       if (!pair) return;
       const task = side === "A" ? pair.taskA : pair.taskB;
       const isCorrect = !timeout && answer === task.correctAnswer;
-      const elapsed = Date.now() - taskStartAt;
 
       if (isCorrect) {
-        addCorrectScore(100, elapsed, task.timeLimit);
+        addCorrectScore();
       } else {
         applyPenalty(timeout);
         if (side === "A") {
@@ -449,8 +421,6 @@ export default function DualTaskGame() {
   const resolveSimultaneousPair = useCallback(
     (forceTimeout = false) => {
       if (!pair || taskAAnswered === false || taskBAnswered === false) return;
-      const elapsed = Date.now() - questionStartAt;
-      const timeLimit = Math.max(pair.taskA.timeLimit, pair.taskB.timeLimit);
       const aCorrect = taskAAnswer === pair.taskA.correctAnswer;
       const bCorrect = taskBAnswer === pair.taskB.correctAnswer;
 
@@ -458,19 +428,19 @@ export default function DualTaskGame() {
         applyPenalty(true);
       } else if (config.mode === "simultaneous") {
         if (aCorrect && bCorrect) {
-          addCorrectScore(200, elapsed, timeLimit);
+          addCorrectScore();
         } else {
           applyPenalty(false);
           return;
         }
       } else {
-        if (aCorrect) addCorrectScore(pair.taskA.pointValue, elapsed, timeLimit);
+        if (aCorrect) addCorrectScore();
         else {
           applyPenalty(false);
           return;
         }
 
-        if (bCorrect) addCorrectScore(pair.taskB.pointValue, elapsed, timeLimit);
+        if (bCorrect) addCorrectScore();
         else {
           applyPenalty(false);
           return;
@@ -751,8 +721,8 @@ export default function DualTaskGame() {
             </View>
           </View>
 
-          <View className="start-btn" onClick={startGame}>
-            <Text className="start-btn-text">开始挑战</Text>
+          <View className="primary-button" onClick={startGame}>
+            <Text className="button-text">开始挑战</Text>
           </View>
         </View>
       )}
@@ -812,40 +782,25 @@ export default function DualTaskGame() {
       {gameStatus === "finished" && (
         <View className="result-screen">
           <View className="result-card">
-            <Text className="result-title">本局完成</Text>
+            <Text className="result-title">本局成绩</Text>
             <Text className="result-score">{score}</Text>
-            <Text className="result-best">当前模式最高分: {Math.max(bestScore, score)}</Text>
+            <Text className="result-desc">答对 {correctCount} 题 · 正确率 {accuracy}% · 最高连击 {maxStreak}</Text>
+            <Text className="result-desc">{DIFFICULTY_CONFIG[config.difficulty].label} · {MODE_CONFIG[config.mode].title}</Text>
+            <Text className="result-desc">
+              历史最高 {bestScore}
+              {score > 0 && score >= bestScore ? <Text className="result-highlight">，刷新纪录</Text> : null}
+            </Text>
+          </View>
 
-            <View className="result-grid">
-              <View className="result-item">
-                <Text className="result-item-label">正确</Text>
-                <Text className="result-item-value">{correctCount}</Text>
-              </View>
-              <View className="result-item">
-                <Text className="result-item-label">错误</Text>
-                <Text className="result-item-value">{wrongCount}</Text>
-              </View>
-              <View className="result-item">
-                <Text className="result-item-label">超时</Text>
-                <Text className="result-item-value">{timeoutCount}</Text>
-              </View>
-              <View className="result-item">
-                <Text className="result-item-label">正确率</Text>
-                <Text className="result-item-value">{accuracy}%</Text>
-              </View>
-              <View className="result-item">
-                <Text className="result-item-label">最高连击</Text>
-                <Text className="result-item-value">{maxStreak}</Text>
-              </View>
+          <View className="result-actions">
+            <View className="primary-button" onClick={startGame}>
+              <Text className="button-text">再来一局</Text>
             </View>
-
-            <View className="result-actions">
-              <View className="action-btn" onClick={startGame}>
-                <Text className="action-btn-text">再来一局</Text>
-              </View>
-              <View className="action-btn action-btn-secondary" onClick={restartGame}>
-                <Text className="action-btn-text action-btn-text-secondary">返回设置</Text>
-              </View>
+            <View className="secondary-button" onClick={() => setGameStatus("start")}>
+              <Text className="button-text">返回开始页</Text>
+            </View>
+            <View className="secondary-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
+              <Text className="button-text">返回游戏主页</Text>
             </View>
           </View>
         </View>

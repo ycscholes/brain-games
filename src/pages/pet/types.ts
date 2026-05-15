@@ -76,12 +76,3 @@ export const PET_SKIN_NAME: Record<PetSkin, string> = {
 export const HUNGER_POINT_PER_MINUTE = 1 / 15; // 1 point every 15 minutes
 export const MAX_HUNGER = 100;
 export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
-export const POINTS_CONVERSION_RATES: Record<string, number> = {
-  "memory-challenge": 1 / 5,
-  "rock-paper-scissors": 1 / 3,
-  "dual-task": 1 / 2,
-  "mental-math": 1 / 1,
-  "digit-span": 1 / 1,
-  "multiple-object-tracking": 1 / 2,
-  "pattern-completion": 1 / 1,
-};

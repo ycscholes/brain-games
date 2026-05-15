@@ -11,7 +11,22 @@
       "Bash(npm list:*)",
       "Bash(/Users/chen.yu/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.7/skills/brainstorming/scripts/start-server.sh:*)",
       "Bash(cat:*)",
-      "Bash(file:*)"
+      "Bash(file:*)",
+      "Bash(npm install *)",
+      "Bash(npm ls *)",
+      "Bash(npm test *)",
+      "Bash(git checkout *)",
+      "Bash(python3 *)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "github",
+    "shadcn-ui",
+    "miniprogram-automator"
+  ],
+  "disabledMcpjsonServers": [
+    "playwright",
+    "magic-ui",
+    "storybook"
+  ]
 }

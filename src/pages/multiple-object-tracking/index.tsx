@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
+import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 type Phase = "start" | "preview" | "tracking" | "selecting" | "roundResult" | "finished";
@@ -343,9 +343,9 @@ export default function MultipleObjectTracking() {
     if (phase !== "start" && phase !== "finished") {
       addPointsToPet("multiple-object-tracking", score);
       recordTrainingSession({
-        gameId: "mot",
+        gameId: "multiple-object-tracking",
         score,
-        awardedPoints: getAwardedPoints("multiple-object-tracking", score),
+        awardedPoints: score,
         outcome: "interrupted",
       });
     }
@@ -415,9 +415,9 @@ export default function MultipleObjectTracking() {
     setRoundMessage("本轮未能完整锁定全部目标");
     addPointsToPet("multiple-object-tracking", score);
     recordTrainingSession({
-      gameId: "mot",
+      gameId: "multiple-object-tracking",
       score,
-      awardedPoints: getAwardedPoints("multiple-object-tracking", score),
+      awardedPoints: score,
       outcome: "completed",
     });
     setPhase("finished");
@@ -585,14 +585,14 @@ export default function MultipleObjectTracking() {
       {phase === "finished" ? (
         <View className="result-screen">
           <View className="result-card">
-            <Text className="result-title">挑战结束</Text>
-            <Text className="result-score">{score}</Text>
-            <Text className="result-desc">本轮命中 {lastHitCount} / {lastTargetIds.length}，最终得分为连续正确轮数。</Text>
-            <Text className="result-desc">最佳分数 {best}</Text>
-            {isNewBest ? <Text className="result-highlight">已刷新最佳分数</Text> : null}
+            <Text className="result-title">本局成绩</Text>
+            <Text className="result-score">{Math.min(MAX_POINTS_PER_SESSION, 4 + score * 2)}</Text>
+            <Text className="result-desc">连续 {score} 轮正确</Text>
+            <Text className="result-desc">
+              历史最高 {best}
+              {isNewBest ? <Text className="result-highlight">，刷新纪录</Text> : null}
+            </Text>
           </View>
-
-          {renderArena()}
 
           <View className="result-actions">
             <View className="primary-button" onClick={startGame}>
@@ -600,6 +600,9 @@ export default function MultipleObjectTracking() {
             </View>
             <View className="secondary-button" onClick={backToStart}>
               <Text className="button-text">返回开始页</Text>
+            </View>
+            <View className="secondary-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
+              <Text className="button-text">返回游戏主页</Text>
             </View>
           </View>
         </View>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
+import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
 import {
   PATTERN_QUESTION_BANK,
   type PatternOption,
@@ -15,7 +15,7 @@ type Feedback = "none" | "correct" | "wrong";
 
 const STORAGE_KEY = "pattern_completion_best";
 const TOTAL_QUESTIONS = PATTERN_QUESTION_BANK.length;
-const MAX_TIME_BONUS = 20;
+const MAX_TIME_BONUS = 10;
 const TIME_BONUS_TARGET_SECONDS = 120;
 const OPTION_LETTERS = ["A", "B", "C", "D"] as const;
 
@@ -150,9 +150,9 @@ export default function PatternCompletion() {
       setFinalScore(settledFinalScore);
       addPointsToPet("pattern-completion", settledFinalScore);
       recordTrainingSession({
-        gameId: "pattern",
+        gameId: "pattern-completion",
         score: settledFinalScore,
-        awardedPoints: getAwardedPoints("pattern-completion", settledFinalScore),
+        awardedPoints: settledFinalScore,
         durationSeconds: Math.round(settledElapsedMs / 1000),
         outcome: "completed",
       });
@@ -358,6 +358,9 @@ export default function PatternCompletion() {
             </View>
             <View className="secondary-button" onClick={backToStart}>
               <Text className="button-text">返回开始页</Text>
+            </View>
+            <View className="secondary-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
+              <Text className="button-text">返回游戏主页</Text>
             </View>
           </View>
         </View>
