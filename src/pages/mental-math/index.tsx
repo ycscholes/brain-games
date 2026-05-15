@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
+import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 type GameState = "start" | "playing" | "gameover";
@@ -386,7 +386,7 @@ export default function MentalMath() {
     recordTrainingSession({
       gameId: "mental-math",
       score: finalCorrectCount,
-      awardedPoints: getAwardedPoints("mental-math", finalCorrectCount),
+      awardedPoints: finalCorrectCount,
       mode: gameMode,
       outcome: "completed",
     });
@@ -551,53 +551,28 @@ export default function MentalMath() {
 
       {/* ---------------- GAME OVER SCREEN ---------------- */}
       {gameState === "gameover" && (
-        <View className="gameover-screen">
-          <View className="gameover-icon-container">
-            <Text className="gameover-icon">🏆</Text>
+        <View className="result-screen">
+          <View className="result-card">
+            <Text className="result-title">本局成绩</Text>
+            <Text className="result-score">{correctCount}</Text>
+            <Text className="result-desc">答对 {correctCount} 题 · 难度 Lv{getDifficultyLevel()}</Text>
+            <Text className="result-desc">{gameMode === "timed" ? "限时模式" : "闯关模式"}</Text>
+            <Text className="result-desc">
+              历史最高 {getHighScore()}
+              {isNewRecord && correctCount > 0 ? <Text className="result-highlight">，刷新纪录</Text> : null}
+            </Text>
           </View>
 
-          <Text className="gameover-title">{gameMode === "timed" ? "时间到！" : "闯关失败"}</Text>
-          <Text className="gameover-subtitle">{gameMode === "timed" ? "挑战完成" : "本次闯关结束"}</Text>
-
-          <View className="score-card">
-            <Text className="score-label">连续答对</Text>
-            <Text className="score-value">{correctCount}</Text>
-            {isNewRecord && correctCount > 0 && (
-              <View className="new-record-badge">
-                <Text className="new-record-text">✨ 新纪录 NEW RECORD ✨</Text>
-              </View>
-            )}
-          </View>
-
-          <View className="stats-grid">
-            <View className="stat-item">
-              <Text className="stat-label">当前等级</Text>
-              <Text className="stat-value">Lv{getDifficultyLevel()}</Text>
+          <View className="result-actions">
+            <View className="primary-button" onClick={startGame}>
+              <Text className="button-text">再来一局</Text>
             </View>
-            <View className="stat-item">
-              <Text className="stat-label">历史最高</Text>
-              <Text className="stat-value">{getHighScore()} 题</Text>
+            <View className="secondary-button" onClick={() => setGameState("start")}>
+              <Text className="button-text">返回开始页</Text>
             </View>
-          </View>
-
-          <View className="tips-card">
-            <View className="tips-header">
-              <Text className="tips-icon">💡</Text>
-              <Text className="tips-title">训练技巧</Text>
+            <View className="secondary-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
+              <Text className="button-text">返回游戏主页</Text>
             </View>
-            <View className="tips-list">
-              <Text className="tips-item">• 每天坚持训练可以提升心算速度</Text>
-              <Text className="tips-item">• 尝试心算而不是逐位计算</Text>
-              <Text className="tips-item">• 正确率比速度更重要</Text>
-            </View>
-          </View>
-
-          <View className="restart-button" onClick={startGame}>
-            <Text className="restart-button-text">再来一局</Text>
-          </View>
-
-          <View className="back-home-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
-            <Text className="back-home-button-text">返回游戏主页</Text>
           </View>
         </View>
       )}

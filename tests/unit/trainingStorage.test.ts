@@ -15,6 +15,7 @@ jest.mock("@tarojs/taro", () => ({
 
 import {
   clearProductData,
+  getAwardedPoints,
   readAppSettings,
   readDashboardStats,
   readTrainingSummary,
@@ -34,20 +35,20 @@ describe("trainingStorage", () => {
 
   test("records sessions and builds summaries from unified records", () => {
     recordTrainingSession({
-      gameId: "memory",
+      gameId: "memory-challenge",
       score: 12,
       awardedPoints: 2,
       outcome: "completed",
     });
 
     recordTrainingSession({
-      gameId: "memory",
+      gameId: "memory-challenge",
       score: 18,
       awardedPoints: 3,
       outcome: "completed",
     });
 
-    const summary = readTrainingSummary("memory");
+    const summary = readTrainingSummary("memory-challenge");
     expect(summary.played).toBe(true);
     expect(summary.best).toBe(18);
     expect(summary.recent).toBe(18);
@@ -105,5 +106,66 @@ describe("trainingStorage", () => {
     clearProductData();
 
     expect(mockStorage.size).toBe(0);
+  });
+
+  describe("getAwardedPoints - aligned reward rates", () => {
+    test("digit-span: 3x conversion", () => {
+      expect(getAwardedPoints("digit-span", 5)).toBe(15);
+      expect(getAwardedPoints("digit-span", 10)).toBe(30);
+    });
+
+    test("mental-math: 1x conversion", () => {
+      expect(getAwardedPoints("mental-math", 15)).toBe(15);
+      expect(getAwardedPoints("mental-math", 30)).toBe(30);
+    });
+
+    test("pattern-completion: 1.2x conversion", () => {
+      expect(getAwardedPoints("pattern-completion", 10)).toBe(12);
+      expect(getAwardedPoints("pattern-completion", 30)).toBe(36);
+    });
+
+    test("dual-task: 0.05x conversion (lower rate for high scores)", () => {
+      expect(getAwardedPoints("dual-task", 200)).toBe(10);
+      expect(getAwardedPoints("dual-task", 800)).toBe(40);
+    });
+
+    test("multiple-object-tracking: 3x conversion", () => {
+      expect(getAwardedPoints("multiple-object-tracking", 5)).toBe(15);
+      expect(getAwardedPoints("multiple-object-tracking", 15)).toBe(45);
+    });
+
+    test("rock-paper-scissors: 0.15x conversion", () => {
+      expect(getAwardedPoints("rock-paper-scissors", 100)).toBe(15);
+      expect(getAwardedPoints("rock-paper-scissors", 300)).toBe(45);
+    });
+
+    test("memory-challenge: 0.25x conversion", () => {
+      expect(getAwardedPoints("memory-challenge", 50)).toBe(12);
+      expect(getAwardedPoints("memory-challenge", 150)).toBe(37);
+    });
+
+    test("typical good performance gives similar rewards across games", () => {
+      // 良好表现应该获得大约 10-40 积分
+      const rewards = [
+        getAwardedPoints("digit-span", 7),
+        getAwardedPoints("mental-math", 20),
+        getAwardedPoints("pattern-completion", 20),
+        getAwardedPoints("dual-task", 400),
+        getAwardedPoints("multiple-object-tracking", 10),
+        getAwardedPoints("rock-paper-scissors", 200),
+        getAwardedPoints("memory-challenge", 100),
+      ];
+
+      rewards.forEach(reward => {
+        expect(reward).toBeGreaterThanOrEqual(10);
+        expect(reward).toBeLessThanOrEqual(50);
+      });
+    });
+
+    test("returns 0 for unknown gameId or zero score", () => {
+      expect(getAwardedPoints("unknown-game", 100)).toBe(0);
+      expect(getAwardedPoints("digit-span", 0)).toBe(0);
+      expect(getAwardedPoints("mental-math", -5)).toBe(0);
+    });
   });
 });

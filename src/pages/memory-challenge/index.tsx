@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, Image } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
+import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 // Import Shapes
@@ -49,6 +49,14 @@ const MEMORY_CONFIG = {
   3: { label: "3-Back", color: "#F97316", n: 3, desc: "记忆前3个" },
   4: { label: "4-Back", color: "#EF4444", n: 4, desc: "记忆前4个" },
 } as const;
+
+// 难度系数积分表
+const POINTS_PER_CORRECT: Record<string, number> = {
+  "T1M1": 2, "T2M1": 2, "T3M1": 3, "T4M1": 3,
+  "T1M2": 2, "T2M2": 3, "T3M2": 3, "T4M2": 3,
+  "T1M3": 3, "T2M3": 3, "T3M3": 3, "T4M3": 4,
+  "T1M4": 3, "T2M4": 3, "T3M4": 4, "T4M4": 4,
+};
 
 // 最高分记录接口
 interface HighScoreRecord {
@@ -285,7 +293,8 @@ export default function MemoryChallenge() {
     if (id === targetShape.id) {
       setFeedback("correct");
       playSound("success");
-      setScore((s) => s + 10);
+      const pts = POINTS_PER_CORRECT[`T${timeDifficulty}M${memoryDifficulty}`] || 2;
+      setScore((s) => Math.min(MAX_POINTS_PER_SESSION, s + pts));
       setCorrectCount((c) => c + 1);
       setStreak((s) => {
         const newStreak = s + 1;
@@ -310,18 +319,19 @@ export default function MemoryChallenge() {
 
   const handleGameOver = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    Taro.setStorageSync("memory_last_score", score);
-    addPointsToPet("memory-challenge", score);
+    const finalScore = Math.min(MAX_POINTS_PER_SESSION, score);
+    Taro.setStorageSync("memory_last_score", finalScore);
+    addPointsToPet("memory-challenge", finalScore);
     recordTrainingSession({
-      gameId: "memory",
-      score,
-      awardedPoints: getAwardedPoints("memory-challenge", score),
+      gameId: "memory-challenge",
+      score: finalScore,
+      awardedPoints: finalScore,
       mode: `T${timeDifficulty}M${memoryDifficulty}`,
       outcome: "completed",
     });
     setGameState("gameover");
     // 更新当前难度组合的最高分
-    updateHighScore(score);
+    updateHighScore(finalScore);
   };
 
   const getStatusText = () => {
@@ -553,56 +563,28 @@ export default function MemoryChallenge() {
 
       {/* ---------------- GAME OVER SCREEN ---------------- */}
       {gameState === "gameover" && (
-        <View className="gameover-screen">
-          <View className="gameover-icon-container">
-            <Text className="gameover-icon">🏆</Text>
+        <View className="result-screen">
+          <View className="result-card">
+            <Text className="result-title">本局成绩</Text>
+            <Text className="result-score">{Math.min(MAX_POINTS_PER_SESSION, score)}</Text>
+            <Text className="result-desc">答对 {correctCount} 题</Text>
+            <Text className="result-desc">{TIME_CONFIG[timeDifficulty].label} · {MEMORY_CONFIG[memoryDifficulty].label}</Text>
+            <Text className="result-desc">
+              历史最高 {highScore}
+              {isNewRecord && score > 0 ? <Text className="result-highlight">，刷新纪录</Text> : null}
+            </Text>
           </View>
 
-          <Text className="gameover-title">游戏结束</Text>
-          <Text className="gameover-subtitle">感谢参与挑战！</Text>
-
-          <View className="score-card">
-            <Text className="score-label">最终得分</Text>
-            <Text className="score-value">{score}</Text>
-            {isNewRecord && score > 0 && (
-              <View className="new-record-badge">
-                <Text className="new-record-text">✨ 新纪录 NEW RECORD ✨</Text>
-              </View>
-            )}
-          </View>
-
-          <View className="stats-grid">
-            <View className="stat-item">
-              <Text className="stat-label">当前连胜</Text>
-              <Text className="stat-value">{streak}</Text>
+          <View className="result-actions">
+            <View className="primary-button" onClick={startGame}>
+              <Text className="button-text">再来一局</Text>
             </View>
-            <View className="stat-item">
-              <Text className="stat-label">答对题数</Text>
-              <Text className="stat-value">{correctCount}</Text>
+            <View className="secondary-button" onClick={() => setGameState("start")}>
+              <Text className="button-text">返回开始页</Text>
             </View>
-          </View>
-
-          <View className="tips-card">
-            <View className="tips-header">
-              <Text className="tips-icon">💡</Text>
-              <Text className="tips-title">提升技巧</Text>
+            <View className="secondary-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
+              <Text className="button-text">返回游戏主页</Text>
             </View>
-            <View className="tips-list">
-              <Text className="tips-item">• 在展示阶段，尝试在脑海中复述图形特征</Text>
-              <Text className="tips-item">• 使用记忆宫殿法，将图形与具体场景关联</Text>
-            </View>
-          </View>
-
-          <View className="restart-button" onClick={startGame}>
-            <Text className="restart-button-text">再来一局</Text>
-          </View>
-
-          <View className="back-button" onClick={() => setGameState("start")}>
-            <Text className="back-button-text">重新选择难度</Text>
-          </View>
-
-          <View className="back-home-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
-            <Text className="back-home-button-text">返回游戏主页</Text>
           </View>
         </View>
       )}

@@ -3,11 +3,15 @@ import { emitUserDataChanged } from "../services/user-data/local/changeNotifier"
 import { resetCloudSyncMeta } from "./cloudSyncMeta";
 
 export type TrainingGameId =
-  | "memory"
-  | "rps"
+  | "memory-challenge"
+  | "rock-paper-scissors"
   | "dual-task"
   | "mental-math"
   | "digit-span"
+  | "multiple-object-tracking"
+  | "pattern-completion"
+  | "memory"
+  | "rps"
   | "mot"
   | "pattern";
 
@@ -52,8 +56,11 @@ export interface AppSettings {
 
 const TRAINING_STORAGE_KEY = "training_records_v1";
 const SETTINGS_STORAGE_KEY = "app_settings_v1";
+const SCORING_VERSION_KEY = "scoring_version";
 const MAX_RECORDS = 120;
 const SETTINGS_VERSION = 1;
+const SCORING_VERSION = 2;
+export const MAX_POINTS_PER_SESSION = 40;
 
 const LEGACY_KEYS = [
   "memory_last_score",
@@ -216,6 +223,7 @@ function readLegacySummary(gameId: TrainingGameId): TrainingSummary {
       };
 
     case "pattern":
+    case "pattern-completion":
       return {
         best: readNumericValue("pattern_completion_best"),
         recent: readNumericValue("pattern_completion_best"),
@@ -223,25 +231,56 @@ function readLegacySummary(gameId: TrainingGameId): TrainingSummary {
         totalSessions: 0,
         lastPlayedAt: null,
       };
+
+    case "memory-challenge":
+      return readLegacySummary("memory");
+    case "rock-paper-scissors":
+      return readLegacySummary("rps");
+    case "multiple-object-tracking":
+      return readLegacySummary("mot");
+
+    default:
+      return {
+        best: 0,
+        recent: 0,
+        played: false,
+        totalSessions: 0,
+        lastPlayedAt: null,
+      };
   }
 }
 
-export function getAwardedPoints(gameId: string, score: number) {
-  const conversionRates: Record<string, number> = {
-    "memory-challenge": 1 / 5,
-    "rock-paper-scissors": 1 / 3,
-    "dual-task": 1 / 2,
-    "mental-math": 1,
-    "digit-span": 1,
-    "multiple-object-tracking": 1 / 2,
-    "pattern-completion": 1,
-  };
+export function getAwardedPoints(_gameId: string, score: number) {
+  return Math.max(0, Math.floor(score));
+}
 
-  const rate = conversionRates[gameId] || 0;
-  return Math.max(0, Math.floor(score * rate));
+function runMigrationsIfNeeded() {
+  const currentVersion = Number(Taro.getStorageSync(SCORING_VERSION_KEY) || 1);
+  if (currentVersion >= SCORING_VERSION) return;
+
+  if (currentVersion === 1) {
+    const raw = Taro.getStorageSync(TRAINING_STORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const migrated = parsed.map((item) => ({
+            ...item,
+            score: item.awardedPoints ?? item.score,
+          }));
+          Taro.setStorageSync(TRAINING_STORAGE_KEY, JSON.stringify(migrated.slice(0, MAX_RECORDS)));
+        }
+      } catch {
+        // silent fail
+      }
+    }
+  }
+
+  Taro.setStorageSync(SCORING_VERSION_KEY, SCORING_VERSION);
 }
 
 export function readTrainingRecords(): TrainingRecord[] {
+  runMigrationsIfNeeded();
   const raw = Taro.getStorageSync(TRAINING_STORAGE_KEY);
   if (!raw) return [];
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
+import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 type GameState = "start" | "playing" | "gameover";
@@ -16,6 +16,8 @@ const DIFFICULTY_CONFIG = {
   3: { label: "中等", color: "#F07A4A", time: 3, description: "需要更快地逆向判断" },
   4: { label: "困难", color: "#D94B58", time: 2, description: "极限快答，容错极低" },
 } as const;
+
+const DIFFICULTY_POINTS: Record<number, number> = { 1: 2, 2: 3, 3: 3, 4: 4 };
 
 const HAND_CONFIG: Record<HandType, { emoji: string; name: string; beats: HandType; losesTo: HandType }> = {
   rock: { emoji: "✊", name: "石头", beats: "scissors", losesTo: "paper" },
@@ -145,17 +147,18 @@ export default function RockPaperScissors() {
 
   const handleGameOver = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
-    Taro.setStorageSync("rps_last_score", score);
-    addPointsToPet("rock-paper-scissors", score);
+    const finalScore = Math.min(MAX_POINTS_PER_SESSION, score);
+    Taro.setStorageSync("rps_last_score", finalScore);
+    addPointsToPet("rock-paper-scissors", finalScore);
     recordTrainingSession({
       gameId: "rps",
-      score,
-      awardedPoints: getAwardedPoints("rock-paper-scissors", score),
+      score: finalScore,
+      awardedPoints: finalScore,
       mode: `D${difficulty}`,
       outcome: "completed",
     });
     setGameState("gameover");
-    updateHighScore(score);
+    updateHighScore(finalScore);
   }, [score]);
 
   const handleSelect = (hand: HandType) => {
@@ -166,7 +169,8 @@ export default function RockPaperScissors() {
 
     if (isCorrect) {
       const nextStreak = streak + 1;
-      const newScore = score + 10 + streak * 2;
+      const pts = DIFFICULTY_POINTS[difficulty] || 2;
+      const newScore = Math.min(MAX_POINTS_PER_SESSION, score + pts);
 
       setFeedback("correct");
       setScore(newScore);
@@ -373,52 +377,27 @@ export default function RockPaperScissors() {
       )}
 
       {gameState === "gameover" && (
-        <View className="screen gameover-screen">
-          <View className="score-card-rps">
-            <Text className="score-label-rps">最终得分</Text>
-            <Text className="score-value-rps">{score}</Text>
-            {isNewRecord && score > 0 && (
-              <View className="new-record-badge-rps">
-                <Text className="new-record-text-rps">✨ 新纪录 NEW RECORD ✨</Text>
-              </View>
-            )}
+        <View className="result-screen">
+          <View className="result-card">
+            <Text className="result-title">本局成绩</Text>
+            <Text className="result-score">{Math.min(MAX_POINTS_PER_SESSION, score)}</Text>
+            <Text className="result-desc">答对 {Math.floor(score / (DIFFICULTY_POINTS[difficulty] || 2))} 题 · 最高连击 {bestStreak} · {DIFFICULTY_CONFIG[difficulty].label}</Text>
+            <Text className="result-desc">
+              历史最高 {highScore}
+              {isNewRecord && score > 0 ? <Text className="result-highlight">，刷新纪录</Text> : null}
+            </Text>
           </View>
 
-          <View className="stats-grid-rps">
-            <View className="stat-item-rps">
-              <Text className="stat-label-rps">最高连胜</Text>
-              <Text className="stat-value-rps">{bestStreak}</Text>
+          <View className="result-actions">
+            <View className="primary-button" onClick={startGame}>
+              <Text className="button-text">再来一局</Text>
             </View>
-            <View className="stat-item-rps">
-              <Text className="stat-label-rps">本局难度</Text>
-              <Text className="stat-value-rps">{DIFFICULTY_CONFIG[difficulty].label}</Text>
+            <View className="secondary-button" onClick={() => setGameState("start")}>
+              <Text className="button-text">返回开始页</Text>
             </View>
-            <View className="stat-item-rps">
-              <Text className="stat-label-rps">当前最高分</Text>
-              <Text className="stat-value-rps">{highScoreRecord?.score ?? highScore}</Text>
+            <View className="secondary-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
+              <Text className="button-text">返回游戏主页</Text>
             </View>
-          </View>
-
-          <View className="tips-card-rps">
-            <View className="tips-header-rps">
-              <Text className="tips-icon-rps">💡</Text>
-              <Text className="tips-title-rps">提升技巧</Text>
-            </View>
-            <View className="tips-list-rps">
-              <Text className="tips-item-rps">• 先固定判断顺序：看电脑 -&gt; 看目标 -&gt; 点答案</Text>
-              <Text className="tips-item-rps">• 把赢平输转换成“克制、相同、被克制”三类关系</Text>
-            </View>
-          </View>
-
-          <View className="restart-button-rps" onClick={startGame}>
-            <Text className="restart-button-text-rps">再来一局</Text>
-          </View>
-
-          <View className="back-button-rps" onClick={() => setGameState("start")}>
-            <Text className="back-button-text-rps">重新选择难度</Text>
-          </View>
-          <View className="back-home-button-rps" onClick={() => Taro.reLaunch({ url: "/pages/index/index" })}>
-            <Text className="back-home-button-text-rps">返回游戏主页</Text>
           </View>
         </View>
       )}

@@ -92,12 +92,16 @@ const BASE_GAMES = [
 
 const GAME_TITLES: Record<TrainingGameId, string> = {
   memory: "记忆图形",
+  "memory-challenge": "记忆图形",
   rps: "逆向猜拳",
+  "rock-paper-scissors": "逆向猜拳",
   "dual-task": "多任务处理",
   "mental-math": "速算挑战",
   "digit-span": "数字广度记忆",
   mot: "追踪任务",
+  "multiple-object-tracking": "追踪任务",
   pattern: "找规律",
+  "pattern-completion": "找规律",
 };
 
 function formatPlayedAt(value: string) {

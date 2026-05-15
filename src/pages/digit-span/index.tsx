@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
+import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 type Phase = "start" | "showing" | "input" | "finished";
@@ -62,7 +62,7 @@ export default function DigitSpan() {
       recordTrainingSession({
         gameId: "digit-span",
         score: finalScore,
-        awardedPoints: getAwardedPoints("digit-span", finalScore),
+        awardedPoints: finalScore,
         outcome: "completed",
       });
       setPhase("finished");
@@ -249,8 +249,8 @@ export default function DigitSpan() {
     <View className="result-screen">
       <View className="result-card">
         <Text className="result-title">本局成绩</Text>
-        <Text className="result-score">{score}</Text>
-        <Text className="result-desc">你成功回忆到 {score} 位数字。</Text>
+        <Text className="result-score">{Math.min(MAX_POINTS_PER_SESSION, Math.max(0, 5 + (score - 3) * 3))}</Text>
+        <Text className="result-desc">成功回忆 {score} 位数字</Text>
         <Text className="result-desc">
           历史最高 {best}
           {isNewBest ? <Text className="result-highlight">，刷新纪录</Text> : null}
@@ -263,6 +263,9 @@ export default function DigitSpan() {
         </View>
         <View className="secondary-button" onClick={() => setPhase("start")}>
           <Text className="button-text">返回开始页</Text>
+        </View>
+        <View className="secondary-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
+          <Text className="button-text">返回游戏主页</Text>
         </View>
       </View>
     </View>
