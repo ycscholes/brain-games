@@ -40,9 +40,13 @@ export function getAwardedPoints(gameId: string, score: number) {
     "digit-span": 3,
     "multiple-object-tracking": 3,
     "pattern-completion": 1.2,
+    memory: 0.25,
+    rps: 0.15,
+    mot: 3,
+    pattern: 1.2,
   };
 
-  const rate = conversionRates[gameId] || 0;
+  const rate = conversionRates[gameId] ?? 0;
   return Math.max(0, Math.floor(score * rate));
 }
 ```
@@ -160,5 +164,5 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 
 ---
 
-**最后更新**：2026-05-14
-**版本**：v1.0
+**最后更新**：2026-05-21
+**版本**：v1.1

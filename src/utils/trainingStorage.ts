@@ -250,8 +250,23 @@ function readLegacySummary(gameId: TrainingGameId): TrainingSummary {
   }
 }
 
-export function getAwardedPoints(_gameId: string, score: number) {
-  return Math.max(0, Math.floor(score));
+const TRAINING_POINT_RATES: Record<string, number> = {
+  "memory-challenge": 0.25,
+  "rock-paper-scissors": 0.15,
+  "dual-task": 0.05,
+  "mental-math": 1,
+  "digit-span": 3,
+  "multiple-object-tracking": 3,
+  "pattern-completion": 1.2,
+  memory: 0.25,
+  rps: 0.15,
+  mot: 3,
+  pattern: 1.2,
+};
+
+export function getAwardedPoints(gameId: string, score: number) {
+  const rate = TRAINING_POINT_RATES[gameId] ?? 0;
+  return Math.max(0, Math.floor(score * rate));
 }
 
 function runMigrationsIfNeeded() {
