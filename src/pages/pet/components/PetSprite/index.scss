@@ -10,6 +10,22 @@
   transform-origin: center bottom;
 }
 
+.pet-sprite--xxs {
+  --pet-sprite-size: 32px;
+
+  .pet-sprite__glow {
+    opacity: 0.35;
+    inset: 10% 10%;
+  }
+
+  .pet-sprite__shadow {
+    opacity: 0.35;
+    left: 12%;
+    right: 12%;
+    bottom: 4%;
+  }
+}
+
 .pet-sprite--xs {
   --pet-sprite-size: 40px;
 }
@@ -55,6 +71,8 @@
   z-index: 1;
   width: 100%;
   height: 100%;
+  display: block;
+  object-fit: contain;
 }
 
 .pet-sprite--selected .pet-sprite__glow {

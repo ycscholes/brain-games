@@ -1,3 +1,62 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+page,
+:root,
+body,
+.taro_page {
+  --bg-page: #f8fafc;
+  --bg-page-start: #fbfbfd;
+  --bg-page-end: #f1f5f9;
+  --surface-card: rgba(255, 255, 255, 0.82);
+  --surface-card-strong: rgba(255, 255, 255, 0.92);
+  --surface-muted: rgba(248, 250, 252, 0.94);
+  --border-soft: rgba(148, 163, 184, 0.16);
+  --border-inverse: rgba(255, 255, 255, 0.84);
+  --text-primary: #111827;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --brand-primary: #4f46e5;
+  --brand-primary-dark: #3730a3;
+  --brand-secondary: #0ea5e9;
+  --brand-warm: #f97316;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --radius-card: 24px;
+  --radius-control: 20px;
+  --shadow-card: 0 16px 30px rgba(148, 163, 184, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  --shadow-button: 0 12px 24px rgba(79, 70, 229, 0.24), 0 4px 10px rgba(14, 165, 233, 0.14);
+  --page-gradient:
+    radial-gradient(circle at 84% 6%, rgba(249, 115, 22, 0.14), transparent 24%),
+    radial-gradient(circle at 16% 28%, rgba(79, 70, 229, 0.1), transparent 24%),
+    radial-gradient(circle at 74% 58%, rgba(14, 165, 233, 0.1), transparent 26%),
+    linear-gradient(180deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
+
+  min-height: 100vh;
+  color: var(--text-primary);
+  background: var(--bg-page);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+view,
+text,
+input,
+button {
+  box-sizing: border-box;
+}
+
+view {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  view,
+  text,
+  image {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

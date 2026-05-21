@@ -19,6 +19,7 @@ import pandaCuddle from "../../../../assets/pets/panda-cuddle.png";
 import "./index.scss";
 
 const sizeClassMap: Record<NonNullable<PetSpriteProps["size"]>, string> = {
+  xxs: "pet-sprite--xxs",
   xs: "pet-sprite--xs",
   sm: "pet-sprite--sm",
   md: "pet-sprite--md",
@@ -79,7 +80,7 @@ export default function PetSprite({
     <View className={classes}>
       <View className="pet-sprite__glow" />
       <View className="pet-sprite__shadow" />
-      <Image className="pet-sprite__image" src={imageSrc} mode="aspectFit" />
+      <Image className="pet-sprite__image" src={imageSrc} mode="scaleToFill" lazyLoad={false} />
     </View>
   );
 }
