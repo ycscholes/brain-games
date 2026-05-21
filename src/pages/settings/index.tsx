@@ -116,7 +116,7 @@ export default function SettingsPage() {
             <Text className="setting-title">音效反馈</Text>
             <Text className="setting-desc">为后续统一接入声音和结算提示预留开关。</Text>
           </View>
-          <Switch checked={settings.soundEnabled} onChange={() => handleToggle("soundEnabled")} color="#2563eb" />
+          <Switch checked={settings.soundEnabled} onChange={() => handleToggle("soundEnabled")} color="#4f46e5" />
         </View>
         <View className="setting-row">
           <View>
@@ -126,7 +126,7 @@ export default function SettingsPage() {
           <Switch
             checked={settings.vibrationEnabled}
             onChange={() => handleToggle("vibrationEnabled")}
-            color="#2563eb"
+            color="#4f46e5"
           />
         </View>
         <View className="setting-row">
@@ -134,7 +134,7 @@ export default function SettingsPage() {
             <Text className="setting-title">减少动效</Text>
             <Text className="setting-desc">在低性能设备或长时间训练时降低动画负担。</Text>
           </View>
-          <Switch checked={settings.reducedMotion} onChange={() => handleToggle("reducedMotion")} color="#2563eb" />
+          <Switch checked={settings.reducedMotion} onChange={() => handleToggle("reducedMotion")} color="#4f46e5" />
         </View>
       </View>
 

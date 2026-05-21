@@ -9,7 +9,8 @@ export default defineAppConfig({
     'pages/multiple-object-tracking/index',
     'pages/pattern-completion/index',
     'pages/pet/index',
-    'pages/settings/index'
+    'pages/settings/index',
+    'pages/training-records/index'
   ],
   window: {
     backgroundTextStyle: 'light',

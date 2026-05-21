@@ -459,8 +459,6 @@ export default function PetPage() {
 
   return (
     <View className="pet-page">
-      <View className="page-glow page-glow-left" />
-      <View className="page-glow page-glow-right" />
       <View className="pet-shell">
         {renderHero()}
         {(showAdoptionPanel || pets.length === 0) && renderAdoptionPanel()}

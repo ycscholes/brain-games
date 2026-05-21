@@ -16,13 +16,16 @@
       "Bash(npm ls *)",
       "Bash(npm test *)",
       "Bash(git checkout *)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(git *)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "github",
     "shadcn-ui",
-    "miniprogram-automator"
+    "miniprogram-automator",
+    "context7"
   ],
   "disabledMcpjsonServers": [
     "playwright",
