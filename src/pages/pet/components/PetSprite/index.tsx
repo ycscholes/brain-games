@@ -1,21 +1,8 @@
 import { Image, View } from "@tarojs/components";
-import type { PetSkin } from "../../types";
+import { useEffect, useState } from "react";
+import { resolvePetSpriteUrl } from "../../../../config/remoteAssets";
+import { PET_SKIN_EMOJI } from "../../types";
 import type { PetSpriteMood, PetSpriteProps } from "./types";
-import catIdle from "../../../../assets/pets/cat-idle.png";
-import catFeed from "../../../../assets/pets/cat-feed.png";
-import catCuddle from "../../../../assets/pets/cat-cuddle.png";
-import dogIdle from "../../../../assets/pets/dog-idle.png";
-import dogFeed from "../../../../assets/pets/dog-feed.png";
-import dogCuddle from "../../../../assets/pets/dog-cuddle.png";
-import rabbitIdle from "../../../../assets/pets/rabbit-idle.png";
-import rabbitFeed from "../../../../assets/pets/rabbit-feed.png";
-import rabbitCuddle from "../../../../assets/pets/rabbit-cuddle.png";
-import bearIdle from "../../../../assets/pets/bear-idle.png";
-import bearFeed from "../../../../assets/pets/bear-feed.png";
-import bearCuddle from "../../../../assets/pets/bear-cuddle.png";
-import pandaIdle from "../../../../assets/pets/panda-idle.png";
-import pandaFeed from "../../../../assets/pets/panda-feed.png";
-import pandaCuddle from "../../../../assets/pets/panda-cuddle.png";
 import "./index.scss";
 
 const sizeClassMap: Record<NonNullable<PetSpriteProps["size"]>, string> = {
@@ -27,34 +14,6 @@ const sizeClassMap: Record<NonNullable<PetSpriteProps["size"]>, string> = {
   xl: "pet-sprite--xl",
 };
 
-const PET_SPRITES: Record<PetSkin, Record<PetSpriteMood, string>> = {
-  cat: {
-    idle: catIdle,
-    feed: catFeed,
-    cuddle: catCuddle,
-  },
-  dog: {
-    idle: dogIdle,
-    feed: dogFeed,
-    cuddle: dogCuddle,
-  },
-  rabbit: {
-    idle: rabbitIdle,
-    feed: rabbitFeed,
-    cuddle: rabbitCuddle,
-  },
-  bear: {
-    idle: bearIdle,
-    feed: bearFeed,
-    cuddle: bearCuddle,
-  },
-  panda: {
-    idle: pandaIdle,
-    feed: pandaFeed,
-    cuddle: pandaCuddle,
-  },
-};
-
 export default function PetSprite({
   skin,
   status = "alive",
@@ -63,8 +22,32 @@ export default function PetSprite({
   selected = false,
   className = "",
 }: PetSpriteProps) {
+  const [imageSrc, setImageSrc] = useState("");
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const safeMood = status === "dead" ? "idle" : mood;
-  const imageSrc = PET_SPRITES[skin][safeMood];
+  const shouldShowImage = Boolean(imageSrc) && !imageLoadFailed;
+
+  useEffect(() => {
+    let isCurrent = true;
+    setImageLoadFailed(false);
+    setImageSrc("");
+
+    void resolvePetSpriteUrl(skin, safeMood)
+      .then((url) => {
+        if (isCurrent) {
+          setImageSrc(url);
+        }
+      })
+      .catch(() => {
+        if (isCurrent) {
+          setImageLoadFailed(true);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [safeMood, skin]);
   const classes = [
     "pet-sprite",
     sizeClassMap[size],
@@ -80,7 +63,17 @@ export default function PetSprite({
     <View className={classes}>
       <View className="pet-sprite__glow" />
       <View className="pet-sprite__shadow" />
-      <Image className="pet-sprite__image" src={imageSrc} mode="scaleToFill" lazyLoad={false} />
+      {shouldShowImage ? (
+        <Image
+          className="pet-sprite__image"
+          src={imageSrc}
+          mode="scaleToFill"
+          lazyLoad={false}
+          onError={() => setImageLoadFailed(true)}
+        />
+      ) : (
+        <View className="pet-sprite__fallback">{PET_SKIN_EMOJI[skin]}</View>
+      )}
     </View>
   );
 }

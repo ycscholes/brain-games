@@ -8,6 +8,16 @@ declare interface MiniProgramCloudFunctionApi {
     name: string;
     data?: Record<string, unknown>;
   }): Promise<MiniProgramCloudCallResult<T>>;
+  getTempFileURL(options: {
+    fileList: string[];
+  }): Promise<{
+    fileList: Array<{
+      fileID: string;
+      tempFileURL?: string;
+      status?: number;
+      errMsg?: string;
+    }>;
+  }>;
 }
 
 declare const wx:

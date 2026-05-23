@@ -119,6 +119,11 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("mental-math", 30)).toBe(30);
     });
 
+    test("twenty-four: 2x conversion", () => {
+      expect(getAwardedPoints("twenty-four", 5)).toBe(10);
+      expect(getAwardedPoints("twenty-four", 20)).toBe(40);
+    });
+
     test("pattern-completion: 1.2x conversion", () => {
       expect(getAwardedPoints("pattern-completion", 10)).toBe(12);
       expect(getAwardedPoints("pattern-completion", 30)).toBe(36);
@@ -149,6 +154,7 @@ describe("trainingStorage", () => {
       const rewards = [
         getAwardedPoints("digit-span", 7),
         getAwardedPoints("mental-math", 20),
+        getAwardedPoints("twenty-four", 10),
         getAwardedPoints("pattern-completion", 20),
         getAwardedPoints("dual-task", 400),
         getAwardedPoints("multiple-object-tracking", 10),

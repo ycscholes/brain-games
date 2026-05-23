@@ -16,6 +16,7 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   "rock-paper-scissors": "逆向猜拳",
   "dual-task": "多任务处理",
   "mental-math": "速算挑战",
+  "twenty-four": "24 点",
   "digit-span": "数字广度记忆",
   mot: "追踪任务",
   "multiple-object-tracking": "追踪任务",

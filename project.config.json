@@ -19,7 +19,7 @@
     "lazyCodeLoading": "requiredComponents",
     "compileWorklet": false,
     "uglifyFileName": false,
-    "uploadWithSourceMap": true,
+    "uploadWithSourceMap": false,
     "packNpmManually": false,
     "packNpmRelationList": [],
     "minifyWXSS": true,
@@ -35,7 +35,12 @@
   "libVersion": "3.10.1",
   "srcMiniprogramRoot": "dist/",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "suffix",
+        "value": ".map"
+      }
+    ],
     "include": []
   },
   "condition": {},

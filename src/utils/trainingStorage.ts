@@ -7,6 +7,7 @@ export type TrainingGameId =
   | "rock-paper-scissors"
   | "dual-task"
   | "mental-math"
+  | "twenty-four"
   | "digit-span"
   | "multiple-object-tracking"
   | "pattern-completion"
@@ -70,6 +71,7 @@ const LEGACY_KEYS = [
   "mental_math_last_score",
   "mental_math_high_score_timed",
   "mental_math_high_score_death",
+  "twenty_four_best",
   "digit_span_best",
   "mot_best",
   "pattern_completion_best",
@@ -204,6 +206,15 @@ function readLegacySummary(gameId: TrainingGameId): TrainingSummary {
       };
     }
 
+    case "twenty-four":
+      return {
+        best: readNumericValue("twenty_four_best"),
+        recent: readNumericValue("twenty_four_best"),
+        played: hasStorageValue("twenty_four_best"),
+        totalSessions: 0,
+        lastPlayedAt: null,
+      };
+
     case "digit-span":
       return {
         best: readNumericValue("digit_span_best"),
@@ -255,6 +266,7 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "rock-paper-scissors": 0.15,
   "dual-task": 0.05,
   "mental-math": 1,
+  "twenty-four": 2,
   "digit-span": 3,
   "multiple-object-tracking": 3,
   "pattern-completion": 1.2,
