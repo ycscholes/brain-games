@@ -12,6 +12,7 @@ declare module '*.sass';
 declare module '*.styl';
 
 declare const __CLOUD_ENV_ID__: string;
+declare const __CLOUD_STORAGE_BUCKET__: string;
 
 declare namespace NodeJS {
   interface ProcessEnv {
@@ -26,6 +27,6 @@ declare namespace NodeJS {
      */
     TARO_APP_ID: string
     TARO_CLOUD_ENV_ID: string
+    TARO_CLOUD_STORAGE_BUCKET: string
   }
 }
-

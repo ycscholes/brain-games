@@ -49,10 +49,146 @@
   box-shadow: 0 8px 20px rgba(188, 188, 188, 0.16);
 }
 
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-card-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(188, 188, 188, 0.16);
+}
+
+.search-button-active {
+  background: rgba(79, 70, 229, 0.12);
+  border-color: rgba(79, 70, 229, 0.18);
+}
+
 .profile-icon {
   font-size: 42px;
   color: var(--text-secondary);
   line-height: 1;
+}
+
+.search-icon {
+  font-size: 38px;
+  color: var(--brand-primary-dark);
+  line-height: 1;
+}
+
+.game-search-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -8px 0 20px;
+  padding: 12px 14px;
+  border-radius: 20px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-inverse);
+  box-shadow: var(--shadow-card);
+  box-sizing: border-box;
+}
+
+.game-search-input {
+  flex: 1;
+  min-height: 54px;
+  padding: 0 16px;
+  border-radius: 16px;
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  font-size: 28px;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.game-search-clear {
+  min-height: 54px;
+  padding: 0 18px;
+  border-radius: 16px;
+  background: rgba(79, 70, 229, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.game-search-clear-text {
+  color: var(--brand-primary);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.game-search-empty {
+  padding: 28px 24px;
+  border-radius: 22px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-inverse);
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+
+.game-search-empty-title {
+  display: block;
+  color: var(--text-primary);
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.game-search-empty-copy {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: 24px;
+}
+
+.game-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.game-category-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.game-category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.game-category-title {
+  display: block;
+  font-size: 34px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: var(--brand-primary-dark);
+}
+
+.game-category-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.1);
+  color: var(--brand-primary);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  flex: 0 0 auto;
 }
 
 .game-list {
@@ -332,6 +468,12 @@
     var(--surface-card);
 }
 
+.card-twenty-four {
+  background:
+    radial-gradient(circle at 42% 26%, rgba(22, 163, 74, 0.18), transparent 34%),
+    var(--surface-card);
+}
+
 .card-digit {
   background:
     radial-gradient(circle at 38% 26%, rgba(37, 99, 235, 0.18), transparent 34%),
@@ -439,6 +581,11 @@
   color: #0284c7;
 }
 
+.card-twenty-four .game-badge {
+  background: rgba(22, 163, 74, 0.18);
+  color: #15803d;
+}
+
 .card-digit .game-badge {
   background: rgba(37, 99, 235, 0.18);
   color: #1d4ed8;
@@ -503,6 +650,10 @@
 
 .card-mental .enter-button {
   background: linear-gradient(90deg, #0284c7 0%, #0ea5e9 100%);
+}
+
+.card-twenty-four .enter-button {
+  background: linear-gradient(90deg, #15803d 0%, #22c55e 100%);
 }
 
 .card-digit .enter-button {
@@ -755,7 +906,8 @@
 .floating-pet {
   position: fixed;
   right: 16px;
-  bottom: calc(80px + env(safe-area-inset-bottom));
+  bottom: calc(96px + constant(safe-area-inset-bottom));
+  bottom: calc(96px + env(safe-area-inset-bottom));
   z-index: 100;
   width: 112px;
   min-height: 124px;
@@ -794,9 +946,29 @@
 
 .floating-pet-info {
   width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.floating-pet-empty .floating-pet-avatar {
+  filter: saturate(0.92);
+}
+
+.floating-pet-empty-text {
+  min-width: 56px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.92);
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 28px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.22);
+  box-sizing: border-box;
 }
 
 .floating-pet-hunger-track {

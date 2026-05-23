@@ -1,4 +1,4 @@
-import { View, Text } from "@tarojs/components";
+import { Input, View, Text } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readPetData, syncPetData } from "../../utils/petStorage";
@@ -29,14 +29,24 @@ interface ScoreSummary {
   totalSessions: number;
 }
 
+type GameCategoryId = "memory" | "calculation" | "reaction" | "logic";
+
 interface GameItem {
   id: TrainingGameId;
   title: string;
   badge: string;
   cardClass: string;
   url: string;
+  category: GameCategoryId;
   summary: ScoreSummary;
 }
+
+const GAME_CATEGORIES: Array<{ id: GameCategoryId; title: string }> = [
+  { id: "memory", title: "记忆" },
+  { id: "calculation", title: "计算" },
+  { id: "reaction", title: "反应" },
+  { id: "logic", title: "逻辑" },
+];
 
 const BASE_GAMES = [
   {
@@ -45,6 +55,7 @@ const BASE_GAMES = [
     badge: "记忆",
     cardClass: "card-memory",
     url: "/pages/memory-challenge/index",
+    category: "memory",
   },
   {
     id: "rps",
@@ -52,13 +63,15 @@ const BASE_GAMES = [
     badge: "反应",
     cardClass: "card-rps",
     url: "/pages/rock-paper-scissors/index",
+    category: "reaction",
   },
   {
     id: "dual-task",
     title: "多任务处理",
-    badge: "协作",
+    badge: "反应",
     cardClass: "card-dual",
     url: "/pages/dual-task/index",
+    category: "reaction",
   },
   {
     id: "mental-math",
@@ -66,6 +79,15 @@ const BASE_GAMES = [
     badge: "计算",
     cardClass: "card-mental",
     url: "/pages/mental-math/index",
+    category: "calculation",
+  },
+  {
+    id: "twenty-four",
+    title: "24 点",
+    badge: "计算",
+    cardClass: "card-twenty-four",
+    url: "/pages/twenty-four/index",
+    category: "calculation",
   },
   {
     id: "digit-span",
@@ -73,22 +95,25 @@ const BASE_GAMES = [
     badge: "记忆",
     cardClass: "card-digit",
     url: "/pages/digit-span/index",
+    category: "memory",
   },
   {
     id: "mot",
     title: "追踪任务",
-    badge: "注意",
+    badge: "记忆",
     cardClass: "card-mot",
     url: "/pages/multiple-object-tracking/index",
+    category: "memory",
   },
   {
     id: "pattern",
     title: "找规律",
-    badge: "推理",
+    badge: "逻辑",
     cardClass: "card-pattern",
     url: "/pages/pattern-completion/index",
+    category: "logic",
   },
-] as const;
+] satisfies Array<Omit<GameItem, "summary">>;
 
 const GAME_TITLES: Record<TrainingGameId, string> = {
   memory: "记忆图形",
@@ -97,6 +122,7 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   "rock-paper-scissors": "逆向猜拳",
   "dual-task": "多任务处理",
   "mental-math": "速算挑战",
+  "twenty-four": "24 点",
   "digit-span": "数字广度记忆",
   mot: "追踪任务",
   "multiple-object-tracking": "追踪任务",
@@ -135,10 +161,10 @@ export default function Index() {
     totalAwardedPoints: 0,
   });
   const [recommendedGameId, setRecommendedGameId] = useState<TrainingGameId>("memory");
-  const [petData, setPetData] = useState<PetStorageData | null>(null);
-  const [activePet, setActivePet] = useState<PetData | null>(null);
-  const [aliveCount, setAliveCount] = useState<number>(0);
+  const [petData, setPetData] = useState<PetStorageData>(() => readPetData());
   const [homePetMotion, setHomePetMotion] = useState<PetSpriteMood>("idle");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const homePetMotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navigateTo = (url: string) => {
@@ -158,8 +184,6 @@ export default function Index() {
       ? syncPetData({ markChanged: false })
       : readPetData();
     setPetData(nextPetData);
-    setActivePet(nextPetData.pets.find((pet) => pet.id === nextPetData.activePetId) ?? null);
-    setAliveCount(nextPetData.pets.filter((pet) => pet.status !== "dead").length);
 
     setDashboard(readDashboardStats());
     const nextGames = BASE_GAMES.map((game) => {
@@ -191,6 +215,9 @@ export default function Index() {
   });
 
   useUserDataChange(refreshDashboard);
+
+  const activePet: PetData | null = petData.pets.find((pet) => pet.id === petData.activePetId) ?? null;
+  const aliveCount = petData.pets.filter((pet) => pet.status !== "dead").length;
 
   useEffect(() => {
     if (homePetMotionTimerRef.current) {
@@ -226,6 +253,17 @@ export default function Index() {
     : 0;
   const petHungerColor =
     petHungerPercent <= 20 ? "#dc2626" : petHungerPercent <= 40 ? "#f59e0b" : "#1f9d72";
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const visibleGames = normalizedSearchQuery
+    ? games.filter((game) => {
+        const categoryTitle = GAME_CATEGORIES.find((category) => category.id === game.category)?.title ?? "";
+        return `${game.title} ${game.badge} ${categoryTitle}`.toLowerCase().includes(normalizedSearchQuery);
+      })
+    : games;
+  const groupedGames = GAME_CATEGORIES.map((category) => ({
+    ...category,
+    games: visibleGames.filter((game) => game.category === category.id),
+  })).filter((category) => category.games.length > 0);
 
   return (
     <View className="game-hub">
@@ -235,10 +273,35 @@ export default function Index() {
             <Text className="page-eyebrow">Brain Yard</Text>
             <Text className="page-title">今日训练中枢</Text>
           </View>
-          <View className="profile-button" onClick={navigateToSettings}>
-            <Text className="profile-icon">≡</Text>
+          <View className="top-actions">
+            <View
+              className={`search-button ${searchOpen ? "search-button-active" : ""}`}
+              onClick={() => setSearchOpen((open) => !open)}
+            >
+              <Text className="search-icon">⌕</Text>
+            </View>
+            <View className="profile-button" onClick={navigateToSettings}>
+              <Text className="profile-icon">≡</Text>
+            </View>
           </View>
         </View>
+
+        {searchOpen && (
+          <View className="game-search-panel">
+            <Input
+              className="game-search-input"
+              value={searchQuery}
+              placeholder="搜索游戏"
+              confirmType="search"
+              onInput={(event) => setSearchQuery(String(event.detail.value ?? ""))}
+            />
+            {searchQuery ? (
+              <View className="game-search-clear" onClick={() => setSearchQuery("")}>
+                <Text className="game-search-clear-text">清除</Text>
+              </View>
+            ) : null}
+          </View>
+        )}
 
         <View className="overview-card">
           <View className="overview-head">
@@ -268,7 +331,7 @@ export default function Index() {
               <Text className="overview-label">累计奖励</Text>
             </View>
             <View className="overview-item">
-              <Text className="overview-value">{petData?.balance ?? 0}</Text>
+              <Text className="overview-value">{petData.balance}</Text>
               <Text className="overview-label">当前积分</Text>
             </View>
             <View className="overview-item">
@@ -304,61 +367,80 @@ export default function Index() {
           </View>
         </View>
 
-        <View className="game-list">
-          {games.map((game) => (
-            <View
-              key={game.id}
-              className={`game-card ${game.cardClass}`}
-              onClick={() => navigateTo(game.url)}
-            >
-              <View className="game-copy">
-                <Text className="game-title">{game.title}</Text>
+        <View className="game-category-list">
+          {groupedGames.map((category) => (
+            <View key={category.id} className="game-category-section">
+              <View className="game-category-header">
+                <Text className="game-category-title">{category.title}</Text>
+                <Text className="game-category-count">{category.games.length} 项</Text>
               </View>
 
-              <View className="game-meta">
-                <Text className="game-badge">{game.badge}</Text>
-                <Text className="score-line">{`最高分：${game.summary.best}`}</Text>
-                <Text className="score-line score-line-secondary">
-                  {game.summary.played
-                    ? `最近 ${game.summary.recent} · 共 ${game.summary.totalSessions} 次`
-                    : "还没有新的统一记录"}
-                </Text>
-              </View>
+              <View className="game-list">
+                {category.games.map((game) => (
+                  <View
+                    key={game.id}
+                    className={`game-card ${game.cardClass}`}
+                    onClick={() => navigateTo(game.url)}
+                  >
+                    <View className="game-copy">
+                      <Text className="game-title">{game.title}</Text>
+                    </View>
 
-              <View className="game-footer">
-                <View className="enter-button">
-                  <Text className="enter-button-text">开始游戏</Text>
-                </View>
+                    <View className="game-meta">
+                      <Text className="game-badge">{game.badge}</Text>
+                      <Text className="score-line">{`最高分：${game.summary.best}`}</Text>
+                      <Text className="score-line score-line-secondary">
+                        {game.summary.played
+                          ? `最近 ${game.summary.recent} · 共 ${game.summary.totalSessions} 次`
+                          : "还没有新的统一记录"}
+                      </Text>
+                    </View>
+
+                    <View className="game-footer">
+                      <View className="enter-button">
+                        <Text className="enter-button-text">开始游戏</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
               </View>
             </View>
           ))}
+          {groupedGames.length === 0 && (
+            <View className="game-search-empty">
+              <Text className="game-search-empty-title">没有找到游戏</Text>
+              <Text className="game-search-empty-copy">换个关键词试试</Text>
+            </View>
+          )}
         </View>
       </View>
 
-      {activePet && (
-        <View
-          className="floating-pet"
-          onClick={navigateToPet}
-          aria-label="宠物入口，点击进入宠物页面"
-        >
-          <View className="floating-pet-avatar">
-            <PetSprite
-              skin={activePet.skin}
-              size="sm"
-              mood={homePetMotion}
-              status={activePet.status}
-            />
-          </View>
-          <View className="floating-pet-info">
+      <View
+        className={`floating-pet ${activePet ? "" : "floating-pet-empty"}`}
+        onClick={navigateToPet}
+        aria-label={activePet ? "宠物饱食度，点击进入宠物页面" : "点击进入宠物页面领养宠物"}
+      >
+        <View className="floating-pet-avatar">
+          <PetSprite
+            skin={activePet?.skin ?? "cat"}
+            size="sm"
+            mood={activePet ? homePetMotion : "idle"}
+            status={activePet?.status}
+          />
+        </View>
+        <View className="floating-pet-info">
+          {activePet ? (
             <View className="floating-pet-hunger-track">
               <View
                 className="floating-pet-hunger-fill"
                 style={{ width: `${petHungerPercent}%`, backgroundColor: petHungerColor }}
               />
             </View>
-          </View>
+          ) : (
+            <Text className="floating-pet-empty-text">领养</Text>
+          )}
         </View>
-      )}
+      </View>
     </View>
   );
 }

@@ -26,18 +26,19 @@ function readEnvValue(filePath: string, key: string): string {
     .replace(/^["']|["']$/g, "");
 }
 
-function resolveCloudEnvId(): string {
-  if (process.env.TARO_CLOUD_ENV_ID) {
-    return process.env.TARO_CLOUD_ENV_ID;
+function resolveEnvValue(key: string): string {
+  if (process.env[key]) {
+    return process.env[key] || "";
   }
 
   const envFileName = process.env.NODE_ENV === "development" ? ".env.development" : ".env.production";
-  return readEnvValue(path.resolve(__dirname, "..", envFileName), "TARO_CLOUD_ENV_ID");
+  return readEnvValue(path.resolve(__dirname, "..", envFileName), key);
 }
 
 // https://taro-docs.jd.com/docs/next/config#defineconfig-辅助函数
 export default defineConfig<"webpack5">(async (merge) => {
-  const cloudEnvId = resolveCloudEnvId();
+  const cloudEnvId = resolveEnvValue("TARO_CLOUD_ENV_ID");
+  const cloudStorageBucket = resolveEnvValue("TARO_CLOUD_STORAGE_BUCKET");
   const baseConfig: UserConfigExport<"webpack5"> = {
     projectName: "cici-brain-training",
     date: "2024-11-19",
@@ -57,9 +58,11 @@ export default defineConfig<"webpack5">(async (merge) => {
     // },
     defineConstants: {
       __CLOUD_ENV_ID__: JSON.stringify(cloudEnvId),
+      __CLOUD_STORAGE_BUCKET__: JSON.stringify(cloudStorageBucket),
     },
     env: {
       TARO_CLOUD_ENV_ID: JSON.stringify(cloudEnvId),
+      TARO_CLOUD_STORAGE_BUCKET: JSON.stringify(cloudStorageBucket),
     },
     copy: {
       patterns: [],

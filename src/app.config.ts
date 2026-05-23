@@ -5,6 +5,7 @@ export default defineAppConfig({
     'pages/rock-paper-scissors/index',
     'pages/dual-task/index',
     'pages/mental-math/index',
+    'pages/twenty-four/index',
     'pages/digit-span/index',
     'pages/multiple-object-tracking/index',
     'pages/pattern-completion/index',
