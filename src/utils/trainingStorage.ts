@@ -17,6 +17,7 @@ export type TrainingGameId =
   | "pattern";
 
 export type TrainingOutcome = "completed" | "interrupted";
+export type TrainingDifficulty = "normal" | "hard";
 
 export interface TrainingRecord {
   id: string;
@@ -26,6 +27,7 @@ export interface TrainingRecord {
   playedAt: string;
   durationSeconds?: number;
   mode?: string;
+  difficulty?: TrainingDifficulty;
   outcome: TrainingOutcome;
 }
 
@@ -62,6 +64,22 @@ const MAX_RECORDS = 120;
 const SETTINGS_VERSION = 1;
 const SCORING_VERSION = 2;
 export const MAX_POINTS_PER_SESSION = 40;
+export const HARD_MAX_POINTS_PER_SESSION = 60;
+
+export const TRAINING_DIFFICULTY_LABELS: Record<TrainingDifficulty, string> = {
+  normal: "普通",
+  hard: "困难",
+};
+
+const TRAINING_DIFFICULTY_MULTIPLIERS: Record<TrainingDifficulty, number> = {
+  normal: 1,
+  hard: 1.5,
+};
+
+const TRAINING_DIFFICULTY_POINT_CAPS: Record<TrainingDifficulty, number> = {
+  normal: MAX_POINTS_PER_SESSION,
+  hard: HARD_MAX_POINTS_PER_SESSION,
+};
 
 const LEGACY_KEYS = [
   "memory_last_score",
@@ -291,9 +309,23 @@ function getEquivalentTrainingGameIds(gameId: TrainingGameId): TrainingGameId[] 
   return TRAINING_GAME_ID_ALIASES[gameId] || [gameId];
 }
 
-export function getAwardedPoints(gameId: string, score: number) {
+export function normalizeTrainingDifficulty(difficulty?: string): TrainingDifficulty {
+  return difficulty === "hard" ? "hard" : "normal";
+}
+
+export function getTrainingDifficultyLabel(difficulty?: string) {
+  return TRAINING_DIFFICULTY_LABELS[normalizeTrainingDifficulty(difficulty)];
+}
+
+export function getAwardedPoints(gameId: string, score: number, difficulty?: TrainingDifficulty) {
   const rate = TRAINING_POINT_RATES[gameId] ?? 0;
-  return Math.max(0, Math.floor(score * rate));
+  const safeScore = Number.isFinite(score) ? score : 0;
+  const normalizedDifficulty = normalizeTrainingDifficulty(difficulty);
+  const rawPoints = Math.max(
+    0,
+    Math.floor(safeScore * rate * TRAINING_DIFFICULTY_MULTIPLIERS[normalizedDifficulty]),
+  );
+  return Math.min(rawPoints, TRAINING_DIFFICULTY_POINT_CAPS[normalizedDifficulty]);
 }
 
 function runMigrationsIfNeeded() {
@@ -339,6 +371,7 @@ export function readTrainingRecords(): TrainingRecord[] {
         typeof item?.score === "number" &&
         typeof item?.awardedPoints === "number" &&
         typeof item?.playedAt === "string" &&
+        (item?.difficulty === undefined || item?.difficulty === "normal" || item?.difficulty === "hard") &&
         (item?.outcome === "completed" || item?.outcome === "interrupted")
       );
     });
@@ -497,6 +530,15 @@ export function clearProductData() {
   for (let difficulty = 1; difficulty <= 4; difficulty += 1) {
     gameSpecificKeys.push(`rps_highscore_D${difficulty}`);
   }
+
+  (["normal", "hard"] satisfies TrainingDifficulty[]).forEach((difficulty) => {
+    gameSpecificKeys.push(`mental_math_high_score_timed_${difficulty}`);
+    gameSpecificKeys.push(`mental_math_high_score_death_${difficulty}`);
+    gameSpecificKeys.push(`twenty_four_best_${difficulty}`);
+    gameSpecificKeys.push(`digit_span_best_${difficulty}`);
+    gameSpecificKeys.push(`mot_best_${difficulty}`);
+    gameSpecificKeys.push(`pattern_completion_best_${difficulty}`);
+  });
 
   ["alternating", "simultaneous", "stroop"].forEach((mode) => {
     gameSpecificKeys.push(`dual_task_best_${mode}`);

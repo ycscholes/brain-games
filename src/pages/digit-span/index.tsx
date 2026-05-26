@@ -2,13 +2,25 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
+import {
+  getAwardedPoints,
+  getTrainingDifficultyLabel,
+  recordTrainingSession,
+  type TrainingDifficulty,
+} from "../../utils/trainingStorage";
 import "./index.scss";
 
 type Phase = "start" | "showing" | "input" | "finished";
 
-const INITIAL_LENGTH = 3;
-const STORAGE_KEY = "digit_span_best";
+const INITIAL_LENGTH: Record<TrainingDifficulty, number> = {
+  normal: 3,
+  hard: 4,
+};
+const REVEAL_MS: Record<TrainingDifficulty, number> = {
+  normal: 1000,
+  hard: 800,
+};
+const STORAGE_KEY_PREFIX = "digit_span_best";
 const DIGIT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"] as const;
 
 const randomDigit = () => Math.floor(Math.random() * 10).toString();
@@ -19,9 +31,10 @@ function buildSequence(length: number): string {
 
 export default function DigitSpan() {
   const [phase, setPhase] = useState<Phase>("start");
+  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
   const [best, setBest] = useState(0);
   const [score, setScore] = useState(0);
-  const [roundLength, setRoundLength] = useState(INITIAL_LENGTH);
+  const [roundLength, setRoundLength] = useState(INITIAL_LENGTH.normal);
   const [sequence, setSequence] = useState("");
   const [currentDigit, setCurrentDigit] = useState("");
   const [inputValue, setInputValue] = useState("");
@@ -36,9 +49,12 @@ export default function DigitSpan() {
   };
 
   const refreshBest = useCallback(() => {
-    const value = Number(Taro.getStorageSync(STORAGE_KEY) || 0);
+    const value = Number(
+      Taro.getStorageSync(`${STORAGE_KEY_PREFIX}_${rewardDifficulty}`) ||
+        (rewardDifficulty === "normal" ? Taro.getStorageSync(STORAGE_KEY_PREFIX) : 0),
+    );
     setBest(Number.isFinite(value) ? value : 0);
-  }, []);
+  }, [rewardDifficulty]);
 
   useLoad(() => {
     refreshBest();
@@ -49,6 +65,10 @@ export default function DigitSpan() {
   });
 
   useEffect(() => {
+    refreshBest();
+  }, [refreshBest]);
+
+  useEffect(() => {
     return () => {
       clearTimers();
     };
@@ -57,26 +77,27 @@ export default function DigitSpan() {
   const finishGame = useCallback(
     (finalScore: number) => {
       clearTimers();
-      const awardedPoints = getAwardedPoints("digit-span", finalScore);
+      const awardedPoints = getAwardedPoints("digit-span", finalScore, rewardDifficulty);
       setScore(finalScore);
-      addPointsToPet("digit-span", finalScore);
+      addPointsToPet("digit-span", finalScore, rewardDifficulty);
       recordTrainingSession({
         gameId: "digit-span",
         score: finalScore,
         awardedPoints,
+        difficulty: rewardDifficulty,
         outcome: "completed",
       });
       setPhase("finished");
 
       if (finalScore > best) {
-        Taro.setStorageSync(STORAGE_KEY, finalScore);
+        Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${rewardDifficulty}`, finalScore);
         setBest(finalScore);
         setIsNewBest(true);
       } else {
         setIsNewBest(false);
       }
     },
-    [best]
+    [best, rewardDifficulty]
   );
 
   const startRound = useCallback((length: number) => {
@@ -94,7 +115,7 @@ export default function DigitSpan() {
       const timer = setTimeout(() => {
         setDisplayStep(index + 1);
         setCurrentDigit(nextSequence.charAt(index));
-      }, index * 1000);
+      }, index * REVEAL_MS[rewardDifficulty]);
 
       timeoutsRef.current.push(timer);
     }
@@ -103,15 +124,15 @@ export default function DigitSpan() {
       setCurrentDigit("");
       setDisplayStep(0);
       setPhase("input");
-    }, nextSequence.length * 1000);
+    }, nextSequence.length * REVEAL_MS[rewardDifficulty]);
 
     timeoutsRef.current.push(doneTimer);
-  }, []);
+  }, [rewardDifficulty]);
 
   const startGame = () => {
     setScore(0);
     setIsNewBest(false);
-    startRound(INITIAL_LENGTH);
+    startRound(INITIAL_LENGTH[rewardDifficulty]);
   };
 
   const appendDigit = (digit: string) => {
@@ -150,7 +171,7 @@ export default function DigitSpan() {
       return;
     }
 
-    const finalScore = roundLength > INITIAL_LENGTH ? roundLength - 1 : 0;
+    const finalScore = roundLength > INITIAL_LENGTH[rewardDifficulty] ? roundLength - 1 : 0;
     finishGame(finalScore);
   };
 
@@ -180,12 +201,32 @@ export default function DigitSpan() {
         <Text className="section-title">训练提示</Text>
         <View className="summary-grid">
           <View className="summary-item">
-            <Text className="summary-value">{INITIAL_LENGTH}</Text>
+            <Text className="summary-value">{INITIAL_LENGTH[rewardDifficulty]}</Text>
             <Text className="summary-label">起始位数</Text>
           </View>
           <View className="summary-item">
-            <Text className="summary-value">{Math.max(best, INITIAL_LENGTH)}</Text>
+            <Text className="summary-value">{Math.max(best, INITIAL_LENGTH[rewardDifficulty])}</Text>
             <Text className="summary-label">当前挑战线</Text>
+          </View>
+        </View>
+      </View>
+
+      <View className="summary-card">
+        <Text className="section-title">难度</Text>
+        <View className="summary-grid">
+          <View
+            className="summary-item"
+            onClick={() => setRewardDifficulty("normal")}
+          >
+            <Text className="summary-value">普通</Text>
+            <Text className="summary-label">3 位起步 · 1.0x</Text>
+          </View>
+          <View
+            className="summary-item"
+            onClick={() => setRewardDifficulty("hard")}
+          >
+            <Text className="summary-value">困难</Text>
+            <Text className="summary-label">4 位起步 · 1.5x</Text>
           </View>
         </View>
       </View>
@@ -266,7 +307,9 @@ export default function DigitSpan() {
         <Text className="result-title">本局成绩</Text>
         <Text className="result-score">{score}</Text>
         <Text className="result-desc">成功回忆 {score} 位数字</Text>
-        <Text className="result-desc">获得 {getAwardedPoints("digit-span", score)} 积分</Text>
+        <Text className="result-desc">
+          积分{getTrainingDifficultyLabel(rewardDifficulty)} · 获得 {getAwardedPoints("digit-span", score, rewardDifficulty)} 积分
+        </Text>
         <Text className="result-desc">
           历史最高 {best}
           {isNewBest ? <Text className="result-highlight">，刷新纪录</Text> : null}

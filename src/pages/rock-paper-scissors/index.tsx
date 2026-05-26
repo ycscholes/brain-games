@@ -2,7 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
+import {
+  getAwardedPoints,
+  getTrainingDifficultyLabel,
+  MAX_POINTS_PER_SESSION,
+  recordTrainingSession,
+  type TrainingDifficulty,
+} from "../../utils/trainingStorage";
 import "./index.scss";
 
 type GameState = "start" | "playing" | "gameover";
@@ -145,22 +151,28 @@ export default function RockPaperScissors() {
     generateQuestion();
   };
 
+  const getRewardDifficulty = (): TrainingDifficulty => {
+    return difficulty >= 3 ? "hard" : "normal";
+  };
+
   const handleGameOver = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     const finalScore = Math.min(MAX_POINTS_PER_SESSION, score);
-    const awardedPoints = getAwardedPoints("rock-paper-scissors", finalScore);
+    const rewardDifficulty = getRewardDifficulty();
+    const awardedPoints = getAwardedPoints("rock-paper-scissors", finalScore, rewardDifficulty);
     Taro.setStorageSync("rps_last_score", finalScore);
-    addPointsToPet("rock-paper-scissors", finalScore);
+    addPointsToPet("rock-paper-scissors", finalScore, rewardDifficulty);
     recordTrainingSession({
       gameId: "rock-paper-scissors",
       score: finalScore,
       awardedPoints,
       mode: `D${difficulty}`,
+      difficulty: rewardDifficulty,
       outcome: "completed",
     });
     setGameState("gameover");
     updateHighScore(finalScore);
-  }, [score]);
+  }, [difficulty, score]);
 
   const handleSelect = (hand: HandType) => {
     if (gameState !== "playing" || feedback !== "none") return;
@@ -293,6 +305,9 @@ export default function RockPaperScissors() {
                     </View>
                     <View className="difficulty-copy-rps">
                       <Text className="difficulty-label">{config.label}</Text>
+                      <Text className="difficulty-reward-rps">
+                        积分{getTrainingDifficultyLabel(d >= 3 ? "hard" : "normal")}
+                      </Text>
                     </View>
                   </View>
                 );
@@ -382,7 +397,12 @@ export default function RockPaperScissors() {
           <View className="result-card">
             <Text className="result-title">本局成绩</Text>
             <Text className="result-score">{Math.min(MAX_POINTS_PER_SESSION, score)}</Text>
-            <Text className="result-desc">答对 {Math.floor(score / (DIFFICULTY_POINTS[difficulty] || 2))} 题 · 最高连击 {bestStreak} · {DIFFICULTY_CONFIG[difficulty].label}</Text>
+            <Text className="result-desc">
+              答对 {Math.floor(score / (DIFFICULTY_POINTS[difficulty] || 2))} 题 · 最高连击 {bestStreak} · {DIFFICULTY_CONFIG[difficulty].label}
+            </Text>
+            <Text className="result-desc">
+              积分{getTrainingDifficultyLabel(getRewardDifficulty())} · 获得 {getAwardedPoints("rock-paper-scissors", Math.min(MAX_POINTS_PER_SESSION, score), getRewardDifficulty())} 积分
+            </Text>
             <Text className="result-desc">
               历史最高 {highScore}
               {isNewRecord && score > 0 ? <Text className="result-highlight">，刷新纪录</Text> : null}

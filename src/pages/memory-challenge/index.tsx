@@ -2,7 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, Image } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
+import {
+  getAwardedPoints,
+  getTrainingDifficultyLabel,
+  MAX_POINTS_PER_SESSION,
+  recordTrainingSession,
+  type TrainingDifficulty,
+} from "../../utils/trainingStorage";
 import "./index.scss";
 
 // Import Shapes
@@ -176,6 +182,10 @@ export default function MemoryChallenge() {
     return MEMORY_CONFIG[memoryDifficulty].n;
   };
 
+  const getRewardDifficulty = (): TrainingDifficulty => {
+    return timeDifficulty >= 3 || memoryDifficulty >= 3 ? "hard" : "normal";
+  };
+
   const getRandomShape = () => {
     const idx = Math.floor(Math.random() * ALL_SHAPES.length);
     return ALL_SHAPES[idx];
@@ -320,14 +330,16 @@ export default function MemoryChallenge() {
   const handleGameOver = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     const finalScore = Math.min(MAX_POINTS_PER_SESSION, score);
-    const awardedPoints = getAwardedPoints("memory-challenge", finalScore);
+    const rewardDifficulty = getRewardDifficulty();
+    const awardedPoints = getAwardedPoints("memory-challenge", finalScore, rewardDifficulty);
     Taro.setStorageSync("memory_last_score", finalScore);
-    addPointsToPet("memory-challenge", finalScore);
+    addPointsToPet("memory-challenge", finalScore, rewardDifficulty);
     recordTrainingSession({
       gameId: "memory-challenge",
       score: finalScore,
       awardedPoints,
       mode: `T${timeDifficulty}M${memoryDifficulty}`,
+      difficulty: rewardDifficulty,
       outcome: "completed",
     });
     setGameState("gameover");
@@ -424,6 +436,9 @@ export default function MemoryChallenge() {
                       <Text className="difficulty-badge-text">{config.time}s</Text>
                     </View>
                     <Text className="difficulty-label">{config.label}</Text>
+                    <Text className="difficulty-desc">
+                      积分{getTrainingDifficultyLabel(d >= 3 ? "hard" : "normal")}
+                    </Text>
                   </View>
                 );
               })}
@@ -456,6 +471,9 @@ export default function MemoryChallenge() {
                       <Text className="difficulty-badge-text">{config.n}</Text>
                     </View>
                     <Text className="difficulty-label">{config.label}</Text>
+                    <Text className="difficulty-desc">
+                      积分{getTrainingDifficultyLabel(d >= 3 ? "hard" : "normal")}
+                    </Text>
                   </View>
                 );
               })}
@@ -569,7 +587,12 @@ export default function MemoryChallenge() {
             <Text className="result-title">本局成绩</Text>
             <Text className="result-score">{Math.min(MAX_POINTS_PER_SESSION, score)}</Text>
             <Text className="result-desc">答对 {correctCount} 题</Text>
-            <Text className="result-desc">{TIME_CONFIG[timeDifficulty].label} · {MEMORY_CONFIG[memoryDifficulty].label}</Text>
+            <Text className="result-desc">
+              {TIME_CONFIG[timeDifficulty].label} · {MEMORY_CONFIG[memoryDifficulty].label} · 积分{getTrainingDifficultyLabel(getRewardDifficulty())}
+            </Text>
+            <Text className="result-desc">
+              获得 {getAwardedPoints("memory-challenge", Math.min(MAX_POINTS_PER_SESSION, score), getRewardDifficulty())} 积分
+            </Text>
             <Text className="result-desc">
               历史最高 {highScore}
               {isNewRecord && score > 0 ? <Text className="result-highlight">，刷新纪录</Text> : null}

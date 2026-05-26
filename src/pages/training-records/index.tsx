@@ -2,6 +2,7 @@ import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useState } from "react";
 import {
+  getTrainingDifficultyLabel,
   readTrainingRecords,
   readDashboardStats,
   type TrainingGameId,
@@ -86,6 +87,7 @@ export default function TrainingRecords() {
                 <View className="record-copy">
                   <Text className="record-game-title">{GAME_TITLES[record.gameId] || record.gameId}</Text>
                   <Text className="record-meta">
+                    {record.difficulty ? `${getTrainingDifficultyLabel(record.difficulty)} · ` : ""}
                     {record.outcome === "completed" ? "正常完成" : "中途返回"} · {formatPlayedAt(record.playedAt)}
                   </Text>
                 </View>

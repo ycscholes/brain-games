@@ -46,6 +46,13 @@ describe("petStorage", () => {
     expect(fed.data.balance).toBe(7);
   });
 
+  test("adds difficulty-adjusted points to shared balance", () => {
+    adoptPet("团子", "cat");
+    addPointsToPet("mental-math", 20, "hard");
+
+    expect(readPetData().balance).toBe(30);
+  });
+
   test("reads empty storage as empty pet yard", () => {
     const data = readPetData();
     expect(data.pets).toHaveLength(0);

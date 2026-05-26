@@ -335,8 +335,14 @@ $color-border: #E2E8F0;
 
 .difficulty-copy-rps {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+.difficulty-reward-rps {
+  color: $color-text-secondary;
+  font-size: 18px;
 }
 
 .difficulty-label {

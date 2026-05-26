@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
+import {
+  getAwardedPoints,
+  getTrainingDifficultyLabel,
+  recordTrainingSession,
+  type TrainingDifficulty,
+} from "../../utils/trainingStorage";
 import {
   PATTERN_QUESTION_BANK,
   type PatternOption,
@@ -13,10 +18,15 @@ import "./index.scss";
 type Phase = "start" | "playing" | "finished";
 type Feedback = "none" | "correct" | "wrong";
 
-const STORAGE_KEY = "pattern_completion_best";
-const TOTAL_QUESTIONS = PATTERN_QUESTION_BANK.length;
-const MAX_TIME_BONUS = 10;
-const TIME_BONUS_TARGET_SECONDS = 120;
+const STORAGE_KEY_PREFIX = "pattern_completion_best";
+const MAX_TIME_BONUS: Record<TrainingDifficulty, number> = {
+  normal: 10,
+  hard: 6,
+};
+const TIME_BONUS_TARGET_SECONDS: Record<TrainingDifficulty, number> = {
+  normal: 120,
+  hard: 90,
+};
 const OPTION_LETTERS = ["A", "B", "C", "D"] as const;
 
 const difficultyLabelMap: Record<number, string> = {
@@ -41,10 +51,11 @@ const formatElapsed = (elapsedMs: number) => {
   return `${minutes}:${seconds}`;
 };
 
-const calculateTimeBonus = (elapsedMs: number) => {
+const calculateTimeBonus = (elapsedMs: number, difficulty: TrainingDifficulty) => {
   const elapsedSeconds = Math.ceil(elapsedMs / 1000);
-  const remaining = Math.max(0, TIME_BONUS_TARGET_SECONDS - elapsedSeconds);
-  return Math.round((remaining / TIME_BONUS_TARGET_SECONDS) * MAX_TIME_BONUS);
+  const targetSeconds = TIME_BONUS_TARGET_SECONDS[difficulty];
+  const remaining = Math.max(0, targetSeconds - elapsedSeconds);
+  return Math.round((remaining / targetSeconds) * MAX_TIME_BONUS[difficulty]);
 };
 
 function PatternToken({
@@ -69,6 +80,7 @@ function PatternToken({
 
 export default function PatternCompletion() {
   const [phase, setPhase] = useState<Phase>("start");
+  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
   const [best, setBest] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -82,9 +94,15 @@ export default function PatternCompletion() {
   const startTimeRef = useRef(0);
   const tickerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const questionBank = useMemo(() => {
+    return rewardDifficulty === "hard"
+      ? PATTERN_QUESTION_BANK.filter((question) => question.difficulty >= 4)
+      : PATTERN_QUESTION_BANK;
+  }, [rewardDifficulty]);
+  const totalQuestions = questionBank.length;
 
   const currentQuestion: PatternQuestion | null =
-    phase === "playing" ? PATTERN_QUESTION_BANK[currentIndex] ?? null : null;
+    phase === "playing" ? questionBank[currentIndex] ?? null : null;
 
   const clearTicker = () => {
     if (tickerRef.current) {
@@ -101,9 +119,12 @@ export default function PatternCompletion() {
   };
 
   const refreshBest = useCallback(() => {
-    const value = Number(Taro.getStorageSync(STORAGE_KEY) || 0);
+    const value = Number(
+      Taro.getStorageSync(`${STORAGE_KEY_PREFIX}_${rewardDifficulty}`) ||
+        (rewardDifficulty === "normal" ? Taro.getStorageSync(STORAGE_KEY_PREFIX) : 0),
+    );
     setBest(Number.isFinite(value) ? value : 0);
-  }, []);
+  }, [rewardDifficulty]);
 
   useLoad(() => {
     refreshBest();
@@ -112,6 +133,10 @@ export default function PatternCompletion() {
   useDidShow(() => {
     refreshBest();
   });
+
+  useEffect(() => {
+    refreshBest();
+  }, [refreshBest]);
 
   useEffect(() => {
     return () => {
@@ -141,33 +166,34 @@ export default function PatternCompletion() {
       clearTransitionTimer();
 
       const settledElapsedMs = Date.now() - startTimeRef.current;
-      const settledTimeBonus = calculateTimeBonus(settledElapsedMs);
+      const settledTimeBonus = calculateTimeBonus(settledElapsedMs, rewardDifficulty);
       const settledFinalScore = settledCorrectCount + settledTimeBonus;
-      const awardedPoints = getAwardedPoints("pattern-completion", settledFinalScore);
+      const awardedPoints = getAwardedPoints("pattern-completion", settledFinalScore, rewardDifficulty);
 
       setElapsedMs(settledElapsedMs);
       setCorrectCount(settledCorrectCount);
       setTimeBonus(settledTimeBonus);
       setFinalScore(settledFinalScore);
-      addPointsToPet("pattern-completion", settledFinalScore);
+      addPointsToPet("pattern-completion", settledFinalScore, rewardDifficulty);
       recordTrainingSession({
         gameId: "pattern-completion",
         score: settledFinalScore,
         awardedPoints,
         durationSeconds: Math.round(settledElapsedMs / 1000),
+        difficulty: rewardDifficulty,
         outcome: "completed",
       });
       setPhase("finished");
 
       if (settledFinalScore > best) {
-        Taro.setStorageSync(STORAGE_KEY, settledFinalScore);
+        Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${rewardDifficulty}`, settledFinalScore);
         setBest(settledFinalScore);
         setIsNewBest(true);
       } else {
         setIsNewBest(false);
       }
     },
-    [best]
+    [best, rewardDifficulty]
   );
 
   const startGame = () => {
@@ -213,7 +239,7 @@ export default function PatternCompletion() {
     setFeedback(isCorrect ? "correct" : "wrong");
 
     transitionTimerRef.current = setTimeout(() => {
-      if (currentIndex >= TOTAL_QUESTIONS - 1) {
+      if (currentIndex >= totalQuestions - 1) {
         finishGame(nextCorrectCount);
         return;
       }
@@ -228,7 +254,7 @@ export default function PatternCompletion() {
   return (
     <View className="pattern-page">
       {phase === "start" ? (
-        <View className="start-screen">
+      <View className="start-screen">
           <View className="header-section">
             <View className="logo-icon">
               <Text className="logo-emoji">△</Text>
@@ -243,17 +269,17 @@ export default function PatternCompletion() {
 
           <View className="rules-card">
             <Text className="section-title">游戏规则</Text>
-            <Text className="rule-item">1. 每局共 10 题，每题观察 4 项序列并选择下一个图形。</Text>
+            <Text className="rule-item">1. 每局共 {totalQuestions} 题，每题观察 4 项序列并选择下一个图形。</Text>
             <Text className="rule-item">2. 选项为 3 到 4 个，图形只由圆形、方形、三角形与颜色组合构成。</Text>
             <Text className="rule-item">3. 难度会逐题提升，后面会出现颜色与形状的双重规律。</Text>
-            <Text className="rule-item">4. 最终得分 = 正确题数 + 时间奖励，120 秒内完成越快奖励越高。</Text>
+            <Text className="rule-item">4. 最终得分 = 正确题数 + 时间奖励，完成越快奖励越高。</Text>
           </View>
 
           <View className="summary-card">
             <Text className="section-title">本局设定</Text>
             <View className="summary-grid">
               <View className="summary-item">
-                <Text className="summary-value">{TOTAL_QUESTIONS}</Text>
+                <Text className="summary-value">{totalQuestions}</Text>
                 <Text className="summary-label">题目数量</Text>
               </View>
               <View className="summary-item">
@@ -261,8 +287,22 @@ export default function PatternCompletion() {
                 <Text className="summary-label">图形类型</Text>
               </View>
               <View className="summary-item">
-                <Text className="summary-value">{MAX_TIME_BONUS}</Text>
+                <Text className="summary-value">{MAX_TIME_BONUS[rewardDifficulty]}</Text>
                 <Text className="summary-label">时间奖励上限</Text>
+              </View>
+            </View>
+          </View>
+
+          <View className="summary-card">
+            <Text className="section-title">难度</Text>
+            <View className="summary-grid">
+              <View className="summary-item" onClick={() => setRewardDifficulty("normal")}>
+                <Text className="summary-value">普通</Text>
+                <Text className="summary-label">完整题库 · 1.0x</Text>
+              </View>
+              <View className="summary-item" onClick={() => setRewardDifficulty("hard")}>
+                <Text className="summary-value">困难</Text>
+                <Text className="summary-label">进阶题库 · 1.5x</Text>
               </View>
             </View>
           </View>
@@ -278,7 +318,7 @@ export default function PatternCompletion() {
         <View className="game-screen">
           <View className="status-row">
             <View className="status-card">
-              <Text className="status-value">{currentIndex + 1}/{TOTAL_QUESTIONS}</Text>
+              <Text className="status-value">{currentIndex + 1}/{totalQuestions}</Text>
               <Text className="status-label">当前进度</Text>
             </View>
             <View className="status-card">
@@ -345,9 +385,11 @@ export default function PatternCompletion() {
           <View className="result-card">
             <Text className="result-title">本局成绩</Text>
             <Text className="result-score">{finalScore}</Text>
-            <Text className="result-desc">答对 {correctCount} / {TOTAL_QUESTIONS} 题</Text>
+            <Text className="result-desc">答对 {correctCount} / {totalQuestions} 题</Text>
             <Text className="result-desc">完成用时 {formatElapsed(elapsedMs)}，时间奖励 {timeBonus}</Text>
-            <Text className="result-desc">获得 {getAwardedPoints("pattern-completion", finalScore)} 积分</Text>
+            <Text className="result-desc">
+              积分{getTrainingDifficultyLabel(rewardDifficulty)} · 获得 {getAwardedPoints("pattern-completion", finalScore, rewardDifficulty)} 积分
+            </Text>
             <Text className="result-desc">
               历史最高 {best}
               {isNewBest ? <Text className="result-highlight">，刷新纪录</Text> : null}

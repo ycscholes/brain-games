@@ -2,7 +2,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
+import {
+  getAwardedPoints,
+  getTrainingDifficultyLabel,
+  MAX_POINTS_PER_SESSION,
+  recordTrainingSession,
+  type TrainingDifficulty,
+} from "../../utils/trainingStorage";
 import "./index.scss";
 
 type GameState = "start" | "playing" | "gameover";
@@ -22,6 +28,7 @@ interface HighScoreRecord {
 export default function MentalMath() {
   const [gameState, setGameState] = useState<GameState>("start");
   const [gameMode, setGameMode] = useState<GameMode>("timed");
+  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
   const [score, setScore] = useState(0);
   const [highScoreTimed, setHighScoreTimed] = useState(0);
   const [highScoreDeath, setHighScoreDeath] = useState(0);
@@ -63,10 +70,11 @@ export default function MentalMath() {
   // 获取难度等级基于最高分
   const getDifficultyLevel = (): 1 | 2 | 3 | 4 => {
     const hs = getHighScore();
-    if (hs < 10) return 1;
-    if (hs < 20) return 2;
-    if (hs < 30) return 3;
-    return 4;
+    const baseLevel = hs < 10 ? 1 : hs < 20 ? 2 : hs < 30 ? 3 : 4;
+    if (rewardDifficulty === "hard") {
+      return Math.min(4, baseLevel + 2) as 1 | 2 | 3 | 4;
+    }
+    return baseLevel as 1 | 2 | 3 | 4;
   };
 
   // 生成随机数
@@ -189,13 +197,14 @@ export default function MentalMath() {
 
   // 获取存储键名 based on mode
   const getStorageKey = (): string => {
-    return gameMode === "timed" ? "mental_math_high_score_timed" : "mental_math_high_score_death";
+    return `mental_math_high_score_${gameMode}_${rewardDifficulty}`;
   };
 
   // 获取当前最高分
   const getCurrentHighScore = (): HighScoreRecord | null => {
     const key = getStorageKey();
-    const record = Taro.getStorageSync(key);
+    const legacyKey = gameMode === "timed" ? "mental_math_high_score_timed" : "mental_math_high_score_death";
+    const record = Taro.getStorageSync(key) || (rewardDifficulty === "normal" ? Taro.getStorageSync(legacyKey) : "");
     if (record) {
       try {
         const parsed = JSON.parse(record);
@@ -240,11 +249,15 @@ export default function MentalMath() {
   // 刷新最高分
   const refreshHighScore = useCallback(() => {
     // Load both high scores for both modes
-    const timedKey = "mental_math_high_score_timed";
-    const deathKey = "mental_math_high_score_death";
+    const timedKey = `mental_math_high_score_timed_${rewardDifficulty}`;
+    const deathKey = `mental_math_high_score_death_${rewardDifficulty}`;
 
-    const timedRecord = Taro.getStorageSync(timedKey);
-    const deathRecord = Taro.getStorageSync(deathKey);
+    const timedRecord =
+      Taro.getStorageSync(timedKey) ||
+      (rewardDifficulty === "normal" ? Taro.getStorageSync("mental_math_high_score_timed") : "");
+    const deathRecord =
+      Taro.getStorageSync(deathKey) ||
+      (rewardDifficulty === "normal" ? Taro.getStorageSync("mental_math_high_score_death") : "");
 
     if (timedRecord) {
       try {
@@ -283,7 +296,7 @@ export default function MentalMath() {
     } else {
       setHighScoreRecord(null);
     }
-  }, [gameMode]);
+  }, [gameMode, rewardDifficulty]);
 
   // Update high score when mode changes
   useEffect(() => {
@@ -293,7 +306,7 @@ export default function MentalMath() {
     } else {
       setHighScoreRecord(null);
     }
-  }, [gameMode]);
+  }, [gameMode, rewardDifficulty]);
 
   useLoad(() => {
     refreshHighScore();
@@ -381,14 +394,15 @@ export default function MentalMath() {
   const handleGameOver = () => {
     clearAllTimers();
     const finalCorrectCount = correctCountRef.current;
-    const awardedPoints = getAwardedPoints("mental-math", finalCorrectCount);
+    const awardedPoints = getAwardedPoints("mental-math", finalCorrectCount, rewardDifficulty);
     Taro.setStorageSync("mental_math_last_score", finalCorrectCount);
-    addPointsToPet("mental-math", finalCorrectCount);
+    addPointsToPet("mental-math", finalCorrectCount, rewardDifficulty);
     recordTrainingSession({
       gameId: "mental-math",
       score: finalCorrectCount,
       awardedPoints,
       mode: gameMode,
+      difficulty: rewardDifficulty,
       outcome: "completed",
     });
     setGameState("gameover");
@@ -429,8 +443,33 @@ export default function MentalMath() {
 
             <View className="difficulty-info">
               <Text className="difficulty-text">
-                当前难度：Lv{getDifficultyLevel()} · 随最高分自动提升
+                当前题目：Lv{getDifficultyLevel()} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
               </Text>
+            </View>
+          </View>
+
+          <View className="mode-section">
+            <View className="mode-header">
+              <View className="mode-icon">
+                <Text className="mode-icon-text">⚡</Text>
+              </View>
+              <Text className="mode-title">选择难度</Text>
+            </View>
+            <View className="mode-grid">
+              <View
+                className={`mode-item ${rewardDifficulty === "normal" ? "mode-item-selected" : ""}`}
+                onClick={() => setRewardDifficulty("normal")}
+              >
+                <View className="mode-name">普通</View>
+                <View className="mode-desc">基础题型 · 1.0x 积分</View>
+              </View>
+              <View
+                className={`mode-item ${rewardDifficulty === "hard" ? "mode-item-selected" : ""}`}
+                onClick={() => setRewardDifficulty("hard")}
+              >
+                <View className="mode-name">困难</View>
+                <View className="mode-desc">更高题阶 · 1.5x 积分</View>
+              </View>
             </View>
           </View>
 
@@ -556,8 +595,13 @@ export default function MentalMath() {
           <View className="result-card">
             <Text className="result-title">本局成绩</Text>
             <Text className="result-score">{correctCount}</Text>
-            <Text className="result-desc">答对 {correctCount} 题 · 难度 Lv{getDifficultyLevel()}</Text>
+            <Text className="result-desc">
+              答对 {correctCount} 题 · Lv{getDifficultyLevel()} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
+            </Text>
             <Text className="result-desc">{gameMode === "timed" ? "限时模式" : "闯关模式"}</Text>
+            <Text className="result-desc">
+              获得 {getAwardedPoints("mental-math", correctCount, rewardDifficulty)} 积分
+            </Text>
             <Text className="result-desc">
               历史最高 {getHighScore()}
               {isNewRecord && correctCount > 0 ? <Text className="result-highlight">，刷新纪录</Text> : null}

@@ -2,7 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
+import {
+  getAwardedPoints,
+  getTrainingDifficultyLabel,
+  recordTrainingSession,
+  type TrainingDifficulty,
+} from "../../utils/trainingStorage";
 import "./index.scss";
 
 type Phase = "start" | "playing" | "finished";
@@ -22,8 +27,15 @@ interface GeneratedRound {
   solution: string;
 }
 
-const STORAGE_KEY = "twenty_four_best";
-const ROUND_SECONDS = 90;
+const STORAGE_KEY_PREFIX = "twenty_four_best";
+const ROUND_SECONDS: Record<TrainingDifficulty, number> = {
+  normal: 90,
+  hard: 60,
+};
+const MAX_CARD_VALUE: Record<TrainingDifficulty, number> = {
+  normal: 10,
+  hard: 13,
+};
 const EPSILON = 1e-6;
 const OPERATORS: Operator[] = ["+", "-", "*", "/"];
 
@@ -86,9 +98,9 @@ function solveTwentyFour(values: number[]): string | null {
   return search(values.map((value) => ({ value, expression: String(value) })));
 }
 
-function generateRound(): GeneratedRound {
+function generateRound(maxCardValue: number): GeneratedRound {
   for (let attempt = 0; attempt < 200; attempt += 1) {
-    const values = Array.from({ length: 4 }, () => randomInt(1, 10));
+    const values = Array.from({ length: 4 }, () => randomInt(1, maxCardValue));
     const solution = solveTwentyFour(values);
     if (solution) {
       return {
@@ -164,12 +176,13 @@ function evaluateExpression(tokens: Token[]): number | null {
 }
 
 export default function TwentyFour() {
-  const [round, setRound] = useState<GeneratedRound>(() => generateRound());
+  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
+  const [round, setRound] = useState<GeneratedRound>(() => generateRound(MAX_CARD_VALUE.normal));
   const [phase, setPhase] = useState<Phase>("start");
   const [tokens, setTokens] = useState<Token[]>([]);
   const [score, setScore] = useState(0);
   const [best, setBest] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(ROUND_SECONDS);
+  const [timeLeft, setTimeLeft] = useState(ROUND_SECONDS.normal);
   const [feedback, setFeedback] = useState("用四张牌和运算符凑出 24");
   const [isNewBest, setIsNewBest] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
@@ -189,9 +202,12 @@ export default function TwentyFour() {
   };
 
   const refreshBest = useCallback(() => {
-    const value = Number(Taro.getStorageSync(STORAGE_KEY) || 0);
+    const value = Number(
+      Taro.getStorageSync(`${STORAGE_KEY_PREFIX}_${rewardDifficulty}`) ||
+        (rewardDifficulty === "normal" ? Taro.getStorageSync(STORAGE_KEY_PREFIX) : 0),
+    );
     setBest(Number.isFinite(value) ? value : 0);
-  }, []);
+  }, [rewardDifficulty]);
 
   useLoad(() => {
     refreshBest();
@@ -202,25 +218,30 @@ export default function TwentyFour() {
   });
 
   useEffect(() => {
+    refreshBest();
+  }, [refreshBest]);
+
+  useEffect(() => {
     return () => clearTimer();
   }, []);
 
   const finishGame = useCallback(() => {
     clearTimer();
     const finalScore = scoreRef.current;
-    const awardedPoints = getAwardedPoints("twenty-four", finalScore);
-    addPointsToPet("twenty-four", finalScore);
+    const awardedPoints = getAwardedPoints("twenty-four", finalScore, rewardDifficulty);
+    addPointsToPet("twenty-four", finalScore, rewardDifficulty);
     recordTrainingSession({
       gameId: "twenty-four",
       score: finalScore,
       awardedPoints,
-      durationSeconds: ROUND_SECONDS,
-      mode: "90s",
+      durationSeconds: ROUND_SECONDS[rewardDifficulty],
+      mode: `${ROUND_SECONDS[rewardDifficulty]}s`,
+      difficulty: rewardDifficulty,
       outcome: "completed",
     });
 
     if (finalScore > best) {
-      Taro.setStorageSync(STORAGE_KEY, finalScore);
+      Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${rewardDifficulty}`, finalScore);
       setBest(finalScore);
       setIsNewBest(true);
     } else {
@@ -228,7 +249,7 @@ export default function TwentyFour() {
     }
 
     setPhase("finished");
-  }, [best]);
+  }, [best, rewardDifficulty]);
 
   useEffect(() => {
     if (phase !== "playing") return undefined;
@@ -248,10 +269,10 @@ export default function TwentyFour() {
 
   const startGame = () => {
     clearTimer();
-    setRound(generateRound());
+    setRound(generateRound(MAX_CARD_VALUE[rewardDifficulty]));
     setTokens([]);
     setScore(0);
-    setTimeLeft(ROUND_SECONDS);
+    setTimeLeft(ROUND_SECONDS[rewardDifficulty]);
     setFeedback("用四张牌和运算符凑出 24");
     setIsNewBest(false);
     setHintUsed(false);
@@ -259,7 +280,7 @@ export default function TwentyFour() {
   };
 
   const nextRound = () => {
-    setRound(generateRound());
+    setRound(generateRound(MAX_CARD_VALUE[rewardDifficulty]));
     setTokens([]);
     setHintUsed(false);
     setFeedback("继续凑出 24");
@@ -352,6 +373,24 @@ export default function TwentyFour() {
             <Text className="tf-rule">3. 每解出一题得 1 分，限时结束后记录成绩。</Text>
           </View>
 
+          <View className="tf-rules">
+            <Text className="tf-section-title">难度</Text>
+            <View className="tf-actions">
+              <View
+                className={rewardDifficulty === "normal" ? "tf-submit-button" : "tf-skip-button"}
+                onClick={() => setRewardDifficulty("normal")}
+              >
+                <Text className="tf-submit-button-text">普通 · 90 秒 · 1.0x</Text>
+              </View>
+              <View
+                className={rewardDifficulty === "hard" ? "tf-submit-button" : "tf-skip-button"}
+                onClick={() => setRewardDifficulty("hard")}
+              >
+                <Text className="tf-submit-button-text">困难 · 60 秒 · 1.5x</Text>
+              </View>
+            </View>
+          </View>
+
           <View className="tf-primary-button" onClick={startGame}>
             <Text className="tf-primary-button-text">开始挑战</Text>
           </View>
@@ -434,7 +473,7 @@ export default function TwentyFour() {
           <Text className="tf-result-title">本局结束</Text>
           <Text className="tf-result-score">{score}</Text>
           <Text className="tf-result-copy">
-            解出 {score} 题，获得 {getAwardedPoints("twenty-four", score)} 积分
+            解出 {score} 题，积分{getTrainingDifficultyLabel(rewardDifficulty)}，获得 {getAwardedPoints("twenty-four", score, rewardDifficulty)} 积分
           </Text>
           {isNewBest ? <Text className="tf-result-highlight">刷新历史最高</Text> : null}
 

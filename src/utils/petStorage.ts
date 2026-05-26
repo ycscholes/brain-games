@@ -1,7 +1,7 @@
 import Taro from "@tarojs/taro";
 import type { PetData, PetSkin, PetStorageData } from "../pages/pet/types";
 import { emitUserDataChanged } from "../services/user-data/local/changeNotifier";
-import { getAwardedPoints } from "./trainingStorage";
+import { getAwardedPoints, type TrainingDifficulty } from "./trainingStorage";
 import {
   HUNGER_POINT_PER_MINUTE,
   MAX_HUNGER,
@@ -318,10 +318,10 @@ export function adoptPet(
   };
 }
 
-export function addPointsToPet(gameId: string, score: number): void {
+export function addPointsToPet(gameId: string, score: number, difficulty?: TrainingDifficulty): void {
   // First sync all pets to update hunger decay before adding points
   const data = syncPetData();
-  const pointsToAdd = getAwardedPoints(gameId, score);
+  const pointsToAdd = getAwardedPoints(gameId, score, difficulty);
 
   if (pointsToAdd <= 0) {
     return;

@@ -12,48 +12,47 @@
 
 每个游戏的得分系统不同，为了确保玩家在不同游戏中获得相似努力程度下获得大致相当的奖励，我们设计了统一的转换率。
 
-**目标范围**：一局游戏的良好表现应获得 10-40 宠物积分。
+**目标范围**：普通难度一局游戏的良好表现应获得 10-40 宠物积分；困难难度在同等表现下获得更多积分，但单局最高 60 积分。
 
 ### 1.2 各游戏转换率
 
-| 游戏名称 | 转换率 | 典型分数范围 | 积分范围 | 说明 |
+| 游戏名称 | 基础转换率 | 普通积分范围 | 困难积分范围 | 说明 |
 |---------|-------|------------|---------|------|
-| **数字广度 (digit-span)** | 3.0x | 5-10 | 15-30 | 分数较低，提升 3 倍 |
-| **心算大师 (mental-math)** | 1.0x | 10-30 | 10-30 | 分数适中，保持 1 倍 |
-| **24 点 (twenty-four)** | 2.0x | 5-20 | 10-40 | 单题耗时较高，提升 2 倍 |
-| **图案推理 (pattern-completion)** | 1.2x | 10-30 | 12-36 | 略有提升，1.2 倍 |
-| **双任务挑战 (dual-task)** | 1.0x | 10-40 | 10-40 | 游戏内已封顶，保持 1 倍 |
-| **多目标追踪 (multiple-object-tracking)** | 3.0x | 5-15 | 15-45 | 分数较低，提升 3 倍 |
-| **逆向猜拳 (rock-paper-scissors)** | 1.0x | 10-40 | 10-40 | 游戏内已封顶，保持 1 倍 |
-| **记忆挑战 (memory-challenge)** | 1.0x | 10-40 | 10-40 | 游戏内已封顶，保持 1 倍 |
+| **数字广度 (digit-span)** | 3.0x | 15-30 | 22-45 | 分数较低，提升 3 倍 |
+| **心算大师 (mental-math)** | 1.0x | 10-30 | 15-45 | 分数适中，保持 1 倍 |
+| **24 点 (twenty-four)** | 2.0x | 10-40 | 15-60 | 单题耗时较高，提升 2 倍 |
+| **图案推理 (pattern-completion)** | 1.2x | 12-36 | 18-54 | 略有提升，1.2 倍 |
+| **双任务挑战 (dual-task)** | 1.0x | 10-40 | 15-60 | 高难度获得额外积分 |
+| **多目标追踪 (multiple-object-tracking)** | 3.0x | 15-40 | 22-60 | 分数较低，提升 3 倍并封顶 |
+| **逆向猜拳 (rock-paper-scissors)** | 1.0x | 10-40 | 15-60 | 高难度获得额外积分 |
+| **记忆挑战 (memory-challenge)** | 1.0x | 10-40 | 15-60 | 高难度获得额外积分 |
 
-### 1.3 核心实现
+### 1.3 难度倍率
+
+| 难度 | 倍率 | 单局积分上限 |
+|------|-----:|------------:|
+| 普通 | 1.0x | 40 |
+| 困难 | 1.5x | 60 |
+
+难度只影响最终获得的宠物积分，不改变游戏内成绩含义。训练记录中的 `difficulty` 字段记录本局使用的积分难度，旧记录没有该字段时按普通难度处理。
+
+### 1.4 核心实现
 
 **文件**：`src/utils/trainingStorage.ts`
 
 ```typescript
-export function getAwardedPoints(gameId: string, score: number) {
-  const conversionRates: Record<string, number> = {
-    "memory-challenge": 1,
-    "rock-paper-scissors": 1,
-    "dual-task": 1,
-    "mental-math": 1,
-    "twenty-four": 2,
-    "digit-span": 3,
-    "multiple-object-tracking": 3,
-    "pattern-completion": 1.2,
-    memory: 1,
-    rps: 1,
-    mot: 3,
-    pattern: 1.2,
-  };
+export type TrainingDifficulty = "normal" | "hard";
 
-  const rate = conversionRates[gameId] ?? 0;
-  return Math.max(0, Math.floor(score * rate));
+export function getAwardedPoints(
+  gameId: string,
+  score: number,
+  difficulty?: TrainingDifficulty,
+) {
+  // 基础转换率 × 难度倍率，然后按难度封顶
 }
 ```
 
-### 1.4 游戏 ID 规范
+### 1.5 游戏 ID 规范
 
 所有游戏统一使用长名称作为 gameId：
 
@@ -114,10 +113,10 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 
 | 场景 | 积分变化 |
 |------|---------|
-| 日常活跃（玩 3 局） | + 约 45-90 积分 |
+| 日常活跃（玩 3 局） | + 约 45-120 积分 |
 | 每日喂食 2 次（苹果） | - 10 积分 |
 | 每日喂食 3 次（苹果） | - 15 积分 |
-| **每日净结余** | **+ 30-75 积分** |
+| **每日净结余** | **+ 30-105 积分** |
 
 ### 3.2 目标达成周期
 
@@ -143,7 +142,8 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 测试文件：`tests/unit/trainingStorage.test.ts`
 
 - ✅ 各游戏转换率正确性
-- ✅ 典型分数范围的积分输出在 10-50 之间
+- ✅ 普通难度典型分数范围的积分输出在 10-40 之间
+- ✅ 困难难度应用 1.5 倍奖励，且单局最高 60 积分
 - ✅ 边界情况：0 分、负数分、未知 gameId 返回 0
 - ✅ 训练记录 `awardedPoints` 与宠物实际获得积分使用同一转换口径
 - ✅ 旧缩写 gameId 与标准长 gameId 在统计中合并处理
@@ -162,7 +162,7 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 
 | 功能 | 文件 | 关键函数/常量 |
 |-----|------|-------------|
-| 积分转换率 | `src/utils/trainingStorage.ts` | `getAwardedPoints()` |
+| 积分转换率/难度倍率 | `src/utils/trainingStorage.ts` | `getAwardedPoints()`, `TrainingDifficulty` |
 | 积分获取/消费 | `src/utils/petStorage.ts` | `addPointsToPet()`, `adoptPet()`, `feedPet()` |
 | 领养/食物定价 | `src/pages/pet/types.ts` | `PET_ADOPTION_COST`, `FOOD_ITEMS` |
 | 饥饿参数 | `src/pages/pet/types.ts` | `HUNGER_POINT_PER_MINUTE`, `MAX_HUNGER` |
@@ -170,5 +170,5 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 
 ---
 
-**最后更新**：2026-05-23
-**版本**：v1.2
+**最后更新**：2026-05-27
+**版本**：v1.3

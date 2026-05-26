@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
+import {
+  getAwardedPoints,
+  getTrainingDifficultyLabel,
+  recordTrainingSession,
+  type TrainingDifficulty,
+} from "../../utils/trainingStorage";
 import "./index.scss";
 
 type Phase = "start" | "preview" | "tracking" | "selecting" | "finished";
@@ -21,12 +26,22 @@ interface MovingCircle {
   isTarget: boolean;
 }
 
-const STORAGE_KEY = "mot_best";
-const INITIAL_TARGET_COUNT = 2;
+const STORAGE_KEY_PREFIX = "mot_best";
+const INITIAL_TARGET_COUNT: Record<TrainingDifficulty, number> = {
+  normal: 2,
+  hard: 3,
+};
 const MAX_TARGET_COUNT = 4;
-const PREVIEW_DURATION = 1200;
-const TRACKING_DURATION = 5000;
+const PREVIEW_DURATION: Record<TrainingDifficulty, number> = {
+  normal: 1200,
+  hard: 900,
+};
+const TRACKING_DURATION: Record<TrainingDifficulty, number> = {
+  normal: 5000,
+  hard: 5500,
+};
 const BASE_SPEED = 2.15;
+const HARD_SPEED_BONUS = 0.35;
 const SPEED_STEP = 0.28;
 const CIRCLE_SIZE = 52;
 const CIRCLE_RADIUS = CIRCLE_SIZE / 2;
@@ -138,9 +153,10 @@ export default function MultipleObjectTracking() {
   const trackStartTimeRef = useRef(0);
 
   const [phase, setPhase] = useState<Phase>("start");
+  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
   const [best, setBest] = useState(0);
   const [score, setScore] = useState(0);
-  const [targetCount, setTargetCount] = useState(INITIAL_TARGET_COUNT);
+  const [targetCount, setTargetCount] = useState(INITIAL_TARGET_COUNT.normal);
   const [speed, setSpeed] = useState(BASE_SPEED);
   const [circles, setCircles] = useState<MovingCircle[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -153,10 +169,13 @@ export default function MultipleObjectTracking() {
     phaseRef.current = phase;
   }, [phase]);
 
-  const refreshBest = () => {
-    const value = Number(Taro.getStorageSync(STORAGE_KEY) || 0);
+  const refreshBest = useCallback(() => {
+    const value = Number(
+      Taro.getStorageSync(`${STORAGE_KEY_PREFIX}_${rewardDifficulty}`) ||
+        (rewardDifficulty === "normal" ? Taro.getStorageSync(STORAGE_KEY_PREFIX) : 0),
+    );
     setBest(Number.isFinite(value) ? value : 0);
-  };
+  }, [rewardDifficulty]);
 
   useLoad(() => {
     refreshBest();
@@ -165,6 +184,10 @@ export default function MultipleObjectTracking() {
   useDidShow(() => {
     refreshBest();
   });
+
+  useEffect(() => {
+    refreshBest();
+  }, [refreshBest]);
 
   const clearRoundRuntime = () => {
     if (previewTimerRef.current) {
@@ -301,7 +324,7 @@ export default function MultipleObjectTracking() {
       const nextCircles = stepCircles(circlesRef.current, dt);
       syncCircles(nextCircles);
 
-      if (elapsed >= TRACKING_DURATION) {
+      if (elapsed >= TRACKING_DURATION[rewardDifficulty]) {
         stopTracking(nextCircles);
         return;
       }
@@ -325,31 +348,32 @@ export default function MultipleObjectTracking() {
 
     previewTimerRef.current = setTimeout(() => {
       startTracking();
-    }, PREVIEW_DURATION);
+    }, PREVIEW_DURATION[rewardDifficulty]);
   };
 
   const startGame = () => {
     setScore(0);
     setIsNewBest(false);
-    startRound(INITIAL_TARGET_COUNT, BASE_SPEED);
+    startRound(INITIAL_TARGET_COUNT[rewardDifficulty], BASE_SPEED + (rewardDifficulty === "hard" ? HARD_SPEED_BONUS : 0));
   };
 
   const backToStart = () => {
     clearRoundRuntime();
     if (phase !== "start" && phase !== "finished") {
-      const awardedPoints = getAwardedPoints("multiple-object-tracking", score);
-      addPointsToPet("multiple-object-tracking", score);
+      const awardedPoints = getAwardedPoints("multiple-object-tracking", score, rewardDifficulty);
+      addPointsToPet("multiple-object-tracking", score, rewardDifficulty);
       recordTrainingSession({
         gameId: "multiple-object-tracking",
         score,
         awardedPoints,
+        difficulty: rewardDifficulty,
         outcome: "interrupted",
       });
     }
     setPhase("start");
     setScore(0);
-    setTargetCount(INITIAL_TARGET_COUNT);
-    setSpeed(BASE_SPEED);
+    setTargetCount(INITIAL_TARGET_COUNT[rewardDifficulty]);
+    setSpeed(BASE_SPEED + (rewardDifficulty === "hard" ? HARD_SPEED_BONUS : 0));
     setSelectedIds([]);
     setCircles([]);
     setRoundMessage("记住高亮的目标圆圈");
@@ -392,7 +416,7 @@ export default function MultipleObjectTracking() {
       setScore(nextScore);
 
       if (nextScore > best) {
-        Taro.setStorageSync(STORAGE_KEY, nextScore);
+        Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${rewardDifficulty}`, nextScore);
         setBest(nextScore);
         setIsNewBest(true);
       }
@@ -402,12 +426,13 @@ export default function MultipleObjectTracking() {
     }
 
     setRoundMessage("本轮未能完整锁定全部目标");
-    const awardedPoints = getAwardedPoints("multiple-object-tracking", score);
-    addPointsToPet("multiple-object-tracking", score);
+    const awardedPoints = getAwardedPoints("multiple-object-tracking", score, rewardDifficulty);
+    addPointsToPet("multiple-object-tracking", score, rewardDifficulty);
     recordTrainingSession({
       gameId: "multiple-object-tracking",
       score,
       awardedPoints,
+      difficulty: rewardDifficulty,
       outcome: "completed",
     });
     setPhase("finished");
@@ -479,16 +504,30 @@ export default function MultipleObjectTracking() {
             <Text className="section-title">当前设定</Text>
             <View className="summary-grid">
               <View className="summary-item">
-                <Text className="summary-value">{INITIAL_TARGET_COUNT}</Text>
+                <Text className="summary-value">{INITIAL_TARGET_COUNT[rewardDifficulty]}</Text>
                 <Text className="summary-label">起始目标</Text>
               </View>
               <View className="summary-item">
-                <Text className="summary-value">5s</Text>
+                <Text className="summary-value">{TRACKING_DURATION[rewardDifficulty] / 1000}s</Text>
                 <Text className="summary-label">移动时长</Text>
               </View>
               <View className="summary-item">
                 <Text className="summary-value">{MAX_TARGET_COUNT}</Text>
                 <Text className="summary-label">目标上限</Text>
+              </View>
+            </View>
+          </View>
+
+          <View className="summary-card">
+            <Text className="section-title">难度</Text>
+            <View className="summary-grid">
+              <View className="summary-item" onClick={() => setRewardDifficulty("normal")}>
+                <Text className="summary-value">普通</Text>
+                <Text className="summary-label">2 目标 · 1.0x</Text>
+              </View>
+              <View className="summary-item" onClick={() => setRewardDifficulty("hard")}>
+                <Text className="summary-value">困难</Text>
+                <Text className="summary-label">3 目标 · 1.5x</Text>
               </View>
             </View>
           </View>
@@ -553,7 +592,9 @@ export default function MultipleObjectTracking() {
             <Text className="result-title">本局成绩</Text>
             <Text className="result-score">{score}</Text>
             <Text className="result-desc">连续 {score} 轮正确</Text>
-            <Text className="result-desc">获得 {getAwardedPoints("multiple-object-tracking", score)} 积分</Text>
+            <Text className="result-desc">
+              积分{getTrainingDifficultyLabel(rewardDifficulty)} · 获得 {getAwardedPoints("multiple-object-tracking", score, rewardDifficulty)} 积分
+            </Text>
             <Text className="result-desc">
               历史最高 {best}
               {isNewBest ? <Text className="result-highlight">，刷新纪录</Text> : null}

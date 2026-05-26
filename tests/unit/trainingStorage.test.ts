@@ -45,6 +45,7 @@ describe("trainingStorage", () => {
       gameId: "memory-challenge",
       score: 18,
       awardedPoints: 3,
+      difficulty: "hard",
       outcome: "completed",
     });
 
@@ -53,6 +54,28 @@ describe("trainingStorage", () => {
     expect(summary.best).toBe(18);
     expect(summary.recent).toBe(18);
     expect(summary.totalSessions).toBe(2);
+  });
+
+  test("accepts records with and without difficulty", () => {
+    recordTrainingSession({
+      gameId: "mental-math",
+      score: 12,
+      awardedPoints: 12,
+      difficulty: "normal",
+      outcome: "completed",
+    });
+
+    recordTrainingSession({
+      gameId: "mental-math",
+      score: 20,
+      awardedPoints: 30,
+      difficulty: "hard",
+      outcome: "completed",
+    });
+
+    const stats = readDashboardStats();
+    expect(stats.totalSessions).toBe(2);
+    expect(stats.totalAwardedPoints).toBe(42);
   });
 
   test("falls back to legacy scores when no unified records exist", () => {
@@ -148,9 +171,9 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("dual-task", 40)).toBe(40);
     });
 
-    test("multiple-object-tracking: 3x conversion", () => {
+    test("multiple-object-tracking: 3x conversion with normal cap", () => {
       expect(getAwardedPoints("multiple-object-tracking", 5)).toBe(15);
-      expect(getAwardedPoints("multiple-object-tracking", 15)).toBe(45);
+      expect(getAwardedPoints("multiple-object-tracking", 15)).toBe(40);
     });
 
     test("rock-paper-scissors: capped score maps directly to points", () => {
@@ -178,8 +201,19 @@ describe("trainingStorage", () => {
 
       rewards.forEach(reward => {
         expect(reward).toBeGreaterThanOrEqual(10);
-        expect(reward).toBeLessThanOrEqual(50);
+        expect(reward).toBeLessThanOrEqual(40);
       });
+    });
+
+    test("hard difficulty applies 1.5x conversion and caps at 60", () => {
+      expect(getAwardedPoints("mental-math", 20, "hard")).toBe(30);
+      expect(getAwardedPoints("twenty-four", 20, "hard")).toBe(60);
+      expect(getAwardedPoints("multiple-object-tracking", 15, "hard")).toBe(60);
+    });
+
+    test("missing difficulty defaults to normal cap", () => {
+      expect(getAwardedPoints("dual-task", 80)).toBe(40);
+      expect(getAwardedPoints("dual-task", 80, "normal")).toBe(40);
     });
 
     test("returns 0 for unknown gameId or zero score", () => {

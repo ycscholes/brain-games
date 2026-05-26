@@ -2,7 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
+import {
+  getAwardedPoints,
+  getTrainingDifficultyLabel,
+  MAX_POINTS_PER_SESSION,
+  recordTrainingSession,
+  type TrainingDifficulty,
+} from "../../utils/trainingStorage";
 import "./index.scss";
 
 type GameStatus = "start" | "playing" | "finished";
@@ -93,6 +99,10 @@ const pickOne = <T,>(list: T[]) => list[randomInt(0, list.length - 1)];
 
 function getStorageKey(mode: Mode) {
   return `dual_task_best_${mode}`;
+}
+
+function getRewardDifficulty(difficulty: Difficulty): TrainingDifficulty {
+  return difficulty === "hard" || difficulty === "expert" ? "hard" : "normal";
 }
 
 function getDifficultyNumberRange(difficulty: Difficulty) {
@@ -341,14 +351,16 @@ export default function DualTaskGame() {
   const finishGame = useCallback((finalScore?: number) => {
     clearAllTimers();
     const settledScore = Math.min(MAX_POINTS_PER_SESSION, Math.max(0, Math.round(finalScore ?? scoreRef.current)));
-    const awardedPoints = getAwardedPoints("dual-task", settledScore);
+    const rewardDifficulty = getRewardDifficulty(config.difficulty);
+    const awardedPoints = getAwardedPoints("dual-task", settledScore, rewardDifficulty);
     Taro.setStorageSync(`dual_task_last_${config.mode}`, settledScore);
-    addPointsToPet("dual-task", settledScore);
+    addPointsToPet("dual-task", settledScore, rewardDifficulty);
     recordTrainingSession({
       gameId: "dual-task",
       score: settledScore,
       awardedPoints,
       mode: `${config.mode}:${config.difficulty}`,
+      difficulty: rewardDifficulty,
       durationSeconds: Math.round((SESSION_DURATION_MS - sessionTimeLeftMs) / 1000),
       outcome: "completed",
     });
@@ -752,7 +764,9 @@ export default function DualTaskGame() {
                     onClick={() => setConfig((prev) => ({ ...prev, difficulty }))}
                   >
                     <Text className="chip-text">{DIFFICULTY_CONFIG[difficulty].label}</Text>
-                    <Text className="chip-meta">{DIFFICULTY_CONFIG[difficulty].taskTimeLimit / 1000}s</Text>
+                    <Text className="chip-meta">
+                      {DIFFICULTY_CONFIG[difficulty].taskTimeLimit / 1000}s · 积分{getTrainingDifficultyLabel(getRewardDifficulty(difficulty))}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -823,7 +837,12 @@ export default function DualTaskGame() {
             <Text className="result-title">本局成绩</Text>
             <Text className="result-score">{score}</Text>
             <Text className="result-desc">答对 {correctCount} 题 · 正确率 {accuracy}% · 最高连击 {maxStreak}</Text>
-            <Text className="result-desc">{DIFFICULTY_CONFIG[config.difficulty].label} · {MODE_CONFIG[config.mode].title}</Text>
+            <Text className="result-desc">
+              {DIFFICULTY_CONFIG[config.difficulty].label} · {MODE_CONFIG[config.mode].title} · 积分{getTrainingDifficultyLabel(getRewardDifficulty(config.difficulty))}
+            </Text>
+            <Text className="result-desc">
+              获得 {getAwardedPoints("dual-task", Math.min(MAX_POINTS_PER_SESSION, Math.max(0, Math.round(score))), getRewardDifficulty(config.difficulty))} 积分
+            </Text>
             <Text className="result-desc">
               历史最高 {bestScore}
               {score > 0 && score >= bestScore ? <Text className="result-highlight">，刷新纪录</Text> : null}
