@@ -18,10 +18,12 @@ import {
   getAwardedPoints,
   readAppSettings,
   readDashboardStats,
+  readTrainingRecords,
   readTrainingSummary,
   recordTrainingSession,
   saveAppSettings,
 } from "../../src/utils/trainingStorage";
+import { getMathStage } from "../../src/pages/mental-math/mathStages";
 
 describe("trainingStorage", () => {
   beforeEach(() => {
@@ -76,6 +78,40 @@ describe("trainingStorage", () => {
     const stats = readDashboardStats();
     expect(stats.totalSessions).toBe(2);
     expect(stats.totalAwardedPoints).toBe(42);
+  });
+
+  test("records mental math stage-derived reward difficulty", () => {
+    recordTrainingSession({
+      gameId: "mental-math",
+      score: 8,
+      awardedPoints: getAwardedPoints("mental-math", 8, getMathStage("G1A").difficulty),
+      mode: "timed:G1A",
+      difficulty: getMathStage("G1A").difficulty,
+      outcome: "completed",
+    });
+
+    recordTrainingSession({
+      gameId: "mental-math",
+      score: 8,
+      awardedPoints: getAwardedPoints("mental-math", 8, getMathStage("G4").difficulty),
+      mode: "timed:G4",
+      difficulty: getMathStage("G4").difficulty,
+      outcome: "completed",
+    });
+
+    const records = readTrainingRecords();
+    expect(records[1]).toMatchObject({
+      gameId: "mental-math",
+      mode: "timed:G1A",
+      difficulty: "normal",
+      awardedPoints: 8,
+    });
+    expect(records[0]).toMatchObject({
+      gameId: "mental-math",
+      mode: "timed:G4",
+      difficulty: "hard",
+      awardedPoints: 12,
+    });
   });
 
   test("falls back to legacy scores when no unified records exist", () => {

@@ -540,6 +540,11 @@ export function clearProductData() {
     gameSpecificKeys.push(`pattern_completion_best_${difficulty}`);
   });
 
+  ["G1A", "G1B", "G2", "G3", "G4", "G5_6"].forEach((stageId) => {
+    gameSpecificKeys.push(`mental_math_high_score_timed_${stageId}`);
+    gameSpecificKeys.push(`mental_math_high_score_death_${stageId}`);
+  });
+
   ["alternating", "simultaneous", "stroop"].forEach((mode) => {
     gameSpecificKeys.push(`dual_task_best_${mode}`);
     gameSpecificKeys.push(`dual_task_last_${mode}`);

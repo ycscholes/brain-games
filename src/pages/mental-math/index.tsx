@@ -1,23 +1,25 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
 import {
   getAwardedPoints,
   getTrainingDifficultyLabel,
-  MAX_POINTS_PER_SESSION,
   recordTrainingSession,
-  type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import {
+  DEFAULT_MATH_STAGE_ID,
+  MATH_STAGES,
+  generateMathOptions,
+  generateMathProblem,
+  getMathStage,
+  type MathProblem,
+  type MathStageId,
+} from "./mathStages";
 import "./index.scss";
 
 type GameState = "start" | "playing" | "gameover";
 type GameMode = "timed" | "death";
-
-interface MathProblem {
-  question: string;
-  answer: number;
-}
 
 // 最高分记录接口
 interface HighScoreRecord {
@@ -28,8 +30,7 @@ interface HighScoreRecord {
 export default function MentalMath() {
   const [gameState, setGameState] = useState<GameState>("start");
   const [gameMode, setGameMode] = useState<GameMode>("timed");
-  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
-  const [score, setScore] = useState(0);
+  const [selectedStageId, setSelectedStageId] = useState<MathStageId>(DEFAULT_MATH_STAGE_ID);
   const [highScoreTimed, setHighScoreTimed] = useState(0);
   const [highScoreDeath, setHighScoreDeath] = useState(0);
   const [highScoreRecord, setHighScoreRecord] = useState<HighScoreRecord | null>(null);
@@ -44,6 +45,8 @@ export default function MentalMath() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const correctCountRef = useRef(0);
   const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const selectedStage = useMemo(() => getMathStage(selectedStageId), [selectedStageId]);
+  const rewardDifficulty = selectedStage.difficulty;
 
   // Keep ref updated with latest correctCount for timer closure
   useEffect(() => {
@@ -67,144 +70,26 @@ export default function MentalMath() {
     return gameMode === "timed" ? highScoreTimed : highScoreDeath;
   };
 
-  // 获取难度等级基于最高分
-  const getDifficultyLevel = (): 1 | 2 | 3 | 4 => {
-    const hs = getHighScore();
-    const baseLevel = hs < 10 ? 1 : hs < 20 ? 2 : hs < 30 ? 3 : 4;
-    if (rewardDifficulty === "hard") {
-      return Math.min(4, baseLevel + 2) as 1 | 2 | 3 | 4;
-    }
-    return baseLevel as 1 | 2 | 3 | 4;
-  };
-
-  // 生成随机数
-  const randomInt = (min: number, max: number): number => {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
-
   // 生成数学题
   const generateProblem = (): MathProblem => {
-    const level = getDifficultyLevel();
-    let a: number, b: number, c: number;
-    let question: string;
-    let answer: number;
-
-    switch (level) {
-      case 1:
-        // Level 1: 1-2 digit addition/subtraction
-        if (Math.random() > 0.5) {
-          a = randomInt(1, 50);
-          b = randomInt(1, 50);
-          question = `${a} + ${b} = ?`;
-          answer = a + b;
-        } else {
-          a = randomInt(10, 99);
-          b = randomInt(1, a);
-          question = `${a} - ${b} = ?`;
-          answer = a - b;
-        }
-        break;
-
-      case 2:
-        // Level 2: 2-3 digit addition/subtraction
-        if (Math.random() > 0.5) {
-          a = randomInt(10, 150);
-          b = randomInt(10, 150);
-          question = `${a} + ${b} = ?`;
-          answer = a + b;
-        } else {
-          a = randomInt(50, 200);
-          b = randomInt(10, a);
-          question = `${a} - ${b} = ?`;
-          answer = a - b;
-        }
-        break;
-
-      case 3:
-        // Level 3: 1-digit multiplication
-        if (Math.random() > 0.3) {
-          a = randomInt(2, 12);
-          b = randomInt(2, 12);
-          question = `${a} × ${b} = ?`;
-          answer = a * b;
-        } else if (Math.random() > 0.5) {
-          a = randomInt(10, 99);
-          b = randomInt(1, 50);
-          question = `${a} + ${b} = ?`;
-          answer = a + b;
-        } else {
-          a = randomInt(50, 150);
-          b = randomInt(10, a);
-          question = `${a} - ${b} = ?`;
-          answer = a - b;
-        }
-        break;
-
-      case 4:
-      default:
-        // Level 4: Mixed operations
-        const operationType = Math.random();
-        if (operationType < 0.4) {
-          a = randomInt(2, 12);
-          b = randomInt(2, 12);
-          c = randomInt(1, 20);
-          if (Math.random() > 0.5) {
-            question = `${a} × ${b} + ${c} = ?`;
-            answer = a * b + c;
-          } else {
-            question = `${a} × ${b} - ${c} = ?`;
-            answer = a * b - c;
-          }
-        } else if (operationType < 0.7) {
-          a = randomInt(2, 12);
-          b = randomInt(2, 12);
-          question = `${a} × ${b} = ?`;
-          answer = a * b;
-        } else if (Math.random() > 0.5) {
-          a = randomInt(50, 200);
-          b = randomInt(20, 150);
-          question = `${a} + ${b} = ?`;
-          answer = a + b;
-        } else {
-          a = randomInt(100, 300);
-          b = randomInt(20, 100);
-          question = `${a} - ${b} = ?`;
-          answer = a - b;
-        }
-        break;
-    }
-
-    return { question, answer };
+    return generateMathProblem(selectedStageId);
   };
 
   // 生成选项
   const generateOptions = (correctAnswer: number): number[] => {
-    const opts = [correctAnswer];
-    const range = Math.max(10, Math.floor(correctAnswer * 0.3));
-
-    while (opts.length < 4) {
-      let offset = randomInt(-range, range);
-      // 保证偏移不为0，并且结果是正数
-      if (offset === 0) offset = 1;
-      const wrong = correctAnswer + offset;
-      if (wrong > 0 && !opts.includes(wrong)) {
-        opts.push(wrong);
-      }
-    }
-
-    return opts.sort(() => Math.random() - 0.5);
+    return generateMathOptions(correctAnswer);
   };
 
-  // 获取存储键名 based on mode
+  // 获取存储键名 based on mode and stage
   const getStorageKey = (): string => {
-    return `mental_math_high_score_${gameMode}_${rewardDifficulty}`;
+    return `mental_math_high_score_${gameMode}_${selectedStageId}`;
   };
 
   // 获取当前最高分
   const getCurrentHighScore = (): HighScoreRecord | null => {
     const key = getStorageKey();
     const legacyKey = gameMode === "timed" ? "mental_math_high_score_timed" : "mental_math_high_score_death";
-    const record = Taro.getStorageSync(key) || (rewardDifficulty === "normal" ? Taro.getStorageSync(legacyKey) : "");
+    const record = Taro.getStorageSync(key) || (selectedStageId === DEFAULT_MATH_STAGE_ID ? Taro.getStorageSync(legacyKey) : "");
     if (record) {
       try {
         const parsed = JSON.parse(record);
@@ -249,15 +134,15 @@ export default function MentalMath() {
   // 刷新最高分
   const refreshHighScore = useCallback(() => {
     // Load both high scores for both modes
-    const timedKey = `mental_math_high_score_timed_${rewardDifficulty}`;
-    const deathKey = `mental_math_high_score_death_${rewardDifficulty}`;
+    const timedKey = `mental_math_high_score_timed_${selectedStageId}`;
+    const deathKey = `mental_math_high_score_death_${selectedStageId}`;
 
     const timedRecord =
       Taro.getStorageSync(timedKey) ||
-      (rewardDifficulty === "normal" ? Taro.getStorageSync("mental_math_high_score_timed") : "");
+      (selectedStageId === DEFAULT_MATH_STAGE_ID ? Taro.getStorageSync("mental_math_high_score_timed") : "");
     const deathRecord =
       Taro.getStorageSync(deathKey) ||
-      (rewardDifficulty === "normal" ? Taro.getStorageSync("mental_math_high_score_death") : "");
+      (selectedStageId === DEFAULT_MATH_STAGE_ID ? Taro.getStorageSync("mental_math_high_score_death") : "");
 
     if (timedRecord) {
       try {
@@ -296,17 +181,12 @@ export default function MentalMath() {
     } else {
       setHighScoreRecord(null);
     }
-  }, [gameMode, rewardDifficulty]);
+  }, [gameMode, selectedStageId]);
 
-  // Update high score when mode changes
+  // Update high scores when mode or stage changes
   useEffect(() => {
-    const record = getCurrentHighScore();
-    if (record) {
-      setHighScoreRecord(record);
-    } else {
-      setHighScoreRecord(null);
-    }
-  }, [gameMode, rewardDifficulty]);
+    refreshHighScore();
+  }, [refreshHighScore]);
 
   useLoad(() => {
     refreshHighScore();
@@ -319,7 +199,6 @@ export default function MentalMath() {
   // 开始新游戏
   const startGame = () => {
     clearAllTimers();
-    setScore(0);
     setTimeLeft(30);
     setCorrectCount(0);
     setSelectedAnswer(null);
@@ -367,7 +246,6 @@ export default function MentalMath() {
     if (answer === currentProblem.answer) {
       // Correct answer
       setFeedback("correct");
-      setScore((s) => s + 1);
       setCorrectCount((c) => c + 1);
 
       feedbackTimerRef.current = setTimeout(() => {
@@ -401,7 +279,7 @@ export default function MentalMath() {
       gameId: "mental-math",
       score: finalCorrectCount,
       awardedPoints,
-      mode: gameMode,
+      mode: `${gameMode}:${selectedStageId}`,
       difficulty: rewardDifficulty,
       outcome: "completed",
     });
@@ -443,7 +321,7 @@ export default function MentalMath() {
 
             <View className="difficulty-info">
               <Text className="difficulty-text">
-                当前题目：Lv{getDifficultyLevel()} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
+                当前阶段：{selectedStage.name} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
               </Text>
             </View>
           </View>
@@ -453,23 +331,26 @@ export default function MentalMath() {
               <View className="mode-icon">
                 <Text className="mode-icon-text">⚡</Text>
               </View>
-              <Text className="mode-title">选择难度</Text>
+              <Text className="mode-title">选择学习阶段</Text>
             </View>
-            <View className="mode-grid">
-              <View
-                className={`mode-item ${rewardDifficulty === "normal" ? "mode-item-selected" : ""}`}
-                onClick={() => setRewardDifficulty("normal")}
-              >
-                <View className="mode-name">普通</View>
-                <View className="mode-desc">基础题型 · 1.0x 积分</View>
-              </View>
-              <View
-                className={`mode-item ${rewardDifficulty === "hard" ? "mode-item-selected" : ""}`}
-                onClick={() => setRewardDifficulty("hard")}
-              >
-                <View className="mode-name">困难</View>
-                <View className="mode-desc">更高题阶 · 1.5x 积分</View>
-              </View>
+            <View className="stage-grid">
+              {MATH_STAGES.map((stage) => (
+                <View
+                  key={stage.id}
+                  className={`stage-item ${selectedStageId === stage.id ? "stage-item-selected" : ""}`}
+                  onClick={() => setSelectedStageId(stage.id)}
+                >
+                  <View className="stage-item-header">
+                    <Text className="stage-name">{stage.name}</Text>
+                    <Text className={`stage-difficulty stage-difficulty-${stage.difficulty}`}>
+                      积分{getTrainingDifficultyLabel(stage.difficulty)}
+                    </Text>
+                  </View>
+                  <Text className="stage-short-name">{stage.shortName}</Text>
+                  <Text className="stage-desc">{stage.summary}</Text>
+                  <Text className="stage-meta">{stage.rangeLabel} · {stage.operationsLabel}</Text>
+                </View>
+              ))}
             </View>
           </View>
 
@@ -521,7 +402,7 @@ export default function MentalMath() {
               </View>
               <View className="rule-item">
                 <Text className="rule-number">4.</Text>
-                <Text className="rule-text">难度随最高分自动提升</Text>
+                <Text className="rule-text">题型由所选学习阶段决定</Text>
               </View>
             </View>
           </View>
@@ -538,6 +419,9 @@ export default function MentalMath() {
       {gameState === "playing" && currentProblem && (
         <View className="game-screen">
           <View className="top-bar">
+            <View className="top-bar-stage">
+              <Text className="top-bar-stage-text">{selectedStage.name} · {selectedStage.shortName}</Text>
+            </View>
             {gameMode === "timed" && (
               <View className="top-bar-item">
                 <View className="top-bar-icon top-bar-icon-clock">
@@ -596,9 +480,11 @@ export default function MentalMath() {
             <Text className="result-title">本局成绩</Text>
             <Text className="result-score">{correctCount}</Text>
             <Text className="result-desc">
-              答对 {correctCount} 题 · Lv{getDifficultyLevel()} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
+              答对 {correctCount} 题 · {selectedStage.name} · {selectedStage.shortName}
             </Text>
-            <Text className="result-desc">{gameMode === "timed" ? "限时模式" : "闯关模式"}</Text>
+            <Text className="result-desc">
+              {gameMode === "timed" ? "限时模式" : "闯关模式"} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
+            </Text>
             <Text className="result-desc">
               获得 {getAwardedPoints("mental-math", correctCount, rewardDifficulty)} 积分
             </Text>
