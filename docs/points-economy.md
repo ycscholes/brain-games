@@ -20,11 +20,12 @@
 |---------|-------|------------|---------|------|
 | **数字广度 (digit-span)** | 3.0x | 5-10 | 15-30 | 分数较低，提升 3 倍 |
 | **心算大师 (mental-math)** | 1.0x | 10-30 | 10-30 | 分数适中，保持 1 倍 |
+| **24 点 (twenty-four)** | 2.0x | 5-20 | 10-40 | 单题耗时较高，提升 2 倍 |
 | **图案推理 (pattern-completion)** | 1.2x | 10-30 | 12-36 | 略有提升，1.2 倍 |
-| **双任务挑战 (dual-task)** | 0.05x | 200-800 | 10-40 | 分数极高，大幅降低 |
+| **双任务挑战 (dual-task)** | 1.0x | 10-40 | 10-40 | 游戏内已封顶，保持 1 倍 |
 | **多目标追踪 (multiple-object-tracking)** | 3.0x | 5-15 | 15-45 | 分数较低，提升 3 倍 |
-| **逆向猜拳 (rock-paper-scissors)** | 0.15x | 100-300 | 15-45 | 分数较高，降低到 0.15 倍 |
-| **记忆挑战 (memory-challenge)** | 0.25x | 50-150 | 12-37 | 分数较高，降低到 0.25 倍 |
+| **逆向猜拳 (rock-paper-scissors)** | 1.0x | 10-40 | 10-40 | 游戏内已封顶，保持 1 倍 |
+| **记忆挑战 (memory-challenge)** | 1.0x | 10-40 | 10-40 | 游戏内已封顶，保持 1 倍 |
 
 ### 1.3 核心实现
 
@@ -33,15 +34,16 @@
 ```typescript
 export function getAwardedPoints(gameId: string, score: number) {
   const conversionRates: Record<string, number> = {
-    "memory-challenge": 0.25,
-    "rock-paper-scissors": 0.15,
-    "dual-task": 0.05,
+    "memory-challenge": 1,
+    "rock-paper-scissors": 1,
+    "dual-task": 1,
     "mental-math": 1,
+    "twenty-four": 2,
     "digit-span": 3,
     "multiple-object-tracking": 3,
     "pattern-completion": 1.2,
-    memory: 0.25,
-    rps: 0.15,
+    memory: 1,
+    rps: 1,
     mot: 3,
     pattern: 1.2,
   };
@@ -61,6 +63,7 @@ export function getAwardedPoints(gameId: string, score: number) {
 | 逆向猜拳 | `rock-paper-scissors` | `rps` |
 | 双任务挑战 | `dual-task` | `dual-task` |
 | 心算大师 | `mental-math` | `mental-math` |
+| 24 点 | `twenty-four` | `twenty-four` |
 | 数字广度 | `digit-span` | `digit-span` |
 | 多目标追踪 | `multiple-object-tracking` | `mot` |
 | 图案推理 | `pattern-completion` | `pattern` |
@@ -92,12 +95,13 @@ export const PET_ADOPTION_COST = 50;
 
 ### 2.3 饥饿衰减机制
 
-- 每 15 分钟：1 点饥饿值
+- 满饱食 100 点：约 3 天降为 0
+- 平均衰减速度：每 43.2 分钟约 1 点饥饿值
 - 饥饿上限：100 点
 - 饿死时间：饥饿值为 0 后 24 小时
 
 ```typescript
-export const HUNGER_POINT_PER_MINUTE = 1 / 15;
+export const HUNGER_POINT_PER_MINUTE = 100 / (3 * 24 * 60);
 export const MAX_HUNGER = 100;
 export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 ```
@@ -141,6 +145,8 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 - ✅ 各游戏转换率正确性
 - ✅ 典型分数范围的积分输出在 10-50 之间
 - ✅ 边界情况：0 分、负数分、未知 gameId 返回 0
+- ✅ 训练记录 `awardedPoints` 与宠物实际获得积分使用同一转换口径
+- ✅ 旧缩写 gameId 与标准长 gameId 在统计中合并处理
 
 ### 4.2 积分消费测试
 
@@ -164,5 +170,5 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 
 ---
 
-**最后更新**：2026-05-21
-**版本**：v1.1
+**最后更新**：2026-05-23
+**版本**：v1.2

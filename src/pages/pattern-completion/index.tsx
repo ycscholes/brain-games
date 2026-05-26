@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
+import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
 import {
   PATTERN_QUESTION_BANK,
   type PatternOption,
@@ -143,6 +143,7 @@ export default function PatternCompletion() {
       const settledElapsedMs = Date.now() - startTimeRef.current;
       const settledTimeBonus = calculateTimeBonus(settledElapsedMs);
       const settledFinalScore = settledCorrectCount + settledTimeBonus;
+      const awardedPoints = getAwardedPoints("pattern-completion", settledFinalScore);
 
       setElapsedMs(settledElapsedMs);
       setCorrectCount(settledCorrectCount);
@@ -152,7 +153,7 @@ export default function PatternCompletion() {
       recordTrainingSession({
         gameId: "pattern-completion",
         score: settledFinalScore,
-        awardedPoints: settledFinalScore,
+        awardedPoints,
         durationSeconds: Math.round(settledElapsedMs / 1000),
         outcome: "completed",
       });
@@ -346,6 +347,7 @@ export default function PatternCompletion() {
             <Text className="result-score">{finalScore}</Text>
             <Text className="result-desc">答对 {correctCount} / {TOTAL_QUESTIONS} 题</Text>
             <Text className="result-desc">完成用时 {formatElapsed(elapsedMs)}，时间奖励 {timeBonus}</Text>
+            <Text className="result-desc">获得 {getAwardedPoints("pattern-completion", finalScore)} 积分</Text>
             <Text className="result-desc">
               历史最高 {best}
               {isNewBest ? <Text className="result-highlight">，刷新纪录</Text> : null}

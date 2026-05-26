@@ -73,6 +73,6 @@ export const PET_SKIN_NAME: Record<PetSkin, string> = {
 };
 
 // Hunger decay constants
-export const HUNGER_POINT_PER_MINUTE = 1 / 15; // 1 point every 15 minutes
+export const HUNGER_POINT_PER_MINUTE = 100 / (3 * 24 * 60); // 100 points over 3 days
 export const MAX_HUNGER = 100;
 export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;

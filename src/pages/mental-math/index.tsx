@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
+import { getAwardedPoints, MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 type GameState = "start" | "playing" | "gameover";
@@ -381,12 +381,13 @@ export default function MentalMath() {
   const handleGameOver = () => {
     clearAllTimers();
     const finalCorrectCount = correctCountRef.current;
+    const awardedPoints = getAwardedPoints("mental-math", finalCorrectCount);
     Taro.setStorageSync("mental_math_last_score", finalCorrectCount);
     addPointsToPet("mental-math", finalCorrectCount);
     recordTrainingSession({
       gameId: "mental-math",
       score: finalCorrectCount,
-      awardedPoints: finalCorrectCount,
+      awardedPoints,
       mode: gameMode,
       outcome: "completed",
     });

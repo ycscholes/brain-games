@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
+import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
-type Phase = "start" | "preview" | "tracking" | "selecting" | "roundResult" | "finished";
+type Phase = "start" | "preview" | "tracking" | "selecting" | "finished";
 
 interface BoardSize {
   width: number;
@@ -146,8 +146,6 @@ export default function MultipleObjectTracking() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [roundMessage, setRoundMessage] = useState("记住高亮的目标圆圈");
   const [isNewBest, setIsNewBest] = useState(false);
-  const [lastHitCount, setLastHitCount] = useState(0);
-  const [lastTargetIds, setLastTargetIds] = useState<number[]>([]);
 
   const boardSize = boardSizeRef.current;
 
@@ -319,8 +317,6 @@ export default function MultipleObjectTracking() {
     setTargetCount(nextTargetCount);
     setSpeed(nextSpeed);
     setSelectedIds([]);
-    setLastHitCount(0);
-    setLastTargetIds([]);
     setRoundMessage("记住高亮的目标圆圈");
 
     const nextCircles = buildCircles(nextTargetCount, nextSpeed, boardSize);
@@ -341,11 +337,12 @@ export default function MultipleObjectTracking() {
   const backToStart = () => {
     clearRoundRuntime();
     if (phase !== "start" && phase !== "finished") {
+      const awardedPoints = getAwardedPoints("multiple-object-tracking", score);
       addPointsToPet("multiple-object-tracking", score);
       recordTrainingSession({
         gameId: "multiple-object-tracking",
         score,
-        awardedPoints: score,
+        awardedPoints,
         outcome: "interrupted",
       });
     }
@@ -355,8 +352,6 @@ export default function MultipleObjectTracking() {
     setSpeed(BASE_SPEED);
     setSelectedIds([]);
     setCircles([]);
-    setLastHitCount(0);
-    setLastTargetIds([]);
     setRoundMessage("记住高亮的目标圆圈");
     refreshBest();
   };
@@ -389,18 +384,12 @@ export default function MultipleObjectTracking() {
     const hitCount = selectedIds.filter((id) => targetSet.has(id)).length;
     const allCorrect = hitCount === targetCount;
 
-    setLastTargetIds(targetIds);
-    setLastHitCount(hitCount);
-
     if (allCorrect) {
       const nextScore = score + 1;
       const nextTargetCount = Math.min(MAX_TARGET_COUNT, targetCount + 1);
       const nextSpeed = Number((speed + SPEED_STEP).toFixed(2));
 
       setScore(nextScore);
-      setTargetCount(nextTargetCount);
-      setSpeed(nextSpeed);
-      setRoundMessage("本轮全部追踪正确");
 
       if (nextScore > best) {
         Taro.setStorageSync(STORAGE_KEY, nextScore);
@@ -408,23 +397,24 @@ export default function MultipleObjectTracking() {
         setIsNewBest(true);
       }
 
-      setPhase("roundResult");
+      startRound(nextTargetCount, nextSpeed);
       return;
     }
 
     setRoundMessage("本轮未能完整锁定全部目标");
+    const awardedPoints = getAwardedPoints("multiple-object-tracking", score);
     addPointsToPet("multiple-object-tracking", score);
     recordTrainingSession({
       gameId: "multiple-object-tracking",
       score,
-      awardedPoints: score,
+      awardedPoints,
       outcome: "completed",
     });
     setPhase("finished");
   };
 
   const renderArena = () => {
-    const revealTargets = phase === "preview" || phase === "roundResult" || phase === "finished";
+    const revealTargets = phase === "preview" || phase === "finished";
 
     return (
       <View className="arena-card">
@@ -482,7 +472,7 @@ export default function MultipleObjectTracking() {
             <Text className="rule-item">1. 每局从 2 个目标圆圈开始，先短暂高亮提示。</Text>
             <Text className="rule-item">2. 所有圆圈统一外观后移动 5 秒，并带有碰撞反弹。</Text>
             <Text className="rule-item">3. 停止后点击选出目标并提交，必须全部正确才算过关。</Text>
-            <Text className="rule-item">4. 每轮成功后目标数 +1，最多 4 个，同时速度略微提升。</Text>
+            <Text className="rule-item">4. 每轮成功后自动进入下一轮，目标数最多 4 个，速度持续提升。</Text>
           </View>
 
           <View className="summary-card">
@@ -557,37 +547,13 @@ export default function MultipleObjectTracking() {
         </View>
       ) : null}
 
-      {phase === "roundResult" ? (
-        <View className="result-screen">
-          <View className="result-card">
-            <Text className="result-title">本轮正确</Text>
-            <Text className="result-score">{score}</Text>
-            <Text className="result-desc">连续正确轮数 +1，本轮命中 {lastHitCount} / {lastTargetIds.length}。</Text>
-            <Text className="result-desc">
-              下一轮将追踪 {targetCount} 个目标，速度提升至 {speed.toFixed(2)}。
-            </Text>
-            {isNewBest ? <Text className="result-highlight">已刷新最佳分数</Text> : null}
-          </View>
-
-          {renderArena()}
-
-          <View className="result-actions">
-            <View className="primary-button" onClick={() => startRound(targetCount, speed)}>
-              <Text className="button-text">进入下一轮</Text>
-            </View>
-            <View className="secondary-button" onClick={backToStart}>
-              <Text className="button-text">返回开始页</Text>
-            </View>
-          </View>
-        </View>
-      ) : null}
-
       {phase === "finished" ? (
         <View className="result-screen">
           <View className="result-card">
             <Text className="result-title">本局成绩</Text>
-            <Text className="result-score">{Math.min(MAX_POINTS_PER_SESSION, 4 + score * 2)}</Text>
+            <Text className="result-score">{score}</Text>
             <Text className="result-desc">连续 {score} 轮正确</Text>
+            <Text className="result-desc">获得 {getAwardedPoints("multiple-object-tracking", score)} 积分</Text>
             <Text className="result-desc">
               历史最高 {best}
               {isNewBest ? <Text className="result-highlight">，刷新纪录</Text> : null}

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, Image } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
+import { getAwardedPoints, MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 // Import Shapes
@@ -320,12 +320,13 @@ export default function MemoryChallenge() {
   const handleGameOver = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     const finalScore = Math.min(MAX_POINTS_PER_SESSION, score);
+    const awardedPoints = getAwardedPoints("memory-challenge", finalScore);
     Taro.setStorageSync("memory_last_score", finalScore);
     addPointsToPet("memory-challenge", finalScore);
     recordTrainingSession({
       gameId: "memory-challenge",
       score: finalScore,
-      awardedPoints: finalScore,
+      awardedPoints,
       mode: `T${timeDifficulty}M${memoryDifficulty}`,
       outcome: "completed",
     });

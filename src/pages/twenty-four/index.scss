@@ -131,7 +131,8 @@ $tf-line: rgba(22, 163, 74, 0.14);
 .tf-primary-button,
 .tf-secondary-button,
 .tf-submit-button,
-.tf-skip-button {
+.tf-skip-button,
+.tf-hint-button {
   min-height: 76px;
   border-radius: 22px;
   display: flex;
@@ -304,10 +305,21 @@ $tf-line: rgba(22, 163, 74, 0.14);
   background: linear-gradient(135deg, $tf-green 0%, $tf-green-dark 100%);
 }
 
+.tf-hint-button {
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+}
+
 .tf-skip-button,
 .tf-secondary-button {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(102, 117, 109, 0.16);
+}
+
+.tf-hint-button-text {
+  color: #b45309;
+  font-size: 28px;
+  font-weight: 900;
 }
 
 .tf-skip-button-text,

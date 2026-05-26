@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
+import { getAwardedPoints, MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 type GameState = "start" | "playing" | "gameover";
@@ -148,12 +148,13 @@ export default function RockPaperScissors() {
   const handleGameOver = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     const finalScore = Math.min(MAX_POINTS_PER_SESSION, score);
+    const awardedPoints = getAwardedPoints("rock-paper-scissors", finalScore);
     Taro.setStorageSync("rps_last_score", finalScore);
     addPointsToPet("rock-paper-scissors", finalScore);
     recordTrainingSession({
-      gameId: "rps",
+      gameId: "rock-paper-scissors",
       score: finalScore,
-      awardedPoints: finalScore,
+      awardedPoints,
       mode: `D${difficulty}`,
       outcome: "completed",
     });

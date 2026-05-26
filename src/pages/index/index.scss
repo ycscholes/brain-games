@@ -549,6 +549,13 @@
   margin-top: 4px;
 }
 
+.game-badge-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .game-badge {
   display: inline-flex;
   align-items: center;
@@ -558,6 +565,41 @@
   border-radius: 12px;
   font-size: 28px;
   line-height: 1;
+  font-weight: 700;
+}
+
+.game-level {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.game-level-easy {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+.game-level-standard {
+  background: rgba(245, 158, 11, 0.16);
+  color: #b45309;
+}
+
+.game-level-advanced {
+  background: rgba(79, 70, 229, 0.14);
+  color: #4338ca;
+}
+
+.game-detail-line {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 26px;
+  line-height: 1.35;
   font-weight: 700;
 }
 

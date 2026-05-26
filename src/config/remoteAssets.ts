@@ -8,26 +8,31 @@ const PET_SPRITE_PATHS: Record<PetSkin, Record<PetSpriteMood, string>> = {
     idle: "assets/pets/cat-idle.png",
     feed: "assets/pets/cat-feed.png",
     cuddle: "assets/pets/cat-cuddle.png",
+    hungry: "assets/pets/cat-hungry.png",
   },
   dog: {
     idle: "assets/pets/dog-idle.png",
     feed: "assets/pets/dog-feed.png",
     cuddle: "assets/pets/dog-cuddle.png",
+    hungry: "assets/pets/dog-hungry.png",
   },
   rabbit: {
     idle: "assets/pets/rabbit-idle.png",
     feed: "assets/pets/rabbit-feed.png",
     cuddle: "assets/pets/rabbit-cuddle.png",
+    hungry: "assets/pets/rabbit-hungry.png",
   },
   bear: {
     idle: "assets/pets/bear-idle.png",
     feed: "assets/pets/bear-feed.png",
     cuddle: "assets/pets/bear-cuddle.png",
+    hungry: "assets/pets/bear-hungry.png",
   },
   panda: {
     idle: "assets/pets/panda-idle.png",
     feed: "assets/pets/panda-feed.png",
     cuddle: "assets/pets/panda-cuddle.png",
+    hungry: "assets/pets/panda-hungry.png",
   },
 };
 

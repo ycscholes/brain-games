@@ -167,7 +167,7 @@ export function calculateHungerDecay(
 
 export function updatePetStatus(pet: PetData): PetData {
   let status: PetData["status"] = "alive";
-  if (pet.hunger <= 20) {
+  if (pet.hunger < 20) {
     status = "hungry";
   }
   if (pet.hunger <= 0) {

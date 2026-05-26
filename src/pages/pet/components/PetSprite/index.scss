@@ -127,6 +127,15 @@
     pet-sprite-cuddle 0.82s ease-in-out 2;
 }
 
+.pet-sprite--hungry {
+  animation: pet-sprite-hungry 2.2s ease-in-out infinite;
+
+  .pet-sprite__glow {
+    background: radial-gradient(circle, rgba(248, 113, 113, 0.28), rgba(248, 113, 113, 0));
+    opacity: 0.58;
+  }
+}
+
 .pet-sprite--dead {
   filter: grayscale(0.9) saturate(0.5);
   opacity: 0.72;
@@ -170,5 +179,16 @@
 
   75% {
     transform: translate3d(6px, 0, 0) rotate(3deg) scale(1.02);
+  }
+}
+
+@keyframes pet-sprite-hungry {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.98);
+  }
+
+  50% {
+    transform: translate3d(0, 2px, 0) scale(0.95);
   }
 }

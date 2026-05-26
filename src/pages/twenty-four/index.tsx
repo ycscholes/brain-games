@@ -17,6 +17,11 @@ interface CardValue {
   label: string;
 }
 
+interface GeneratedRound {
+  cards: CardValue[];
+  solution: string;
+}
+
 const STORAGE_KEY = "twenty_four_best";
 const ROUND_SECONDS = 90;
 const EPSILON = 1e-6;
@@ -32,47 +37,6 @@ function formatOperator(operator: Operator) {
   return operator;
 }
 
-function hasTwentyFourSolution(values: number[]) {
-  const search = (numbers: number[]): boolean => {
-    if (numbers.length === 1) {
-      return Math.abs(numbers[0] - 24) < EPSILON;
-    }
-
-    for (let leftIndex = 0; leftIndex < numbers.length; leftIndex += 1) {
-      for (let rightIndex = 0; rightIndex < numbers.length; rightIndex += 1) {
-        if (leftIndex === rightIndex) continue;
-
-        const rest = numbers.filter((_, index) => index !== leftIndex && index !== rightIndex);
-        const left = numbers[leftIndex];
-        const right = numbers[rightIndex];
-        const candidates = [left + right, left - right, left * right];
-        if (Math.abs(right) > EPSILON) {
-          candidates.push(left / right);
-        }
-
-        if (candidates.some((candidate) => search([...rest, candidate]))) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  };
-
-  return search(values);
-}
-
-function generateCards(): CardValue[] {
-  for (let attempt = 0; attempt < 200; attempt += 1) {
-    const values = Array.from({ length: 4 }, () => randomInt(1, 10));
-    if (hasTwentyFourSolution(values)) {
-      return values.map((value) => ({ value, label: String(value) }));
-    }
-  }
-
-  return [3, 3, 8, 8].map((value) => ({ value, label: String(value) }));
-}
-
 function tokenToText(token: Token) {
   if (token.type === "number") return token.label;
   if (token.type === "operator") return formatOperator(token.value);
@@ -81,6 +45,63 @@ function tokenToText(token: Token) {
 
 function getPrecedence(operator: Operator) {
   return operator === "+" || operator === "-" ? 1 : 2;
+}
+
+function solveTwentyFour(values: number[]): string | null {
+  const search = (items: Array<{ value: number; expression: string }>): string | null => {
+    if (items.length === 1) {
+      return Math.abs(items[0].value - 24) < EPSILON ? items[0].expression : null;
+    }
+
+    for (let leftIndex = 0; leftIndex < items.length; leftIndex += 1) {
+      for (let rightIndex = 0; rightIndex < items.length; rightIndex += 1) {
+        if (leftIndex === rightIndex) continue;
+
+        const left = items[leftIndex];
+        const right = items[rightIndex];
+        const rest = items.filter((_, index) => index !== leftIndex && index !== rightIndex);
+        const candidates = [
+          { value: left.value + right.value, expression: `(${left.expression}+${right.expression})` },
+          { value: left.value - right.value, expression: `(${left.expression}-${right.expression})` },
+          { value: left.value * right.value, expression: `(${left.expression}×${right.expression})` },
+        ];
+
+        if (Math.abs(right.value) > EPSILON) {
+          candidates.push({
+            value: left.value / right.value,
+            expression: `(${left.expression}÷${right.expression})`,
+          });
+        }
+
+        for (const candidate of candidates) {
+          const result = search([...rest, candidate]);
+          if (result) return result;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  return search(values.map((value) => ({ value, expression: String(value) })));
+}
+
+function generateRound(): GeneratedRound {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const values = Array.from({ length: 4 }, () => randomInt(1, 10));
+    const solution = solveTwentyFour(values);
+    if (solution) {
+      return {
+        cards: values.map((value) => ({ value, label: String(value) })),
+        solution,
+      };
+    }
+  }
+
+  return {
+    cards: [3, 3, 8, 8].map((value) => ({ value, label: String(value) })),
+    solution: "(8÷(3-8÷3))",
+  };
 }
 
 function evaluateExpression(tokens: Token[]): number | null {
@@ -143,14 +164,15 @@ function evaluateExpression(tokens: Token[]): number | null {
 }
 
 export default function TwentyFour() {
+  const [round, setRound] = useState<GeneratedRound>(() => generateRound());
   const [phase, setPhase] = useState<Phase>("start");
-  const [cards, setCards] = useState<CardValue[]>(() => generateCards());
   const [tokens, setTokens] = useState<Token[]>([]);
   const [score, setScore] = useState(0);
   const [best, setBest] = useState(0);
   const [timeLeft, setTimeLeft] = useState(ROUND_SECONDS);
   const [feedback, setFeedback] = useState("用四张牌和运算符凑出 24");
   const [isNewBest, setIsNewBest] = useState(false);
+  const [hintUsed, setHintUsed] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scoreRef = useRef(0);
@@ -226,19 +248,27 @@ export default function TwentyFour() {
 
   const startGame = () => {
     clearTimer();
-    setCards(generateCards());
+    setRound(generateRound());
     setTokens([]);
     setScore(0);
     setTimeLeft(ROUND_SECONDS);
     setFeedback("用四张牌和运算符凑出 24");
     setIsNewBest(false);
+    setHintUsed(false);
     setPhase("playing");
   };
 
   const nextRound = () => {
-    setCards(generateCards());
+    setRound(generateRound());
     setTokens([]);
+    setHintUsed(false);
     setFeedback("继续凑出 24");
+  };
+
+  const showHint = () => {
+    if (phase !== "playing") return;
+    setHintUsed(true);
+    setFeedback(`参考解法：${round.solution}。本题继续练习但不计分`);
   };
 
   const usedCardIndexes = new Set(
@@ -275,7 +305,7 @@ export default function TwentyFour() {
   };
 
   const submitExpression = () => {
-    if (usedCardIndexes.size !== cards.length) {
+    if (usedCardIndexes.size !== round.cards.length) {
       setFeedback("需要用完四张牌");
       return;
     }
@@ -287,8 +317,12 @@ export default function TwentyFour() {
     }
 
     if (Math.abs(result - 24) < EPSILON) {
-      setScore((current) => current + 1);
-      setFeedback("正确，进入下一题");
+      if (!hintUsed) {
+        setScore((current) => current + 1);
+        setFeedback("正确，进入下一题");
+      } else {
+        setFeedback("已完成提示题，进入下一题");
+      }
       setTimeout(nextRound, 450);
       return;
     }
@@ -342,7 +376,7 @@ export default function TwentyFour() {
           </View>
 
           <View className="tf-card-row">
-            {cards.map((card, index) => (
+            {round.cards.map((card, index) => (
               <View
                 key={`${card.label}-${index}`}
                 className={`tf-number-card ${usedCardIndexes.has(index) ? "tf-number-card-used" : ""}`}
@@ -387,6 +421,9 @@ export default function TwentyFour() {
             </View>
             <View className="tf-skip-button" onClick={nextRound}>
               <Text className="tf-skip-button-text">换一题</Text>
+            </View>
+            <View className="tf-hint-button" onClick={showHint}>
+              <Text className="tf-hint-button-text">看提示</Text>
             </View>
           </View>
         </View>
