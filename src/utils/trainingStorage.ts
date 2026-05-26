@@ -262,19 +262,34 @@ function readLegacySummary(gameId: TrainingGameId): TrainingSummary {
 }
 
 const TRAINING_POINT_RATES: Record<string, number> = {
-  "memory-challenge": 0.25,
-  "rock-paper-scissors": 0.15,
-  "dual-task": 0.05,
+  "memory-challenge": 1,
+  "rock-paper-scissors": 1,
+  "dual-task": 1,
   "mental-math": 1,
   "twenty-four": 2,
   "digit-span": 3,
   "multiple-object-tracking": 3,
   "pattern-completion": 1.2,
-  memory: 0.25,
-  rps: 0.15,
+  memory: 1,
+  rps: 1,
   mot: 3,
   pattern: 1.2,
 };
+
+const TRAINING_GAME_ID_ALIASES: Partial<Record<TrainingGameId, TrainingGameId[]>> = {
+  "memory-challenge": ["memory-challenge", "memory"],
+  memory: ["memory", "memory-challenge"],
+  "rock-paper-scissors": ["rock-paper-scissors", "rps"],
+  rps: ["rps", "rock-paper-scissors"],
+  "multiple-object-tracking": ["multiple-object-tracking", "mot"],
+  mot: ["mot", "multiple-object-tracking"],
+  "pattern-completion": ["pattern-completion", "pattern"],
+  pattern: ["pattern", "pattern-completion"],
+};
+
+function getEquivalentTrainingGameIds(gameId: TrainingGameId): TrainingGameId[] {
+  return TRAINING_GAME_ID_ALIASES[gameId] || [gameId];
+}
 
 export function getAwardedPoints(gameId: string, score: number) {
   const rate = TRAINING_POINT_RATES[gameId] ?? 0;
@@ -357,7 +372,8 @@ export function recordTrainingSession(record: Omit<TrainingRecord, "id" | "playe
 }
 
 export function readTrainingSummary(gameId: TrainingGameId): TrainingSummary {
-  const records = readTrainingRecords().filter((item) => item.gameId === gameId);
+  const gameIds = getEquivalentTrainingGameIds(gameId);
+  const records = readTrainingRecords().filter((item) => gameIds.includes(item.gameId));
   const latest = records[0] ?? null;
   const best = records.reduce((max, item) => Math.max(max, item.score), 0);
   const legacy = readLegacySummary(gameId);
@@ -407,9 +423,11 @@ export function recommendNextGame(gameIds: TrainingGameId[]): TrainingGameId {
   const records = readTrainingRecords();
   const lastPlayedMap = new Map<TrainingGameId, number>();
 
-  records.forEach((record) => {
-    if (!lastPlayedMap.has(record.gameId)) {
-      lastPlayedMap.set(record.gameId, new Date(record.playedAt).getTime());
+  gameIds.forEach((gameId) => {
+    const equivalentIds = getEquivalentTrainingGameIds(gameId);
+    const latest = records.find((record) => equivalentIds.includes(record.gameId));
+    if (latest) {
+      lastPlayedMap.set(gameId, new Date(latest.playedAt).getTime());
     }
   });
 

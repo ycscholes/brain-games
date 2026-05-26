@@ -292,8 +292,7 @@ $color-warning: #f59e0b;
   gap: 12px;
 }
 
-.key,
-.key-wide {
+.key {
   min-height: 72px;
   border-radius: 22px;
   background-color: #f8fafc;
@@ -303,13 +302,11 @@ $color-warning: #f59e0b;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
-.key:active,
-.key-wide:active {
+.key:active {
   transform: scale(0.98);
 }
 
-.key-wide {
-  grid-column: span 2;
+.key-secondary {
   background-color: $color-primary-light;
 }
 
@@ -340,7 +337,12 @@ $color-warning: #f59e0b;
 }
 
 .submit-button {
+  grid-column: 1 / -1;
   background: linear-gradient(90deg, $color-primary 0%, $color-primary-dark 100%);
+}
+
+.submit-button-disabled {
+  opacity: 0.55;
 }
 
 .button-text {

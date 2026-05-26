@@ -29,7 +29,7 @@ interface ScoreSummary {
   totalSessions: number;
 }
 
-type GameCategoryId = "memory" | "calculation" | "reaction" | "logic";
+type GameCategoryId = "daily" | "memory" | "advanced";
 
 interface GameItem {
   id: TrainingGameId;
@@ -38,56 +38,40 @@ interface GameItem {
   cardClass: string;
   url: string;
   category: GameCategoryId;
+  duration: string;
+  skill: string;
+  level: "轻松" | "标准" | "进阶";
   summary: ScoreSummary;
 }
 
 const GAME_CATEGORIES: Array<{ id: GameCategoryId; title: string }> = [
-  { id: "memory", title: "记忆" },
-  { id: "calculation", title: "计算" },
-  { id: "reaction", title: "反应" },
-  { id: "logic", title: "逻辑" },
+  { id: "daily", title: "日常优先" },
+  { id: "memory", title: "反应与记忆" },
+  { id: "advanced", title: "进阶专注" },
 ];
 
 const BASE_GAMES = [
-  {
-    id: "memory",
-    title: "记忆图形",
-    badge: "记忆",
-    cardClass: "card-memory",
-    url: "/pages/memory-challenge/index",
-    category: "memory",
-  },
-  {
-    id: "rps",
-    title: "逆向猜拳",
-    badge: "反应",
-    cardClass: "card-rps",
-    url: "/pages/rock-paper-scissors/index",
-    category: "reaction",
-  },
-  {
-    id: "dual-task",
-    title: "多任务处理",
-    badge: "反应",
-    cardClass: "card-dual",
-    url: "/pages/dual-task/index",
-    category: "reaction",
-  },
   {
     id: "mental-math",
     title: "速算挑战",
     badge: "计算",
     cardClass: "card-mental",
     url: "/pages/mental-math/index",
-    category: "calculation",
+    category: "daily",
+    duration: "30 秒",
+    skill: "计算速度",
+    level: "轻松",
   },
   {
-    id: "twenty-four",
-    title: "24 点",
-    badge: "计算",
-    cardClass: "card-twenty-four",
-    url: "/pages/twenty-four/index",
-    category: "calculation",
+    id: "pattern-completion",
+    title: "找规律",
+    badge: "逻辑",
+    cardClass: "card-pattern",
+    url: "/pages/pattern-completion/index",
+    category: "daily",
+    duration: "约 2 分钟",
+    skill: "规律推理",
+    level: "轻松",
   },
   {
     id: "digit-span",
@@ -95,23 +79,65 @@ const BASE_GAMES = [
     badge: "记忆",
     cardClass: "card-digit",
     url: "/pages/digit-span/index",
-    category: "memory",
+    category: "daily",
+    duration: "1-3 分钟",
+    skill: "短时记忆",
+    level: "轻松",
   },
   {
-    id: "mot",
-    title: "追踪任务",
+    id: "twenty-four",
+    title: "24 点",
+    badge: "计算",
+    cardClass: "card-twenty-four",
+    url: "/pages/twenty-four/index",
+    category: "daily",
+    duration: "90 秒",
+    skill: "算术组合",
+    level: "标准",
+  },
+  {
+    id: "rock-paper-scissors",
+    title: "逆向猜拳",
+    badge: "反应",
+    cardClass: "card-rps",
+    url: "/pages/rock-paper-scissors/index",
+    category: "memory",
+    duration: "1-2 分钟",
+    skill: "抑制控制",
+    level: "标准",
+  },
+  {
+    id: "memory-challenge",
+    title: "记忆图形",
     badge: "记忆",
+    cardClass: "card-memory",
+    url: "/pages/memory-challenge/index",
+    category: "memory",
+    duration: "失误即止",
+    skill: "N-back",
+    level: "进阶",
+  },
+  {
+    id: "multiple-object-tracking",
+    title: "追踪任务",
+    badge: "专注",
     cardClass: "card-mot",
     url: "/pages/multiple-object-tracking/index",
-    category: "memory",
+    category: "advanced",
+    duration: "每轮 6 秒",
+    skill: "视觉追踪",
+    level: "进阶",
   },
   {
-    id: "pattern",
-    title: "找规律",
-    badge: "逻辑",
-    cardClass: "card-pattern",
-    url: "/pages/pattern-completion/index",
-    category: "logic",
+    id: "dual-task",
+    title: "多任务处理",
+    badge: "双任务",
+    cardClass: "card-dual",
+    url: "/pages/dual-task/index",
+    category: "advanced",
+    duration: "60 秒",
+    skill: "任务切换",
+    level: "进阶",
   },
 ] satisfies Array<Omit<GameItem, "summary">>;
 
@@ -257,7 +283,9 @@ export default function Index() {
   const visibleGames = normalizedSearchQuery
     ? games.filter((game) => {
         const categoryTitle = GAME_CATEGORIES.find((category) => category.id === game.category)?.title ?? "";
-        return `${game.title} ${game.badge} ${categoryTitle}`.toLowerCase().includes(normalizedSearchQuery);
+        return `${game.title} ${game.badge} ${game.skill} ${game.duration} ${game.level} ${categoryTitle}`
+          .toLowerCase()
+          .includes(normalizedSearchQuery);
       })
     : games;
   const groupedGames = GAME_CATEGORIES.map((category) => ({
@@ -346,7 +374,7 @@ export default function Index() {
             <View>
               <Text className="section-title">下一练建议</Text>
               <Text className="section-subtitle">
-                优先补齐最近少练或尚未开始的项目，保持训练面均衡。
+                先从短时、低门槛项目开始，再逐步补齐进阶训练。
               </Text>
             </View>
           </View>
@@ -387,7 +415,13 @@ export default function Index() {
                     </View>
 
                     <View className="game-meta">
-                      <Text className="game-badge">{game.badge}</Text>
+                      <View className="game-badge-row">
+                        <Text className="game-badge">{game.badge}</Text>
+                        <Text className={`game-level game-level-${game.level === "进阶" ? "advanced" : game.level === "标准" ? "standard" : "easy"}`}>
+                          {game.level}
+                        </Text>
+                      </View>
+                      <Text className="game-detail-line">{game.duration} · {game.skill}</Text>
                       <Text className="score-line">{`最高分：${game.summary.best}`}</Text>
                       <Text className="score-line score-line-secondary">
                         {game.summary.played

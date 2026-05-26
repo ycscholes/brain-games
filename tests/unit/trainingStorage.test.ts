@@ -66,6 +66,20 @@ describe("trainingStorage", () => {
     expect(summary.totalSessions).toBe(0);
   });
 
+  test("summaries and recommendations treat legacy short ids as the same game", () => {
+    recordTrainingSession({
+      gameId: "rps",
+      score: 12,
+      awardedPoints: 12,
+      outcome: "completed",
+    });
+
+    const summary = readTrainingSummary("rock-paper-scissors");
+    expect(summary.played).toBe(true);
+    expect(summary.best).toBe(12);
+    expect(summary.recent).toBe(12);
+  });
+
   test("reads and updates app settings", () => {
     expect(readAppSettings().privacyAccepted).toBe(false);
 
@@ -129,9 +143,9 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("pattern-completion", 30)).toBe(36);
     });
 
-    test("dual-task: 0.05x conversion (lower rate for high scores)", () => {
-      expect(getAwardedPoints("dual-task", 200)).toBe(10);
-      expect(getAwardedPoints("dual-task", 800)).toBe(40);
+    test("dual-task: capped score maps directly to points", () => {
+      expect(getAwardedPoints("dual-task", 10)).toBe(10);
+      expect(getAwardedPoints("dual-task", 40)).toBe(40);
     });
 
     test("multiple-object-tracking: 3x conversion", () => {
@@ -139,14 +153,14 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("multiple-object-tracking", 15)).toBe(45);
     });
 
-    test("rock-paper-scissors: 0.15x conversion", () => {
-      expect(getAwardedPoints("rock-paper-scissors", 100)).toBe(15);
-      expect(getAwardedPoints("rock-paper-scissors", 300)).toBe(45);
+    test("rock-paper-scissors: capped score maps directly to points", () => {
+      expect(getAwardedPoints("rock-paper-scissors", 10)).toBe(10);
+      expect(getAwardedPoints("rock-paper-scissors", 40)).toBe(40);
     });
 
-    test("memory-challenge: 0.25x conversion", () => {
-      expect(getAwardedPoints("memory-challenge", 50)).toBe(12);
-      expect(getAwardedPoints("memory-challenge", 150)).toBe(37);
+    test("memory-challenge: capped score maps directly to points", () => {
+      expect(getAwardedPoints("memory-challenge", 10)).toBe(10);
+      expect(getAwardedPoints("memory-challenge", 40)).toBe(40);
     });
 
     test("typical good performance gives similar rewards across games", () => {
@@ -156,10 +170,10 @@ describe("trainingStorage", () => {
         getAwardedPoints("mental-math", 20),
         getAwardedPoints("twenty-four", 10),
         getAwardedPoints("pattern-completion", 20),
-        getAwardedPoints("dual-task", 400),
+        getAwardedPoints("dual-task", 24),
         getAwardedPoints("multiple-object-tracking", 10),
-        getAwardedPoints("rock-paper-scissors", 200),
-        getAwardedPoints("memory-challenge", 100),
+        getAwardedPoints("rock-paper-scissors", 24),
+        getAwardedPoints("memory-challenge", 24),
       ];
 
       rewards.forEach(reward => {

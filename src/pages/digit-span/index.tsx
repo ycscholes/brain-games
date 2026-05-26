@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
+import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 type Phase = "start" | "showing" | "input" | "finished";
@@ -57,12 +57,13 @@ export default function DigitSpan() {
   const finishGame = useCallback(
     (finalScore: number) => {
       clearTimers();
+      const awardedPoints = getAwardedPoints("digit-span", finalScore);
       setScore(finalScore);
       addPointsToPet("digit-span", finalScore);
       recordTrainingSession({
         gameId: "digit-span",
         score: finalScore,
-        awardedPoints: finalScore,
+        awardedPoints,
         outcome: "completed",
       });
       setPhase("finished");
@@ -127,6 +128,14 @@ export default function DigitSpan() {
     }
 
     setInputValue("");
+  };
+
+  const deleteLastDigit = () => {
+    if (phase !== "input") {
+      return;
+    }
+
+    setInputValue((prev) => prev.slice(0, -1));
   };
 
   const submitAnswer = () => {
@@ -230,13 +239,19 @@ export default function DigitSpan() {
                 <Text className="key-text">{digit}</Text>
               </View>
             ))}
-            <View className="key-wide" onClick={clearInput}>
-              <Text className="key-text">清除</Text>
+            <View className="key key-secondary" onClick={deleteLastDigit}>
+              <Text className="key-text">退格</Text>
             </View>
             <View className="key" onClick={() => appendDigit(DIGIT_KEYS[9])}>
               <Text className="key-text">{DIGIT_KEYS[9]}</Text>
             </View>
-            <View className="submit-button" onClick={submitAnswer}>
+            <View className="key key-secondary" onClick={clearInput}>
+              <Text className="key-text">清除</Text>
+            </View>
+            <View
+              className={`submit-button ${inputValue.length === roundLength ? "" : "submit-button-disabled"}`}
+              onClick={submitAnswer}
+            >
               <Text className="button-text">提交答案</Text>
             </View>
           </View>
@@ -249,8 +264,9 @@ export default function DigitSpan() {
     <View className="result-screen">
       <View className="result-card">
         <Text className="result-title">本局成绩</Text>
-        <Text className="result-score">{Math.min(MAX_POINTS_PER_SESSION, Math.max(0, 5 + (score - 3) * 3))}</Text>
+        <Text className="result-score">{score}</Text>
         <Text className="result-desc">成功回忆 {score} 位数字</Text>
+        <Text className="result-desc">获得 {getAwardedPoints("digit-span", score)} 积分</Text>
         <Text className="result-desc">
           历史最高 {best}
           {isNewBest ? <Text className="result-highlight">，刷新纪录</Text> : null}

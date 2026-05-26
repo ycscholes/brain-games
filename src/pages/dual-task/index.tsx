@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
-import { MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
+import { getAwardedPoints, MAX_POINTS_PER_SESSION, recordTrainingSession } from "../../utils/trainingStorage";
 import "./index.scss";
 
 type GameStatus = "start" | "playing" | "finished";
@@ -86,6 +86,7 @@ const COLOR_BLOCKS = ["🟥", "🟦", "🟨", "🟩"];
 const SHAPES = ["●", "■", "▲", "★"];
 const SHAPE_LABELS = ["圆形", "方形", "三角", "五角星"];
 const WRONG_PENALTY = 2;
+const SESSION_DURATION_MS = 60 * 1000;
 
 const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 const pickOne = <T,>(list: T[]) => list[randomInt(0, list.length - 1)];
@@ -269,11 +270,14 @@ export default function DualTaskGame() {
   const [questionStartAt, setQuestionStartAt] = useState(0);
   const [taskStartAt, setTaskStartAt] = useState(0);
   const [taskTimeLeftMs, setTaskTimeLeftMs] = useState(0);
+  const [sessionTimeLeftMs, setSessionTimeLeftMs] = useState(SESSION_DURATION_MS);
 
   const [lastFeedback, setLastFeedback] = useState<"correct" | "wrong" | "timeout" | "none">("none");
 
   const questionTickerRef = useRef<NodeJS.Timeout | null>(null);
   const roundTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const sessionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const scoreRef = useRef(0);
 
   const difficultyMeta = DIFFICULTY_CONFIG[config.difficulty];
 
@@ -286,7 +290,15 @@ export default function DualTaskGame() {
       clearTimeout(roundTimerRef.current);
       roundTimerRef.current = null;
     }
+    if (sessionTimerRef.current) {
+      clearInterval(sessionTimerRef.current);
+      sessionTimerRef.current = null;
+    }
   };
+
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
 
   const loadBestScore = useCallback(() => {
     const cached = Taro.getStorageSync(getStorageKey(config.mode));
@@ -328,14 +340,16 @@ export default function DualTaskGame() {
 
   const finishGame = useCallback((finalScore?: number) => {
     clearAllTimers();
-    const settledScore = Math.min(MAX_POINTS_PER_SESSION, Math.max(0, Math.round(finalScore ?? score)));
+    const settledScore = Math.min(MAX_POINTS_PER_SESSION, Math.max(0, Math.round(finalScore ?? scoreRef.current)));
+    const awardedPoints = getAwardedPoints("dual-task", settledScore);
     Taro.setStorageSync(`dual_task_last_${config.mode}`, settledScore);
     addPointsToPet("dual-task", settledScore);
     recordTrainingSession({
       gameId: "dual-task",
       score: settledScore,
-      awardedPoints: settledScore,
+      awardedPoints,
       mode: `${config.mode}:${config.difficulty}`,
+      durationSeconds: Math.round((SESSION_DURATION_MS - sessionTimeLeftMs) / 1000),
       outcome: "completed",
     });
     setGameStatus("finished");
@@ -348,7 +362,7 @@ export default function DualTaskGame() {
     } else {
       setBestScore(currentBest);
     }
-  }, [config.mode, score]);
+  }, [config.difficulty, config.mode, sessionTimeLeftMs]);
 
   const applyPenalty = useCallback(
     (isTimeout: boolean) => {
@@ -360,10 +374,10 @@ export default function DualTaskGame() {
       else setWrongCount((prev) => prev + 1);
       setLastFeedback(isTimeout ? "timeout" : "wrong");
       roundTimerRef.current = setTimeout(() => {
-        finishGame(nextScore);
+        spawnNextPair();
       }, 420);
     },
-    [difficultyMeta.timeoutPenalty, finishGame, score],
+    [difficultyMeta.timeoutPenalty, score, spawnNextPair],
   );
 
   const addCorrectScore = useCallback(() => {
@@ -551,6 +565,29 @@ export default function DualTaskGame() {
   ]);
 
   useEffect(() => {
+    if (gameStatus !== "playing") return undefined;
+
+    if (sessionTimerRef.current) clearInterval(sessionTimerRef.current);
+    sessionTimerRef.current = setInterval(() => {
+      setSessionTimeLeftMs((current) => {
+        if (current <= 1000) {
+          finishGame();
+          return 0;
+        }
+
+        return current - 1000;
+      });
+    }, 1000);
+
+    return () => {
+      if (sessionTimerRef.current) {
+        clearInterval(sessionTimerRef.current);
+        sessionTimerRef.current = null;
+      }
+    };
+  }, [finishGame, gameStatus]);
+
+  useEffect(() => {
     if (gameStatus !== "playing" || config.mode === "alternating") return;
     if (lastFeedback !== "none") return;
     if (taskAAnswered && taskBAnswered) {
@@ -569,6 +606,7 @@ export default function DualTaskGame() {
     clearAllTimers();
     setGameStatus("playing");
     setScore(0);
+    setSessionTimeLeftMs(SESSION_DURATION_MS);
     setStreak(0);
     setMaxStreak(0);
     setCorrectCount(0);
@@ -675,7 +713,7 @@ export default function DualTaskGame() {
                 <Text className="hero-metric-label">单题时限</Text>
               </View>
               <View className="hero-metric">
-                <Text className="hero-metric-value">失误即止</Text>
+                <Text className="hero-metric-value">60s</Text>
                 <Text className="hero-metric-label">当前规则</Text>
               </View>
               <View className="hero-metric">
@@ -746,8 +784,8 @@ export default function DualTaskGame() {
 
             <View className="top-bar">
               <View className="stat-cell">
-                <Text className="stat-label">🎯 难度</Text>
-                <Text className="stat-value">{DIFFICULTY_CONFIG[config.difficulty].label}</Text>
+                <Text className="stat-label">⏱️ 剩余</Text>
+                <Text className="stat-value">{Math.ceil(sessionTimeLeftMs / 1000)}s</Text>
               </View>
               <View className="stat-cell">
                 <Text className="stat-label">🏆 得分</Text>

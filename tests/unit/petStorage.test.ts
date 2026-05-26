@@ -13,7 +13,14 @@ jest.mock("@tarojs/taro", () => ({
   },
 }));
 
-import { addPointsToPet, adoptPet, feedPet, readPetData } from "../../src/utils/petStorage";
+import {
+  addPointsToPet,
+  adoptPet,
+  calculateHungerDecay,
+  feedPet,
+  readPetData,
+  updatePetStatus,
+} from "../../src/utils/petStorage";
 
 describe("petStorage", () => {
   beforeEach(() => {
@@ -43,5 +50,41 @@ describe("petStorage", () => {
     const data = readPetData();
     expect(data.pets).toHaveLength(0);
     expect(data.balance).toBe(0);
+  });
+
+  test("marks pets hungry only when hunger is below twenty percent", () => {
+    const adoption = adoptPet("米粒", "rabbit");
+    const pet = adoption.pet!;
+
+    expect(updatePetStatus({ ...pet, hunger: 20 }).status).toBe("alive");
+    expect(updatePetStatus({ ...pet, hunger: 19 }).status).toBe("hungry");
+    expect(updatePetStatus({ ...pet, hunger: 0 }).status).toBe("hungry");
+  });
+
+  test("decays full hunger to zero after three days without killing the pet", () => {
+    const lastCheckTime = new Date("2026-04-04T10:00:00.000Z").toISOString();
+
+    expect(calculateHungerDecay(100, lastCheckTime)).toEqual({
+      newHunger: 0,
+      shouldDie: false,
+    });
+  });
+
+  test("keeps pets alive before three full days of hunger decay", () => {
+    const lastCheckTime = new Date("2026-04-04T10:01:00.000Z").toISOString();
+
+    expect(calculateHungerDecay(100, lastCheckTime)).toEqual({
+      newHunger: 1,
+      shouldDie: false,
+    });
+  });
+
+  test("kills pets after hunger has been zero for one day", () => {
+    const lastCheckTime = new Date("2026-04-03T10:00:00.000Z").toISOString();
+
+    expect(calculateHungerDecay(100, lastCheckTime)).toEqual({
+      newHunger: 0,
+      shouldDie: true,
+    });
   });
 });

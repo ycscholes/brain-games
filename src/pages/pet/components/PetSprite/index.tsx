@@ -24,7 +24,7 @@ export default function PetSprite({
 }: PetSpriteProps) {
   const [imageSrc, setImageSrc] = useState("");
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
-  const safeMood = status === "dead" ? "idle" : mood;
+  const safeMood = status === "dead" ? "idle" : status === "hungry" ? "hungry" : mood;
   const shouldShowImage = Boolean(imageSrc) && !imageLoadFailed;
 
   useEffect(() => {
