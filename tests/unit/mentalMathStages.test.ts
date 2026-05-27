@@ -16,7 +16,7 @@ function getNumbers(question: string) {
 }
 
 describe("mental math stage generation", () => {
-  test("defines six fixed primary-school learning stages with mapped point difficulty", () => {
+  test("defines six fixed content stages with mapped point difficulty", () => {
     expect(MATH_STAGES.map((stage) => stage.id)).toEqual(["G1A", "G1B", "G2", "G3", "G4", "G5_6"]);
     expect(getMathStage("G1A").difficulty).toBe("normal");
     expect(getMathStage("G1B").difficulty).toBe("normal");
@@ -24,6 +24,25 @@ describe("mental math stage generation", () => {
     expect(getMathStage("G3").difficulty).toBe("hard");
     expect(getMathStage("G4").difficulty).toBe("hard");
     expect(getMathStage("G5_6").difficulty).toBe("hard");
+  });
+
+  test("uses content-based display labels instead of grade labels", () => {
+    const gradePattern = /一年级|二年级|三年级|四年级|五六年级/;
+
+    expect(MATH_STAGES.map((stage) => stage.name)).toEqual([
+      "10以内加减",
+      "20以内进退位",
+      "百以内与口诀",
+      "万以内加减乘除",
+      "多位数乘除",
+      "整数四则混合",
+    ]);
+
+    MATH_STAGES.forEach((stage) => {
+      expect(stage.name).not.toMatch(gradePattern);
+      expect(stage.shortName).not.toMatch(gradePattern);
+      expect(stage.summary).not.toMatch(gradePattern);
+    });
   });
 
   test("all stages produce integer answers and four unique integer options", () => {
@@ -43,7 +62,7 @@ describe("mental math stage generation", () => {
     });
   });
 
-  test("first and second grade stages only generate addition and subtraction within range", () => {
+  test("early addition and subtraction stages stay within range", () => {
     const expectations: Array<[MathStageId, number]> = [
       ["G1A", 10],
       ["G1B", 20],
@@ -62,7 +81,7 @@ describe("mental math stage generation", () => {
     });
   });
 
-  test("second grade introduces multiplication but not division", () => {
+  test("hundred-range stage introduces multiplication but not division", () => {
     const operations = new Set<MathOperation>();
 
     sampleProblems("G2").forEach((problem) => {
@@ -78,7 +97,7 @@ describe("mental math stage generation", () => {
     expect(operations.has("divide")).toBe(false);
   });
 
-  test("third grade introduces integer division and keeps values in stage ranges", () => {
+  test("ten-thousand-range stage introduces integer division and keeps values in stage ranges", () => {
     const operations = new Set<MathOperation>();
 
     sampleProblems("G3").forEach((problem) => {
@@ -103,7 +122,7 @@ describe("mental math stage generation", () => {
     expect(operations.has("divide")).toBe(true);
   });
 
-  test("fourth grade generates multi-digit multiplication and exact division", () => {
+  test("multi-digit stage generates multiplication and exact division", () => {
     const operations = new Set<MathOperation>();
 
     sampleProblems("G4").forEach((problem) => {
@@ -129,7 +148,7 @@ describe("mental math stage generation", () => {
     expect(operations.has("divide")).toBe(true);
   });
 
-  test("fifth and sixth grade generates two-step integer mixed arithmetic", () => {
+  test("mixed arithmetic stage generates two-step integer problems", () => {
     sampleProblems("G5_6").forEach((problem) => {
       expect(problem.operation).toBe("mixed");
       expect(Number.isInteger(problem.answer)).toBe(true);

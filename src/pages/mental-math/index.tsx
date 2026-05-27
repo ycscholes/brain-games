@@ -321,7 +321,7 @@ export default function MentalMath() {
 
             <View className="difficulty-info">
               <Text className="difficulty-text">
-                当前阶段：{selectedStage.name} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
+                当前内容：{selectedStage.name} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
               </Text>
             </View>
           </View>
@@ -331,7 +331,7 @@ export default function MentalMath() {
               <View className="mode-icon">
                 <Text className="mode-icon-text">⚡</Text>
               </View>
-              <Text className="mode-title">选择学习阶段</Text>
+              <Text className="mode-title">选择训练内容</Text>
             </View>
             <View className="stage-grid">
               {MATH_STAGES.map((stage) => (
@@ -402,7 +402,7 @@ export default function MentalMath() {
               </View>
               <View className="rule-item">
                 <Text className="rule-number">4.</Text>
-                <Text className="rule-text">题型由所选学习阶段决定</Text>
+                <Text className="rule-text">题型由所选训练内容决定</Text>
               </View>
             </View>
           </View>
