@@ -50,9 +50,9 @@
   position: absolute;
   inset: 10% 14%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 215, 142, 0.42), rgba(255, 215, 142, 0));
-  filter: blur(12px);
-  opacity: 0.42;
+  background: radial-gradient(circle, rgba(255, 228, 132, 0.58), rgba(255, 228, 132, 0));
+  filter: blur(10px);
+  opacity: 0.54;
 }
 
 .pet-sprite__shadow {
@@ -62,8 +62,8 @@
   bottom: 6%;
   height: 14%;
   border-radius: 50%;
-  background: rgba(74, 49, 28, 0.12);
-  filter: blur(5px);
+  background: rgba(74, 49, 28, 0.18);
+  filter: blur(4px);
 }
 
 .pet-sprite__image {
@@ -84,11 +84,13 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(255, 246, 225, 0.72);
+  background: #fff5c9;
   color: #7a4b2a;
   font-size: 56px;
   line-height: 1;
-  box-shadow: inset 0 0 0 1px rgba(122, 75, 42, 0.1);
+  box-shadow:
+    inset 0 -8px 0 rgba(169, 107, 42, 0.12),
+    inset 0 0 0 3px rgba(122, 75, 42, 0.14);
 }
 
 .pet-sprite--xxs .pet-sprite__fallback {
@@ -113,6 +115,7 @@
 
 .pet-sprite--selected .pet-sprite__glow {
   opacity: 0.9;
+  background: radial-gradient(circle, rgba(255, 239, 141, 0.8), rgba(255, 239, 141, 0));
 }
 
 .pet-sprite--feed {

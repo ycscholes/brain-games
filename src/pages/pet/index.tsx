@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Input, ScrollView } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useUserDataChange } from "../../services/user-data/hooks/useUserDataChange";
@@ -11,6 +11,7 @@ import {
 } from "../../utils/petStorage";
 import {
   PetData,
+  FoodItem,
   PetStorageData,
   PetSkin,
   FOOD_ITEMS,
@@ -21,13 +22,26 @@ import PetSprite from "./components/PetSprite";
 import type { PetSpriteMood } from "./components/PetSprite/types";
 import "./index.scss";
 
+type PetFeedbackKind = "idle" | "switch" | "feed" | "cuddle" | "error";
+
+interface FeedBurst {
+  id: number;
+  emoji: string;
+  restoreHunger: number;
+  cost: number;
+}
+
 export default function PetPage() {
   const [storageData, setStorageData] = useState<PetStorageData>(() => readPetData());
   const [newName, setNewName] = useState("");
   const [selectedSkin, setSelectedSkin] = useState<PetSkin>("cat");
   const [showAdoptionPanel, setShowAdoptionPanel] = useState(false);
   const [petMotion, setPetMotion] = useState<PetSpriteMood>("idle");
+  const [feedbackKind, setFeedbackKind] = useState<PetFeedbackKind>("idle");
+  const [feedBurst, setFeedBurst] = useState<FeedBurst | null>(null);
   const petMotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const feedBurstTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearPetMotionTimer = useCallback(() => {
     if (petMotionTimerRef.current) {
@@ -35,6 +49,49 @@ export default function PetPage() {
       petMotionTimerRef.current = null;
     }
   }, []);
+
+  const clearFeedbackTimer = useCallback(() => {
+    if (feedbackTimerRef.current) {
+      clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = null;
+    }
+  }, []);
+
+  const clearFeedBurstTimer = useCallback(() => {
+    if (feedBurstTimerRef.current) {
+      clearTimeout(feedBurstTimerRef.current);
+      feedBurstTimerRef.current = null;
+    }
+  }, []);
+
+  const playFeedback = useCallback(
+    (kind: PetFeedbackKind, duration = 1300) => {
+      clearFeedbackTimer();
+      setFeedbackKind(kind);
+      feedbackTimerRef.current = setTimeout(() => {
+        setFeedbackKind("idle");
+        feedbackTimerRef.current = null;
+      }, duration);
+    },
+    [clearFeedbackTimer],
+  );
+
+  const showFeedBurst = useCallback(
+    (food: FoodItem) => {
+      clearFeedBurstTimer();
+      setFeedBurst({
+        id: Date.now(),
+        emoji: food.emoji,
+        restoreHunger: food.restoreHunger,
+        cost: food.cost,
+      });
+      feedBurstTimerRef.current = setTimeout(() => {
+        setFeedBurst(null);
+        feedBurstTimerRef.current = null;
+      }, 1100);
+    },
+    [clearFeedBurstTimer],
+  );
 
   const playPetMotion = useCallback(
     (motion: PetSpriteMood, duration = 900) => {
@@ -77,17 +134,52 @@ export default function PetPage() {
   const deadCount = pets.length - aliveCount;
   const nextAdoptionCost = getNextAdoptionCost(storageData);
 
+  const activePetLine = useMemo(() => {
+    if (!activePet) {
+      return "先领养一位小伙伴，小院就会热闹起来。";
+    }
+
+    if (activePet.status === "dead") {
+      return `${activePet.name} 的小木牌还留在院子里。`;
+    }
+
+    if (feedbackKind === "feed") {
+      return `${activePet.name} 吃饱了，开心地摇了摇尾巴。`;
+    }
+
+    if (feedbackKind === "cuddle") {
+      return `${activePet.name} 贴过来蹭了蹭你。`;
+    }
+
+    if (feedbackKind === "switch") {
+      return `${activePet.name} 跑到了小院中央。`;
+    }
+
+    if (feedbackKind === "error") {
+      return `${activePet.name} 眨了眨眼，好像还差一点资源。`;
+    }
+
+    if (activePet.status === "hungry") {
+      return `${activePet.name} 的肚子咕咕叫，想吃点东西。`;
+    }
+
+    return `${activePet.name} 正在小院里等你。`;
+  }, [activePet, feedbackKind]);
+
   useEffect(() => {
     return () => {
       clearPetMotionTimer();
+      clearFeedbackTimer();
+      clearFeedBurstTimer();
     };
-  }, [clearPetMotionTimer]);
+  }, [clearFeedBurstTimer, clearFeedbackTimer, clearPetMotionTimer]);
 
   useEffect(() => {
     if (activePet) {
       playPetMotion(activePet.status === "dead" ? "idle" : "cuddle", 720);
+      playFeedback("switch", 1100);
     }
-  }, [activePet?.id, activePet?.status, playPetMotion]);
+  }, [activePet?.id, activePet?.status, playFeedback, playPetMotion]);
 
   const handleSelectPet = useCallback((petId: string) => {
     setStorageData((prev) => {
@@ -99,7 +191,8 @@ export default function PetPage() {
       return nextData;
     });
     playPetMotion("cuddle", 720);
-  }, [playPetMotion]);
+    playFeedback("switch", 1100);
+  }, [playFeedback, playPetMotion]);
 
   const handleAdoptPet = useCallback(() => {
     if (!newName.trim()) {
@@ -120,11 +213,12 @@ export default function PetPage() {
     setNewName("");
     setShowAdoptionPanel(false);
     playPetMotion("cuddle", 820);
+    playFeedback("switch", 1200);
     Taro.showToast({
       title: result.cost === 0 ? "第一只宠物免费领养成功" : `${result.pet?.name} 加入了小院`,
       icon: "success",
     });
-  }, [newName, playPetMotion, selectedSkin]);
+  }, [newName, playFeedback, playPetMotion, selectedSkin]);
 
   const handleFeed = useCallback((foodId: string) => {
     if (!activePet) {
@@ -142,6 +236,7 @@ export default function PetPage() {
       if (result.pet && result.pet.status === "dead") {
         message = "已离开的宠物无法喂食";
       }
+      playFeedback("error", 1200);
       Taro.showToast({
         title: message,
         icon: "none",
@@ -151,11 +246,13 @@ export default function PetPage() {
 
     setStorageData(result.data);
     playPetMotion("feed", 760);
+    playFeedback("feed", 1400);
+    showFeedBurst(food);
     Taro.showToast({
       title: `${result.pet?.name} 吃完了 ${food.name}`,
       icon: "success",
     });
-  }, [activePet, playPetMotion]);
+  }, [activePet, playFeedback, playPetMotion, showFeedBurst]);
 
   const getHungerPercent = (pet: PetData | null) => {
     if (!pet) return 0;
@@ -246,18 +343,27 @@ export default function PetPage() {
 
   const renderHero = () => (
     <View className="hero-card">
+      <View className="yard-sky">
+        <View className="yard-cloud yard-cloud-left" />
+        <View className="yard-cloud yard-cloud-right" />
+      </View>
       <View className="hero-top">
         <View>
           <Text className="hero-eyebrow">Pet Yard</Text>
           <Text className="hero-title">我的宠物小院</Text>
           <Text className="hero-subtitle">
-            头部查看汇总并切换宠物，下方查看详情与喂食操作。
+            今天的小院阳光很好，伙伴们等着你来照顾。
           </Text>
         </View>
         <View className="hero-badge">
           <View
             className="pet-sprite-action"
-            onClick={() => activePet && activePet.status !== "dead" && playPetMotion("cuddle", 760)}
+            onClick={() => {
+              if (activePet && activePet.status !== "dead") {
+                playPetMotion("cuddle", 760);
+                playFeedback("cuddle", 1300);
+              }
+            }}
           >
             <PetSprite
               skin={activePet?.skin ?? selectedSkin}
@@ -320,6 +426,7 @@ export default function PetPage() {
 
       <View className="hero-actions">
         <View className="secondary-button" onClick={() => setShowAdoptionPanel((prev) => !prev)}>
+          <Text className="button-icon">{showAdoptionPanel ? "▴" : "+"}</Text>
           <Text className="secondary-button-text">
             {showAdoptionPanel ? "收起领养面板" : "新增宠物"}
           </Text>
@@ -339,6 +446,9 @@ export default function PetPage() {
             </View>
           </View>
         ) : null}
+      </View>
+      <View className={`speech-bubble speech-${feedbackKind}`}>
+        <Text className="speech-text">{activePetLine}</Text>
       </View>
     </View>
   );
@@ -366,7 +476,12 @@ export default function PetPage() {
             </View>
             <View
               className="detail-avatar-shell pet-sprite-action"
-              onClick={() => activePet.status !== "dead" && playPetMotion("cuddle", 820)}
+              onClick={() => {
+                if (activePet.status !== "dead") {
+                  playPetMotion("cuddle", 820);
+                  playFeedback("cuddle", 1300);
+                }
+              }}
             >
               <PetSprite
                 skin={activePet.skin}
@@ -375,6 +490,16 @@ export default function PetPage() {
                 mood={petMotion}
                 selected
               />
+              <View className={`pet-talk-bubble pet-talk-${feedbackKind}`}>
+                <Text className="pet-talk-text">{activePetLine}</Text>
+              </View>
+              {feedBurst ? (
+                <View key={feedBurst.id} className="feed-burst">
+                  <Text className="feed-burst-food">{feedBurst.emoji}</Text>
+                  <Text className="feed-burst-value">+{feedBurst.restoreHunger}</Text>
+                  <Text className="feed-burst-cost">-{feedBurst.cost}分</Text>
+                </View>
+              ) : null}
             </View>
           </View>
 
@@ -438,7 +563,7 @@ export default function PetPage() {
                 <View
                   key={food.id}
                   className={`food-item ${storageData.balance >= food.cost ? "food-available" : "food-unavailable"}`}
-                  onClick={() => storageData.balance >= food.cost && handleFeed(food.id)}
+                  onClick={() => handleFeed(food.id)}
                 >
                   <View className="food-icon-wrap">
                     <Text className="food-emoji">{food.emoji}</Text>
