@@ -107,6 +107,17 @@ const BASE_GAMES = [
     level: "标准",
   },
   {
+    id: "number-order",
+    title: "星图排序",
+    badge: "记忆",
+    cardClass: "card-number-order",
+    url: "/pages/number-order/index",
+    category: "memory",
+    duration: "约 2 分钟",
+    skill: "空间记忆",
+    level: "标准",
+  },
+  {
     id: "memory-challenge",
     title: "记忆图形",
     badge: "记忆",
@@ -126,6 +137,17 @@ const BASE_GAMES = [
     category: "advanced",
     duration: "每轮 6 秒",
     skill: "视觉追踪",
+    level: "进阶",
+  },
+  {
+    id: "head-count",
+    title: "小剧场清点",
+    badge: "专注",
+    cardClass: "card-head-count",
+    url: "/pages/head-count/index",
+    category: "advanced",
+    duration: "约 2 分钟",
+    skill: "动态计数",
     level: "进阶",
   },
   {
@@ -154,6 +176,8 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   "multiple-object-tracking": "追踪任务",
   pattern: "找规律",
   "pattern-completion": "找规律",
+  "number-order": "星图排序",
+  "head-count": "小剧场清点",
 };
 
 function formatPlayedAt(value: string) {

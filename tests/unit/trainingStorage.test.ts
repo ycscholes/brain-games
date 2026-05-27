@@ -175,6 +175,8 @@ describe("trainingStorage", () => {
     mockStorage.set("training_records_v1", JSON.stringify([{ id: "1" }]));
     mockStorage.set("pet_data", JSON.stringify({ pets: [] }));
     mockStorage.set("mot_best", "4");
+    mockStorage.set("number_order_best_normal", "30");
+    mockStorage.set("head_count_best_hard", "45");
 
     clearProductData();
 
@@ -222,6 +224,16 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("memory-challenge", 40)).toBe(40);
     });
 
+    test("number-order: capped score maps directly to points", () => {
+      expect(getAwardedPoints("number-order", 20, "normal")).toBe(20);
+      expect(getAwardedPoints("number-order", 40, "normal")).toBe(40);
+    });
+
+    test("head-count: hard difficulty applies 1.5x conversion and caps at 60", () => {
+      expect(getAwardedPoints("head-count", 30, "hard")).toBe(45);
+      expect(getAwardedPoints("head-count", 50, "hard")).toBe(60);
+    });
+
     test("typical good performance gives similar rewards across games", () => {
       // 良好表现应该获得大约 10-40 积分
       const rewards = [
@@ -233,6 +245,8 @@ describe("trainingStorage", () => {
         getAwardedPoints("multiple-object-tracking", 10),
         getAwardedPoints("rock-paper-scissors", 24),
         getAwardedPoints("memory-challenge", 24),
+        getAwardedPoints("number-order", 30),
+        getAwardedPoints("head-count", 35),
       ];
 
       rewards.forEach(reward => {

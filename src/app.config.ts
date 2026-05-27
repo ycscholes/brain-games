@@ -9,6 +9,8 @@ export default defineAppConfig({
     'pages/digit-span/index',
     'pages/multiple-object-tracking/index',
     'pages/pattern-completion/index',
+    'pages/number-order/index',
+    'pages/head-count/index',
     'pages/pet/index',
     'pages/settings/index',
     'pages/training-records/index'

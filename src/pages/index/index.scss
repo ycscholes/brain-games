@@ -492,6 +492,18 @@
     var(--surface-card);
 }
 
+.card-number-order {
+  background:
+    radial-gradient(circle at 44% 28%, rgba(20, 184, 166, 0.2), transparent 34%),
+    var(--surface-card);
+}
+
+.card-head-count {
+  background:
+    radial-gradient(circle at 52% 28%, rgba(245, 158, 11, 0.2), transparent 34%),
+    var(--surface-card);
+}
+
 .card-pet {
   background:
     radial-gradient(circle at 45% 28%, rgba(139, 92, 246, 0.18), transparent 34%),
@@ -643,6 +655,16 @@
   color: #ec4899;
 }
 
+.card-number-order .game-badge {
+  background: rgba(20, 184, 166, 0.18);
+  color: #0f766e;
+}
+
+.card-head-count .game-badge {
+  background: rgba(245, 158, 11, 0.18);
+  color: #b45309;
+}
+
 .card-pet .game-badge {
   background: rgba(139, 92, 246, 0.18);
   color: #8b5cf6;
@@ -708,6 +730,14 @@
 
 .card-pattern .enter-button {
   background: linear-gradient(90deg, #ec4899 0%, #f472b6 100%);
+}
+
+.card-number-order .enter-button {
+  background: linear-gradient(90deg, #0f766e 0%, #2563eb 100%);
+}
+
+.card-head-count .enter-button {
+  background: linear-gradient(90deg, #b45309 0%, #4f46e5 100%);
 }
 
 .enter-button-text {

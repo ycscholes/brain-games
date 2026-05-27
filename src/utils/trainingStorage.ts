@@ -11,6 +11,8 @@ export type TrainingGameId =
   | "digit-span"
   | "multiple-object-tracking"
   | "pattern-completion"
+  | "number-order"
+  | "head-count"
   | "memory"
   | "rps"
   | "mot"
@@ -288,6 +290,8 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "digit-span": 3,
   "multiple-object-tracking": 3,
   "pattern-completion": 1.2,
+  "number-order": 1,
+  "head-count": 1,
   memory: 1,
   rps: 1,
   mot: 3,
@@ -538,6 +542,8 @@ export function clearProductData() {
     gameSpecificKeys.push(`digit_span_best_${difficulty}`);
     gameSpecificKeys.push(`mot_best_${difficulty}`);
     gameSpecificKeys.push(`pattern_completion_best_${difficulty}`);
+    gameSpecificKeys.push(`number_order_best_${difficulty}`);
+    gameSpecificKeys.push(`head_count_best_${difficulty}`);
   });
 
   ["G1A", "G1B", "G2", "G3", "G4", "G5_6"].forEach((stageId) => {

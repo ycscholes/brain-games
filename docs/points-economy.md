@@ -26,6 +26,8 @@
 | **多目标追踪 (multiple-object-tracking)** | 3.0x | 15-40 | 22-60 | 分数较低，提升 3 倍并封顶 |
 | **逆向猜拳 (rock-paper-scissors)** | 1.0x | 10-40 | 15-60 | 高难度获得额外积分 |
 | **记忆挑战 (memory-challenge)** | 1.0x | 10-40 | 15-60 | 高难度获得额外积分 |
+| **星图排序 (number-order)** | 1.0x | 约 20-40 | 约 30-60 | 空间工作记忆，困难封顶 |
+| **小剧场清点 (head-count)** | 1.0x | 约 20-40 | 约 30-60 | 动态计数与持续注意，困难封顶 |
 
 ### 1.3 难度倍率
 
@@ -68,6 +70,8 @@ export function getAwardedPoints(
 | 数字广度 | `digit-span` | `digit-span` |
 | 多目标追踪 | `multiple-object-tracking` | `mot` |
 | 图案推理 | `pattern-completion` | `pattern` |
+| 星图排序 | `number-order` | - |
+| 小剧场清点 | `head-count` | - |
 
 ---
 
@@ -149,6 +153,8 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 - ✅ 边界情况：0 分、负数分、未知 gameId 返回 0
 - ✅ 训练记录 `awardedPoints` 与宠物实际获得积分使用同一转换口径
 - ✅ 旧缩写 gameId 与标准长 gameId 在统计中合并处理
+- ✅ 星图排序和小剧场清点使用 1.0 倍积分转换并沿用普通/困难封顶
+- ✅ 新增游戏逻辑测试覆盖题目生成、答案唯一性和计分规则
 
 ### 4.2 积分消费测试
 
