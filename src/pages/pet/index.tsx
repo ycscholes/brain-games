@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, Input, ScrollView } from "@tarojs/components";
+import { View, Text, Input, ScrollView, Image } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useUserDataChange } from "../../services/user-data/hooks/useUserDataChange";
 import {
@@ -20,6 +20,7 @@ import {
 } from "./types";
 import PetSprite from "./components/PetSprite";
 import type { PetSpriteMood } from "./components/PetSprite/types";
+import { resolveFoodIconUrl } from "../../config/remoteAssets";
 import "./index.scss";
 
 type PetFeedbackKind = "idle" | "switch" | "feed" | "cuddle" | "error";
@@ -29,6 +30,24 @@ interface FeedBurst {
   emoji: string;
   restoreHunger: number;
   cost: number;
+}
+
+function FoodIcon({ food }: { food: FoodItem }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const iconUrl = resolveFoodIconUrl(food.id);
+
+  if (iconUrl && !imageFailed) {
+    return (
+      <Image
+        className="food-image"
+        src={iconUrl}
+        mode="aspectFit"
+        onError={() => setImageFailed(true)}
+      />
+    );
+  }
+
+  return <Text className="food-emoji">{food.emoji}</Text>;
 }
 
 export default function PetPage() {
@@ -566,7 +585,7 @@ export default function PetPage() {
                   onClick={() => handleFeed(food.id)}
                 >
                   <View className="food-icon-wrap">
-                    <Text className="food-emoji">{food.emoji}</Text>
+                    <FoodIcon food={food} />
                   </View>
                   <View className="food-copy">
                     <Text className="food-name">{food.name}</Text>
