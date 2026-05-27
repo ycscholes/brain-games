@@ -355,6 +355,9 @@ export default function NumberOrder() {
           <View className="secondary-button" onClick={backToStart}>
             <Text className="secondary-button-text">返回设置</Text>
           </View>
+          <View className="secondary-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
+            <Text className="secondary-button-text">返回首页</Text>
+          </View>
         </View>
       ) : null}
     </View>
