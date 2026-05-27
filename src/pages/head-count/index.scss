@@ -302,6 +302,12 @@
   color: #241b14;
 }
 
+.room-count-hidden {
+  min-height: 86px;
+  font-size: 40px;
+  color: #b45309;
+}
+
 .people-row {
   width: 100%;
   min-height: 104px;
@@ -329,6 +335,89 @@
   line-height: 1;
   font-weight: 900;
   color: #fff;
+}
+
+.event-people-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.moving-person {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 8px 16px rgba(79, 70, 229, 0.28),
+    inset 0 2px 0 rgba(255, 255, 255, 0.34);
+  opacity: 0;
+}
+
+.moving-person-enter {
+  left: -56px;
+  animation-name: person-enter;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+
+.moving-person-leave {
+  left: 50%;
+  animation-name: person-leave;
+  animation-timing-function: ease-in;
+  animation-fill-mode: both;
+}
+
+.moving-person-normal {
+  animation-duration: 620ms;
+}
+
+.moving-person-hard {
+  animation-duration: 460ms;
+}
+
+.moving-person-text {
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 900;
+  color: #fff;
+}
+
+@keyframes person-enter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.82);
+  }
+
+  28% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.95;
+    transform: translate3d(130px, -4px, 0) scale(1);
+  }
+}
+
+@keyframes person-leave {
+  0% {
+    opacity: 0.95;
+    transform: translate3d(-24px, -4px, 0) scale(1);
+  }
+
+  72% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(180px, 18px, 0) scale(0.82);
+  }
 }
 
 .stage-card-answering .room-count {

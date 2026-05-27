@@ -34,6 +34,13 @@ function formatEvent(event: HeadCountEvent | null) {
   return event.direction === "enter" ? `进入 ${event.delta} 人` : `离开 ${event.delta} 人`;
 }
 
+function getRoomCountText(phase: Phase, displayCount: number, answer: number) {
+  if (phase === "ready") return `${displayCount}`;
+  if (phase === "feedback") return `${answer}`;
+  if (phase === "answering") return "?";
+  return "清点中";
+}
+
 export default function HeadCount() {
   const [phase, setPhase] = useState<Phase>("start");
   const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
@@ -57,6 +64,12 @@ export default function HeadCount() {
 
   const currentQuestion = questions[currentIndex] ?? null;
   const currentEvent = currentQuestion && eventIndex >= 0 ? currentQuestion.events[eventIndex] ?? null : null;
+  const staticPeopleCount = currentQuestion && phase === "feedback"
+    ? currentQuestion.answer
+    : phase === "ready"
+      ? displayCount
+      : 0;
+  const movingPeople = Array.from({ length: currentEvent?.delta ?? 0 }, (_, index) => index);
 
   const clearTimers = () => {
     timersRef.current.forEach((timer) => clearTimeout(timer));
@@ -268,8 +281,8 @@ export default function HeadCount() {
           <View className="info-panel">
             <Text className="section-title">训练规则</Text>
             <Text className="rule-line">1. 每局 8 题，先看初始人数。</Text>
-            <Text className="rule-line">2. 记住每次进入或离开的人数变化。</Text>
-            <Text className="rule-line">3. 事件结束后，从 4 个选项中选择剩余人数。</Text>
+            <Text className="rule-line">2. 事件开始后不再显示总人数，需要在心里清点。</Text>
+            <Text className="rule-line">3. 观察人物进出动画，结束后从 4 个选项中选择剩余人数。</Text>
           </View>
 
           <View className="info-panel">
@@ -308,7 +321,7 @@ export default function HeadCount() {
               {phase === "ready" ? "记住初始人数" : phase === "playing-event" ? formatEvent(currentEvent) : phase === "answering" ? "现在还剩多少人" : lastResult?.correct ? "回答正确" : "回答偏差"}
             </Text>
             <Text className="prompt-copy">
-              {phase === "feedback" ? `正确答案 ${currentQuestion.answer} · 本题 +${lastResult?.score ?? 0}` : "观察每次进出，不需要点击"}
+              {phase === "feedback" ? `正确答案 ${currentQuestion.answer} · 本题 +${lastResult?.score ?? 0}` : "在心里更新人数，不需要点击"}
             </Text>
           </View>
 
@@ -317,15 +330,35 @@ export default function HeadCount() {
               <Text className="door-label">入口</Text>
             </View>
             <View className="room">
-              <Text className="room-title">舞台人数</Text>
-              <Text className="room-count">{phase === "answering" ? "?" : displayCount}</Text>
+              <Text className="room-title">
+                {phase === "ready" ? "初始人数" : phase === "feedback" ? "正确人数" : "舞台人数"}
+              </Text>
+              <Text className={`room-count ${phase === "playing-event" ? "room-count-hidden" : ""}`}>
+                {getRoomCountText(phase, displayCount, currentQuestion.answer)}
+              </Text>
               <View className="people-row">
-                {Array.from({ length: Math.min(displayCount, 10) }, (_, index) => (
+                {Array.from({ length: Math.min(staticPeopleCount, 10) }, (_, index) => (
                   <View key={`person-${index}`} className="person-token">
                     <Text className="person-text">人</Text>
                   </View>
                 ))}
               </View>
+              {phase === "playing-event" && currentEvent ? (
+                <View className={`event-people-layer event-people-layer-${currentEvent.direction}`}>
+                  {movingPeople.map((personIndex) => (
+                    <View
+                      key={`event-${eventIndex}-${personIndex}`}
+                      className={`moving-person moving-person-${currentEvent.direction} moving-person-${rewardDifficulty}`}
+                      style={{
+                        top: `${34 + personIndex * 16}%`,
+                        animationDelay: `${personIndex * 70}ms`,
+                      }}
+                    >
+                      <Text className="moving-person-text">人</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
             </View>
             <View className="door door-right">
               <Text className="door-label">出口</Text>
