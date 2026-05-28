@@ -297,12 +297,12 @@
 
 .stage-speech {
   position: absolute;
-  top: 8px;
-  left: calc(50% - 128px);
+  top: -12px;
+  left: calc(50% - 190px);
   z-index: 3;
-  width: 256px;
+  width: 380px;
   min-height: 68px;
-  padding: 12px 15px;
+  padding: 14px 18px;
   border: 3px solid #8a5a2a;
   border-radius: 20px;
   background: rgba(255, 253, 238, 0.96);
@@ -310,12 +310,21 @@
 }
 
 .stage-speech::after {
-  display: none;
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -11px;
+  width: 18px;
+  height: 18px;
+  background: rgba(255, 253, 238, 0.96);
+  border-right: 3px solid #8a5a2a;
+  border-bottom: 3px solid #8a5a2a;
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .stage-speech-text {
   color: #4a2d18;
-  font-size: 20px;
+  font-size: 30px;
   font-weight: 900;
   line-height: 1.42;
 }
@@ -791,16 +800,16 @@
   }
 
   .stage-speech {
-    top: 16px;
-    left: calc(50% - 109px);
-    width: 218px;
-    min-height: 74px;
-    padding: 10px 12px;
+    top: 300px;
+    left: calc(50% - 160px);
+    width: 320px;
+    min-height: 112px;
+    padding: 14px 16px;
   }
 
   .stage-speech-text {
-    font-size: 17px;
-    line-height: 1.48;
+    font-size: 26px;
+    line-height: 1.46;
   }
 
   .food-button {
