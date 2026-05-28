@@ -33,8 +33,30 @@ interface FeedBurst {
 }
 
 function FoodIcon({ food }: { food: FoodItem }) {
+  const [iconUrl, setIconUrl] = useState("");
   const [imageFailed, setImageFailed] = useState(false);
-  const iconUrl = resolveFoodIconUrl(food.id);
+
+  useEffect(() => {
+    let isCurrent = true;
+    setImageFailed(false);
+    setIconUrl("");
+
+    void resolveFoodIconUrl(food.id)
+      .then((url) => {
+        if (isCurrent) {
+          setIconUrl(url);
+        }
+      })
+      .catch(() => {
+        if (isCurrent) {
+          setImageFailed(true);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [food.id]);
 
   if (iconUrl && !imageFailed) {
     return (
@@ -421,21 +443,20 @@ export default function PetPage() {
         <View className="stage-hud">
           <View className="pet-name-plate" onClick={() => pets.length > 0 && setShowPetPickerDialog(true)}>
             <Text className="pet-name-text">{activePet?.name || "空的小院"}</Text>
-            <Text className={`pet-state-text pet-state-${activePet?.status || "empty"}`}>{statusText}</Text>
+            <View className="pet-status-row">
+              <Text className={`pet-state-text pet-state-${activePet?.status || "empty"}`}>{statusText}</Text>
+              <View className="mini-hunger">
+                <Text className="mini-hunger-label">饱食</Text>
+                <View className="mini-hunger-track">
+                  <View className="mini-hunger-fill" style={{ width: `${hungerPercent}%` }} />
+                </View>
+                <Text className="mini-hunger-value">{Math.round(hungerPercent)}%</Text>
+              </View>
+            </View>
           </View>
           <View className="resource-plate">
             <Text className="resource-label">积分</Text>
             <Text className="resource-value">{storageData.balance}</Text>
-          </View>
-        </View>
-
-        <View className="hunger-panel">
-          <View className="hunger-copy">
-            <Text className="hunger-label">饱食度</Text>
-            <Text className="hunger-value">{Math.round(hungerPercent)}%</Text>
-          </View>
-          <View className="stage-hunger-bar">
-            <View className="stage-hunger-fill" style={{ width: `${hungerPercent}%` }} />
           </View>
         </View>
 
@@ -489,16 +510,19 @@ export default function PetPage() {
 
         <View className="stage-actions">
           {canFeed ? (
-            <View className="stage-button" onClick={handleCuddle}>
+            <View className="stage-button action-cuddle" onClick={handleCuddle}>
+              <Text className="stage-button-icon">♡</Text>
               <Text className="stage-button-text">抚摸</Text>
             </View>
           ) : null}
           {pets.length > 0 ? (
-            <View className="stage-button" onClick={() => setShowPetPickerDialog(true)}>
+            <View className="stage-button action-pick" onClick={() => setShowPetPickerDialog(true)}>
+              <Text className="stage-button-icon">⇄</Text>
               <Text className="stage-button-text">选择宠物</Text>
             </View>
           ) : null}
           <View className="stage-button adopt-button" onClick={() => setShowAdoptionDialog(true)}>
+            <Text className="stage-button-icon">＋</Text>
             <Text className="stage-button-text">领养</Text>
           </View>
         </View>
