@@ -131,7 +131,8 @@
 }
 
 .stage-hud-panel {
-  width: min(100%, 760px);
+  width: fit-content;
+  max-width: 100%;
   min-width: 0;
   padding: 12px 14px;
   border-radius: 24px;
@@ -296,11 +297,11 @@
 
 .stage-speech {
   position: absolute;
-  top: 18px;
-  right: 9%;
+  top: 8px;
+  left: calc(50% - 128px);
   z-index: 3;
   width: 256px;
-  min-height: 74px;
+  min-height: 68px;
   padding: 12px 15px;
   border: 3px solid #8a5a2a;
   border-radius: 20px;
@@ -309,16 +310,7 @@
 }
 
 .stage-speech::after {
-  content: "";
-  position: absolute;
-  right: 42px;
-  bottom: -11px;
-  width: 18px;
-  height: 18px;
-  background: rgba(255, 253, 238, 0.96);
-  border-right: 3px solid #8a5a2a;
-  border-bottom: 3px solid #8a5a2a;
-  transform: rotate(45deg);
+  display: none;
 }
 
 .stage-speech-text {
@@ -743,8 +735,10 @@
   }
 
   .stage-hud-panel {
+    width: fit-content;
+    max-width: 100%;
     padding: 10px 12px;
-    align-items: stretch;
+    align-items: flex-start;
     flex-direction: column;
     gap: 8px;
     border-radius: 22px;
@@ -752,7 +746,8 @@
 
   .pet-hud-main,
   .pet-hud-metrics {
-    width: 100%;
+    width: auto;
+    max-width: 100%;
   }
 
   .pet-name-text {
@@ -796,11 +791,10 @@
   }
 
   .stage-speech {
-    top: 14px;
-    left: auto;
-    right: 6%;
+    top: 16px;
+    left: calc(50% - 109px);
     width: 218px;
-    min-height: 82px;
+    min-height: 74px;
     padding: 10px 12px;
   }
 
