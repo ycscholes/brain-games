@@ -67,7 +67,7 @@ export default function PetSprite({
         <Image
           className="pet-sprite__image"
           src={imageSrc}
-          mode="scaleToFill"
+          mode="aspectFit"
           lazyLoad={false}
           onError={() => setImageLoadFailed(true)}
         />
