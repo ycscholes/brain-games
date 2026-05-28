@@ -191,7 +191,7 @@
 }
 
 .mini-hunger {
-  width: 210px;
+  width: 172px;
   min-width: 0;
   height: 32px;
   padding: 4px 8px;
@@ -296,11 +296,12 @@
 
 .stage-speech {
   position: absolute;
-  top: 8px;
-  right: 8%;
+  top: 18px;
+  right: 9%;
   z-index: 3;
-  max-width: 360px;
-  padding: 11px 15px;
+  width: 256px;
+  min-height: 74px;
+  padding: 12px 15px;
   border: 3px solid #8a5a2a;
   border-radius: 20px;
   background: rgba(255, 253, 238, 0.96);
@@ -324,7 +325,7 @@
   color: #4a2d18;
   font-size: 20px;
   font-weight: 900;
-  line-height: 1.35;
+  line-height: 1.42;
 }
 
 .speech-feed {
@@ -766,8 +767,8 @@
   }
 
   .mini-hunger {
-    flex: 1 1 auto;
-    width: auto;
+    flex: 0 1 210px;
+    width: 210px;
     min-width: 0;
     height: 30px;
   }
@@ -795,15 +796,17 @@
   }
 
   .stage-speech {
-    top: 6px;
-    left: 6%;
+    top: 14px;
+    left: auto;
     right: 6%;
-    max-width: none;
-    padding: 9px 12px;
+    width: 218px;
+    min-height: 82px;
+    padding: 10px 12px;
   }
 
   .stage-speech-text {
     font-size: 17px;
+    line-height: 1.48;
   }
 
   .food-button {
