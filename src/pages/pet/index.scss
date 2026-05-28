@@ -10,9 +10,13 @@
 .pet-stage {
   position: relative;
   min-height: 100vh;
-  padding: 24px 24px calc(28px + env(safe-area-inset-bottom));
+  min-height: 100dvh;
+  padding: 20px 20px calc(18px + env(safe-area-inset-bottom));
   box-sizing: border-box;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   animation: stage-in 0.45s ease-out;
 }
 
@@ -111,13 +115,11 @@
   position: relative;
   z-index: 2;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
+  justify-content: center;
 }
 
-.pet-name-plate,
-.resource-plate,
+.stage-hud-panel,
+.resource-pill,
 .stage-button,
 .food-button,
 .game-dialog {
@@ -128,19 +130,42 @@
     inset 0 2px 0 rgba(255, 255, 255, 0.72);
 }
 
-.pet-name-plate {
+.stage-hud-panel {
+  width: min(100%, 760px);
   min-width: 0;
-  max-width: 460px;
-  padding: 14px 18px;
-  border-radius: 22px;
+  padding: 12px 14px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.pet-hud-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pet-hud-metrics {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .pet-name-text {
   display: block;
   color: #4a2d18;
-  font-size: 36px;
+  font-size: 32px;
   font-weight: 900;
   line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pet-state-text {
@@ -165,16 +190,10 @@
   background: #eaf7ff;
 }
 
-.pet-status-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-}
-
 .mini-hunger {
-  min-width: 210px;
-  height: 34px;
+  width: 210px;
+  min-width: 0;
+  height: 32px;
   padding: 4px 8px;
   border-radius: 999px;
   background: rgba(234, 211, 160, 0.86);
@@ -211,41 +230,49 @@
   transition: width 0.32s ease;
 }
 
-.resource-plate {
-  min-width: 136px;
-  padding: 12px 16px;
-  border-radius: 20px;
-  text-align: center;
+.resource-pill {
+  min-width: 112px;
+  height: 40px;
+  padding: 0 12px;
+  border-width: 3px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, rgba(255, 243, 184, 0.98), rgba(251, 206, 94, 0.94));
 }
 
 .resource-label {
-  display: block;
+  display: inline;
   color: #6f7a40;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
 }
 
 .resource-value {
-  display: block;
+  display: inline;
   color: #4a2d18;
-  font-size: 34px;
+  font-size: 24px;
   font-weight: 900;
   line-height: 1;
-  margin-top: 6px;
 }
 
 .stage-pet-zone {
   position: relative;
   z-index: 1;
-  min-height: 520px;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 8px;
+  padding: 56px 0 10px;
+  box-sizing: border-box;
 }
 
 .stage-pet-zone .stage-pet-sprite {
-  --pet-sprite-size: 390px;
+  --pet-sprite-size: min(430px, 62vw, 48vh);
 }
 
 .stage-pet-zone .pet-sprite__fallback {
@@ -260,7 +287,7 @@
   position: absolute;
   left: 22%;
   right: 22%;
-  bottom: 64px;
+  bottom: 12%;
   height: 34px;
   border-radius: 999px;
   background: rgba(56, 84, 36, 0.18);
@@ -269,13 +296,13 @@
 
 .stage-speech {
   position: absolute;
-  top: 14px;
-  right: 6%;
+  top: 8px;
+  right: 8%;
   z-index: 3;
-  max-width: 390px;
-  padding: 14px 18px;
-  border: 4px solid #8a5a2a;
-  border-radius: 22px;
+  max-width: 360px;
+  padding: 11px 15px;
+  border: 3px solid #8a5a2a;
+  border-radius: 20px;
   background: rgba(255, 253, 238, 0.96);
   box-shadow: 0 8px 0 rgba(88, 57, 27, 0.18);
 }
@@ -284,20 +311,20 @@
   content: "";
   position: absolute;
   right: 42px;
-  bottom: -13px;
-  width: 20px;
-  height: 20px;
+  bottom: -11px;
+  width: 18px;
+  height: 18px;
   background: rgba(255, 253, 238, 0.96);
-  border-right: 4px solid #8a5a2a;
-  border-bottom: 4px solid #8a5a2a;
+  border-right: 3px solid #8a5a2a;
+  border-bottom: 3px solid #8a5a2a;
   transform: rotate(45deg);
 }
 
 .stage-speech-text {
   color: #4a2d18;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 900;
-  line-height: 1.45;
+  line-height: 1.35;
 }
 
 .speech-feed {
@@ -309,13 +336,22 @@
   animation: speech-wiggle 0.48s ease-out;
 }
 
+.stage-controls {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 760px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .food-dock {
   position: relative;
   z-index: 2;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  margin-top: -58px;
 }
 
 .food-button {
@@ -701,94 +737,119 @@
 
 @media (max-width: 420px) {
   .pet-stage {
-    padding: 18px 18px calc(24px + env(safe-area-inset-bottom));
+    gap: 10px;
+    padding: 16px 18px calc(18px + env(safe-area-inset-bottom));
   }
 
-  .stage-hud {
+  .stage-hud-panel {
+    padding: 10px 12px;
     align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+    border-radius: 22px;
+  }
+
+  .pet-hud-main,
+  .pet-hud-metrics {
+    width: 100%;
   }
 
   .pet-name-text {
-    font-size: 30px;
+    flex: 1;
+    font-size: 28px;
   }
 
-  .pet-status-row {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 7px;
+  .pet-state-text {
+    flex: 0 0 auto;
+    padding: 4px 9px;
+    font-size: 17px;
   }
 
   .mini-hunger {
-    width: 100%;
+    flex: 1 1 auto;
+    width: auto;
     min-width: 0;
+    height: 30px;
   }
 
-  .resource-plate {
-    min-width: 112px;
+  .resource-pill {
+    min-width: 88px;
+    height: 36px;
+    padding: 0 9px;
   }
 
   .resource-value {
-    font-size: 30px;
+    font-size: 21px;
   }
 
   .stage-pet-zone {
-    min-height: 430px;
-    padding-top: 90px;
-    align-items: flex-start;
+    padding: 54px 0 4px;
   }
 
   .stage-pet-zone .stage-pet-sprite {
-    --pet-sprite-size: 286px;
+    --pet-sprite-size: min(500px, 88vw, 44vh);
   }
 
   .stage-pet-zone .pet-sprite__fallback {
-    font-size: 124px;
+    font-size: 172px;
   }
 
   .stage-speech {
     top: 6px;
-    left: 8%;
-    right: 8%;
+    left: 6%;
+    right: 6%;
     max-width: none;
+    padding: 9px 12px;
+  }
+
+  .stage-speech-text {
+    font-size: 17px;
   }
 
   .food-button {
-    min-height: 72px;
-    padding: 8px;
-    gap: 7px;
+    min-height: 64px;
+    padding: 7px;
+    gap: 6px;
+    border-radius: 18px;
   }
 
   .food-button-icon,
   .food-icon-wrap {
-    width: 46px;
-    height: 46px;
+    width: 42px;
+    height: 42px;
+    border-radius: 16px;
   }
 
   .food-image {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .food-emoji {
+    font-size: 31px;
   }
 
   .food-button-name {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .food-button-cost {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .stage-button {
     flex: 1 1 0;
-    min-height: 52px;
-    padding: 0 8px;
+    min-height: 50px;
+    padding: 0 6px;
+    gap: 4px;
   }
 
   .stage-button-icon {
-    font-size: 21px;
+    font-size: 18px;
   }
 
   .stage-button-text {
-    font-size: 19px;
+    font-size: 16px;
   }
 
   .game-dialog {

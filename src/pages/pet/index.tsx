@@ -440,11 +440,13 @@ export default function PetPage() {
         </View>
         <View className="stage-hills" />
 
-        <View className="stage-hud">
-          <View className="pet-name-plate" onClick={() => pets.length > 0 && setShowPetPickerDialog(true)}>
-            <Text className="pet-name-text">{activePet?.name || "空的小院"}</Text>
-            <View className="pet-status-row">
+        <View className="stage-hud" onClick={() => pets.length > 0 && setShowPetPickerDialog(true)}>
+          <View className="stage-hud-panel">
+            <View className="pet-hud-main">
+              <Text className="pet-name-text">{activePet?.name || "空的小院"}</Text>
               <Text className={`pet-state-text pet-state-${activePet?.status || "empty"}`}>{statusText}</Text>
+            </View>
+            <View className="pet-hud-metrics">
               <View className="mini-hunger">
                 <Text className="mini-hunger-label">饱食</Text>
                 <View className="mini-hunger-track">
@@ -452,11 +454,11 @@ export default function PetPage() {
                 </View>
                 <Text className="mini-hunger-value">{Math.round(hungerPercent)}%</Text>
               </View>
+              <View className="resource-pill">
+                <Text className="resource-label">积分</Text>
+                <Text className="resource-value">{storageData.balance}</Text>
+              </View>
             </View>
-          </View>
-          <View className="resource-plate">
-            <Text className="resource-label">积分</Text>
-            <Text className="resource-value">{storageData.balance}</Text>
           </View>
         </View>
 
@@ -488,42 +490,44 @@ export default function PetPage() {
           ) : null}
         </View>
 
-        {canFeed ? (
-          <View className="food-dock">
-            {FOOD_ITEMS.map((food) => (
-              <View
-                key={food.id}
-                className={`food-button ${storageData.balance >= food.cost ? "food-button-ready" : "food-button-disabled"}`}
-                onClick={() => handleFeed(food.id)}
-              >
-                <View className="food-button-icon">
-                  <FoodIcon food={food} />
-                </View>
-                <View className="food-button-copy">
-                  <Text className="food-button-name">{food.name}</Text>
-                  <Text className="food-button-cost">{food.cost}分</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        <View className="stage-actions">
+        <View className="stage-controls">
           {canFeed ? (
-            <View className="stage-button action-cuddle" onClick={handleCuddle}>
-              <Text className="stage-button-icon">♡</Text>
-              <Text className="stage-button-text">抚摸</Text>
+            <View className="food-dock">
+              {FOOD_ITEMS.map((food) => (
+                <View
+                  key={food.id}
+                  className={`food-button ${storageData.balance >= food.cost ? "food-button-ready" : "food-button-disabled"}`}
+                  onClick={() => handleFeed(food.id)}
+                >
+                  <View className="food-button-icon">
+                    <FoodIcon food={food} />
+                  </View>
+                  <View className="food-button-copy">
+                    <Text className="food-button-name">{food.name}</Text>
+                    <Text className="food-button-cost">{food.cost}分</Text>
+                  </View>
+                </View>
+              ))}
             </View>
           ) : null}
-          {pets.length > 0 ? (
-            <View className="stage-button action-pick" onClick={() => setShowPetPickerDialog(true)}>
-              <Text className="stage-button-icon">⇄</Text>
-              <Text className="stage-button-text">选择宠物</Text>
+
+          <View className="stage-actions">
+            {canFeed ? (
+              <View className="stage-button action-cuddle" onClick={handleCuddle}>
+                <Text className="stage-button-icon">♡</Text>
+                <Text className="stage-button-text">抚摸</Text>
+              </View>
+            ) : null}
+            {pets.length > 0 ? (
+              <View className="stage-button action-pick" onClick={() => setShowPetPickerDialog(true)}>
+                <Text className="stage-button-icon">⇄</Text>
+                <Text className="stage-button-text">选择宠物</Text>
+              </View>
+            ) : null}
+            <View className="stage-button adopt-button" onClick={() => setShowAdoptionDialog(true)}>
+              <Text className="stage-button-icon">＋</Text>
+              <Text className="stage-button-text">领养</Text>
             </View>
-          ) : null}
-          <View className="stage-button adopt-button" onClick={() => setShowAdoptionDialog(true)}>
-            <Text className="stage-button-icon">＋</Text>
-            <Text className="stage-button-text">领养</Text>
           </View>
         </View>
       </View>
