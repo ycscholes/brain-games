@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { addPointsToPet } from "../../utils/petStorage";
@@ -9,25 +9,32 @@ import {
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
 import {
-  PATTERN_QUESTION_BANK,
+  generatePatternSession,
+  PATTERN_HINTS_PER_SESSION,
+  PATTERN_SESSION_LENGTH,
+  scorePatternQuestion,
+  type PatternCell,
   type PatternOption,
   type PatternQuestion,
+  type PatternScoreResult,
 } from "./patterns";
 import "./index.scss";
 
-type Phase = "start" | "playing" | "finished";
-type Feedback = "none" | "correct" | "wrong";
+type Phase = "start" | "playing" | "reveal" | "finished";
+
+interface KindStats {
+  visualCorrect: number;
+  visualTotal: number;
+  numericCorrect: number;
+  numericTotal: number;
+}
 
 const STORAGE_KEY_PREFIX = "pattern_completion_best";
-const MAX_TIME_BONUS: Record<TrainingDifficulty, number> = {
-  normal: 10,
-  hard: 6,
-};
-const TIME_BONUS_TARGET_SECONDS: Record<TrainingDifficulty, number> = {
-  normal: 120,
-  hard: 90,
-};
 const OPTION_LETTERS = ["A", "B", "C", "D"] as const;
+const SPEED_TARGET_MS: Record<TrainingDifficulty, number> = {
+  normal: 12000,
+  hard: 9000,
+};
 
 const difficultyLabelMap: Record<number, string> = {
   1: "入门",
@@ -42,6 +49,13 @@ const difficultyLabelMap: Record<number, string> = {
   10: "大师",
 };
 
+const getDefaultKindStats = (): KindStats => ({
+  visualCorrect: 0,
+  visualTotal: 0,
+  numericCorrect: 0,
+  numericTotal: 0,
+});
+
 const formatElapsed = (elapsedMs: number) => {
   const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
   const minutes = Math.floor(totalSeconds / 60)
@@ -51,13 +65,6 @@ const formatElapsed = (elapsedMs: number) => {
   return `${minutes}:${seconds}`;
 };
 
-const calculateTimeBonus = (elapsedMs: number, difficulty: TrainingDifficulty) => {
-  const elapsedSeconds = Math.ceil(elapsedMs / 1000);
-  const targetSeconds = TIME_BONUS_TARGET_SECONDS[difficulty];
-  const remaining = Math.max(0, targetSeconds - elapsedSeconds);
-  return Math.round((remaining / targetSeconds) * MAX_TIME_BONUS[difficulty]);
-};
-
 function PatternToken({
   option,
   compact = false,
@@ -65,15 +72,53 @@ function PatternToken({
   option: PatternOption;
   compact?: boolean;
 }) {
+  if (option.type === "number") {
+    return (
+      <View className={`pattern-token number-token ${compact ? "pattern-token-compact" : ""}`}>
+        <View className="number-shell">
+          <Text className="number-value">{option.value}</Text>
+        </View>
+        {!compact ? <Text className="token-label">数字 {option.value}</Text> : null}
+      </View>
+    );
+  }
+
+  const shapeItems = Array.from({ length: option.count }, (_, index) => index);
+
   return (
     <View className={`pattern-token ${compact ? "pattern-token-compact" : ""}`}>
-      <View className="shape-shell">
-        <View
-          className={`shape shape-${option.shape}`}
-          style={{ color: option.colorHex }}
-        />
+      <View className={`shape-shell shape-shell-${option.size}`}>
+        {shapeItems.map((item) => (
+          <View
+            key={`${option.id}-${item}`}
+            className={`shape shape-${option.shape} shape-size-${option.size}`}
+            style={{ color: option.colorHex }}
+          />
+        ))}
       </View>
       {!compact ? <Text className="token-label">{option.label}</Text> : null}
+    </View>
+  );
+}
+
+function SequenceCell({
+  cell,
+  index,
+  isAnswerVisible,
+  answer,
+}: {
+  cell: PatternCell;
+  index: number;
+  isAnswerVisible: boolean;
+  answer: PatternOption;
+}) {
+  if (cell) {
+    return <PatternToken key={`${cell.id}-${index}`} option={cell} compact />;
+  }
+
+  return (
+    <View className={`answer-slot ${isAnswerVisible ? "answer-slot-revealed" : ""}`}>
+      {isAnswerVisible ? <PatternToken option={answer} compact /> : <Text className="answer-slot-text">?</Text>}
     </View>
   );
 }
@@ -82,39 +127,40 @@ export default function PatternCompletion() {
   const [phase, setPhase] = useState<Phase>("start");
   const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
   const [best, setBest] = useState(0);
+  const [session, setSession] = useState<PatternQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState("");
-  const [feedback, setFeedback] = useState<Feedback>("none");
+  const [hintVisible, setHintVisible] = useState(false);
+  const [hintUsedForCurrent, setHintUsedForCurrent] = useState(false);
+  const [remainingHints, setRemainingHints] = useState(PATTERN_HINTS_PER_SESSION);
+  const [currentCombo, setCurrentCombo] = useState(0);
+  const [longestCombo, setLongestCombo] = useState(0);
+  const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
+  const [currentScoreResult, setCurrentScoreResult] = useState<PatternScoreResult | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
-  const [timeBonus, setTimeBonus] = useState(0);
   const [finalScore, setFinalScore] = useState(0);
+  const [kindStats, setKindStats] = useState<KindStats>(getDefaultKindStats);
   const [isNewBest, setIsNewBest] = useState(false);
 
   const startTimeRef = useRef(0);
+  const questionStartedAtRef = useRef(0);
   const tickerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const questionBank = useMemo(() => {
-    return rewardDifficulty === "hard"
-      ? PATTERN_QUESTION_BANK.filter((question) => question.difficulty >= 4)
-      : PATTERN_QUESTION_BANK;
-  }, [rewardDifficulty]);
-  const totalQuestions = questionBank.length;
+  const finishRecordedRef = useRef(false);
 
-  const currentQuestion: PatternQuestion | null =
-    phase === "playing" ? questionBank[currentIndex] ?? null : null;
+  const totalQuestions = session.length || PATTERN_SESSION_LENGTH;
+  const currentQuestion =
+    phase === "playing" || phase === "reveal" ? session[currentIndex] ?? null : null;
+  const hintsUsed = PATTERN_HINTS_PER_SESSION - remainingHints;
+  const numericAccuracy =
+    kindStats.numericTotal > 0
+      ? Math.round((kindStats.numericCorrect / kindStats.numericTotal) * 100)
+      : 0;
 
   const clearTicker = () => {
     if (tickerRef.current) {
       clearInterval(tickerRef.current);
       tickerRef.current = null;
-    }
-  };
-
-  const clearTransitionTimer = () => {
-    if (transitionTimerRef.current) {
-      clearTimeout(transitionTimerRef.current);
-      transitionTimerRef.current = null;
     }
   };
 
@@ -141,12 +187,11 @@ export default function PatternCompletion() {
   useEffect(() => {
     return () => {
       clearTicker();
-      clearTransitionTimer();
     };
   }, []);
 
   useEffect(() => {
-    if (phase !== "playing") {
+    if (phase !== "playing" && phase !== "reveal") {
       clearTicker();
       return;
     }
@@ -161,18 +206,19 @@ export default function PatternCompletion() {
   }, [phase]);
 
   const finishGame = useCallback(
-    (settledCorrectCount: number) => {
+    (settledFinalScore: number) => {
+      if (finishRecordedRef.current) {
+        setPhase("finished");
+        return;
+      }
+
+      finishRecordedRef.current = true;
       clearTicker();
-      clearTransitionTimer();
 
       const settledElapsedMs = Date.now() - startTimeRef.current;
-      const settledTimeBonus = calculateTimeBonus(settledElapsedMs, rewardDifficulty);
-      const settledFinalScore = settledCorrectCount + settledTimeBonus;
       const awardedPoints = getAwardedPoints("pattern-completion", settledFinalScore, rewardDifficulty);
 
       setElapsedMs(settledElapsedMs);
-      setCorrectCount(settledCorrectCount);
-      setTimeBonus(settledTimeBonus);
       setFinalScore(settledFinalScore);
       addPointsToPet("pattern-completion", settledFinalScore, rewardDifficulty);
       recordTrainingSession({
@@ -193,74 +239,134 @@ export default function PatternCompletion() {
         setIsNewBest(false);
       }
     },
-    [best, rewardDifficulty]
+    [best, rewardDifficulty],
   );
+
+  const resetRoundState = () => {
+    setSelectedOptionId("");
+    setHintVisible(false);
+    setHintUsedForCurrent(false);
+    setCurrentScoreResult(null);
+    setLastAnswerCorrect(false);
+    questionStartedAtRef.current = Date.now();
+  };
 
   const startGame = () => {
     clearTicker();
-    clearTransitionTimer();
 
+    const nextSession = generatePatternSession(rewardDifficulty);
     startTimeRef.current = Date.now();
+    questionStartedAtRef.current = Date.now();
+    finishRecordedRef.current = false;
+    setSession(nextSession);
     setPhase("playing");
     setCurrentIndex(0);
     setCorrectCount(0);
-    setSelectedOptionId("");
-    setFeedback("none");
+    setRemainingHints(PATTERN_HINTS_PER_SESSION);
+    setCurrentCombo(0);
+    setLongestCombo(0);
     setElapsedMs(0);
-    setTimeBonus(0);
     setFinalScore(0);
+    setKindStats(getDefaultKindStats());
     setIsNewBest(false);
+    resetRoundState();
   };
 
   const backToStart = () => {
     clearTicker();
-    clearTransitionTimer();
+    finishRecordedRef.current = false;
     setPhase("start");
+    setSession([]);
     setCurrentIndex(0);
     setCorrectCount(0);
-    setSelectedOptionId("");
-    setFeedback("none");
+    setRemainingHints(PATTERN_HINTS_PER_SESSION);
+    setCurrentCombo(0);
+    setLongestCombo(0);
     setElapsedMs(0);
-    setTimeBonus(0);
     setFinalScore(0);
+    setKindStats(getDefaultKindStats());
     setIsNewBest(false);
+    resetRoundState();
     refreshBest();
   };
 
+  const handleHint = () => {
+    if (!currentQuestion || phase !== "playing" || selectedOptionId || remainingHints <= 0 || hintUsedForCurrent) {
+      return;
+    }
+
+    setRemainingHints((prev) => prev - 1);
+    setHintUsedForCurrent(true);
+    setHintVisible(true);
+  };
+
   const handleOptionSelect = (option: PatternOption) => {
-    if (!currentQuestion || selectedOptionId) {
+    if (!currentQuestion || selectedOptionId || phase !== "playing") {
       return;
     }
 
     const isCorrect = option.id === currentQuestion.answer.id;
-    const nextCorrectCount = correctCount + (isCorrect ? 1 : 0);
+    const questionElapsedMs = Date.now() - questionStartedAtRef.current;
+    const scoreResult = scorePatternQuestion({
+      isCorrect,
+      currentCombo,
+      elapsedMs: questionElapsedMs,
+      targetMs: SPEED_TARGET_MS[rewardDifficulty],
+      hintUsed: hintUsedForCurrent,
+    });
+    const nextCombo = isCorrect ? currentCombo + 1 : 0;
+    const nextFinalScore = finalScore + scoreResult.score;
 
     setSelectedOptionId(option.id);
-    setFeedback(isCorrect ? "correct" : "wrong");
-
-    transitionTimerRef.current = setTimeout(() => {
-      if (currentIndex >= totalQuestions - 1) {
-        finishGame(nextCorrectCount);
-        return;
+    setLastAnswerCorrect(isCorrect);
+    setCurrentScoreResult(scoreResult);
+    setFinalScore(nextFinalScore);
+    setCorrectCount((prev) => prev + (isCorrect ? 1 : 0));
+    setCurrentCombo(nextCombo);
+    setLongestCombo((prev) => Math.max(prev, nextCombo));
+    setKindStats((prev) => {
+      if (currentQuestion.kind === "numeric") {
+        return {
+          ...prev,
+          numericTotal: prev.numericTotal + 1,
+          numericCorrect: prev.numericCorrect + (isCorrect ? 1 : 0),
+        };
       }
 
-      setCorrectCount(nextCorrectCount);
-      setCurrentIndex((prev) => prev + 1);
-      setSelectedOptionId("");
-      setFeedback("none");
-    }, 550);
+      return {
+        ...prev,
+        visualTotal: prev.visualTotal + 1,
+        visualCorrect: prev.visualCorrect + (isCorrect ? 1 : 0),
+      };
+    });
+    setPhase("reveal");
+  };
+
+  const handleNextCase = () => {
+    if (phase !== "reveal") {
+      return;
+    }
+
+    if (currentIndex >= totalQuestions - 1) {
+      finishGame(finalScore);
+      return;
+    }
+
+    setCurrentIndex((prev) => prev + 1);
+    resetRoundState();
+    setPhase("playing");
   };
 
   return (
     <View className="pattern-page">
       {phase === "start" ? (
-      <View className="start-screen">
+        <View className="start-screen">
           <View className="header-section">
             <View className="logo-icon">
               <Text className="logo-emoji">△</Text>
             </View>
             <Text className="game-title">找规律</Text>
-            <Text className="game-subtitle">观察图形与颜色变化，推理下一个图案</Text>
+            <Text className="game-subtitle">先观察作答，再揭示隐藏规律</Text>
             <View className="high-score-badge">
               <Text className="high-score-label">最佳分数</Text>
               <Text className="high-score-value">{best}</Text>
@@ -269,46 +375,46 @@ export default function PatternCompletion() {
 
           <View className="rules-card">
             <Text className="section-title">游戏规则</Text>
-            <Text className="rule-item">1. 每局共 {totalQuestions} 题，每题观察 4 项序列并选择下一个图形。</Text>
-            <Text className="rule-item">2. 选项为 3 到 4 个，图形只由圆形、方形、三角形与颜色组合构成。</Text>
-            <Text className="rule-item">3. 难度会逐题提升，后面会出现颜色与形状的双重规律。</Text>
-            <Text className="rule-item">4. 最终得分 = 正确题数 + 时间奖励，完成越快奖励越高。</Text>
+            <Text className="rule-item">1. 每局共 {PATTERN_SESSION_LENGTH} 个规律案件，包含图形规律和数字规律。</Text>
+            <Text className="rule-item">2. 先观察序列并选择缺口答案，答完后才揭示规律。</Text>
+            <Text className="rule-item">3. 每局有 {PATTERN_HINTS_PER_SESSION} 次线索，只提示观察方向，不直接给答案。</Text>
+            <Text className="rule-item">4. 分数来自答对、连击和快速识破；使用线索会少拿 1 分。</Text>
           </View>
 
           <View className="summary-card">
             <Text className="section-title">本局设定</Text>
             <View className="summary-grid">
               <View className="summary-item">
-                <Text className="summary-value">{totalQuestions}</Text>
-                <Text className="summary-label">题目数量</Text>
+                <Text className="summary-value">{PATTERN_SESSION_LENGTH}</Text>
+                <Text className="summary-label">案件数量</Text>
               </View>
               <View className="summary-item">
-                <Text className="summary-value">3</Text>
-                <Text className="summary-label">图形类型</Text>
+                <Text className="summary-value">7</Text>
+                <Text className="summary-label">规律类型</Text>
               </View>
               <View className="summary-item">
-                <Text className="summary-value">{MAX_TIME_BONUS[rewardDifficulty]}</Text>
-                <Text className="summary-label">时间奖励上限</Text>
+                <Text className="summary-value">{PATTERN_HINTS_PER_SESSION}</Text>
+                <Text className="summary-label">可用线索</Text>
               </View>
             </View>
           </View>
 
           <View className="summary-card">
             <Text className="section-title">难度</Text>
-            <View className="summary-grid">
+            <View className="summary-grid difficulty-grid">
               <View
                 className={`summary-item ${rewardDifficulty === "normal" ? "summary-item-active" : ""}`}
                 onClick={() => setRewardDifficulty("normal")}
               >
                 <Text className="summary-value">普通</Text>
-                <Text className="summary-label">完整题库 · 1.0x</Text>
+                <Text className="summary-label">渐进规律 · 1.0x</Text>
               </View>
               <View
                 className={`summary-item ${rewardDifficulty === "hard" ? "summary-item-active" : ""}`}
                 onClick={() => setRewardDifficulty("hard")}
               >
                 <Text className="summary-value">困难</Text>
-                <Text className="summary-label">进阶题库 · 1.5x</Text>
+                <Text className="summary-label">强干扰项 · 1.5x</Text>
               </View>
             </View>
           </View>
@@ -322,16 +428,16 @@ export default function PatternCompletion() {
         </View>
       ) : null}
 
-      {phase === "playing" && currentQuestion ? (
+      {(phase === "playing" || phase === "reveal") && currentQuestion ? (
         <View className="game-screen">
           <View className="status-row">
             <View className="status-card">
               <Text className="status-value">{currentIndex + 1}/{totalQuestions}</Text>
-              <Text className="status-label">当前进度</Text>
+              <Text className="status-label">当前案件</Text>
             </View>
             <View className="status-card">
-              <Text className="status-value">{correctCount}</Text>
-              <Text className="status-label">答对题数</Text>
+              <Text className="status-value">{finalScore}</Text>
+              <Text className="status-label">当前分数</Text>
             </View>
             <View className="status-card">
               <Text className="status-value">{formatElapsed(elapsedMs)}</Text>
@@ -340,19 +446,33 @@ export default function PatternCompletion() {
           </View>
 
           <View className="question-card">
-            <Text className="difficulty-tag">{difficultyLabelMap[currentQuestion.difficulty]}</Text>
-            <Text className="question-title">选择这个序列中的下一个图形</Text>
-            <Text className="question-subtitle">{currentQuestion.description}</Text>
+            <View className="question-meta-row">
+              <Text className="difficulty-tag">{difficultyLabelMap[currentQuestion.difficulty]}</Text>
+              <Text className="combo-tag">连击 {currentCombo}</Text>
+              <Text className="hint-count-tag">线索 {remainingHints}</Text>
+            </View>
+            <Text className="question-title">{currentQuestion.title}</Text>
+            <Text className="question-subtitle">{currentQuestion.prompt}</Text>
 
             <View className="sequence-row">
-              {currentQuestion.sequence.map((item) => (
-                <PatternToken key={`${currentQuestion.id}-${item.id}`} option={item} compact />
+              {currentQuestion.sequence.map((cell, index) => (
+                <SequenceCell
+                  key={`${currentQuestion.id}-cell-${index}`}
+                  cell={cell}
+                  index={index}
+                  isAnswerVisible={phase === "reveal"}
+                  answer={currentQuestion.answer}
+                />
               ))}
-              <View className="answer-slot">
-                <Text className="answer-slot-text">?</Text>
-              </View>
             </View>
           </View>
+
+          {hintVisible ? (
+            <View className="hint-card">
+              <Text className="hint-title">线索</Text>
+              <Text className="hint-text">{currentQuestion.hint}</Text>
+            </View>
+          ) : null}
 
           <View className="options-grid">
             {currentQuestion.options.map((option, optionIndex) => {
@@ -361,8 +481,8 @@ export default function PatternCompletion() {
               const classNames = [
                 "option-card",
                 isSelected ? "option-selected" : "",
-                selectedOptionId && isCorrect ? "option-correct" : "",
-                selectedOptionId && isSelected && !isCorrect ? "option-wrong" : "",
+                phase === "reveal" && isCorrect ? "option-correct" : "",
+                phase === "reveal" && isSelected && !isCorrect ? "option-wrong" : "",
               ]
                 .filter(Boolean)
                 .join(" ");
@@ -376,15 +496,41 @@ export default function PatternCompletion() {
             })}
           </View>
 
-          <View className={`feedback-card ${feedback !== "none" ? `feedback-${feedback}` : ""}`}>
-            <Text className="feedback-text">
-              {feedback === "none"
-                ? "请从下方选项中作答"
-                : feedback === "correct"
-                  ? "回答正确，进入下一题"
-                  : `回答错误，正确答案是 ${currentQuestion.answer.label}`}
-            </Text>
-          </View>
+          {phase === "playing" ? (
+            <View
+              className={`hint-button ${remainingHints <= 0 || hintUsedForCurrent ? "hint-button-disabled" : ""}`}
+              onClick={handleHint}
+            >
+              <Text className="hint-button-text">
+                {remainingHints > 0 ? `给我线索（剩余 ${remainingHints}）` : "线索已用完"}
+              </Text>
+            </View>
+          ) : null}
+
+          {phase === "reveal" ? (
+            <View className={`feedback-card ${lastAnswerCorrect ? "feedback-correct" : "feedback-wrong"}`}>
+              <Text className="feedback-title">{lastAnswerCorrect ? "识破规律" : "差一点"}</Text>
+              <Text className="feedback-text">
+                正确答案是 {currentQuestion.answer.label}
+                {currentScoreResult ? `，本题 +${currentScoreResult.score}` : ""}
+              </Text>
+              {currentScoreResult ? (
+                <View className="score-chip-row">
+                  <Text className="score-chip">基础 {currentScoreResult.baseScore}</Text>
+                  <Text className="score-chip">连击 +{currentScoreResult.comboBonus}</Text>
+                  <Text className="score-chip">速度 +{currentScoreResult.speedBonus}</Text>
+                  {currentScoreResult.hintPenalty > 0 ? <Text className="score-chip score-chip-penalty">线索 -1</Text> : null}
+                </View>
+              ) : null}
+              <View className="rule-card">
+                <Text className="rule-card-title">{currentQuestion.explanationTitle}</Text>
+                <Text className="rule-card-text">{currentQuestion.explanation}</Text>
+              </View>
+              <View className="primary-button next-button" onClick={handleNextCase}>
+                <Text className="button-text">{currentIndex >= totalQuestions - 1 ? "查看成绩" : "下一案"}</Text>
+              </View>
+            </View>
+          ) : null}
         </View>
       ) : null}
 
@@ -393,8 +539,12 @@ export default function PatternCompletion() {
           <View className="result-card">
             <Text className="result-title">本局成绩</Text>
             <Text className="result-score">{finalScore}</Text>
-            <Text className="result-desc">答对 {correctCount} / {totalQuestions} 题</Text>
-            <Text className="result-desc">完成用时 {formatElapsed(elapsedMs)}，时间奖励 {timeBonus}</Text>
+            <Text className="result-desc">识破 {correctCount} / {totalQuestions} 个案件</Text>
+            <Text className="result-desc">最长连击 {longestCombo}，使用线索 {hintsUsed} 次</Text>
+            <Text className="result-desc">
+              数字题正确率 {kindStats.numericCorrect}/{kindStats.numericTotal}（{numericAccuracy}%）
+            </Text>
+            <Text className="result-desc">完成用时 {formatElapsed(elapsedMs)}</Text>
             <Text className="result-desc">
               积分{getTrainingDifficultyLabel(rewardDifficulty)} · 获得 {getAwardedPoints("pattern-completion", finalScore, rewardDifficulty)} 积分
             </Text>
@@ -411,7 +561,7 @@ export default function PatternCompletion() {
             <View className="secondary-button" onClick={backToStart}>
               <Text className="button-text">返回开始页</Text>
             </View>
-            <View className="secondary-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
+            <View className="secondary-button" onClick={() => Taro.reLaunch({ url: "/pages/index/index" })}>
               <Text className="button-text">返回游戏主页</Text>
             </View>
           </View>
