@@ -194,11 +194,18 @@ $color-danger: #ef4444;
 
 .summary-item {
   background-color: $color-primary-light;
+  border: 2px solid transparent;
   border-radius: 18px;
   padding: 16px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.summary-item-active {
+  background: linear-gradient(180deg, #ccfbf1 0%, #f0fdfa 100%);
+  border-color: rgba(15, 118, 110, 0.56);
+  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.16);
 }
 
 .summary-value {

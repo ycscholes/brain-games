@@ -377,16 +377,16 @@ export default function TwentyFour() {
             <Text className="tf-section-title">难度</Text>
             <View className="tf-actions">
               <View
-                className={rewardDifficulty === "normal" ? "tf-submit-button" : "tf-skip-button"}
+                className={`tf-difficulty-button ${rewardDifficulty === "normal" ? "tf-difficulty-button-active" : ""}`}
                 onClick={() => setRewardDifficulty("normal")}
               >
-                <Text className="tf-submit-button-text">普通 · 90 秒 · 1.0x</Text>
+                <Text className="tf-difficulty-button-text">普通 · 90 秒 · 1.0x</Text>
               </View>
               <View
-                className={rewardDifficulty === "hard" ? "tf-submit-button" : "tf-skip-button"}
+                className={`tf-difficulty-button ${rewardDifficulty === "hard" ? "tf-difficulty-button-active" : ""}`}
                 onClick={() => setRewardDifficulty("hard")}
               >
-                <Text className="tf-submit-button-text">困难 · 60 秒 · 1.5x</Text>
+                <Text className="tf-difficulty-button-text">困难 · 60 秒 · 1.5x</Text>
               </View>
             </View>
           </View>

@@ -521,11 +521,17 @@ export default function MultipleObjectTracking() {
           <View className="summary-card">
             <Text className="section-title">难度</Text>
             <View className="summary-grid">
-              <View className="summary-item" onClick={() => setRewardDifficulty("normal")}>
+              <View
+                className={`summary-item ${rewardDifficulty === "normal" ? "summary-item-active" : ""}`}
+                onClick={() => setRewardDifficulty("normal")}
+              >
                 <Text className="summary-value">普通</Text>
                 <Text className="summary-label">2 目标 · 1.0x</Text>
               </View>
-              <View className="summary-item" onClick={() => setRewardDifficulty("hard")}>
+              <View
+                className={`summary-item ${rewardDifficulty === "hard" ? "summary-item-active" : ""}`}
+                onClick={() => setRewardDifficulty("hard")}
+              >
                 <Text className="summary-value">困难</Text>
                 <Text className="summary-label">3 目标 · 1.5x</Text>
               </View>

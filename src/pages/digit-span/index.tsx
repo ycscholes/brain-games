@@ -215,14 +215,14 @@ export default function DigitSpan() {
         <Text className="section-title">难度</Text>
         <View className="summary-grid">
           <View
-            className="summary-item"
+            className={`summary-item ${rewardDifficulty === "normal" ? "summary-item-active" : ""}`}
             onClick={() => setRewardDifficulty("normal")}
           >
             <Text className="summary-value">普通</Text>
             <Text className="summary-label">3 位起步 · 1.0x</Text>
           </View>
           <View
-            className="summary-item"
+            className={`summary-item ${rewardDifficulty === "hard" ? "summary-item-active" : ""}`}
             onClick={() => setRewardDifficulty("hard")}
           >
             <Text className="summary-value">困难</Text>

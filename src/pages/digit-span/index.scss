@@ -190,11 +190,18 @@ $color-warning: #f59e0b;
 
 .summary-item {
   background-color: $color-primary-light;
+  border: 2px solid transparent;
   border-radius: 18px;
   padding: 16px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.summary-item-active {
+  background: linear-gradient(180deg, #dbeafe 0%, #eff6ff 100%);
+  border-color: rgba(37, 99, 235, 0.56);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.16);
 }
 
 .summary-value {

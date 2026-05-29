@@ -130,6 +130,7 @@ $tf-line: rgba(22, 163, 74, 0.14);
 
 .tf-primary-button,
 .tf-secondary-button,
+.tf-difficulty-button,
 .tf-submit-button,
 .tf-skip-button,
 .tf-hint-button {
@@ -151,11 +152,32 @@ $tf-line: rgba(22, 163, 74, 0.14);
   box-shadow: 0 16px 28px rgba(22, 163, 74, 0.26);
 }
 
+.tf-difficulty-button {
+  background: rgba(255, 255, 255, 0.72);
+  border: 2px solid rgba(102, 117, 109, 0.16);
+}
+
+.tf-difficulty-button-active {
+  background: linear-gradient(135deg, $tf-green 0%, $tf-green-dark 100%);
+  border-color: rgba(22, 163, 74, 0.64);
+  box-shadow: 0 12px 22px rgba(22, 163, 74, 0.22);
+}
+
 .tf-primary-button-text,
 .tf-submit-button-text {
   color: #ffffff;
   font-size: 30px;
   font-weight: 900;
+}
+
+.tf-difficulty-button-text {
+  color: $tf-green-dark;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.tf-difficulty-button-active .tf-difficulty-button-text {
+  color: #ffffff;
 }
 
 .tf-play {
