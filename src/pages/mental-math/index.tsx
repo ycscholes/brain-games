@@ -8,11 +8,18 @@ import {
   recordTrainingSession,
 } from "../../utils/trainingStorage";
 import {
+  CUSTOM_MATH_STAGE_ID,
+  CUSTOM_OPERATION_OPTIONS,
+  CUSTOM_RANGE_OPTIONS,
   DEFAULT_MATH_STAGE_ID,
+  DEFAULT_CUSTOM_MATH_CONFIG,
   MATH_STAGES,
   generateMathOptions,
   generateMathProblem,
+  getCustomMathProfile,
   getMathStage,
+  type CustomMathOperation,
+  type CustomMathRangeId,
   type MathProblem,
   type MathStageId,
 } from "./mathStages";
@@ -31,6 +38,7 @@ export default function MentalMath() {
   const [gameState, setGameState] = useState<GameState>("start");
   const [gameMode, setGameMode] = useState<GameMode>("timed");
   const [selectedStageId, setSelectedStageId] = useState<MathStageId>(DEFAULT_MATH_STAGE_ID);
+  const [customConfig, setCustomConfig] = useState(DEFAULT_CUSTOM_MATH_CONFIG);
   const [highScoreTimed, setHighScoreTimed] = useState(0);
   const [highScoreDeath, setHighScoreDeath] = useState(0);
   const [highScoreRecord, setHighScoreRecord] = useState<HighScoreRecord | null>(null);
@@ -46,7 +54,12 @@ export default function MentalMath() {
   const correctCountRef = useRef(0);
   const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
   const selectedStage = useMemo(() => getMathStage(selectedStageId), [selectedStageId]);
-  const rewardDifficulty = selectedStage.difficulty;
+  const customProfile = useMemo(() => getCustomMathProfile(customConfig), [customConfig]);
+  const isCustomStage = selectedStageId === CUSTOM_MATH_STAGE_ID;
+  const rewardDifficulty = isCustomStage ? customProfile.difficulty : selectedStage.difficulty;
+  const selectedStageShortName = isCustomStage ? customProfile.summary : selectedStage.shortName;
+  const selectedStageRangeLabel = isCustomStage ? customProfile.rangeLabel : selectedStage.rangeLabel;
+  const selectedStageOperationsLabel = isCustomStage ? customProfile.operationsLabel : selectedStage.operationsLabel;
 
   // Keep ref updated with latest correctCount for timer closure
   useEffect(() => {
@@ -72,7 +85,7 @@ export default function MentalMath() {
 
   // 生成数学题
   const generateProblem = (): MathProblem => {
-    return generateMathProblem(selectedStageId);
+    return generateMathProblem(selectedStageId, customConfig);
   };
 
   // 生成选项
@@ -183,6 +196,55 @@ export default function MentalMath() {
     }
   }, [gameMode, selectedStageId]);
 
+  const getEffectiveScoreForPoints = (score: number) => {
+    return isCustomStage ? score * customProfile.coefficient : score;
+  };
+
+  const getTrainingModeRecord = () => {
+    if (!isCustomStage) {
+      return `${gameMode}:${selectedStageId}`;
+    }
+    return `${gameMode}:${CUSTOM_MATH_STAGE_ID}:${customProfile.operationsKey}:${customProfile.rangeKey}:x${customProfile.coefficient}`;
+  };
+
+  const handleToggleCustomOperation = (operation: CustomMathOperation | "all") => {
+    if (operation === "all") {
+      setCustomConfig((config) => ({
+        ...config,
+        operations: ["add", "subtract", "multiply", "divide"],
+      }));
+      return;
+    }
+
+    setCustomConfig((config) => {
+      const hasOperation = config.operations.includes(operation);
+      if (hasOperation && config.operations.length === 1) {
+        return config;
+      }
+      const nextOperations = hasOperation
+        ? config.operations.filter((item) => item !== operation)
+        : [...config.operations, operation];
+      const orderedOperations = (["add", "subtract", "multiply", "divide"] satisfies CustomMathOperation[]).filter((item) =>
+        nextOperations.includes(item),
+      );
+      return {
+        ...config,
+        operations: orderedOperations,
+      };
+    });
+  };
+
+  const handleSelectCustomRange = (rangeId: CustomMathRangeId) => {
+    setCustomConfig((config) => ({
+      ...config,
+      rangeId,
+    }));
+  };
+
+  const getStageDifficulty = (stageId: MathStageId) => {
+    return stageId === CUSTOM_MATH_STAGE_ID ? customProfile.difficulty : getMathStage(stageId).difficulty;
+  };
+
   // Update high scores when mode or stage changes
   useEffect(() => {
     refreshHighScore();
@@ -272,14 +334,15 @@ export default function MentalMath() {
   const handleGameOver = () => {
     clearAllTimers();
     const finalCorrectCount = correctCountRef.current;
-    const awardedPoints = getAwardedPoints("mental-math", finalCorrectCount, rewardDifficulty);
+    const effectiveScore = getEffectiveScoreForPoints(finalCorrectCount);
+    const awardedPoints = getAwardedPoints("mental-math", effectiveScore, rewardDifficulty);
     Taro.setStorageSync("mental_math_last_score", finalCorrectCount);
-    addPointsToPet("mental-math", finalCorrectCount, rewardDifficulty);
+    addPointsToPet("mental-math", effectiveScore, rewardDifficulty);
     recordTrainingSession({
       gameId: "mental-math",
       score: finalCorrectCount,
       awardedPoints,
-      mode: `${gameMode}:${selectedStageId}`,
+      mode: getTrainingModeRecord(),
       difficulty: rewardDifficulty,
       outcome: "completed",
     });
@@ -321,7 +384,8 @@ export default function MentalMath() {
 
             <View className="difficulty-info">
               <Text className="difficulty-text">
-                当前内容：{selectedStage.name} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
+                当前内容：{selectedStage.name} · {selectedStageRangeLabel} · {selectedStageOperationsLabel} ·
+                积分{getTrainingDifficultyLabel(rewardDifficulty)}
               </Text>
             </View>
           </View>
@@ -342,16 +406,57 @@ export default function MentalMath() {
                 >
                   <View className="stage-item-header">
                     <Text className="stage-name">{stage.name}</Text>
-                    <Text className={`stage-difficulty stage-difficulty-${stage.difficulty}`}>
-                      积分{getTrainingDifficultyLabel(stage.difficulty)}
+                    <Text className={`stage-difficulty stage-difficulty-${getStageDifficulty(stage.id)}`}>
+                      积分{getTrainingDifficultyLabel(getStageDifficulty(stage.id))}
                     </Text>
                   </View>
-                  <Text className="stage-short-name">{stage.shortName}</Text>
-                  <Text className="stage-desc">{stage.summary}</Text>
-                  <Text className="stage-meta">{stage.rangeLabel} · {stage.operationsLabel}</Text>
+                  <Text className="stage-short-name">{stage.id === CUSTOM_MATH_STAGE_ID ? customProfile.summary : stage.shortName}</Text>
+                  <Text className="stage-desc">{stage.id === CUSTOM_MATH_STAGE_ID ? `积分系数 x${customProfile.coefficient}` : stage.summary}</Text>
+                  <Text className="stage-meta">
+                    {stage.id === CUSTOM_MATH_STAGE_ID ? customProfile.rangeLabel : stage.rangeLabel} ·{" "}
+                    {stage.id === CUSTOM_MATH_STAGE_ID ? customProfile.operationsLabel : stage.operationsLabel}
+                  </Text>
                 </View>
               ))}
             </View>
+            {isCustomStage && (
+              <View className="custom-panel">
+                <View className="custom-group">
+                  <Text className="custom-label">运算</Text>
+                  <View className="custom-chip-row">
+                    {CUSTOM_OPERATION_OPTIONS.map((operation) => {
+                      const selected =
+                        operation.id === "all"
+                          ? customConfig.operations.length === 4
+                          : customConfig.operations.includes(operation.id);
+                      return (
+                        <View
+                          key={operation.id}
+                          className={`custom-chip ${selected ? "custom-chip-selected" : ""}`}
+                          onClick={() => handleToggleCustomOperation(operation.id)}
+                        >
+                          <Text className="custom-chip-text">{operation.label}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+                <View className="custom-group">
+                  <Text className="custom-label">数字范围</Text>
+                  <View className="custom-chip-row">
+                    {CUSTOM_RANGE_OPTIONS.map((range) => (
+                      <View
+                        key={range.id}
+                        className={`custom-chip ${customConfig.rangeId === range.id ? "custom-chip-selected" : ""}`}
+                        onClick={() => handleSelectCustomRange(range.id)}
+                      >
+                        <Text className="custom-chip-text">{range.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            )}
           </View>
 
           {/* 模式选择 */}
@@ -420,7 +525,7 @@ export default function MentalMath() {
         <View className="game-screen">
           <View className="top-bar">
             <View className="top-bar-stage">
-              <Text className="top-bar-stage-text">{selectedStage.name} · {selectedStage.shortName}</Text>
+              <Text className="top-bar-stage-text">{selectedStage.name} · {selectedStageShortName}</Text>
             </View>
             {gameMode === "timed" && (
               <View className="top-bar-item">
@@ -480,13 +585,13 @@ export default function MentalMath() {
             <Text className="result-title">本局成绩</Text>
             <Text className="result-score">{correctCount}</Text>
             <Text className="result-desc">
-              答对 {correctCount} 题 · {selectedStage.name} · {selectedStage.shortName}
+              答对 {correctCount} 题 · {selectedStage.name} · {selectedStageShortName}
             </Text>
             <Text className="result-desc">
               {gameMode === "timed" ? "限时模式" : "闯关模式"} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
             </Text>
             <Text className="result-desc">
-              获得 {getAwardedPoints("mental-math", correctCount, rewardDifficulty)} 积分
+              获得 {getAwardedPoints("mental-math", getEffectiveScoreForPoints(correctCount), rewardDifficulty)} 积分
             </Text>
             <Text className="result-desc">
               历史最高 {getHighScore()}

@@ -93,9 +93,9 @@ describe("trainingStorage", () => {
     recordTrainingSession({
       gameId: "mental-math",
       score: 8,
-      awardedPoints: getAwardedPoints("mental-math", 8, getMathStage("G4").difficulty),
-      mode: "timed:G4",
-      difficulty: getMathStage("G4").difficulty,
+      awardedPoints: getAwardedPoints("mental-math", 8, getMathStage("G4_MIXED_100").difficulty),
+      mode: "timed:G4_MIXED_100",
+      difficulty: getMathStage("G4_MIXED_100").difficulty,
       outcome: "completed",
     });
 
@@ -108,7 +108,7 @@ describe("trainingStorage", () => {
     });
     expect(records[0]).toMatchObject({
       gameId: "mental-math",
-      mode: "timed:G4",
+      mode: "timed:G4_MIXED_100",
       difficulty: "hard",
       awardedPoints: 12,
     });

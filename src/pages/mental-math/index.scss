@@ -245,6 +245,68 @@ $color-wrong: #EF4444;
   margin-top: 4px;
 }
 
+.custom-panel {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 2px solid $color-border;
+  background-color: $color-bg-card;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.custom-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-label {
+  color: $color-text-tertiary;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.custom-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.custom-chip {
+  min-width: 72px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 2px solid $color-border;
+  background-color: #F8FAFC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.custom-chip-selected {
+  border-color: $color-primary;
+  background-color: $color-primary-light;
+}
+
+.custom-chip-text {
+  color: $color-text-tertiary;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.custom-chip-selected .custom-chip-text {
+  color: $color-primary-dark;
+}
+
 .mode-item {
   display: flex;
   flex-direction: column;

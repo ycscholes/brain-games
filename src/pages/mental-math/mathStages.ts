@@ -1,7 +1,9 @@
 import type { TrainingDifficulty } from "../../utils/trainingStorage";
 
-export type MathStageId = "G1A" | "G1B" | "G2" | "G3" | "G4" | "G5_6";
+export type MathStageId = "G1A" | "G1B" | "G2_ADD" | "G2_MUL" | "G3_ADD" | "G4_MIXED_100" | "CUSTOM";
 export type MathOperation = "add" | "subtract" | "multiply" | "divide" | "mixed";
+export type CustomMathOperation = Exclude<MathOperation, "mixed">;
+export type CustomMathRangeId = "within10" | "within100" | "within10000" | "unlimited";
 
 export interface MathProblem {
   question: string;
@@ -18,6 +20,44 @@ export interface MathStage {
   operationsLabel: string;
   difficulty: TrainingDifficulty;
 }
+
+export interface CustomMathConfig {
+  operations: CustomMathOperation[];
+  rangeId: CustomMathRangeId;
+}
+
+export interface CustomMathProfile {
+  coefficient: number;
+  difficulty: TrainingDifficulty;
+  operationsKey: string;
+  rangeKey: CustomMathRangeId;
+  summary: string;
+  rangeLabel: string;
+  operationsLabel: string;
+}
+
+export const CUSTOM_MATH_STAGE_ID: MathStageId = "CUSTOM";
+export const DEFAULT_MATH_STAGE_ID: MathStageId = "G1A";
+
+export const CUSTOM_OPERATION_OPTIONS: Array<{ id: CustomMathOperation | "all"; label: string }> = [
+  { id: "add", label: "加" },
+  { id: "subtract", label: "减" },
+  { id: "multiply", label: "乘" },
+  { id: "divide", label: "除" },
+  { id: "all", label: "全选" },
+];
+
+export const CUSTOM_RANGE_OPTIONS: Array<{ id: CustomMathRangeId; label: string; max: number; coefficient: number }> = [
+  { id: "within10", label: "10 以内", max: 10, coefficient: 1 },
+  { id: "within100", label: "100 以内", max: 100, coefficient: 1.2 },
+  { id: "within10000", label: "10000 以内", max: 10000, coefficient: 1.5 },
+  { id: "unlimited", label: "不限制", max: 999999, coefficient: 2 },
+];
+
+export const DEFAULT_CUSTOM_MATH_CONFIG: CustomMathConfig = {
+  operations: ["add", "subtract"],
+  rangeId: "within100",
+};
 
 export const MATH_STAGES: MathStage[] = [
   {
@@ -39,44 +79,67 @@ export const MATH_STAGES: MathStage[] = [
     difficulty: "normal",
   },
   {
-    id: "G2",
-    name: "百以内与口诀",
-    shortName: "加减与乘法口诀",
-    summary: "100 以内加减和乘法口诀",
+    id: "G2_ADD",
+    name: "百以内加减法",
+    shortName: "100以内加减",
+    summary: "100 以内非负整数加减",
     rangeLabel: "0-100",
-    operationsLabel: "加法、减法、乘法",
+    operationsLabel: "加法、减法",
     difficulty: "normal",
   },
   {
-    id: "G3",
-    name: "万以内加减乘除",
-    shortName: "一位数乘除",
-    summary: "万以内加减，一位数乘除",
+    id: "G2_MUL",
+    name: "乘法口诀",
+    shortName: "九九乘法",
+    summary: "2-9 的乘法口诀",
+    rangeLabel: "2-9",
+    operationsLabel: "乘法",
+    difficulty: "normal",
+  },
+  {
+    id: "G3_ADD",
+    name: "万以内加减法",
+    shortName: "10000以内加减",
+    summary: "10000 以内非负整数加减",
     rangeLabel: "0-10000",
-    operationsLabel: "加法、减法、乘法、除法",
+    operationsLabel: "加法、减法",
     difficulty: "hard",
   },
   {
-    id: "G4",
-    name: "多位数乘除",
-    shortName: "两位乘法与整除",
-    summary: "两位数乘法，整除除法",
-    rangeLabel: "两到四位数",
-    operationsLabel: "乘法、除法",
-    difficulty: "hard",
-  },
-  {
-    id: "G5_6",
-    name: "整数四则混合",
+    id: "G4_MIXED_100",
+    name: "100以内四则混合",
     shortName: "两步综合口算",
-    summary: "两步整数混合运算",
-    rangeLabel: "整数口算",
+    summary: "100 以内两步整数混合运算",
+    rangeLabel: "0-100",
     operationsLabel: "四则混合",
     difficulty: "hard",
   },
+  {
+    id: CUSTOM_MATH_STAGE_ID,
+    name: "自定义训练",
+    shortName: "自选范围与运算",
+    summary: "自选加减乘除和数字范围",
+    rangeLabel: "自定义",
+    operationsLabel: "自定义",
+    difficulty: "normal",
+  },
 ];
 
-export const DEFAULT_MATH_STAGE_ID: MathStageId = "G1A";
+const CUSTOM_OPERATION_LABELS: Record<CustomMathOperation, string> = {
+  add: "加法",
+  subtract: "减法",
+  multiply: "乘法",
+  divide: "除法",
+};
+
+const CUSTOM_OPERATION_WEIGHTS: Record<CustomMathOperation, number> = {
+  add: 1,
+  subtract: 1,
+  multiply: 1.3,
+  divide: 1.5,
+};
+
+const CUSTOM_OPERATION_ORDER: CustomMathOperation[] = ["add", "subtract", "multiply", "divide"];
 
 export function getMathStage(stageId: MathStageId) {
   return MATH_STAGES.find((stage) => stage.id === stageId) || MATH_STAGES[0];
@@ -90,30 +153,62 @@ function pick<T>(items: T[]): T {
   return items[randomInt(0, items.length - 1)];
 }
 
-function createDivisionProblem(
-  divisorMin: number,
-  divisorMax: number,
-  quotientMin: number,
-  quotientMax: number,
-  dividendMin?: number,
-  dividendMax?: number,
-): MathProblem {
-  let divisor = divisorMin;
-  let quotient = quotientMin;
-  let dividend = divisor * quotient;
+function uniqueOperations(operations: CustomMathOperation[]): CustomMathOperation[] {
+  const selected = CUSTOM_OPERATION_ORDER.filter((operation) => operations.includes(operation));
+  return selected.length > 0 ? selected : DEFAULT_CUSTOM_MATH_CONFIG.operations;
+}
 
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    divisor = randomInt(divisorMin, divisorMax);
-    quotient = randomInt(quotientMin, quotientMax);
-    dividend = divisor * quotient;
+function getCustomRange(rangeId: CustomMathRangeId) {
+  return CUSTOM_RANGE_OPTIONS.find((range) => range.id === rangeId) || CUSTOM_RANGE_OPTIONS[1];
+}
 
-    if (
-      (dividendMin === undefined || dividend >= dividendMin) &&
-      (dividendMax === undefined || dividend <= dividendMax)
-    ) {
-      break;
-    }
-  }
+function formatCoefficient(coefficient: number) {
+  return Number(coefficient.toFixed(2));
+}
+
+export function getCustomMathProfile(config: CustomMathConfig): CustomMathProfile {
+  const operations = uniqueOperations(config.operations);
+  const range = getCustomRange(config.rangeId);
+  const strongestOperationWeight = Math.max(...operations.map((operation) => CUSTOM_OPERATION_WEIGHTS[operation]));
+  const operationCoefficient = Math.min(1.8, strongestOperationWeight + (operations.length - 1) * 0.1);
+  const coefficient = formatCoefficient(range.coefficient * operationCoefficient);
+  const difficulty = coefficient >= 1.5 ? "hard" : "normal";
+  const operationsLabel = operations.map((operation) => CUSTOM_OPERATION_LABELS[operation]).join("、");
+
+  return {
+    coefficient,
+    difficulty,
+    operationsKey: operations.join("-"),
+    rangeKey: range.id,
+    summary: `${range.label} · ${operationsLabel}`,
+    rangeLabel: range.label,
+    operationsLabel,
+  };
+}
+
+function createAdditionProblem(max: number, minFirst = 0): MathProblem {
+  const a = randomInt(minFirst, max);
+  const b = randomInt(0, max - a);
+  return { question: `${a} + ${b} = ?`, answer: a + b, operation: "add" };
+}
+
+function createSubtractionProblem(max: number, minFirst = 0): MathProblem {
+  const a = randomInt(minFirst, max);
+  const b = randomInt(0, a);
+  return { question: `${a} - ${b} = ?`, answer: a - b, operation: "subtract" };
+}
+
+function createMultiplicationProblem(max: number, factorMin = 1, factorMax = max): MathProblem {
+  const safeFactorMax = Math.max(factorMin, Math.min(factorMax, max));
+  const a = randomInt(factorMin, safeFactorMax);
+  const b = randomInt(factorMin, Math.max(factorMin, Math.floor(max / a)));
+  return { question: `${a} × ${b} = ?`, answer: a * b, operation: "multiply" };
+}
+
+function createDivisionProblem(divisorMin: number, divisorMax: number, quotientMin: number, quotientMax: number): MathProblem {
+  const divisor = randomInt(divisorMin, Math.max(divisorMin, divisorMax));
+  const quotient = randomInt(quotientMin, Math.max(quotientMin, quotientMax));
+  const dividend = divisor * quotient;
 
   return {
     question: `${dividend} ÷ ${divisor} = ?`,
@@ -122,118 +217,112 @@ function createDivisionProblem(
   };
 }
 
-export function generateMathProblem(stageId: MathStageId): MathProblem {
+function createCustomDivisionProblem(max: number): MathProblem {
+  const divisor = randomInt(2, Math.max(2, Math.min(max, 999)));
+  const quotient = randomInt(1, Math.max(1, Math.floor(max / divisor)));
+  return {
+    question: `${divisor * quotient} ÷ ${divisor} = ?`,
+    answer: quotient,
+    operation: "divide",
+  };
+}
+
+function createMixedHundredProblem(): MathProblem {
   let a: number;
   let b: number;
   let c: number;
 
+  switch (randomInt(0, 5)) {
+    case 0:
+      a = randomInt(1, 40);
+      b = randomInt(1, 60 - a);
+      c = randomInt(0, 100 - a - b);
+      return { question: `${a} + ${b} + ${c} = ?`, answer: a + b + c, operation: "mixed" };
+    case 1:
+      a = randomInt(20, 100);
+      b = randomInt(0, a);
+      c = randomInt(0, a - b);
+      return { question: `${a} - ${b} - ${c} = ?`, answer: a - b - c, operation: "mixed" };
+    case 2:
+      a = randomInt(2, 10);
+      b = randomInt(2, Math.floor(100 / a));
+      c = randomInt(0, 100 - a * b);
+      return { question: `${a} × ${b} + ${c} = ?`, answer: a * b + c, operation: "mixed" };
+    case 3:
+      a = randomInt(2, 10);
+      b = randomInt(2, Math.floor(100 / a));
+      c = randomInt(0, a * b);
+      return { question: `${a} × ${b} - ${c} = ?`, answer: a * b - c, operation: "mixed" };
+    case 4:
+      b = randomInt(2, 10);
+      c = randomInt(1, Math.floor(100 / b));
+      a = randomInt(0, 100 - c);
+      return { question: `${a} + ${b * c} ÷ ${b} = ?`, answer: a + c, operation: "mixed" };
+    default:
+      c = randomInt(2, 10);
+      a = randomInt(0, Math.floor(100 / c));
+      b = randomInt(0, Math.floor(100 / c) - a);
+      return { question: `(${a} + ${b}) × ${c} = ?`, answer: (a + b) * c, operation: "mixed" };
+  }
+}
+
+export function generateCustomMathProblem(config: CustomMathConfig): MathProblem {
+  const operations = uniqueOperations(config.operations);
+  const range = getCustomRange(config.rangeId);
+
+  switch (pick<CustomMathOperation>(operations)) {
+    case "add":
+      return createAdditionProblem(range.max);
+    case "subtract":
+      return createSubtractionProblem(range.max);
+    case "multiply":
+      return createMultiplicationProblem(range.max, 1, Math.min(range.max, 999));
+    case "divide":
+    default:
+      return createCustomDivisionProblem(range.max);
+  }
+}
+
+export function generateMathProblem(stageId: MathStageId, customConfig = DEFAULT_CUSTOM_MATH_CONFIG): MathProblem {
   switch (stageId) {
     case "G1A":
-      if (Math.random() > 0.5) {
-        a = randomInt(0, 10);
-        b = randomInt(0, 10 - a);
-        return { question: `${a} + ${b} = ?`, answer: a + b, operation: "add" };
-      }
-      a = randomInt(0, 10);
-      b = randomInt(0, a);
-      return { question: `${a} - ${b} = ?`, answer: a - b, operation: "subtract" };
+      return Math.random() > 0.5 ? createAdditionProblem(10) : createSubtractionProblem(10);
 
     case "G1B":
       if (Math.random() > 0.5) {
         if (Math.random() > 0.5) {
-          a = randomInt(2, 9);
-          b = randomInt(10 - a, 20 - a);
-        } else {
-          a = randomInt(0, 20);
-          b = randomInt(0, 20 - a);
+          const a = randomInt(2, 9);
+          const b = randomInt(10 - a, 20 - a);
+          return { question: `${a} + ${b} = ?`, answer: a + b, operation: "add" };
         }
-        return { question: `${a} + ${b} = ?`, answer: a + b, operation: "add" };
+        return createAdditionProblem(20);
       }
       if (Math.random() > 0.5) {
-        a = randomInt(11, 18);
-        b = randomInt((a % 10) + 1, Math.min(a, 9));
-      } else {
-        a = randomInt(0, 20);
-        b = randomInt(0, a);
+        const a = randomInt(11, 18);
+        const b = randomInt((a % 10) + 1, Math.min(a, 9));
+        return { question: `${a} - ${b} = ?`, answer: a - b, operation: "subtract" };
       }
-      return { question: `${a} - ${b} = ?`, answer: a - b, operation: "subtract" };
+      return createSubtractionProblem(20);
 
-    case "G2":
-      switch (pick<MathOperation>(["add", "subtract", "multiply"])) {
-        case "add":
-          a = randomInt(0, 100);
-          b = randomInt(0, 100 - a);
-          return { question: `${a} + ${b} = ?`, answer: a + b, operation: "add" };
-        case "subtract":
-          a = randomInt(0, 100);
-          b = randomInt(0, a);
-          return { question: `${a} - ${b} = ?`, answer: a - b, operation: "subtract" };
-        default:
-          a = randomInt(2, 9);
-          b = randomInt(2, 9);
-          return { question: `${a} × ${b} = ?`, answer: a * b, operation: "multiply" };
-      }
+    case "G2_ADD":
+      return Math.random() > 0.5 ? createAdditionProblem(100) : createSubtractionProblem(100);
 
-    case "G3":
-      switch (pick<MathOperation>(["add", "subtract", "multiply", "divide"])) {
-        case "add":
-          a = randomInt(100, 9999);
-          b = randomInt(1, 10000 - a);
-          return { question: `${a} + ${b} = ?`, answer: a + b, operation: "add" };
-        case "subtract":
-          a = randomInt(100, 10000);
-          b = randomInt(1, a);
-          return { question: `${a} - ${b} = ?`, answer: a - b, operation: "subtract" };
-        case "multiply":
-          a = randomInt(2, 9);
-          b = randomInt(10, 999);
-          return { question: `${a} × ${b} = ?`, answer: a * b, operation: "multiply" };
-        default:
-          return createDivisionProblem(2, 9, 10, 111, 10, 999);
-      }
-
-    case "G4":
-      if (Math.random() > 0.5) {
-        a = randomInt(10, 99);
-        b = randomInt(10, 99);
+    case "G2_MUL":
+      {
+        const a = randomInt(2, 9);
+        const b = randomInt(2, 9);
         return { question: `${a} × ${b} = ?`, answer: a * b, operation: "multiply" };
       }
-      return createDivisionProblem(2, 99, 2, 99, 100, 9999);
 
-    case "G5_6":
+    case "G3_ADD":
+      return Math.random() > 0.5 ? createAdditionProblem(10000, 100) : createSubtractionProblem(10000, 100);
+
+    case "G4_MIXED_100":
+      return createMixedHundredProblem();
+
+    case CUSTOM_MATH_STAGE_ID:
     default:
-      switch (randomInt(0, 5)) {
-        case 0:
-          a = randomInt(2, 20);
-          b = randomInt(2, 20);
-          c = randomInt(1, 100);
-          return { question: `${a} × ${b} + ${c} = ?`, answer: a * b + c, operation: "mixed" };
-        case 1:
-          a = randomInt(2, 20);
-          b = randomInt(2, 20);
-          c = randomInt(1, Math.min(a * b, 200));
-          return { question: `${a} × ${b} - ${c} = ?`, answer: a * b - c, operation: "mixed" };
-        case 2:
-          b = randomInt(2, 12);
-          c = randomInt(2, 20);
-          a = randomInt(1, 200);
-          return { question: `${a} + ${b * c} ÷ ${b} = ?`, answer: a + c, operation: "mixed" };
-        case 3:
-          a = randomInt(1, 80);
-          b = randomInt(1, 80);
-          c = randomInt(2, 9);
-          return { question: `(${a} + ${b}) × ${c} = ?`, answer: (a + b) * c, operation: "mixed" };
-        case 4:
-          a = randomInt(1, 90);
-          b = randomInt(a + 1, 150);
-          c = randomInt(b - a, 220);
-          return { question: `${a} - ${b} + ${c} = ?`, answer: a - b + c, operation: "mixed" };
-        default:
-          b = randomInt(2, 12);
-          c = randomInt(2, 30);
-          a = randomInt(2, 20);
-          return { question: `${a} × (${b * c} ÷ ${b}) = ?`, answer: a * c, operation: "mixed" };
-      }
+      return generateCustomMathProblem(customConfig);
   }
 }
 

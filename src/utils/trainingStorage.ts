@@ -546,7 +546,7 @@ export function clearProductData() {
     gameSpecificKeys.push(`head_count_best_${difficulty}`);
   });
 
-  ["G1A", "G1B", "G2", "G3", "G4", "G5_6"].forEach((stageId) => {
+  ["G1A", "G1B", "G2", "G3", "G4", "G5_6", "G2_ADD", "G2_MUL", "G3_ADD", "G4_MIXED_100", "CUSTOM"].forEach((stageId) => {
     gameSpecificKeys.push(`mental_math_high_score_timed_${stageId}`);
     gameSpecificKeys.push(`mental_math_high_score_death_${stageId}`);
   });
