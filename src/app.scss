@@ -51,6 +51,28 @@ view {
   -webkit-tap-highlight-color: transparent;
 }
 
+.floating-start-action {
+  position: fixed;
+  left: 24px;
+  right: 24px;
+  bottom: calc(20px + constant(safe-area-inset-bottom));
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 30;
+}
+
+.floating-start-action .primary-button,
+.floating-start-action .tf-primary-button,
+.floating-start-action .start-button,
+.floating-start-action .start-button-rps {
+  width: 100%;
+}
+
+.floating-start-spacer {
+  height: calc(112px + constant(safe-area-inset-bottom));
+  height: calc(112px + env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   view,
   text,

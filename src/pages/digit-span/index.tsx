@@ -231,10 +231,12 @@ export default function DigitSpan() {
         </View>
       </View>
 
-      <View className="primary-button" onClick={startGame}>
-        <Text className="button-text">开始挑战</Text>
+      <View className="floating-start-action">
+        <View className="primary-button" onClick={startGame}>
+          <Text className="button-text">开始挑战</Text>
+        </View>
       </View>
-      <View className="footer-gap" />
+      <View className="footer-gap floating-start-spacer" />
     </View>
   );
 

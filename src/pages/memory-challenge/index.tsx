@@ -481,11 +481,12 @@ export default function MemoryChallenge() {
           </View>
 
           {/* Start Button */}
-          <View className="start-button-container">
+          <View className="start-button-container floating-start-action">
             <View className="start-button" onClick={startGame}>
               <Text className="start-button-text">开始游戏</Text>
             </View>
           </View>
+          <View className="floating-start-spacer" />
         </View>
       )}
 

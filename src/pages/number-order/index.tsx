@@ -270,9 +270,12 @@ export default function NumberOrder() {
             </View>
           </View>
 
-          <View className="primary-button" onClick={startGame}>
-            <Text className="primary-button-text">开始训练</Text>
+          <View className="floating-start-action">
+            <View className="primary-button" onClick={startGame}>
+              <Text className="primary-button-text">开始训练</Text>
+            </View>
           </View>
+          <View className="floating-start-spacer" />
         </View>
       ) : null}
 

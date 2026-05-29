@@ -773,9 +773,12 @@ export default function DualTaskGame() {
             </View>
           </View>
 
-          <View className="primary-button" onClick={startGame}>
-            <Text className="button-text">开始挑战</Text>
+          <View className="floating-start-action">
+            <View className="primary-button" onClick={startGame}>
+              <Text className="button-text">开始挑战</Text>
+            </View>
           </View>
+          <View className="floating-start-spacer" />
         </View>
       )}
 

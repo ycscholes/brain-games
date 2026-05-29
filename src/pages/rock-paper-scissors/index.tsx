@@ -315,11 +315,12 @@ export default function RockPaperScissors() {
             </View>
           </View>
 
-          <View className="start-button-container-rps">
+          <View className="start-button-container-rps floating-start-action">
             <View className="start-button-rps" onClick={startGame}>
               <Text className="start-button-text-rps">开始游戏</Text>
             </View>
           </View>
+          <View className="floating-start-spacer" />
         </View>
       )}
 
