@@ -3,6 +3,8 @@ import {
   createHeadCountQuestion,
   createHeadCountSession,
   getHeadCountEventCount,
+  getHeadCountEventMs,
+  getHeadCountRewardDifficulty,
   HEAD_COUNT_TOTAL_QUESTIONS,
   scoreHeadCountQuestion,
 } from "../../src/pages/head-count/gameLogic";
@@ -11,6 +13,7 @@ describe("head-count game logic", () => {
   test("creates an 8-question session", () => {
     expect(createHeadCountSession("normal")).toHaveLength(HEAD_COUNT_TOTAL_QUESTIONS);
     expect(createHeadCountSession("hard")).toHaveLength(HEAD_COUNT_TOTAL_QUESTIONS);
+    expect(createHeadCountSession("normal", "fast")).toHaveLength(HEAD_COUNT_TOTAL_QUESTIONS);
   });
 
   test("normal questions stay within event and delta limits", () => {
@@ -55,6 +58,16 @@ describe("head-count game logic", () => {
     }
   });
 
+  test("speed difficulty controls event pacing and reward difficulty", () => {
+    expect(getHeadCountEventMs("slow", 0)).toBeGreaterThan(getHeadCountEventMs("standard", 0));
+    expect(getHeadCountEventMs("standard", 0)).toBeGreaterThan(getHeadCountEventMs("fast", 0));
+    expect(createHeadCountQuestion("normal", 0).eventMs).toBe(getHeadCountEventMs("slow", 0));
+    expect(getHeadCountRewardDifficulty("normal", "slow")).toBe("normal");
+    expect(getHeadCountRewardDifficulty("normal", "standard")).toBe("normal");
+    expect(getHeadCountRewardDifficulty("normal", "fast")).toBe("hard");
+    expect(getHeadCountRewardDifficulty("hard", "slow")).toBe("hard");
+  });
+
   test("options include the correct answer once", () => {
     for (let answer = 0; answer <= 12; answer += 1) {
       const options = createHeadCountOptions(answer);
@@ -73,9 +86,9 @@ describe("head-count game logic", () => {
       currentCombo: 2,
     })).toEqual({
       correct: true,
-      speedBonus: 2,
+      speedBonus: 1,
       comboBonus: 1,
-      score: 8,
+      score: 5,
     });
 
     expect(scoreHeadCountQuestion({
@@ -85,9 +98,9 @@ describe("head-count game logic", () => {
       currentCombo: 0,
     })).toMatchObject({
       correct: true,
-      speedBonus: 1,
+      speedBonus: 0,
       comboBonus: 0,
-      score: 6,
+      score: 3,
     });
 
     expect(scoreHeadCountQuestion({

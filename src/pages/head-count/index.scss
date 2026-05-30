@@ -112,6 +112,10 @@
   gap: 14px;
 }
 
+.speed-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .difficulty-card {
   min-height: 116px;
   padding: 18px;
@@ -373,12 +377,16 @@
   animation-fill-mode: both;
 }
 
-.moving-person-normal {
-  animation-duration: 620ms;
+.moving-person-speed-slow {
+  animation-duration: 820ms;
 }
 
-.moving-person-hard {
-  animation-duration: 460ms;
+.moving-person-speed-standard {
+  animation-duration: 660ms;
+}
+
+.moving-person-speed-fast {
+  animation-duration: 520ms;
 }
 
 .moving-person-text {

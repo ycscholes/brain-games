@@ -6,15 +6,18 @@ import {
   getAwardedPoints,
   getTrainingDifficultyLabel,
   recordTrainingSession,
-  type TrainingDifficulty,
 } from "../../utils/trainingStorage";
 import {
   createHeadCountSession,
+  getHeadCountRewardDifficulty,
+  HEAD_COUNT_SPEED_LABELS,
   HEAD_COUNT_TOTAL_QUESTIONS,
   scoreHeadCountQuestion,
   type HeadCountEvent,
+  type HeadCountDifficulty,
   type HeadCountQuestion,
   type HeadCountQuestionResult,
+  type HeadCountSpeedDifficulty,
 } from "./gameLogic";
 import "./index.scss";
 
@@ -24,8 +27,16 @@ const STORAGE_KEY_PREFIX = "head_count_best";
 const READY_MS = 520;
 const FEEDBACK_MS = 880;
 
-function readBestScore(difficulty: TrainingDifficulty) {
-  const value = Number(Taro.getStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`) || 0);
+function getBestScoreKey(difficulty: HeadCountDifficulty, speedDifficulty: HeadCountSpeedDifficulty) {
+  return `${STORAGE_KEY_PREFIX}_${difficulty}_${speedDifficulty}`;
+}
+
+function readBestScore(difficulty: HeadCountDifficulty, speedDifficulty: HeadCountSpeedDifficulty) {
+  const value = Number(
+    Taro.getStorageSync(getBestScoreKey(difficulty, speedDifficulty)) ||
+      Taro.getStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`) ||
+      0,
+  );
   return Number.isFinite(value) ? value : 0;
 }
 
@@ -43,7 +54,8 @@ function getRoomCountText(phase: Phase, displayCount: number, answer: number) {
 
 export default function HeadCount() {
   const [phase, setPhase] = useState<Phase>("start");
-  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
+  const [difficulty, setDifficulty] = useState<HeadCountDifficulty>("normal");
+  const [speedDifficulty, setSpeedDifficulty] = useState<HeadCountSpeedDifficulty>("slow");
   const [best, setBest] = useState(0);
   const [questions, setQuestions] = useState<HeadCountQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -62,6 +74,7 @@ export default function HeadCount() {
   const answerStartedAtRef = useRef(0);
   const finishedRef = useRef(false);
 
+  const rewardDifficulty = getHeadCountRewardDifficulty(difficulty, speedDifficulty);
   const currentQuestion = questions[currentIndex] ?? null;
   const currentEvent = currentQuestion && eventIndex >= 0 ? currentQuestion.events[eventIndex] ?? null : null;
   const staticPeopleCount = currentQuestion && phase === "feedback"
@@ -82,8 +95,8 @@ export default function HeadCount() {
   };
 
   const refreshBest = useCallback(() => {
-    setBest(readBestScore(rewardDifficulty));
-  }, [rewardDifficulty]);
+    setBest(readBestScore(difficulty, speedDifficulty));
+  }, [difficulty, speedDifficulty]);
 
   useLoad(() => {
     refreshBest();
@@ -119,6 +132,7 @@ export default function HeadCount() {
       score: finalScore,
       awardedPoints: nextAwardedPoints,
       durationSeconds,
+      mode: `${difficulty}:${speedDifficulty}`,
       difficulty: rewardDifficulty,
       outcome: "completed",
     });
@@ -128,13 +142,13 @@ export default function HeadCount() {
     setPhase("finished");
 
     if (finalScore > best) {
-      Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${rewardDifficulty}`, finalScore);
+      Taro.setStorageSync(getBestScoreKey(difficulty, speedDifficulty), finalScore);
       setBest(finalScore);
       setIsNewBest(true);
     } else {
       setIsNewBest(false);
     }
-  }, [best, rewardDifficulty]);
+  }, [best, difficulty, rewardDifficulty, speedDifficulty]);
 
   const beginQuestion = useCallback((questionIndex: number) => {
     clearTimers();
@@ -165,7 +179,7 @@ export default function HeadCount() {
 
   const startGame = () => {
     clearTimers();
-    const nextQuestions = createHeadCountSession(rewardDifficulty);
+    const nextQuestions = createHeadCountSession(difficulty, speedDifficulty);
     finishedRef.current = false;
     startedAtRef.current = Date.now();
     setQuestions(nextQuestions);
@@ -254,12 +268,22 @@ export default function HeadCount() {
     return `${Math.round((correctQuestions / HEAD_COUNT_TOTAL_QUESTIONS) * 100)}%`;
   }, [correctQuestions]);
 
-  const renderDifficultyCard = (difficulty: TrainingDifficulty, copy: string) => (
+  const renderDifficultyCard = (nextDifficulty: HeadCountDifficulty, copy: string) => (
     <View
-      className={`difficulty-card ${rewardDifficulty === difficulty ? "difficulty-card-active" : ""}`}
-      onClick={() => setRewardDifficulty(difficulty)}
+      className={`difficulty-card ${difficulty === nextDifficulty ? "difficulty-card-active" : ""}`}
+      onClick={() => setDifficulty(nextDifficulty)}
     >
-      <Text className="difficulty-name">{getTrainingDifficultyLabel(difficulty)}</Text>
+      <Text className="difficulty-name">{getTrainingDifficultyLabel(nextDifficulty)}</Text>
+      <Text className="difficulty-copy">{copy}</Text>
+    </View>
+  );
+
+  const renderSpeedCard = (nextSpeedDifficulty: HeadCountSpeedDifficulty, copy: string) => (
+    <View
+      className={`difficulty-card ${speedDifficulty === nextSpeedDifficulty ? "difficulty-card-active" : ""}`}
+      onClick={() => setSpeedDifficulty(nextSpeedDifficulty)}
+    >
+      <Text className="difficulty-name">{HEAD_COUNT_SPEED_LABELS[nextSpeedDifficulty]}</Text>
       <Text className="difficulty-copy">{copy}</Text>
     </View>
   );
@@ -273,7 +297,7 @@ export default function HeadCount() {
             <Text className="hero-title">小剧场清点</Text>
             <Text className="hero-copy">观察角色进出房间，最后判断舞台上还剩多少人。</Text>
             <View className="best-pill">
-              <Text className="best-label">当前难度最高</Text>
+              <Text className="best-label">当前设置最高</Text>
               <Text className="best-value">{best}</Text>
             </View>
           </View>
@@ -286,10 +310,19 @@ export default function HeadCount() {
           </View>
 
           <View className="info-panel">
-            <Text className="section-title">难度</Text>
+            <Text className="section-title">事件难度</Text>
             <View className="difficulty-grid">
               {renderDifficultyCard("normal", "3-4 段事件 · 节奏清晰")}
-              {renderDifficultyCard("hard", "4-6 段事件 · 变化更快")}
+              {renderDifficultyCard("hard", "4-6 段事件 · 人数变化更大")}
+            </View>
+          </View>
+
+          <View className="info-panel">
+            <Text className="section-title">出入速度</Text>
+            <View className="difficulty-grid speed-grid">
+              {renderSpeedCard("slow", "舒缓进出 · 默认推荐")}
+              {renderSpeedCard("standard", "标准节奏 · 略有压力")}
+              {renderSpeedCard("fast", "快速切换 · 按困难积分")}
             </View>
           </View>
 
@@ -351,7 +384,7 @@ export default function HeadCount() {
                   {movingPeople.map((personIndex) => (
                     <View
                       key={`event-${eventIndex}-${personIndex}`}
-                      className={`moving-person moving-person-${currentEvent.direction} moving-person-${rewardDifficulty}`}
+                      className={`moving-person moving-person-${currentEvent.direction} moving-person-speed-${speedDifficulty}`}
                       style={{
                         top: `${34 + personIndex * 16}%`,
                         animationDelay: `${personIndex * 70}ms`,
@@ -394,7 +427,9 @@ export default function HeadCount() {
           <View className="result-card">
             <Text className="result-kicker">{isNewBest ? "刷新最高分" : "训练完成"}</Text>
             <Text className="result-score">{score}</Text>
-            <Text className="result-copy">小剧场清点 · {getTrainingDifficultyLabel(rewardDifficulty)}</Text>
+            <Text className="result-copy">
+              小剧场清点 · {getTrainingDifficultyLabel(difficulty)} · {HEAD_COUNT_SPEED_LABELS[speedDifficulty]} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
+            </Text>
           </View>
 
           <View className="result-grid">

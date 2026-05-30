@@ -1,6 +1,7 @@
 import type { TrainingDifficulty } from "../../utils/trainingStorage";
 
 export type HeadCountDifficulty = TrainingDifficulty;
+export type HeadCountSpeedDifficulty = "slow" | "standard" | "fast";
 export type HeadCountDirection = "enter" | "leave";
 
 export interface HeadCountEvent {
@@ -26,6 +27,7 @@ export interface HeadCountQuestionResult {
 }
 
 export const HEAD_COUNT_TOTAL_QUESTIONS = 8;
+const BASE_CORRECT_SCORE = 3;
 
 const EVENT_COUNT_STEPS: Record<HeadCountDifficulty, number[]> = {
   normal: [3, 3, 3, 4, 4, 4, 4, 4],
@@ -42,9 +44,22 @@ const MAX_DELTA: Record<HeadCountDifficulty, number> = {
   hard: 3,
 };
 
-const EVENT_MS: Record<HeadCountDifficulty, number> = {
-  normal: 920,
-  hard: 720,
+const EVENT_MS: Record<HeadCountSpeedDifficulty, number> = {
+  slow: 1180,
+  standard: 980,
+  fast: 780,
+};
+
+const EVENT_MS_STEP: Record<HeadCountSpeedDifficulty, number> = {
+  slow: 18,
+  standard: 22,
+  fast: 26,
+};
+
+export const HEAD_COUNT_SPEED_LABELS: Record<HeadCountSpeedDifficulty, string> = {
+  slow: "舒缓",
+  standard: "标准",
+  fast: "快速",
 };
 
 function clampQuestionIndex(questionIndex: number) {
@@ -66,6 +81,18 @@ function shuffle<T>(items: T[]) {
 
 export function getHeadCountEventCount(difficulty: HeadCountDifficulty, questionIndex: number) {
   return EVENT_COUNT_STEPS[difficulty][clampQuestionIndex(questionIndex)];
+}
+
+export function getHeadCountEventMs(speedDifficulty: HeadCountSpeedDifficulty, questionIndex: number) {
+  const safeQuestionIndex = clampQuestionIndex(questionIndex);
+  return Math.max(620, EVENT_MS[speedDifficulty] - safeQuestionIndex * EVENT_MS_STEP[speedDifficulty]);
+}
+
+export function getHeadCountRewardDifficulty(
+  difficulty: HeadCountDifficulty,
+  speedDifficulty: HeadCountSpeedDifficulty,
+): TrainingDifficulty {
+  return difficulty === "hard" || speedDifficulty === "fast" ? "hard" : "normal";
 }
 
 function createEvent(currentCount: number, difficulty: HeadCountDifficulty, previousDirection?: HeadCountDirection) {
@@ -126,6 +153,7 @@ export function createHeadCountOptions(answer: number) {
 export function createHeadCountQuestion(
   difficulty: HeadCountDifficulty,
   questionIndex: number,
+  speedDifficulty: HeadCountSpeedDifficulty = "slow",
 ): HeadCountQuestion {
   const safeQuestionIndex = clampQuestionIndex(questionIndex);
   const initialRange = INITIAL_RANGES[difficulty];
@@ -148,13 +176,16 @@ export function createHeadCountQuestion(
     events,
     answer: currentCount,
     options: createHeadCountOptions(currentCount),
-    eventMs: Math.max(520, EVENT_MS[difficulty] - safeQuestionIndex * 24),
+    eventMs: getHeadCountEventMs(speedDifficulty, safeQuestionIndex),
   };
 }
 
-export function createHeadCountSession(difficulty: HeadCountDifficulty) {
+export function createHeadCountSession(
+  difficulty: HeadCountDifficulty,
+  speedDifficulty: HeadCountSpeedDifficulty = "slow",
+) {
   return Array.from({ length: HEAD_COUNT_TOTAL_QUESTIONS }, (_, index) =>
-    createHeadCountQuestion(difficulty, index),
+    createHeadCountQuestion(difficulty, index, speedDifficulty),
   );
 }
 
@@ -174,13 +205,13 @@ export function scoreHeadCountQuestion(params: {
     };
   }
 
-  const speedBonus = params.answerMs <= 1600 ? 2 : params.answerMs <= 3000 ? 1 : 0;
-  const comboBonus = params.currentCombo > 0 ? 1 : 0;
+  const speedBonus = params.answerMs <= 1800 ? 1 : 0;
+  const comboBonus = params.currentCombo >= 2 ? 1 : 0;
 
   return {
     correct: true,
     speedBonus,
     comboBonus,
-    score: 5 + speedBonus + comboBonus,
+    score: BASE_CORRECT_SCORE + speedBonus + comboBonus,
   };
 }
