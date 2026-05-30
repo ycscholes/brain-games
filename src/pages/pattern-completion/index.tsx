@@ -339,6 +339,19 @@ export default function PatternCompletion() {
         visualCorrect: prev.visualCorrect + (isCorrect ? 1 : 0),
       };
     });
+
+    if (isCorrect) {
+      if (currentIndex >= totalQuestions - 1) {
+        finishGame(nextFinalScore);
+        return;
+      }
+
+      setCurrentIndex((prev) => prev + 1);
+      resetRoundState();
+      setPhase("playing");
+      return;
+    }
+
     setPhase("reveal");
   };
 
@@ -376,9 +389,10 @@ export default function PatternCompletion() {
           <View className="rules-card">
             <Text className="section-title">游戏规则</Text>
             <Text className="rule-item">1. 每局共 {PATTERN_SESSION_LENGTH} 个规律案件，包含图形规律和数字规律。</Text>
-            <Text className="rule-item">2. 先观察序列并选择缺口答案，答完后才揭示规律。</Text>
-            <Text className="rule-item">3. 每局有 {PATTERN_HINTS_PER_SESSION} 次线索，只提示观察方向，不直接给答案。</Text>
-            <Text className="rule-item">4. 分数来自答对、连击和快速识破；使用线索会少拿 1 分。</Text>
+            <Text className="rule-item">2. 先观察序列并选择缺口答案，答对直接进入下一题。</Text>
+            <Text className="rule-item">3. 答错时会揭示正确答案和规律，帮助你调整下一题思路。</Text>
+            <Text className="rule-item">4. 每局有 {PATTERN_HINTS_PER_SESSION} 次线索，只提示观察方向，不直接给答案。</Text>
+            <Text className="rule-item">5. 分数来自答对、连击和快速识破；使用线索会少拿 1 分。</Text>
           </View>
 
           <View className="summary-card">
