@@ -74,8 +74,8 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
     timelineTitle: "找规律推理训练",
   },
   "pages/number-order/index": {
-    title: "来玩星图排序，练瞬时记忆",
-    timelineTitle: "星图排序记忆训练",
+    title: "来玩星链回响，练路径记忆",
+    timelineTitle: "星链回响记忆训练",
   },
   "pages/head-count/index": {
     title: "来玩小剧场清点，练动态心算",

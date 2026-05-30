@@ -109,13 +109,13 @@ const BASE_GAMES = [
   },
   {
     id: "number-order",
-    title: "星图排序",
+    title: "星链回响",
     badge: "记忆",
     cardClass: "card-number-order",
     url: "/pages/number-order/index",
     category: "memory",
     duration: "约 2 分钟",
-    skill: "空间记忆",
+    skill: "路径记忆",
     level: "标准",
   },
   {
@@ -177,7 +177,7 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   "multiple-object-tracking": "追踪任务",
   pattern: "找规律",
   "pattern-completion": "找规律",
-  "number-order": "星图排序",
+  "number-order": "星链回响",
   "head-count": "小剧场清点",
 };
 

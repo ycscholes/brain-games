@@ -227,6 +227,8 @@ describe("trainingStorage", () => {
     test("number-order: capped score maps directly to points", () => {
       expect(getAwardedPoints("number-order", 20, "normal")).toBe(20);
       expect(getAwardedPoints("number-order", 40, "normal")).toBe(40);
+      expect(getAwardedPoints("number-order", 30, "hard")).toBe(45);
+      expect(getAwardedPoints("number-order", 50, "hard")).toBe(60);
     });
 
     test("head-count: hard difficulty applies 1.5x conversion and caps at 60", () => {

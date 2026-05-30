@@ -344,6 +344,12 @@
   box-shadow: 0 0 18px rgba(45, 212, 191, 0.46);
 }
 
+.route-segment-echo {
+  height: 6px;
+  background: rgba(125, 211, 252, 0.88);
+  box-shadow: 0 0 22px rgba(125, 211, 252, 0.54);
+}
+
 .route-segment-answer {
   height: 4px;
   background: rgba(251, 191, 36, 0.92);
@@ -393,6 +399,16 @@
   border-color: rgba(254, 226, 226, 0.94);
 }
 
+.star-node-echo-active {
+  background: #fef3c7;
+  border-color: rgba(254, 252, 232, 0.98);
+  transform: scale(1.14);
+  box-shadow:
+    0 0 42px rgba(250, 204, 21, 0.74),
+    0 0 26px rgba(45, 212, 191, 0.5),
+    inset 0 2px 0 rgba(255, 255, 255, 0.92);
+}
+
 .star-node-text {
   font-size: 31px;
   line-height: 1;
@@ -412,6 +428,18 @@
 
 .star-board-answering .star-node-gold {
   background: rgba(254, 243, 199, 0.42);
+}
+
+.star-board-revealing .star-node {
+  background: rgba(226, 246, 255, 0.34);
+}
+
+.star-board-revealing .star-node-gold {
+  background: rgba(254, 243, 199, 0.34);
+}
+
+.star-board-revealing .star-node-echo-active {
+  background: #fef3c7;
 }
 
 .route-replay-card {

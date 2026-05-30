@@ -24,7 +24,7 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   "multiple-object-tracking": "追踪任务",
   pattern: "找规律",
   "pattern-completion": "找规律",
-  "number-order": "星图排序",
+  "number-order": "星链回响",
   "head-count": "小剧场清点",
 };
 
