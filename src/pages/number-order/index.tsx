@@ -11,6 +11,7 @@ import {
 import { usePageShare } from "../../utils/share";
 import {
   createNumberOrderSession,
+  getRouteValues,
   NUMBER_ORDER_TOTAL_QUESTIONS,
   scoreNumberOrderQuestion,
   type NumberOrderQuestion,
@@ -22,7 +23,7 @@ type Phase = "start" | "ready" | "revealing" | "answering" | "feedback" | "finis
 
 const STORAGE_KEY_PREFIX = "number_order_best";
 const READY_MS = 520;
-const FEEDBACK_MS = 880;
+const FEEDBACK_MS = 1500;
 
 function readBestScore(difficulty: TrainingDifficulty) {
   const value = Number(Taro.getStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`) || 0);
@@ -40,6 +41,8 @@ export default function NumberOrder() {
   const [tappedIds, setTappedIds] = useState<string[]>([]);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
+  const [bestCombo, setBestCombo] = useState(0);
+  const [masteredRules, setMasteredRules] = useState<string[]>([]);
   const [correctQuestions, setCorrectQuestions] = useState(0);
   const [lastResult, setLastResult] = useState<NumberOrderQuestionResult | null>(null);
   const [awardedPoints, setAwardedPoints] = useState(0);
@@ -50,8 +53,10 @@ export default function NumberOrder() {
   const finishedRef = useRef(false);
 
   const currentQuestion = questions[currentIndex] ?? null;
-  const visibleNumbers = phase === "revealing" || phase === "feedback";
   const answerProgress = currentQuestion ? `${Math.min(tappedIds.length + 1, currentQuestion.answerIds.length)}/${currentQuestion.answerIds.length}` : "0/0";
+  const routeValues = currentQuestion ? getRouteValues(currentQuestion) : [];
+  const routeValueText = routeValues.join(" -> ");
+  const masteredRuleText = masteredRules.length > 0 ? masteredRules.join(" / ") : "继续探索";
 
   const clearTimers = () => {
     timersRef.current.forEach((timer) => clearTimeout(timer));
@@ -146,12 +151,18 @@ export default function NumberOrder() {
     });
     const nextScore = score + result.score;
     const nextCombo = result.allCorrect ? combo + 1 : 0;
+    const nextBestCombo = Math.max(bestCombo, nextCombo);
+    const nextMasteredRules = result.allCorrect && !masteredRules.includes(currentQuestion.routeRule.shortLabel)
+      ? [...masteredRules, currentQuestion.routeRule.shortLabel]
+      : masteredRules;
     const nextCorrectQuestions = correctQuestions + (result.allCorrect ? 1 : 0);
 
     setTappedIds(nextTappedIds);
     setLastResult(result);
     setScore(nextScore);
     setCombo(nextCombo);
+    setBestCombo(nextBestCombo);
+    setMasteredRules(nextMasteredRules);
     setCorrectQuestions(nextCorrectQuestions);
     setPhase("feedback");
 
@@ -165,11 +176,13 @@ export default function NumberOrder() {
     }, FEEDBACK_MS);
   }, [
     beginQuestion,
+    bestCombo,
     combo,
     correctQuestions,
     currentIndex,
     currentQuestion,
     finishGame,
+    masteredRules,
     phase,
     score,
   ]);
@@ -184,6 +197,8 @@ export default function NumberOrder() {
     setTappedIds([]);
     setScore(0);
     setCombo(0);
+    setBestCombo(0);
+    setMasteredRules([]);
     setCorrectQuestions(0);
     setLastResult(null);
     setAwardedPoints(0);
@@ -206,6 +221,8 @@ export default function NumberOrder() {
     setTappedIds([]);
     setScore(0);
     setCombo(0);
+    setBestCombo(0);
+    setMasteredRules([]);
     setCorrectQuestions(0);
     setLastResult(null);
     setAwardedPoints(0);
@@ -244,6 +261,35 @@ export default function NumberOrder() {
     </View>
   );
 
+  const renderRouteSegment = (
+    fromPoint: NumberOrderQuestion["points"][number] | undefined,
+    toPoint: NumberOrderQuestion["points"][number] | undefined,
+    className: string,
+    key: string,
+  ) => {
+    if (!fromPoint || !toPoint) {
+      return null;
+    }
+
+    const deltaX = toPoint.x - fromPoint.x;
+    const deltaY = toPoint.y - fromPoint.y;
+    const length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+
+    return (
+      <View
+        key={key}
+        className={className}
+        style={{
+          left: `${fromPoint.x}%`,
+          top: `${fromPoint.y}%`,
+          width: `${length}%`,
+          transform: `rotate(${angle}deg)`,
+        }}
+      />
+    );
+  };
+
   return (
     <View className="number-order-page">
       {phase === "start" ? (
@@ -251,7 +297,15 @@ export default function NumberOrder() {
           <View className="hero-panel">
             <Text className="hero-kicker">空间工作记忆</Text>
             <Text className="hero-title">星图排序</Text>
-            <Text className="hero-copy">记住星点数字，隐藏后按从小到大依次点亮。</Text>
+            <Text className="hero-copy">记住星点线索，按航线规则点亮星路。</Text>
+            <View className="route-preview" aria-hidden>
+              <View className="preview-line preview-line-one" />
+              <View className="preview-line preview-line-two" />
+              <Text className="preview-star preview-star-one">4</Text>
+              <Text className="preview-star preview-star-two">9</Text>
+              <Text className="preview-star preview-star-three">12</Text>
+              <Text className="preview-star preview-star-four">18</Text>
+            </View>
             <View className="best-pill">
               <Text className="best-label">当前难度最高</Text>
               <Text className="best-value">{best}</Text>
@@ -260,16 +314,16 @@ export default function NumberOrder() {
 
           <View className="info-panel">
             <Text className="section-title">训练规则</Text>
-            <Text className="rule-line">1. 每局 8 题，先看数字星点。</Text>
-            <Text className="rule-line">2. 数字隐藏后，按升序点击位置。</Text>
-            <Text className="rule-line">3. 连续整题全对会获得额外连击分。</Text>
+            <Text className="rule-line">1. 看清数字、颜色和亮度线索。</Text>
+            <Text className="rule-line">2. 线索隐藏后，按当前航线规则点亮。</Text>
+            <Text className="rule-line">3. 回放会展示正确星路和本题得分。</Text>
           </View>
 
           <View className="info-panel">
             <Text className="section-title">难度</Text>
             <View className="difficulty-grid">
-              {renderDifficultyCard("normal", "4-6 个数字 · 节奏舒展")}
-              {renderDifficultyCard("hard", "5-7 个数字 · 展示更短")}
+              {renderDifficultyCard("normal", "规则逐步加入 · 观察时间更宽")}
+              {renderDifficultyCard("hard", "多规则混合 · 星点更多")}
             </View>
           </View>
 
@@ -301,30 +355,71 @@ export default function NumberOrder() {
 
           <View className="prompt-card">
             <Text className="prompt-title">
-              {phase === "ready" ? "准备观察星图" : phase === "revealing" ? "记住数字和位置" : phase === "answering" ? `点击第 ${answerProgress} 个星点` : lastResult?.allCorrect ? "整题全对" : "顺序中断"}
+              {phase === "ready"
+                ? "准备观察星图"
+                : phase === "revealing"
+                  ? currentQuestion.routeRule.title
+                  : phase === "answering"
+                    ? `点亮第 ${answerProgress} 颗星`
+                    : lastResult?.allCorrect
+                      ? "星路完成"
+                      : "星路中断"}
             </Text>
             <Text className="prompt-copy">
-              {phase === "answering" ? "按从小到大的顺序点击" : phase === "feedback" ? `本题 +${lastResult?.score ?? 0}` : "保持专注，星点马上隐藏"}
+              {phase === "answering"
+                ? currentQuestion.routeRule.description
+                : phase === "feedback"
+                  ? `${currentQuestion.replayText} · 本题 +${lastResult?.score ?? 0}`
+                  : "保持专注，星点线索马上隐藏"}
             </Text>
           </View>
 
           <View className={`star-board star-board-${phase}`}>
+            {tappedIds.slice(1).map((pointId, index) => {
+              const fromPoint = currentQuestion.points.find((point) => point.id === tappedIds[index]);
+              const toPoint = currentQuestion.points.find((point) => point.id === pointId);
+              return renderRouteSegment(
+                fromPoint,
+                toPoint,
+                "route-segment route-segment-player",
+                `${tappedIds[index]}-${pointId}`,
+              );
+            })}
+            {phase === "feedback" ? currentQuestion.answerIds.slice(1).map((pointId, index) => {
+              const fromPoint = currentQuestion.points.find((point) => point.id === currentQuestion.answerIds[index]);
+              const toPoint = currentQuestion.points.find((point) => point.id === pointId);
+              return renderRouteSegment(
+                fromPoint,
+                toPoint,
+                "route-segment route-segment-answer",
+                `answer-${currentQuestion.answerIds[index]}-${pointId}`,
+              );
+            }) : null}
             {currentQuestion.points.map((point) => {
               const tapped = tappedIds.includes(point.id);
-              const wrongTap = phase === "feedback" && tapped && !currentQuestion.answerIds.slice(0, tappedIds.length).includes(point.id);
+              const expectedPrefix = currentQuestion.answerIds.slice(0, tappedIds.length);
+              const wrongTap = phase === "feedback" && tapped && !expectedPrefix.includes(point.id);
+              const shouldShowValue = phase === "revealing" || phase === "feedback";
               return (
                 <View
                   key={point.id}
-                  className={`star-node ${tapped ? "star-node-tapped" : ""} ${wrongTap ? "star-node-wrong" : ""}`}
+                  className={`star-node star-node-${point.colorGroup} star-node-${point.brightness} ${tapped ? "star-node-tapped" : ""} ${wrongTap ? "star-node-wrong" : ""}`}
                   style={{ left: `${point.x}%`, top: `${point.y}%` }}
                   onClick={() => handlePointTap(point.id)}
                 >
-                  <Text className="star-node-text">{visibleNumbers ? point.value : tapped ? "OK" : ""}</Text>
+                  <Text className="star-node-text">{shouldShowValue ? point.value : tapped ? "✓" : ""}</Text>
                 </View>
               );
             })}
             <View className="star-board-grid" />
           </View>
+
+          {phase === "feedback" ? (
+            <View className="route-replay-card">
+              <Text className="route-replay-label">正确星路</Text>
+              <Text className="route-replay-values">{routeValueText}</Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
 
@@ -350,8 +445,16 @@ export default function NumberOrder() {
               <Text className="result-label">宠物积分</Text>
             </View>
             <View className="result-item">
-              <Text className="result-value">{combo}</Text>
-              <Text className="result-label">最终连击</Text>
+              <Text className="result-value">{bestCombo}</Text>
+              <Text className="result-label">最佳连击</Text>
+            </View>
+            <View className="result-item">
+              <Text className="result-value">{correctQuestions}/{NUMBER_ORDER_TOTAL_QUESTIONS}</Text>
+              <Text className="result-label">完成航线</Text>
+            </View>
+            <View className="result-item result-item-wide">
+              <Text className="result-value result-value-small">{masteredRuleText}</Text>
+              <Text className="result-label">掌握规则</Text>
             </View>
           </View>
 
