@@ -9,6 +9,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
 type GameStatus = "start" | "playing" | "finished";
@@ -257,6 +258,8 @@ function createTaskPair(config: GameConfig): TaskPair {
 }
 
 export default function DualTaskGame() {
+  usePageShare("pages/dual-task/index");
+
   const [gameStatus, setGameStatus] = useState<GameStatus>("start");
   const [config, setConfig] = useState<GameConfig>({
     mode: "alternating",

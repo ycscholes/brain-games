@@ -8,6 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
 type Phase = "start" | "showing" | "input" | "finished";
@@ -30,6 +31,8 @@ function buildSequence(length: number): string {
 }
 
 export default function DigitSpan() {
+  usePageShare("pages/digit-span/index");
+
   const [phase, setPhase] = useState<Phase>("start");
   const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
   const [best, setBest] = useState(0);

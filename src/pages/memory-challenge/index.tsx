@@ -9,6 +9,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
 // Import Shapes
@@ -71,6 +72,8 @@ interface HighScoreRecord {
 }
 
 export default function MemoryChallenge() {
+  usePageShare("pages/memory-challenge/index");
+
   const [gameState, setGameState] = useState<GameState>("start");
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);

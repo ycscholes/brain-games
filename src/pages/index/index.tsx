@@ -9,6 +9,7 @@ import {
   recommendNextGame,
   type TrainingGameId,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import { MAX_HUNGER, PetData, PetStorageData } from "../../pages/pet/types";
 import PetSprite from "../pet/components/PetSprite";
 import type { PetSpriteMood } from "../pet/components/PetSprite/types";
@@ -202,6 +203,8 @@ function formatPlayedAt(value: string) {
 }
 
 export default function Index() {
+  usePageShare("pages/index/index");
+
   const [games, setGames] = useState<GameItem[]>([]);
   const [dashboard, setDashboard] = useState<DashboardView>({
     todaySessions: 0,

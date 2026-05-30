@@ -13,6 +13,7 @@ import {
   readDashboardStats,
   saveAppSettings,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
 interface DashboardSnapshot {
@@ -24,6 +25,8 @@ interface DashboardSnapshot {
 }
 
 export default function SettingsPage() {
+  usePageShare("pages/settings/index");
+
   const [settings, setSettings] = useState(() => readAppSettings());
   const [dashboard, setDashboard] = useState<DashboardSnapshot>(() => readDashboardStats());
   const [petCount, setPetCount] = useState(0);

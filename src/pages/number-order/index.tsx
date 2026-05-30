@@ -8,6 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import {
   createNumberOrderSession,
   NUMBER_ORDER_TOTAL_QUESTIONS,
@@ -29,6 +30,8 @@ function readBestScore(difficulty: TrainingDifficulty) {
 }
 
 export default function NumberOrder() {
+  usePageShare("pages/number-order/index");
+
   const [phase, setPhase] = useState<Phase>("start");
   const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
   const [best, setBest] = useState(0);

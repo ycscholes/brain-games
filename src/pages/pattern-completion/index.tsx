@@ -8,6 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import {
   generatePatternSession,
   PATTERN_HINTS_PER_SESSION,
@@ -124,6 +125,8 @@ function SequenceCell({
 }
 
 export default function PatternCompletion() {
+  usePageShare("pages/pattern-completion/index");
+
   const [phase, setPhase] = useState<Phase>("start");
   const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
   const [best, setBest] = useState(0);

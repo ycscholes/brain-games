@@ -9,6 +9,7 @@ import {
   adoptPet,
   getNextAdoptionCost,
 } from "../../utils/petStorage";
+import { usePageShare } from "../../utils/share";
 import {
   FoodItem,
   PetData,
@@ -73,6 +74,8 @@ function FoodIcon({ food }: { food: FoodItem }) {
 }
 
 export default function PetPage() {
+  usePageShare("pages/pet/index");
+
   const [storageData, setStorageData] = useState<PetStorageData>(() => readPetData());
   const [newName, setNewName] = useState("");
   const [selectedSkin, setSelectedSkin] = useState<PetSkin>("cat");

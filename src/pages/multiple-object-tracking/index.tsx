@@ -8,6 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
 type Phase = "start" | "preview" | "tracking" | "selecting" | "finished";
@@ -143,6 +144,8 @@ const buildCircles = (targetCount: number, speed: number, boardSize: BoardSize):
 };
 
 export default function MultipleObjectTracking() {
+  usePageShare("pages/multiple-object-tracking/index");
+
   const systemInfoRef = useRef(Taro.getSystemInfoSync());
   const boardSizeRef = useRef(getBoardSize(systemInfoRef.current.windowWidth));
   const phaseRef = useRef<Phase>("start");

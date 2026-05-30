@@ -7,6 +7,7 @@ import {
   getTrainingDifficultyLabel,
   recordTrainingSession,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import {
   CUSTOM_MATH_STAGE_ID,
   CUSTOM_OPERATION_OPTIONS,
@@ -35,6 +36,8 @@ interface HighScoreRecord {
 }
 
 export default function MentalMath() {
+  usePageShare("pages/mental-math/index");
+
   const [gameState, setGameState] = useState<GameState>("start");
   const [gameMode, setGameMode] = useState<GameMode>("timed");
   const [selectedStageId, setSelectedStageId] = useState<MathStageId>(DEFAULT_MATH_STAGE_ID);

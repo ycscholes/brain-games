@@ -8,6 +8,7 @@ import {
   type TrainingGameId,
   type TrainingRecord,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
 const GAME_TITLES: Record<TrainingGameId, string> = {
@@ -49,6 +50,8 @@ function formatPlayedAt(value: string) {
 }
 
 export default function TrainingRecords() {
+  usePageShare("pages/training-records/index");
+
   const [records, setRecords] = useState<TrainingRecord[]>([]);
   const [dashboard, setDashboard] = useState({ totalSessions: 0, totalAwardedPoints: 0 });
 

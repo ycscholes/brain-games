@@ -9,6 +9,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
 type GameState = "start" | "playing" | "gameover";
@@ -43,6 +44,8 @@ interface HighScoreRecord {
 }
 
 export default function RockPaperScissors() {
+  usePageShare("pages/rock-paper-scissors/index");
+
   const [gameState, setGameState] = useState<GameState>("start");
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);

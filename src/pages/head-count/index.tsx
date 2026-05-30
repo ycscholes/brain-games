@@ -7,6 +7,7 @@ import {
   getTrainingDifficultyLabel,
   recordTrainingSession,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import {
   createHeadCountSession,
   getHeadCountRewardDifficulty,
@@ -53,6 +54,8 @@ function getRoomCountText(phase: Phase, displayCount: number, answer: number) {
 }
 
 export default function HeadCount() {
+  usePageShare("pages/head-count/index");
+
   const [phase, setPhase] = useState<Phase>("start");
   const [difficulty, setDifficulty] = useState<HeadCountDifficulty>("normal");
   const [speedDifficulty, setSpeedDifficulty] = useState<HeadCountSpeedDifficulty>("slow");

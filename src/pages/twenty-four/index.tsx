@@ -8,6 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
 type Phase = "start" | "playing" | "finished";
@@ -176,6 +177,8 @@ function evaluateExpression(tokens: Token[]): number | null {
 }
 
 export default function TwentyFour() {
+  usePageShare("pages/twenty-four/index");
+
   const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
   const [round, setRound] = useState<GeneratedRound>(() => generateRound(MAX_CARD_VALUE.normal));
   const [phase, setPhase] = useState<Phase>("start");
