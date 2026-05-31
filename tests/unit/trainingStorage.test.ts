@@ -207,6 +207,8 @@ describe("trainingStorage", () => {
     test("dual-task: capped score maps directly to points", () => {
       expect(getAwardedPoints("dual-task", 10)).toBe(10);
       expect(getAwardedPoints("dual-task", 40)).toBe(40);
+      expect(getAwardedPoints("dual-task", 30, "hard")).toBe(45);
+      expect(getAwardedPoints("dual-task", 50, "hard")).toBe(60);
     });
 
     test("multiple-object-tracking: 3x conversion with normal cap", () => {
