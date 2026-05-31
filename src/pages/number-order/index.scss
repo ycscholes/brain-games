@@ -334,6 +334,7 @@
   position: absolute;
   z-index: 1;
   height: 8px;
+  margin-top: -4px;
   border-radius: 999px;
   transform-origin: 0 50%;
   pointer-events: none;
@@ -346,12 +347,14 @@
 
 .route-segment-echo {
   height: 6px;
+  margin-top: -3px;
   background: rgba(125, 211, 252, 0.88);
   box-shadow: 0 0 22px rgba(125, 211, 252, 0.54);
 }
 
 .route-segment-answer {
   height: 4px;
+  margin-top: -2px;
   background: rgba(251, 191, 36, 0.92);
   box-shadow: 0 0 18px rgba(251, 191, 36, 0.36);
 }
