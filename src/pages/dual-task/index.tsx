@@ -444,7 +444,7 @@ export default function DualTaskGame() {
       {gameStatus === "playing" && (
         <View className="game-screen command-game-screen">
           <View className="play-shell command-play-shell">
-            <View className="battle-header command-header">
+            <View className="command-header">
               <View className="mode-pill">
                 <Text className="mode-pill-text">指挥中心 · {difficultyConfig.label}</Text>
               </View>
