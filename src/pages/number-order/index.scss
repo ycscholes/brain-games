@@ -312,7 +312,11 @@
 
 .star-board {
   position: relative;
-  height: 620px;
+  align-self: center;
+  width: calc(100vw - 48px);
+  max-width: 620px;
+  height: calc(100vw - 48px);
+  max-height: 620px;
   border-radius: 30px;
   overflow: hidden;
   background:
