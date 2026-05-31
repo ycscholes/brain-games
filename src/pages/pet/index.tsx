@@ -407,9 +407,8 @@ export default function PetPage() {
             {pets.map((pet) => (
               <View
                 key={pet.id}
-                className={`pet-picker-item ${storageData.activePetId === pet.id ? "pet-picker-item-active" : ""} ${
-                  pet.status === "dead" ? "pet-picker-item-dead" : ""
-                }`}
+                className={`pet-picker-item ${storageData.activePetId === pet.id ? "pet-picker-item-active" : ""} ${pet.status === "dead" ? "pet-picker-item-dead" : ""
+                  }`}
                 onClick={() => handleSelectPet(pet.id)}
               >
                 <View className="pet-picker-avatar">
@@ -481,8 +480,8 @@ export default function PetPage() {
               className="stage-pet-sprite"
             />
           ) : (
-            <PetSprite skin={selectedSkin} size="xl" mood="idle" className="stage-pet-sprite stage-pet-empty" />
-          )}
+              <PetSprite skin={selectedSkin} size="xl" mood="idle" className="stage-pet-sprite stage-pet-empty" />
+            )}
 
           {feedBurst ? (
             <View key={feedBurst.id} className="feed-burst stage-feed-burst">
