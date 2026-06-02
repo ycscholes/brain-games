@@ -177,6 +177,8 @@ describe("trainingStorage", () => {
     mockStorage.set("mot_best", "4");
     mockStorage.set("number_order_best_normal", "30");
     mockStorage.set("head_count_best_hard", "45");
+    mockStorage.set("head_count_best_normal_slow", "35");
+    mockStorage.set("head_count_best_hard_fast", "48");
 
     clearProductData();
 

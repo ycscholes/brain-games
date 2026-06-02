@@ -544,6 +544,10 @@ export function clearProductData() {
     gameSpecificKeys.push(`pattern_completion_best_${difficulty}`);
     gameSpecificKeys.push(`number_order_best_${difficulty}`);
     gameSpecificKeys.push(`head_count_best_${difficulty}`);
+
+    ["slow", "standard", "fast"].forEach((speedDifficulty) => {
+      gameSpecificKeys.push(`head_count_best_${difficulty}_${speedDifficulty}`);
+    });
   });
 
   ["G1A", "G1B", "G2", "G3", "G4", "G5_6", "G2_ADD", "G2_MUL", "G3_ADD", "G4_MIXED_100", "CUSTOM"].forEach((stageId) => {
