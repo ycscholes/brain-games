@@ -504,6 +504,18 @@
     var(--surface-card);
 }
 
+.card-word-scramble {
+  background:
+    radial-gradient(circle at 46% 28%, rgba(124, 58, 237, 0.18), transparent 34%),
+    var(--surface-card);
+}
+
+.card-bird-count {
+  background:
+    radial-gradient(circle at 52% 24%, rgba(2, 132, 199, 0.2), transparent 34%),
+    var(--surface-card);
+}
+
 .card-pet {
   background:
     radial-gradient(circle at 45% 28%, rgba(139, 92, 246, 0.18), transparent 34%),
@@ -665,6 +677,16 @@
   color: #b45309;
 }
 
+.card-word-scramble .game-badge {
+  background: rgba(124, 58, 237, 0.16);
+  color: #6d28d9;
+}
+
+.card-bird-count .game-badge {
+  background: rgba(2, 132, 199, 0.16);
+  color: #0369a1;
+}
+
 .card-pet .game-badge {
   background: rgba(139, 92, 246, 0.18);
   color: #8b5cf6;
@@ -738,6 +760,14 @@
 
 .card-head-count .enter-button {
   background: linear-gradient(90deg, #b45309 0%, #4f46e5 100%);
+}
+
+.card-word-scramble .enter-button {
+  background: linear-gradient(90deg, #6d28d9 0%, #f97316 100%);
+}
+
+.card-bird-count .enter-button {
+  background: linear-gradient(90deg, #0369a1 0%, #22c55e 100%);
 }
 
 .enter-button-text {

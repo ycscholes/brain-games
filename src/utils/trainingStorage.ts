@@ -13,6 +13,8 @@ export type TrainingGameId =
   | "pattern-completion"
   | "number-order"
   | "head-count"
+  | "word-scramble"
+  | "bird-count"
   | "memory"
   | "rps"
   | "mot"
@@ -292,6 +294,8 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "pattern-completion": 1.2,
   "number-order": 1,
   "head-count": 1,
+  "word-scramble": 1,
+  "bird-count": 1,
   memory: 1,
   rps: 1,
   mot: 3,
@@ -544,6 +548,8 @@ export function clearProductData() {
     gameSpecificKeys.push(`pattern_completion_best_${difficulty}`);
     gameSpecificKeys.push(`number_order_best_${difficulty}`);
     gameSpecificKeys.push(`head_count_best_${difficulty}`);
+    gameSpecificKeys.push(`word_scramble_best_${difficulty}`);
+    gameSpecificKeys.push(`bird_count_best_${difficulty}`);
 
     ["slow", "standard", "fast"].forEach((speedDifficulty) => {
       gameSpecificKeys.push(`head_count_best_${difficulty}_${speedDifficulty}`);

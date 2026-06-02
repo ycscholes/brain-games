@@ -86,6 +86,17 @@ const BASE_GAMES = [
     level: "轻松",
   },
   {
+    id: "word-scramble",
+    title: "词语拼盘",
+    badge: "语言",
+    cardClass: "card-word-scramble",
+    url: "/pages/word-scramble/index",
+    category: "daily",
+    duration: "约 2 分钟",
+    skill: "语言重组",
+    level: "标准",
+  },
+  {
     id: "twenty-four",
     title: "24 点",
     badge: "计算",
@@ -152,6 +163,17 @@ const BASE_GAMES = [
     level: "进阶",
   },
   {
+    id: "bird-count",
+    title: "飞鸟速数",
+    badge: "观察",
+    cardClass: "card-bird-count",
+    url: "/pages/bird-count/index",
+    category: "advanced",
+    duration: "约 90 秒",
+    skill: "快速计数",
+    level: "标准",
+  },
+  {
     id: "dual-task",
     title: "多任务处理",
     badge: "双任务",
@@ -179,6 +201,8 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   "pattern-completion": "找规律",
   "number-order": "星链回响",
   "head-count": "小剧场清点",
+  "word-scramble": "词语拼盘",
+  "bird-count": "飞鸟速数",
 };
 
 function formatPlayedAt(value: string) {

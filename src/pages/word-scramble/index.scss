@@ -1,0 +1,331 @@
+$primary: #7c3aed;
+$primary-dark: #5b21b6;
+$accent: #f97316;
+$success: #16a34a;
+$danger: #dc2626;
+$text: #1f2937;
+$muted: #64748b;
+$card: #ffffff;
+$page: #f8fafc;
+
+.word-scramble-page {
+  min-height: 100vh;
+  background: $page;
+  color: $text;
+}
+
+.word-start,
+.word-play,
+.word-result {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 24px;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.word-hero,
+.info-panel,
+.scramble-card,
+.feedback-card,
+.result-card {
+  border-radius: 24px;
+  background: $card;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.word-hero {
+  padding: 28px;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(249, 115, 22, 0.18), transparent 36%),
+    linear-gradient(135deg, #f5f3ff 0%, #ffffff 72%);
+}
+
+.hero-kicker,
+.question-kicker,
+.result-kicker {
+  display: block;
+  font-size: 22px;
+  color: $primary;
+  font-weight: 800;
+}
+
+.hero-title {
+  display: block;
+  margin-top: 8px;
+  font-size: 48px;
+  font-weight: 900;
+  color: $primary-dark;
+  line-height: 1.1;
+}
+
+.hero-copy {
+  display: block;
+  margin-top: 12px;
+  font-size: 26px;
+  line-height: 1.5;
+  color: $muted;
+}
+
+.best-pill {
+  margin-top: 22px;
+  width: fit-content;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.best-label {
+  font-size: 22px;
+  color: $muted;
+  font-weight: 700;
+}
+
+.best-value {
+  font-size: 32px;
+  color: $primary-dark;
+  font-weight: 900;
+}
+
+.info-panel {
+  padding: 22px;
+}
+
+.section-title {
+  display: block;
+  font-size: 30px;
+  font-weight: 850;
+  color: $text;
+  margin-bottom: 12px;
+}
+
+.rule-line {
+  display: block;
+  font-size: 24px;
+  line-height: 1.55;
+  color: $muted;
+  font-weight: 600;
+}
+
+.difficulty-grid,
+.option-grid,
+.result-grid,
+.status-row {
+  display: grid;
+  gap: 14px;
+}
+
+.difficulty-grid,
+.option-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.status-row,
+.result-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.difficulty-card,
+.status-card,
+.option-card,
+.result-item {
+  border-radius: 18px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  padding: 18px 14px;
+  box-sizing: border-box;
+}
+
+.difficulty-card-active {
+  border-color: rgba(124, 58, 237, 0.55);
+  background: #f5f3ff;
+}
+
+.difficulty-name,
+.status-value,
+.result-item-value {
+  display: block;
+  color: $primary-dark;
+  font-size: 30px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.difficulty-copy,
+.status-label,
+.result-item-label {
+  display: block;
+  margin-top: 6px;
+  color: $muted;
+  font-size: 21px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 84px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+  box-shadow: 0 12px 28px rgba(124, 58, 237, 0.24);
+}
+
+.secondary-button {
+  background: #eef2ff;
+}
+
+.primary-button-text,
+.secondary-button-text {
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.primary-button-text {
+  color: #ffffff;
+}
+
+.secondary-button-text {
+  color: $primary-dark;
+}
+
+.scramble-card {
+  padding: 24px;
+  text-align: center;
+}
+
+.char-row {
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.char-tile {
+  width: 76px;
+  height: 76px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff7ed 0%, #fed7aa 100%);
+  border: 2px solid rgba(249, 115, 22, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.char-text {
+  font-size: 38px;
+  color: #9a3412;
+  font-weight: 900;
+}
+
+.hint-text {
+  display: block;
+  color: $muted;
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.option-card {
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.option-text {
+  color: $text;
+  font-size: 30px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.option-card-correct {
+  border-color: rgba(22, 163, 74, 0.6);
+  background: #dcfce7;
+}
+
+.option-card-wrong {
+  border-color: rgba(220, 38, 38, 0.55);
+  background: #fee2e2;
+}
+
+.feedback-card {
+  padding: 20px;
+  border: 2px solid transparent;
+}
+
+.feedback-correct {
+  border-color: rgba(22, 163, 74, 0.45);
+  background: #f0fdf4;
+}
+
+.feedback-wrong {
+  border-color: rgba(220, 38, 38, 0.42);
+  background: #fef2f2;
+}
+
+.feedback-title,
+.feedback-copy {
+  display: block;
+  text-align: center;
+}
+
+.feedback-title {
+  font-size: 30px;
+  font-weight: 900;
+  color: $text;
+}
+
+.feedback-copy {
+  margin-top: 8px;
+  font-size: 24px;
+  color: $muted;
+  font-weight: 700;
+}
+
+.word-result {
+  justify-content: center;
+}
+
+.result-card {
+  padding: 28px;
+  text-align: center;
+}
+
+.result-score {
+  display: block;
+  margin-top: 10px;
+  font-size: 84px;
+  line-height: 1;
+  color: $primary-dark;
+  font-weight: 950;
+}
+
+.result-copy {
+  display: block;
+  margin: 14px 0 22px;
+  color: $muted;
+  font-size: 24px;
+  font-weight: 750;
+}
+
+.result-actions {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+

@@ -18,6 +18,8 @@ export const SHARE_PAGE_PATHS = [
   "pages/pattern-completion/index",
   "pages/number-order/index",
   "pages/head-count/index",
+  "pages/word-scramble/index",
+  "pages/bird-count/index",
   "pages/pet/index",
   "pages/settings/index",
   "pages/training-records/index",
@@ -80,6 +82,14 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/head-count/index": {
     title: "来玩小剧场清点，练动态心算",
     timelineTitle: "小剧场清点脑力训练",
+  },
+  "pages/word-scramble/index": {
+    title: "来玩词语拼盘，练语言重组",
+    timelineTitle: "词语拼盘语言训练",
+  },
+  "pages/bird-count/index": {
+    title: "来玩飞鸟速数，练快速观察",
+    timelineTitle: "飞鸟速数观察训练",
   },
   "pages/pet/index": {
     title: "来看看我的Cici的脑部锻炼宠物",

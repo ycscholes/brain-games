@@ -11,6 +11,8 @@ export default defineAppConfig({
     'pages/pattern-completion/index',
     'pages/number-order/index',
     'pages/head-count/index',
+    'pages/word-scramble/index',
+    'pages/bird-count/index',
     'pages/pet/index',
     'pages/settings/index',
     'pages/training-records/index'

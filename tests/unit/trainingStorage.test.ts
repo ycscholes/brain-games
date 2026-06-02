@@ -179,6 +179,8 @@ describe("trainingStorage", () => {
     mockStorage.set("head_count_best_hard", "45");
     mockStorage.set("head_count_best_normal_slow", "35");
     mockStorage.set("head_count_best_hard_fast", "48");
+    mockStorage.set("word_scramble_best_normal", "33");
+    mockStorage.set("bird_count_best_hard", "41");
 
     clearProductData();
 
@@ -240,6 +242,13 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("head-count", 50, "hard")).toBe(60);
     });
 
+    test("word-scramble and bird-count use 1x conversion with difficulty caps", () => {
+      expect(getAwardedPoints("word-scramble", 32, "normal")).toBe(32);
+      expect(getAwardedPoints("word-scramble", 50, "normal")).toBe(40);
+      expect(getAwardedPoints("bird-count", 32, "hard")).toBe(48);
+      expect(getAwardedPoints("bird-count", 50, "hard")).toBe(60);
+    });
+
     test("typical good performance gives similar rewards across games", () => {
       // 良好表现应该获得大约 10-40 积分
       const rewards = [
@@ -253,6 +262,8 @@ describe("trainingStorage", () => {
         getAwardedPoints("memory-challenge", 24),
         getAwardedPoints("number-order", 30),
         getAwardedPoints("head-count", 35),
+        getAwardedPoints("word-scramble", 34),
+        getAwardedPoints("bird-count", 34),
       ];
 
       rewards.forEach(reward => {
