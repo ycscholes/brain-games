@@ -164,13 +164,13 @@ const BASE_GAMES = [
   },
   {
     id: "bird-count",
-    title: "飞鸟速数",
+    title: "宠物速数",
     badge: "观察",
     cardClass: "card-bird-count",
     url: "/pages/bird-count/index",
     category: "advanced",
     duration: "约 90 秒",
-    skill: "快速计数",
+    skill: "选择性计数",
     level: "标准",
   },
   {
@@ -202,7 +202,7 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   "number-order": "星链回响",
   "head-count": "小剧场清点",
   "word-scramble": "词语拼盘",
-  "bird-count": "飞鸟速数",
+  "bird-count": "宠物速数",
 };
 
 function formatPlayedAt(value: string) {

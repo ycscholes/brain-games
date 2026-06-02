@@ -27,7 +27,7 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   "number-order": "星链回响",
   "head-count": "小剧场清点",
   "word-scramble": "词语拼盘",
-  "bird-count": "飞鸟速数",
+  "bird-count": "宠物速数",
 };
 
 function formatPlayedAt(value: string) {

@@ -88,8 +88,8 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
     timelineTitle: "词语拼盘语言训练",
   },
   "pages/bird-count/index": {
-    title: "来玩飞鸟速数，练快速观察",
-    timelineTitle: "飞鸟速数观察训练",
+    title: "来玩宠物速数，练快速观察",
+    timelineTitle: "宠物速数观察训练",
   },
   "pages/pet/index": {
     title: "来看看我的Cici的脑部锻炼宠物",

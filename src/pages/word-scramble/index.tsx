@@ -37,6 +37,8 @@ export default function WordScramble() {
   const [questions, setQuestions] = useState<WordScrambleQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedWord, setSelectedWord] = useState("");
+  const [selectedCharIds, setSelectedCharIds] = useState<string[]>([]);
+  const [isHintVisible, setIsHintVisible] = useState(false);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [bestCombo, setBestCombo] = useState(0);
@@ -49,8 +51,24 @@ export default function WordScramble() {
   const startedAtRef = useRef(0);
   const questionStartedAtRef = useRef(0);
   const finishedRef = useRef(false);
+  const phaseRef = useRef<Phase>("start");
+  const selectedWordRef = useRef("");
+  const scoreRef = useRef(0);
+  const comboRef = useRef(0);
+  const bestComboRef = useRef(0);
+  const correctQuestionsRef = useRef(0);
+  const currentIndexRef = useRef(0);
 
   const currentQuestion = questions[currentIndex] ?? null;
+  const selectedChars = useMemo(() => {
+    if (!currentQuestion) {
+      return [];
+    }
+
+    return selectedCharIds
+      .map((id) => currentQuestion.charChoices.find((choice) => choice.id === id)?.char || "")
+      .filter(Boolean);
+  }, [currentQuestion, selectedCharIds]);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach((timer) => clearTimeout(timer));
@@ -83,6 +101,34 @@ export default function WordScramble() {
       clearTimers();
     };
   }, [clearTimers]);
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
+  useEffect(() => {
+    selectedWordRef.current = selectedWord;
+  }, [selectedWord]);
+
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
+
+  useEffect(() => {
+    comboRef.current = combo;
+  }, [combo]);
+
+  useEffect(() => {
+    bestComboRef.current = bestCombo;
+  }, [bestCombo]);
+
+  useEffect(() => {
+    correctQuestionsRef.current = correctQuestions;
+  }, [correctQuestions]);
+
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
 
   const finishGame = useCallback((finalScore: number, finalCorrectQuestions: number) => {
     if (finishedRef.current) {
@@ -117,13 +163,29 @@ export default function WordScramble() {
     }
   }, [best, clearTimers, difficulty]);
 
-  const beginQuestion = useCallback((questionIndex: number) => {
+  const beginQuestion = (questionIndex: number, nextQuestions = questions) => {
+    clearTimers();
+    const question = nextQuestions[questionIndex];
     setCurrentIndex(questionIndex);
     setSelectedWord("");
+    setSelectedCharIds([]);
+    setIsHintVisible(false);
     setLastResult(null);
     questionStartedAtRef.current = Date.now();
     setPhase("playing");
-  }, []);
+
+    schedule(() => {
+      setIsHintVisible(true);
+    }, question?.hintDelayMs ?? 0);
+
+    schedule(() => {
+      if (!question) {
+        return;
+      }
+
+      submitAnswer("", question, true);
+    }, question?.timeLimitMs ?? 6000);
+  };
 
   const startGame = () => {
     clearTimers();
@@ -136,10 +198,12 @@ export default function WordScramble() {
     setBestCombo(0);
     setCorrectQuestions(0);
     setSelectedWord("");
+    setSelectedCharIds([]);
+    setIsHintVisible(false);
     setLastResult(null);
     setAwardedPoints(0);
     setIsNewBest(false);
-    beginQuestion(0);
+    beginQuestion(0, nextQuestions);
   };
 
   const backToStart = () => {
@@ -152,6 +216,8 @@ export default function WordScramble() {
     setBestCombo(0);
     setCorrectQuestions(0);
     setSelectedWord("");
+    setSelectedCharIds([]);
+    setIsHintVisible(false);
     setLastResult(null);
     setAwardedPoints(0);
     setIsNewBest(false);
@@ -159,37 +225,79 @@ export default function WordScramble() {
     refreshBest();
   };
 
-  const handleAnswer = (word: string) => {
-    if (phase !== "playing" || !currentQuestion || selectedWord) {
+  const submitAnswer = (word: string, question = currentQuestion, timedOut = false) => {
+    if (phaseRef.current !== "playing" || !question || selectedWordRef.current) {
       return;
     }
 
+    clearTimers();
     const result = scoreWordScrambleQuestion({
-      selectedWord: word,
-      correctWord: currentQuestion.target.word,
+      selectedWord: timedOut ? "" : word,
+      correctWord: question.target.word,
       answerMs: Date.now() - questionStartedAtRef.current,
-      currentCombo: combo,
+      currentCombo: comboRef.current,
     });
-    const nextScore = score + result.score;
-    const nextCombo = result.correct ? combo + 1 : 0;
-    const nextCorrectQuestions = correctQuestions + (result.correct ? 1 : 0);
+    const nextScore = scoreRef.current + result.score;
+    const nextCombo = result.correct ? comboRef.current + 1 : 0;
+    const nextCorrectQuestions = correctQuestionsRef.current + (result.correct ? 1 : 0);
 
-    setSelectedWord(word);
+    setSelectedWord(timedOut ? "超时" : word);
     setLastResult(result);
     setScore(nextScore);
     setCombo(nextCombo);
-    setBestCombo(Math.max(bestCombo, nextCombo));
+    setBestCombo(Math.max(bestComboRef.current, nextCombo));
     setCorrectQuestions(nextCorrectQuestions);
     setPhase("feedback");
 
     schedule(() => {
-      if (currentIndex >= WORD_SCRAMBLE_TOTAL_QUESTIONS - 1) {
+      if (currentIndexRef.current >= WORD_SCRAMBLE_TOTAL_QUESTIONS - 1) {
         finishGame(nextScore, nextCorrectQuestions);
         return;
       }
 
-      beginQuestion(currentIndex + 1);
+      beginQuestion(currentIndexRef.current + 1);
     }, FEEDBACK_MS);
+  };
+
+  const handleCharTap = (choiceId: string) => {
+    if (
+      phase !== "playing" ||
+      !currentQuestion ||
+      selectedWord ||
+      selectedCharIds.includes(choiceId) ||
+      selectedCharIds.length >= currentQuestion.target.word.length
+    ) {
+      return;
+    }
+
+    const nextSelectedCharIds = [...selectedCharIds, choiceId];
+    const nextWord = nextSelectedCharIds
+      .map((id) => currentQuestion.charChoices.find((choice) => choice.id === id)?.char || "")
+      .join("");
+
+    setSelectedCharIds(nextSelectedCharIds);
+
+    if (nextWord.length >= currentQuestion.target.word.length) {
+      schedule(() => {
+        submitAnswer(nextWord, currentQuestion);
+      }, 120);
+    }
+  };
+
+  const undoChar = () => {
+    if (phase !== "playing" || selectedWord) {
+      return;
+    }
+
+    setSelectedCharIds((ids) => ids.slice(0, -1));
+  };
+
+  const clearSelection = () => {
+    if (phase !== "playing" || selectedWord) {
+      return;
+    }
+
+    setSelectedCharIds([]);
   };
 
   const accuracyText = useMemo(() => {
@@ -213,7 +321,7 @@ export default function WordScramble() {
           <View className="word-hero">
             <Text className="hero-kicker">语言处理训练</Text>
             <Text className="hero-title">词语拼盘</Text>
-            <Text className="hero-copy">看乱序汉字和提示，在四个词语里快速找出正确答案。</Text>
+            <Text className="hero-copy">从混入干扰字的字盘里点选汉字，按顺序拼出目标词。</Text>
             <View className="best-pill">
               <Text className="best-label">当前难度最高</Text>
               <Text className="best-value">{best}</Text>
@@ -222,16 +330,16 @@ export default function WordScramble() {
 
           <View className="info-panel">
             <Text className="section-title">训练规则</Text>
-            <Text className="rule-line">1. 每局 8 题，先看打乱的汉字。</Text>
-            <Text className="rule-line">2. 结合线索，在四个候选词里选出原词。</Text>
-            <Text className="rule-line">3. 连续正确和快速作答会获得额外分。</Text>
+            <Text className="rule-line">1. 每局 8 题，字盘会混入无关汉字。</Text>
+            <Text className="rule-line">2. 按正确顺序点字，字数满后自动判定。</Text>
+            <Text className="rule-line">3. 困难模式提示会延迟出现，限时更紧。</Text>
           </View>
 
           <View className="info-panel">
             <Text className="section-title">难度</Text>
             <View className="difficulty-grid">
-              {renderDifficultyCard("normal", "2 字常用词 · 线索更直接")}
-              {renderDifficultyCard("hard", "3-5 字词组 · 判断更紧")}
+              {renderDifficultyCard("normal", "2 字词 · 2-3 个干扰字")}
+              {renderDifficultyCard("hard", "3-5 字词组 · 4-6 个干扰字")}
             </View>
           </View>
 
@@ -260,28 +368,36 @@ export default function WordScramble() {
 
           <View className="scramble-card">
             <Text className="question-kicker">{currentQuestion.target.category}</Text>
-            <View className="char-row">
-              {currentQuestion.scrambledChars.map((char, index) => (
-                <View key={`${char}-${index}`} className="char-tile">
-                  <Text className="char-text">{char}</Text>
+            <View className="answer-rack">
+              {Array.from(currentQuestion.target.word).map((_, index) => (
+                <View key={`slot-${index}`} className={`answer-slot ${selectedChars[index] ? "answer-slot-filled" : ""}`}>
+                  <Text className="answer-slot-text">{selectedChars[index] || ""}</Text>
                 </View>
               ))}
             </View>
-            <Text className="hint-text">{currentQuestion.target.hint}</Text>
+            <Text className="hint-text">
+              {isHintVisible ? currentQuestion.target.hint : "提示蓄力中，先靠字形和类别判断"}
+            </Text>
+            <View className="tool-row">
+              <View className="tool-button" onClick={undoChar}>
+                <Text className="tool-button-text">撤销</Text>
+              </View>
+              <View className="tool-button" onClick={clearSelection}>
+                <Text className="tool-button-text">清空</Text>
+              </View>
+            </View>
           </View>
 
-          <View className="option-grid">
-            {currentQuestion.options.map((option) => {
-              const isSelected = selectedWord === option;
-              const isAnswer = phase === "feedback" && option === currentQuestion.target.word;
-              const isWrong = phase === "feedback" && isSelected && option !== currentQuestion.target.word;
+          <View className="char-bank">
+            {currentQuestion.charChoices.map((choice) => {
+              const isUsed = selectedCharIds.includes(choice.id);
               return (
                 <View
-                  key={option}
-                  className={`option-card ${isAnswer ? "option-card-correct" : ""} ${isWrong ? "option-card-wrong" : ""}`}
-                  onClick={() => handleAnswer(option)}
+                  key={choice.id}
+                  className={`char-tile ${isUsed ? "char-tile-used" : ""} ${phase === "feedback" && choice.isTarget ? "char-tile-answer" : ""}`}
+                  onClick={() => handleCharTap(choice.id)}
                 >
-                  <Text className="option-text">{option}</Text>
+                  <Text className="char-text">{choice.char}</Text>
                 </View>
               );
             })}
@@ -289,7 +405,7 @@ export default function WordScramble() {
 
           {phase === "feedback" ? (
             <View className={`feedback-card ${lastResult?.correct ? "feedback-correct" : "feedback-wrong"}`}>
-              <Text className="feedback-title">{lastResult?.correct ? "回答正确" : "正确词语"}</Text>
+              <Text className="feedback-title">{lastResult?.correct ? "拼盘完成" : "正确词语"}</Text>
               <Text className="feedback-copy">{currentQuestion.target.word} · 本题 +{lastResult?.score ?? 0}</Text>
             </View>
           ) : null}
@@ -332,4 +448,3 @@ export default function WordScramble() {
     </View>
   );
 }
-

@@ -1,16 +1,18 @@
-$primary: #0284c7;
-$primary-dark: #075985;
+$primary: #b45309;
+$primary-dark: #7c2d12;
 $accent: #facc15;
 $success: #16a34a;
 $danger: #dc2626;
-$text: #1e293b;
-$muted: #64748b;
+$text: #2f2418;
+$muted: #7c5f43;
 $card: #ffffff;
-$page: #f0f9ff;
+$page: #fff7ed;
 
 .bird-count-page {
   min-height: 100vh;
-  background: $page;
+  background:
+    linear-gradient(135deg, rgba(255, 247, 237, 0.92), rgba(254, 243, 199, 0.88)),
+    repeating-linear-gradient(90deg, rgba(124, 45, 18, 0.05) 0 1px, transparent 1px 18px);
   color: $text;
 }
 
@@ -33,14 +35,15 @@ $page: #f0f9ff;
 .result-card {
   border-radius: 24px;
   background: $card;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 30px rgba(124, 45, 18, 0.12);
 }
 
 .bird-hero {
   padding: 28px;
   background:
-    radial-gradient(circle at 85% 8%, rgba(250, 204, 21, 0.34), transparent 34%),
-    linear-gradient(135deg, #e0f2fe 0%, #ffffff 72%);
+    radial-gradient(circle at 86% 8%, rgba(250, 204, 21, 0.34), transparent 34%),
+    linear-gradient(135deg, #ffedd5 0%, #ffffff 72%);
+  border: 2px solid rgba(180, 83, 9, 0.16);
 }
 
 .hero-kicker,
@@ -73,7 +76,7 @@ $page: #f0f9ff;
   width: fit-content;
   padding: 12px 20px;
   border-radius: 999px;
-  background: rgba(2, 132, 199, 0.1);
+  background: rgba(180, 83, 9, 0.1);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -135,14 +138,14 @@ $page: #f0f9ff;
 .result-item {
   border-radius: 18px;
   background: #ffffff;
-  border: 2px solid #dbeafe;
+  border: 2px solid #fed7aa;
   padding: 18px 14px;
   box-sizing: border-box;
 }
 
 .difficulty-card-active {
-  border-color: rgba(2, 132, 199, 0.58);
-  background: #e0f2fe;
+  border-color: rgba(180, 83, 9, 0.58);
+  background: #ffedd5;
 }
 
 .difficulty-name,
@@ -178,11 +181,11 @@ $page: #f0f9ff;
 
 .primary-button {
   background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
-  box-shadow: 0 12px 28px rgba(2, 132, 199, 0.24);
+  box-shadow: 0 12px 28px rgba(180, 83, 9, 0.24);
 }
 
 .secondary-button {
-  background: #e0f2fe;
+  background: #ffedd5;
 }
 
 .primary-button-text,
@@ -200,66 +203,168 @@ $page: #f0f9ff;
 }
 
 .sky-card {
-  padding: 22px;
+  padding: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 251, 235, 0.96), rgba(255, 247, 237, 0.96)),
+    #ffffff;
+  border: 2px solid rgba(180, 83, 9, 0.16);
+}
+
+.target-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.target-pet {
+  width: 82px;
+  height: 82px;
+  flex: 0 0 82px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, #ffffff 0%, #fde68a 100%);
+  border: 2px solid rgba(180, 83, 9, 0.22);
+  box-shadow: inset 0 -6px 12px rgba(180, 83, 9, 0.1);
+}
+
+.target-pet-emoji {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.target-copy {
+  min-width: 0;
+  flex: 1;
 }
 
 .sky-prompt {
   display: block;
-  text-align: center;
+  text-align: left;
   color: $primary-dark;
   font-size: 30px;
   font-weight: 900;
-  margin-bottom: 14px;
+  line-height: 1.2;
 }
 
-.sky-field {
+.target-meta {
+  display: block;
+  margin-top: 6px;
+  color: $muted;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.scroll-viewport {
   position: relative;
   height: 430px;
-  border-radius: 22px;
+  border-radius: 20px;
   overflow: hidden;
   background:
-    linear-gradient(180deg, #bae6fd 0%, #e0f2fe 58%, #dcfce7 100%);
-  border: 2px solid rgba(2, 132, 199, 0.18);
+    linear-gradient(180deg, rgba(255, 247, 237, 0.22), rgba(254, 243, 199, 0.26)),
+    url("../../assets/game-backgrounds/pet-count-scroll.png") center / cover no-repeat;
+  border: 3px solid rgba(124, 45, 18, 0.22);
+  box-shadow: inset 0 0 26px rgba(124, 45, 18, 0.18);
 }
 
-.sky-field-empty {
+.scroll-viewport::before,
+.scroll-viewport::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 72px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.scroll-viewport::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(67, 20, 7, 0.22), transparent);
+}
+
+.scroll-viewport::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(67, 20, 7, 0.22), transparent);
+}
+
+.scroll-viewport-empty {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .hidden-count {
-  color: rgba(7, 89, 133, 0.35);
+  color: rgba(124, 45, 18, 0.42);
   font-size: 96px;
   font-weight: 950;
 }
 
-.bird-token {
+.scroll-track {
+  position: absolute;
+  left: -18%;
+  top: 0;
+  width: 136%;
+  height: 100%;
+  animation-name: scrollPets;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
+.pet-count-token {
   position: absolute;
   transform: translate(-50%, -50%);
-  color: #0f172a;
-  font-weight: 950;
+  width: 62px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 2px solid rgba(124, 45, 18, 0.1);
+  box-shadow: 0 8px 16px rgba(67, 20, 7, 0.14);
+  animation: petHop 720ms ease-in-out infinite alternate;
+}
+
+.pet-count-target {
+  background: rgba(254, 240, 138, 0.82);
+  border-color: rgba(250, 204, 21, 0.5);
+}
+
+.pet-count-mirror .pet-count-emoji {
+  transform: scaleX(-1);
+}
+
+.pet-count-emoji {
+  display: block;
+  font-size: 40px;
   line-height: 1;
 }
 
-.bird-left {
-  transform: translate(-50%, -50%) scaleX(1.2);
+.pet-count-small {
+  width: 54px;
+  height: 54px;
 }
 
-.bird-right {
-  transform: translate(-50%, -50%) scaleX(1.2);
+.pet-count-small .pet-count-emoji {
+  font-size: 34px;
 }
 
-.bird-small {
-  font-size: 30px;
+.pet-count-medium {
+  width: 64px;
+  height: 64px;
 }
 
-.bird-medium {
-  font-size: 38px;
+.pet-count-large {
+  width: 76px;
+  height: 76px;
 }
 
-.bird-large {
-  font-size: 46px;
+.pet-count-large .pet-count-emoji {
+  font-size: 48px;
 }
 
 .option-card {
@@ -294,6 +399,26 @@ $page: #f0f9ff;
 .feedback-correct {
   border-color: rgba(22, 163, 74, 0.45);
   background: #f0fdf4;
+}
+
+@keyframes scrollPets {
+  from {
+    transform: translateX(22%);
+  }
+
+  to {
+    transform: translateX(-22%);
+  }
+}
+
+@keyframes petHop {
+  from {
+    margin-top: 0;
+  }
+
+  to {
+    margin-top: -8px;
+  }
 }
 
 .feedback-wrong {
@@ -352,4 +477,3 @@ $page: #f0f9ff;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
-

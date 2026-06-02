@@ -5,6 +5,8 @@ import {
   createBirdCountSession,
   getBirdCountRevealMs,
   getBirdCountTarget,
+  getPetCountTotal,
+  PET_COUNT_SKINS,
   scoreBirdCountQuestion,
 } from "../../src/pages/bird-count/gameLogic";
 
@@ -14,38 +16,47 @@ describe("bird-count game logic", () => {
     expect(createBirdCountSession("hard")).toHaveLength(BIRD_COUNT_TOTAL_QUESTIONS);
   });
 
-  test("normal questions use 4-8 birds and slower reveal timing", () => {
+  test("normal questions use target pets, decoys, and slower reveal timing", () => {
     createBirdCountSession("normal").forEach((question, index) => {
       expect(question.answer).toBe(getBirdCountTarget("normal", index));
-      expect(question.birds).toHaveLength(question.answer);
-      expect(question.answer).toBeGreaterThanOrEqual(4);
-      expect(question.answer).toBeLessThanOrEqual(8);
+      expect(question.totalPets).toBe(getPetCountTotal("normal", index));
+      expect(question.pets).toHaveLength(question.totalPets);
+      expect(question.pets.filter((pet) => pet.skin === question.targetSkin)).toHaveLength(question.answer);
+      expect(PET_COUNT_SKINS).toContain(question.targetSkin);
+      expect(question.answer).toBeGreaterThanOrEqual(3);
+      expect(question.answer).toBeLessThanOrEqual(7);
       expect(question.revealMs).toBe(getBirdCountRevealMs("normal", index));
-      expect(question.revealMs).toBeGreaterThanOrEqual(1150);
+      expect(question.revealMs).toBeGreaterThanOrEqual(2350);
     });
   });
 
-  test("hard questions use 7-12 birds and faster reveal timing", () => {
+  test("hard questions use more mixed pets and faster reveal timing", () => {
     createBirdCountSession("hard").forEach((question, index) => {
       expect(question.answer).toBe(getBirdCountTarget("hard", index));
-      expect(question.birds).toHaveLength(question.answer);
-      expect(question.answer).toBeGreaterThanOrEqual(7);
-      expect(question.answer).toBeLessThanOrEqual(12);
+      expect(question.totalPets).toBe(getPetCountTotal("hard", index));
+      expect(question.pets).toHaveLength(question.totalPets);
+      expect(question.pets.filter((pet) => pet.skin === question.targetSkin)).toHaveLength(question.answer);
+      expect(question.answer).toBeGreaterThanOrEqual(5);
+      expect(question.answer).toBeLessThanOrEqual(9);
+      expect(question.laneCount).toBe(5);
       expect(question.revealMs).toBe(getBirdCountRevealMs("hard", index));
-      expect(question.revealMs).toBeLessThanOrEqual(1100);
+      expect(question.revealMs).toBeLessThanOrEqual(2800);
     });
   });
 
-  test("generated birds have unique ids and bounded positions", () => {
+  test("generated pets have unique ids and bounded scroll positions", () => {
     const question = createBirdCountQuestion("hard", 7);
-    const ids = new Set(question.birds.map((bird) => bird.id));
+    const ids = new Set(question.pets.map((pet) => pet.id));
 
-    expect(ids.size).toBe(question.birds.length);
-    question.birds.forEach((bird) => {
-      expect(bird.x).toBeGreaterThanOrEqual(0);
-      expect(bird.x).toBeLessThanOrEqual(100);
-      expect(bird.y).toBeGreaterThanOrEqual(0);
-      expect(bird.y).toBeLessThanOrEqual(100);
+    expect(ids.size).toBe(question.pets.length);
+    question.pets.forEach((pet) => {
+      expect(PET_COUNT_SKINS).toContain(pet.skin);
+      expect(pet.x).toBeGreaterThanOrEqual(0);
+      expect(pet.x).toBeLessThanOrEqual(100);
+      expect(pet.y).toBeGreaterThanOrEqual(0);
+      expect(pet.y).toBeLessThanOrEqual(100);
+      expect(pet.lane).toBeGreaterThanOrEqual(0);
+      expect(pet.lane).toBeLessThan(question.laneCount);
     });
   });
 
@@ -85,4 +96,3 @@ describe("bird-count game logic", () => {
     });
   });
 });
-

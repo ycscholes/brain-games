@@ -9,6 +9,7 @@ import {
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
+import { PET_SKIN_EMOJI, PET_SKIN_NAME } from "../pet/types";
 import {
   BIRD_COUNT_TOTAL_QUESTIONS,
   createBirdCountSession,
@@ -222,8 +223,8 @@ export default function BirdCount() {
         <View className="bird-start">
           <View className="bird-hero">
             <Text className="hero-kicker">快速观察训练</Text>
-            <Text className="hero-title">飞鸟速数</Text>
-            <Text className="hero-copy">鸟群只出现一瞬间，记住数量后从选项中回答。</Text>
+            <Text className="hero-title">宠物速数</Text>
+            <Text className="hero-copy">画轴会快速滚过一群宠物，只数指定宠物的数量。</Text>
             <View className="best-pill">
               <Text className="best-label">当前难度最高</Text>
               <Text className="best-value">{best}</Text>
@@ -232,16 +233,16 @@ export default function BirdCount() {
 
           <View className="info-panel">
             <Text className="section-title">训练规则</Text>
-            <Text className="rule-line">1. 每局 8 题，先准备观察天空。</Text>
-            <Text className="rule-line">2. 鸟群短暂出现后会隐藏。</Text>
-            <Text className="rule-line">3. 选择刚才看到的鸟数量，快速正确有额外分。</Text>
+            <Text className="rule-line">1. 每局 8 题，先看本题要数哪种宠物。</Text>
+            <Text className="rule-line">2. 画轴滚动时只统计目标宠物，忽略其他宠物。</Text>
+            <Text className="rule-line">3. 速度会逐题提升，快速正确和连击有额外分。</Text>
           </View>
 
           <View className="info-panel">
             <Text className="section-title">难度</Text>
             <View className="difficulty-grid">
-              {renderDifficultyCard("normal", "4-8 只鸟 · 显示时间更长")}
-              {renderDifficultyCard("hard", "7-12 只鸟 · 闪现更快")}
+              {renderDifficultyCard("normal", "8-15 只宠物 · 4 条轨道")}
+              {renderDifficultyCard("hard", "14-21 只宠物 · 5 条轨道")}
             </View>
           </View>
 
@@ -269,24 +270,49 @@ export default function BirdCount() {
           </View>
 
           <View className={`sky-card sky-card-${phase}`}>
-            <Text className="sky-prompt">
-              {phase === "ready" ? "准备观察" : phase === "watching" ? "现在数鸟" : phase === "answering" ? "刚才有几只" : lastResult?.correct ? "回答正确" : "正确数量"}
-            </Text>
+            <View className="target-banner">
+              <View className="target-pet">
+                <Text className="target-pet-emoji">{PET_SKIN_EMOJI[currentQuestion.targetSkin]}</Text>
+              </View>
+              <View className="target-copy">
+                <Text className="sky-prompt">
+                  {phase === "ready"
+                    ? "准备观察目标"
+                    : phase === "watching"
+                      ? `只数${PET_SKIN_NAME[currentQuestion.targetSkin]}`
+                      : phase === "answering"
+                        ? `${PET_SKIN_NAME[currentQuestion.targetSkin]}有几只`
+                        : lastResult?.correct
+                          ? "回答正确"
+                          : "正确数量"}
+                </Text>
+                <Text className="target-meta">
+                  {phase === "watching"
+                    ? `${currentQuestion.totalPets} 只混排 · ${currentQuestion.laneCount} 条轨道`
+                    : `目标：${PET_SKIN_NAME[currentQuestion.targetSkin]}`}
+                </Text>
+              </View>
+            </View>
             {phase === "watching" || phase === "feedback" ? (
-              <View className="sky-field">
-                {currentQuestion.birds.map((bird) => (
-                  <Text
-                    key={bird.id}
-                    className={`bird-token bird-${bird.size} bird-${bird.direction}`}
-                    style={{ left: `${bird.x}%`, top: `${bird.y}%` }}
-                  >
-                    {bird.direction === "right" ? ">" : "<"}
-                  </Text>
-                ))}
+              <View className="scroll-viewport">
+                <View
+                  className="scroll-track"
+                  style={{ animationDuration: `${currentQuestion.scrollMs}ms` }}
+                >
+                  {currentQuestion.pets.map((pet) => (
+                    <View
+                      key={pet.id}
+                      className={`pet-count-token pet-count-${pet.size} ${pet.mirror ? "pet-count-mirror" : ""} ${pet.skin === currentQuestion.targetSkin ? "pet-count-target" : ""}`}
+                      style={{ left: `${pet.x}%`, top: `${pet.y}%`, animationDelay: `${pet.delayMs}ms` }}
+                    >
+                      <Text className="pet-count-emoji">{PET_SKIN_EMOJI[pet.skin]}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             ) : (
-              <View className="sky-field sky-field-empty">
-                <Text className="hidden-count">{phase === "answering" ? "?" : currentQuestion.answer}</Text>
+              <View className="scroll-viewport scroll-viewport-empty">
+                <Text className="hidden-count">{phase === "answering" ? "?" : PET_SKIN_EMOJI[currentQuestion.targetSkin]}</Text>
               </View>
             )}
           </View>
@@ -313,7 +339,7 @@ export default function BirdCount() {
           {phase === "feedback" ? (
             <View className={`feedback-card ${lastResult?.correct ? "feedback-correct" : "feedback-wrong"}`}>
               <Text className="feedback-title">{lastResult?.correct ? "计数准确" : "正确答案"}</Text>
-              <Text className="feedback-copy">{currentQuestion.answer} 只 · 本题 +{lastResult?.score ?? 0}</Text>
+              <Text className="feedback-copy">{PET_SKIN_NAME[currentQuestion.targetSkin]} {currentQuestion.answer} 只 · 本题 +{lastResult?.score ?? 0}</Text>
             </View>
           ) : null}
         </View>
@@ -325,7 +351,7 @@ export default function BirdCount() {
             <Text className="result-kicker">训练完成</Text>
             <Text className="result-score">{score}</Text>
             <Text className="result-copy">
-              飞鸟速数 · {getTrainingDifficultyLabel(difficulty)} {isNewBest ? "· 新最高" : ""}
+              宠物速数 · {getTrainingDifficultyLabel(difficulty)} {isNewBest ? "· 新最高" : ""}
             </Text>
             <View className="result-grid">
               <View className="result-item">
@@ -355,4 +381,3 @@ export default function BirdCount() {
     </View>
   );
 }
-

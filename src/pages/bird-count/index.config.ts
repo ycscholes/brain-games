@@ -1,4 +1,3 @@
 export default definePageConfig({
-  navigationBarTitleText: "飞鸟速数",
+  navigationBarTitleText: "宠物速数",
 });
-
