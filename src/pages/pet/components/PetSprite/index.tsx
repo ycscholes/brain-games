@@ -21,15 +21,23 @@ export default function PetSprite({
   size = "md",
   selected = false,
   className = "",
+  staticImageSrc = "",
 }: PetSpriteProps) {
   const safeMood = status === "dead" ? "idle" : status === "hungry" ? "hungry" : mood;
-  const [imageSrc, setImageSrc] = useState(() => resolveCachedPetSpriteUrl(skin, safeMood));
+  const [imageSrc, setImageSrc] = useState(() => staticImageSrc || resolveCachedPetSpriteUrl(skin, safeMood));
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const shouldShowImage = Boolean(imageSrc) && !imageLoadFailed;
 
   useEffect(() => {
     let isCurrent = true;
     setImageLoadFailed(false);
+
+    if (staticImageSrc) {
+      setImageSrc(staticImageSrc);
+      return () => {
+        isCurrent = false;
+      };
+    }
 
     setImageSrc(resolveCachedPetSpriteUrl(skin, safeMood));
 
@@ -48,7 +56,7 @@ export default function PetSprite({
     return () => {
       isCurrent = false;
     };
-  }, [safeMood, skin]);
+  }, [safeMood, skin, staticImageSrc]);
   const classes = [
     "pet-sprite",
     sizeClassMap[size],

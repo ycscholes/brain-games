@@ -10,4 +10,5 @@ export interface PetSpriteProps {
   size?: PetSpriteSize;
   selected?: boolean;
   className?: string;
+  staticImageSrc?: string;
 }

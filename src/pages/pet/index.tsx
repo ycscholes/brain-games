@@ -22,6 +22,7 @@ import {
 import PetSprite from "./components/PetSprite";
 import type { PetSpriteMood } from "./components/PetSprite/types";
 import { resolveFoodIconUrl } from "../../config/remoteAssets";
+import { PET_ADOPTION_AVATAR_SRC } from "./adoptionAvatars";
 import "./index.scss";
 
 type PetFeedbackKind = "idle" | "switch" | "feed" | "cuddle" | "error";
@@ -356,7 +357,12 @@ export default function PetPage() {
                   className={`skin-token ${selectedSkin === skin ? "skin-token-selected" : ""}`}
                   onClick={() => setSelectedSkin(skin)}
                 >
-                  <PetSprite skin={skin} size="sm" selected={selectedSkin === skin} />
+                  <PetSprite
+                    skin={skin}
+                    size="sm"
+                    selected={selectedSkin === skin}
+                    staticImageSrc={PET_ADOPTION_AVATAR_SRC[skin]}
+                  />
                   <Text className="skin-name">{PET_SKIN_NAME[skin]}</Text>
                 </View>
               ))}
