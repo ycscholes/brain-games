@@ -1,6 +1,6 @@
 import { Image, View } from "@tarojs/components";
 import { useEffect, useState } from "react";
-import { resolvePetSpriteUrl } from "../../../../config/remoteAssets";
+import { resolveCachedPetSpriteUrl, resolvePetSpriteUrl } from "../../../../config/remoteAssets";
 import { PET_SKIN_EMOJI } from "../../types";
 import type { PetSpriteMood, PetSpriteProps } from "./types";
 import "./index.scss";
@@ -22,15 +22,16 @@ export default function PetSprite({
   selected = false,
   className = "",
 }: PetSpriteProps) {
-  const [imageSrc, setImageSrc] = useState("");
-  const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const safeMood = status === "dead" ? "idle" : status === "hungry" ? "hungry" : mood;
+  const [imageSrc, setImageSrc] = useState(() => resolveCachedPetSpriteUrl(skin, safeMood));
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const shouldShowImage = Boolean(imageSrc) && !imageLoadFailed;
 
   useEffect(() => {
     let isCurrent = true;
     setImageLoadFailed(false);
-    setImageSrc("");
+
+    setImageSrc(resolveCachedPetSpriteUrl(skin, safeMood));
 
     void resolvePetSpriteUrl(skin, safeMood)
       .then((url) => {

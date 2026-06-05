@@ -1,3 +1,4 @@
+import Taro from "@tarojs/taro";
 import type { PetSkin } from "../pages/pet/types";
 import type { PetSpriteMood } from "../pages/pet/components/PetSprite/types";
 import { CLOUD_ENV_ID } from "./cloud";
@@ -42,7 +43,20 @@ const FOOD_ICON_PATHS: Partial<Record<string, string>> = {
   steak: "assets/pets/food-steak.png",
 };
 
+type CachedRemoteAsset = {
+  updatedDate: string;
+  url: string;
+};
+
+type RemoteAssetCache = {
+  version: 1;
+  assets: Record<string, CachedRemoteAsset>;
+};
+
+const REMOTE_ASSET_CACHE_KEY = "remote_asset_url_cache_v1";
 const tempFileUrlCache = new Map<string, string>();
+const tempFileUrlDateCache = new Map<string, string>();
+const refreshPromiseCache = new Map<string, Promise<string>>();
 const CLOUD_STORAGE_BUCKET =
   typeof __CLOUD_STORAGE_BUCKET__ !== "undefined"
     ? __CLOUD_STORAGE_BUCKET__
@@ -56,18 +70,98 @@ function toCloudFileId(path: string): string {
   return `cloud://${CLOUD_ENV_ID}.${CLOUD_STORAGE_BUCKET}/${path}`;
 }
 
-async function resolveCloudFileUrl(path: string): Promise<string> {
+function getTodayKey(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function createEmptyCache(): RemoteAssetCache {
+  return {
+    version: 1,
+    assets: {},
+  };
+}
+
+function parseRemoteAssetCache(raw: unknown): RemoteAssetCache {
+  if (typeof raw !== "string" || !raw) {
+    return createEmptyCache();
+  }
+
   try {
-    const fileID = toCloudFileId(path);
-    if (!fileID) {
-      return "";
+    const parsed = JSON.parse(raw) as Partial<RemoteAssetCache>;
+    if (parsed.version !== 1 || !parsed.assets || typeof parsed.assets !== "object") {
+      return createEmptyCache();
     }
 
-    const cachedUrl = tempFileUrlCache.get(fileID);
-    if (cachedUrl) {
-      return cachedUrl;
-    }
+    return {
+      version: 1,
+      assets: parsed.assets,
+    };
+  } catch {
+    return createEmptyCache();
+  }
+}
 
+function readRemoteAssetCache(): RemoteAssetCache {
+  try {
+    return parseRemoteAssetCache(Taro.getStorageSync(REMOTE_ASSET_CACHE_KEY));
+  } catch {
+    return createEmptyCache();
+  }
+}
+
+function writeRemoteAssetCache(fileID: string, url: string, updatedDate: string): void {
+  try {
+    const cache = readRemoteAssetCache();
+    cache.assets[fileID] = {
+      updatedDate,
+      url,
+    };
+    Taro.setStorageSync(REMOTE_ASSET_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Storage failures should not prevent the remote image from rendering.
+  }
+}
+
+function getCachedCloudFileUrl(fileID: string): CachedRemoteAsset | null {
+  const memoryUrl = tempFileUrlCache.get(fileID);
+  const memoryDate = tempFileUrlDateCache.get(fileID);
+  if (memoryUrl && memoryDate) {
+    return {
+      updatedDate: memoryDate,
+      url: memoryUrl,
+    };
+  }
+
+  const cached = readRemoteAssetCache().assets[fileID];
+  if (!cached?.url || !cached.updatedDate) {
+    return null;
+  }
+
+  tempFileUrlCache.set(fileID, cached.url);
+  tempFileUrlDateCache.set(fileID, cached.updatedDate);
+  return cached;
+}
+
+function getCachedCloudFileUrlByPath(path: string): string {
+  const fileID = toCloudFileId(path);
+  if (!fileID) {
+    return "";
+  }
+
+  return getCachedCloudFileUrl(fileID)?.url || "";
+}
+
+async function refreshCloudFileUrl(fileID: string, todayKey: string): Promise<string> {
+  const cachedRefresh = refreshPromiseCache.get(fileID);
+  if (cachedRefresh) {
+    return cachedRefresh;
+  }
+
+  const refreshPromise = (async () => {
     const cloud = await ensureCloudReady();
     if (!cloud?.getTempFileURL) {
       return "";
@@ -80,9 +174,40 @@ async function resolveCloudFileUrl(path: string): Promise<string> {
 
     if (tempFileURL) {
       tempFileUrlCache.set(fileID, tempFileURL);
+      tempFileUrlDateCache.set(fileID, todayKey);
+      writeRemoteAssetCache(fileID, tempFileURL, todayKey);
     }
 
     return tempFileURL;
+  })();
+
+  refreshPromiseCache.set(fileID, refreshPromise);
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromiseCache.delete(fileID);
+  }
+}
+
+async function resolveCloudFileUrl(path: string): Promise<string> {
+  try {
+    const fileID = toCloudFileId(path);
+    if (!fileID) {
+      return "";
+    }
+
+    const todayKey = getTodayKey();
+    const cached = getCachedCloudFileUrl(fileID);
+    if (cached?.url && cached.updatedDate === todayKey) {
+      return cached.url;
+    }
+
+    if (cached?.url) {
+      void refreshCloudFileUrl(fileID, todayKey).catch(() => "");
+      return cached.url;
+    }
+
+    return refreshCloudFileUrl(fileID, todayKey);
   } catch {
     return "";
   }
@@ -90,6 +215,10 @@ async function resolveCloudFileUrl(path: string): Promise<string> {
 
 export async function resolvePetSpriteUrl(skin: PetSkin, mood: PetSpriteMood): Promise<string> {
   return resolveCloudFileUrl(PET_SPRITE_PATHS[skin][mood]);
+}
+
+export function resolveCachedPetSpriteUrl(skin: PetSkin, mood: PetSpriteMood): string {
+  return getCachedCloudFileUrlByPath(PET_SPRITE_PATHS[skin][mood]);
 }
 
 export async function resolveFoodIconUrl(foodId: string): Promise<string> {
