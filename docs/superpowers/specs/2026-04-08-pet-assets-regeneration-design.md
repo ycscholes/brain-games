@@ -149,7 +149,34 @@ cuddle pose, leaning forward as if for a hug, eyes gently closed, soft blush on 
 
 ---
 
-## 工具特定模板
+## 当前工具规范
+
+项目后续所有生成图片流程统一使用 Codex 内置 `image_gen`。旧的 Midjourney、DALL-E Web、Stable Diffusion、纯 Pillow 手绘占位等路径只保留为历史参考，不再作为项目图片交付流程。
+
+权威流程见：
+
+```text
+docs/superpowers/generation/image-gen-asset-workflow.md
+```
+
+对于宠物素材，实际项目目录已经迁移为云存储备份目录：
+
+```text
+asset-backups/cloudbase-images/pets/
+```
+
+每个宠物当前需要 4 个状态文件：
+
+```text
+<skin>-idle.png
+<skin>-feed.png
+<skin>-cuddle.png
+<skin>-hungry.png
+```
+
+透明 PNG 生成时，先用内置 `image_gen` 生成纯色 chroma-key 背景图，再使用本地抠图脚本移除背景并验收 alpha 通道。
+
+## 历史工具模板
 
 ### Midjourney
 

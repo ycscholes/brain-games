@@ -1,5 +1,7 @@
 # 15 张宠物图片 完整提示词清单
 
+> 当前项目图片生成的权威流程已经统一为 Codex 内置 `image_gen`。本文件中的 Midjourney / DALL-E / Stable Diffusion 提示词仅为历史参考，不再作为实际交付流程。实际生成、透明背景处理、验收和提交步骤见 `docs/superpowers/generation/image-gen-asset-workflow.md`。
+
 风格：**水彩手绘风格 (Watercolor Hand-Painted)**
 
 本文件按每张图片整理好完整提示词，可直接复制到 AI 生成工具。

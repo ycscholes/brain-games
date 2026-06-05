@@ -19,3 +19,10 @@ Do not use for: refactoring, writing scripts from scratch, debugging business lo
 - After making any code change, run the relevant verification commands, stage only the files related to that task, and create an automatic `git commit`.
 - Do not include unrelated existing worktree changes in the commit.
 - If verification or commit cannot be completed, report the exact command, failure reason, and affected files.
+
+## Image Generation Workflow
+
+- For all generated project images, use the built-in Codex `image_gen` tool.
+- Do not generate project image assets with Pillow-only drawing scripts, SVG placeholders, Midjourney, Stable Diffusion, DALL-E web prompts, or other external generators unless the user explicitly overrides this.
+- For transparent PNG assets, generate with `image_gen` on a flat chroma-key background, remove the key locally, validate alpha/edges/bounds, and save the final asset into the repository.
+- Follow `docs/superpowers/generation/image-gen-asset-workflow.md` for pet sprites and other generated bitmap assets.
