@@ -1,5 +1,5 @@
 export type PetStatus = "alive" | "hungry" | "dead";
-export type PetSkin = "cat" | "dog" | "rabbit" | "bear" | "panda";
+export type PetSkin = "cat" | "dog" | "rabbit" | "bear" | "panda" | "gecko" | "turtle";
 
 export interface PetData {
   id: string;
@@ -62,6 +62,8 @@ export const PET_SKIN_EMOJI: Record<PetSkin, string> = {
   rabbit: "🐰",
   bear: "🐻",
   panda: "🐼",
+  gecko: "🦎",
+  turtle: "🐢",
 };
 
 export const PET_SKIN_NAME: Record<PetSkin, string> = {
@@ -70,6 +72,8 @@ export const PET_SKIN_NAME: Record<PetSkin, string> = {
   rabbit: "小兔",
   bear: "小熊",
   panda: "熊猫",
+  gecko: "守宫",
+  turtle: "小乌龟",
 };
 
 // Hunger decay constants

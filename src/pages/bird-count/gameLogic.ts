@@ -38,7 +38,7 @@ export interface BirdCountQuestionResult {
 export const BIRD_COUNT_TOTAL_QUESTIONS = 8;
 export const PET_COUNT_TOTAL_QUESTIONS = BIRD_COUNT_TOTAL_QUESTIONS;
 
-export const PET_COUNT_SKINS: PetSkin[] = ["cat", "dog", "rabbit", "bear", "panda"];
+export const PET_COUNT_SKINS: PetSkin[] = ["cat", "dog", "rabbit", "bear", "panda", "gecko", "turtle"];
 
 const TARGET_COUNT_STEPS: Record<BirdCountDifficulty, number[]> = {
   normal: [3, 4, 4, 5, 5, 6, 6, 7],

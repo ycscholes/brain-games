@@ -16,6 +16,10 @@ describe("bird-count game logic", () => {
     expect(createBirdCountSession("hard")).toHaveLength(BIRD_COUNT_TOTAL_QUESTIONS);
   });
 
+  test("pet count skin pool includes gecko and turtle", () => {
+    expect(PET_COUNT_SKINS).toEqual(["cat", "dog", "rabbit", "bear", "panda", "gecko", "turtle"]);
+  });
+
   test("normal questions use target pets, decoys, and slower reveal timing", () => {
     createBirdCountSession("normal").forEach((question, index) => {
       expect(question.answer).toBe(getBirdCountTarget("normal", index));

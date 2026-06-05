@@ -35,6 +35,18 @@ const PET_SPRITE_PATHS: Record<PetSkin, Record<PetSpriteMood, string>> = {
     cuddle: "assets/pets/panda-cuddle.png",
     hungry: "assets/pets/panda-hungry.png",
   },
+  gecko: {
+    idle: "assets/pets/gecko-idle.png",
+    feed: "assets/pets/gecko-feed.png",
+    cuddle: "assets/pets/gecko-cuddle.png",
+    hungry: "assets/pets/gecko-hungry.png",
+  },
+  turtle: {
+    idle: "assets/pets/turtle-idle.png",
+    feed: "assets/pets/turtle-feed.png",
+    cuddle: "assets/pets/turtle-cuddle.png",
+    hungry: "assets/pets/turtle-hungry.png",
+  },
 };
 
 const FOOD_ICON_PATHS: Partial<Record<string, string>> = {
