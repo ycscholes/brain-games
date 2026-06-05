@@ -3,6 +3,7 @@ import Taro, { useDidShow } from "@tarojs/taro";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readPetData, syncPetData } from "../../utils/petStorage";
 import { useUserDataChange } from "../../services/user-data/hooks/useUserDataChange";
+import { initializeCloudSync } from "../../services/user-data/sync/userDataSyncService";
 import {
   readDashboardStats,
   readTrainingSummary,
@@ -239,6 +240,7 @@ export default function Index() {
   });
   const [recommendedGameId, setRecommendedGameId] = useState<TrainingGameId>("memory");
   const [petData, setPetData] = useState<PetStorageData>(() => readPetData());
+  const [isFloatingPetReady, setIsFloatingPetReady] = useState(false);
   const [homePetMotion, setHomePetMotion] = useState<PetSpriteMood>("idle");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -290,6 +292,32 @@ export default function Index() {
   useDidShow(() => {
     refreshDashboardDeferred();
   });
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    void initializeCloudSync()
+      .then(() => {
+        if (!isCurrent) {
+          return;
+        }
+
+        refreshDashboard({ syncPets: true });
+        setIsFloatingPetReady(true);
+      })
+      .catch(() => {
+        if (!isCurrent) {
+          return;
+        }
+
+        refreshDashboard({ syncPets: true });
+        setIsFloatingPetReady(true);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [refreshDashboard]);
 
   useUserDataChange(refreshDashboard);
 
@@ -500,32 +528,34 @@ export default function Index() {
         </View>
       </View>
 
-      <View
-        className={`floating-pet ${activePet ? "" : "floating-pet-empty"}`}
-        onClick={navigateToPet}
-        aria-label={activePet ? "宠物饱食度，点击进入宠物页面" : "点击进入宠物页面领养宠物"}
-      >
-        <View className="floating-pet-avatar">
-          <PetSprite
-            skin={activePet?.skin ?? "cat"}
-            size="sm"
-            mood={activePet ? homePetMotion : "idle"}
-            status={activePet?.status}
-          />
+      {isFloatingPetReady ? (
+        <View
+          className={`floating-pet ${activePet ? "" : "floating-pet-empty"}`}
+          onClick={navigateToPet}
+          aria-label={activePet ? "宠物饱食度，点击进入宠物页面" : "点击进入宠物页面领养宠物"}
+        >
+          <View className="floating-pet-avatar">
+            <PetSprite
+              skin={activePet?.skin ?? "cat"}
+              size="sm"
+              mood={activePet ? homePetMotion : "idle"}
+              status={activePet?.status}
+            />
+          </View>
+          <View className="floating-pet-info">
+            {activePet ? (
+              <View className="floating-pet-hunger-track">
+                <View
+                  className="floating-pet-hunger-fill"
+                  style={{ width: `${petHungerPercent}%`, backgroundColor: petHungerColor }}
+                />
+              </View>
+            ) : (
+              <Text className="floating-pet-empty-text">领养</Text>
+            )}
+          </View>
         </View>
-        <View className="floating-pet-info">
-          {activePet ? (
-            <View className="floating-pet-hunger-track">
-              <View
-                className="floating-pet-hunger-fill"
-                style={{ width: `${petHungerPercent}%`, backgroundColor: petHungerColor }}
-              />
-            </View>
-          ) : (
-            <Text className="floating-pet-empty-text">领养</Text>
-          )}
-        </View>
-      </View>
+      ) : null}
     </View>
   );
 }
