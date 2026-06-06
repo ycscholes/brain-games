@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
+import { resolvePetSpriteUrl } from "../../config/remoteAssets";
 import { addPointsToPet, syncPetData } from "../../utils/petStorage";
 import {
   getAwardedPoints,
@@ -35,12 +36,13 @@ import {
 import "./index.scss";
 
 type FarmCountMode = "speed" | "yard";
-type Phase = "start" | "ready" | "watching" | "playing-event" | "answering" | "feedback" | "finished";
+type Phase = "start" | "loading" | "ready" | "watching" | "playing-event" | "answering" | "feedback" | "finished";
 
 const SPEED_STORAGE_KEY_PREFIX = "bird_count_best";
 const YARD_STORAGE_KEY_PREFIX = "head_count_best";
 const READY_MS = 520;
 const FEEDBACK_MS = 900;
+const SPEED_LOADING_MIN_MS = 520;
 
 function normalizeMode(value?: string): FarmCountMode {
   return value === "yard" ? "yard" : "speed";
@@ -111,6 +113,56 @@ function CountPetSprite({
   return <PetSprite skin={skin} mood={mood} size={size} className={`count-pet-sprite ${className}`} />;
 }
 
+function preloadImage(url: string) {
+  if (!url) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve) => {
+    Taro.getImageInfo({
+      src: url,
+      success: () => resolve(),
+      fail: () => resolve(),
+    });
+  });
+}
+
+function waitForMs(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function preloadSpeedQuestionImages(
+  questions: BirdCountQuestion[],
+  onProgress: (loaded: number, total: number) => void,
+) {
+  const imageKeys = new Map<string, { skin: PetSkin; mood: PetSpriteMood }>();
+
+  questions.forEach((question) => {
+    imageKeys.set(`${question.targetSkin}:idle`, { skin: question.targetSkin, mood: "idle" });
+    question.pets.forEach((pet) => {
+      imageKeys.set(`${pet.skin}:${pet.mood}`, { skin: pet.skin, mood: pet.mood });
+    });
+  });
+
+  const images = [...imageKeys.values()];
+  let loaded = 0;
+  onProgress(loaded, images.length);
+
+  await Promise.all(
+    images.map(async ({ skin, mood }) => {
+      try {
+        const url = await resolvePetSpriteUrl(skin, mood);
+        await preloadImage(url);
+      } finally {
+        loaded += 1;
+        onProgress(loaded, images.length);
+      }
+    }),
+  );
+}
+
 export default function FarmCount() {
   usePageShare("pages/bird-count/index");
 
@@ -135,11 +187,13 @@ export default function FarmCount() {
   const [lastYardResult, setLastYardResult] = useState<HeadCountQuestionResult | null>(null);
   const [awardedPoints, setAwardedPoints] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
+  const [loadProgress, setLoadProgress] = useState({ loaded: 0, total: 0 });
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const startedAtRef = useRef(0);
   const answerStartedAtRef = useRef(0);
   const finishedRef = useRef(false);
+  const preloadRunIdRef = useRef(0);
 
   const speedQuestion = speedQuestions[currentIndex] ?? null;
   const yardQuestion = yardQuestions[currentIndex] ?? null;
@@ -208,10 +262,12 @@ export default function FarmCount() {
     setLastYardResult(null);
     setAwardedPoints(0);
     setIsNewBest(false);
+    setLoadProgress({ loaded: 0, total: 0 });
     finishedRef.current = false;
   }, []);
 
   const backToStart = useCallback(() => {
+    preloadRunIdRef.current += 1;
     clearTimers();
     setPhase("start");
     setSpeedQuestions([]);
@@ -344,19 +400,38 @@ export default function FarmCount() {
     }, READY_MS);
   }, [clearTimers, schedule, yardQuestions]);
 
-  const startSpeedGame = () => {
+  const startSpeedGame = async () => {
     clearTimers();
+    const preloadRunId = preloadRunIdRef.current + 1;
+    preloadRunIdRef.current = preloadRunId;
     const nextQuestions = createBirdCountSession(difficulty, petSkinPool);
     resetRoundState();
     finishedRef.current = false;
-    startedAtRef.current = Date.now();
     setSpeedQuestions(nextQuestions);
     setYardQuestions([]);
+    setPhase("loading");
+    setCurrentIndex(0);
+
+    await Promise.all([
+      preloadSpeedQuestionImages(nextQuestions, (loaded, total) => {
+        if (preloadRunIdRef.current === preloadRunId) {
+          setLoadProgress({ loaded, total });
+        }
+      }),
+      waitForMs(SPEED_LOADING_MIN_MS),
+    ]);
+
+    if (preloadRunIdRef.current !== preloadRunId) {
+      return;
+    }
+
+    startedAtRef.current = Date.now();
     beginSpeedQuestion(0, nextQuestions);
   };
 
   const startYardGame = () => {
     clearTimers();
+    preloadRunIdRef.current += 1;
     const nextQuestions = createHeadCountSession(yardDifficulty, speedDifficulty);
     resetRoundState();
     finishedRef.current = false;
@@ -372,7 +447,7 @@ export default function FarmCount() {
       startYardGame();
       return;
     }
-    startSpeedGame();
+    void startSpeedGame();
   };
 
   const handleSpeedAnswer = (answer: number) => {
@@ -550,8 +625,8 @@ export default function FarmCount() {
                 </>
               ) : (
                 <>
-                  {renderSpeedDifficultyCard("normal", "8-15 只宠物 · 4 条小路")}
-                  {renderSpeedDifficultyCard("hard", "14-21 只宠物 · 5 条小路")}
+                  {renderSpeedDifficultyCard("normal", "8-15 只宠物 · 3 条地面小路")}
+                  {renderSpeedDifficultyCard("hard", "14-21 只宠物 · 4 条地面小路")}
                 </>
               )}
             </View>
@@ -670,7 +745,9 @@ export default function FarmCount() {
                 </View>
                 <View className="target-copy">
                   <Text className="farm-prompt">
-                    {phase === "ready"
+                    {phase === "loading"
+                      ? "准备农场"
+                      : phase === "ready"
                       ? "准备观察目标"
                       : phase === "watching"
                         ? `只数${PET_SKIN_NAME[speedQuestion.targetSkin]}`
@@ -681,13 +758,24 @@ export default function FarmCount() {
                             : "正确数量"}
                   </Text>
                   <Text className="target-meta">
-                    {phase === "watching"
+                    {phase === "loading"
+                      ? `加载宠物图片 ${loadProgress.loaded}/${loadProgress.total || "..."}`
+                      : phase === "watching"
                       ? `${speedQuestion.totalPets} 只混排 · ${speedQuestion.laneCount} 条小路`
                       : `目标：${PET_SKIN_NAME[speedQuestion.targetSkin]}`}
                   </Text>
                 </View>
               </View>
-              {phase === "watching" || phase === "feedback" ? (
+              {phase === "loading" ? (
+                <View className="scroll-viewport scroll-viewport-loading">
+                  <View className="scroll-world scroll-world-paused" />
+                  <View className="speed-loading">
+                    <View className="speed-loading-spinner" />
+                    <Text className="speed-loading-title">整理农场小路</Text>
+                    <Text className="speed-loading-copy">宠物图片加载完成后开始</Text>
+                  </View>
+                </View>
+              ) : phase === "watching" || phase === "feedback" ? (
                 <View className="scroll-viewport">
                   <View
                     className="scroll-world"

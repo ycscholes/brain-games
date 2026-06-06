@@ -60,7 +60,7 @@ describe("bird-count game logic", () => {
       expect(question.pets.filter((pet) => pet.skin === question.targetSkin)).toHaveLength(question.answer);
       expect(question.answer).toBeGreaterThanOrEqual(5);
       expect(question.answer).toBeLessThanOrEqual(9);
-      expect(question.laneCount).toBe(5);
+      expect(question.laneCount).toBe(4);
       expect(question.revealMs).toBe(getBirdCountRevealMs("hard", index));
       expect(question.revealMs).toBeLessThanOrEqual(2800);
     });
@@ -75,11 +75,24 @@ describe("bird-count game logic", () => {
       expect(PET_COUNT_SKINS).toContain(pet.skin);
       expect(pet.x).toBeGreaterThanOrEqual(0);
       expect(pet.x).toBeLessThanOrEqual(100);
-      expect(pet.y).toBeGreaterThanOrEqual(0);
-      expect(pet.y).toBeLessThanOrEqual(100);
+      expect(pet.y).toBeGreaterThanOrEqual(58);
+      expect(pet.y).toBeLessThanOrEqual(86);
       expect(pet.lane).toBeGreaterThanOrEqual(0);
       expect(pet.lane).toBeLessThan(question.laneCount);
     });
+  });
+
+  test("generated pets are distributed through the full farm strip", () => {
+    const question = createBirdCountQuestion("hard", 7);
+    const xs = question.pets.map((pet) => pet.x);
+    const firstHalfCount = xs.filter((x) => x < 50).length;
+    const secondHalfCount = xs.filter((x) => x >= 50).length;
+
+    expect(Math.min(...xs)).toBeLessThanOrEqual(10);
+    expect(Math.max(...xs)).toBeGreaterThanOrEqual(90);
+    expect(firstHalfCount).toBeGreaterThan(0);
+    expect(secondHalfCount).toBeGreaterThan(0);
+    expect(Math.abs(firstHalfCount - secondHalfCount)).toBeLessThanOrEqual(1);
   });
 
   test("generated pets use valid stable moods without changing target counts", () => {

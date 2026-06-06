@@ -63,7 +63,9 @@ const SCROLL_MS: Record<BirdCountDifficulty, number[]> = {
   hard: [2500, 2380, 2260, 2160, 2060, 1960, 1880, 1800],
 };
 
-const LANE_Y = [16, 31, 46, 61, 76];
+const GROUND_LANE_Y = [60, 68, 76, 84];
+const STRIP_X_MIN = 5;
+const STRIP_X_MAX = 95;
 
 function clampQuestionIndex(questionIndex: number) {
   return Math.max(0, Math.min(BIRD_COUNT_TOTAL_QUESTIONS - 1, questionIndex));
@@ -157,19 +159,30 @@ export function createBirdCountQuestion(
   const answer = getBirdCountTarget(difficulty, safeQuestionIndex);
   const totalPets = getPetCountTotal(difficulty, safeQuestionIndex);
   const skinPool = createPetSkinPool(targetSkin, answer, totalPets, petSkinPool);
-  const laneCount = difficulty === "hard" ? 5 : 4;
+  const laneCount = difficulty === "hard" ? 4 : 3;
+  const usableWidth = STRIP_X_MAX - STRIP_X_MIN;
+  const segmentWidth = usableWidth / totalPets;
   const pets = skinPool.map((skin, index) => {
-    const lane = index % laneCount;
-    const rowOffset = Math.floor(index / laneCount);
+    const lane = (index * 2 + safeQuestionIndex) % laneCount;
+    const segmentCenter = STRIP_X_MIN + segmentWidth * (index + 0.5);
+    const xJitter = (Math.random() - 0.5) * Math.min(5.5, segmentWidth * 0.72);
+    const yJitter = Math.floor(Math.random() * 5) - 2;
+    const groundDepth = lane / Math.max(1, laneCount - 1);
+    const size = groundDepth > 0.72
+      ? "large" as const
+      : groundDepth < 0.28
+        ? "small" as const
+        : "medium" as const;
+
     return {
       id: `pet-count-${difficulty}-${safeQuestionIndex + 1}-pet-${index + 1}`,
       skin,
-      x: 8 + rowOffset * 18 + Math.floor(Math.random() * 7),
-      y: LANE_Y[lane] + Math.floor(Math.random() * 5) - 2,
+      x: Math.max(STRIP_X_MIN, Math.min(STRIP_X_MAX, segmentCenter + xJitter)),
+      y: GROUND_LANE_Y[lane] + yJitter,
       lane,
-      size: index % 5 === 0 ? "large" as const : index % 3 === 0 ? "small" as const : "medium" as const,
+      size,
       mirror: index % 2 === 1,
-      delayMs: Math.floor(index / laneCount) * 85,
+      delayMs: index * 35,
       mood: PET_COUNT_MOODS[
         (index + safeQuestionIndex + Math.floor(Math.random() * PET_COUNT_MOODS.length)) % PET_COUNT_MOODS.length
       ],
