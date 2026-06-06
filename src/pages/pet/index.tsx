@@ -21,7 +21,7 @@ import {
 } from "./types";
 import PetSprite from "./components/PetSprite";
 import type { PetSpriteMood } from "./components/PetSprite/types";
-import { resolveFoodIconUrl } from "../../config/remoteAssets";
+import { resolveCachedFoodIconUrl, resolveFoodIconUrl } from "../../config/remoteAssets";
 import "./index.scss";
 
 type PetFeedbackKind = "idle" | "switch" | "feed" | "cuddle" | "error";
@@ -32,13 +32,15 @@ interface FeedBurst {
 }
 
 function FoodIcon({ food }: { food: FoodItem }) {
-  const [iconUrl, setIconUrl] = useState("");
+  const [iconUrl, setIconUrl] = useState(() => resolveCachedFoodIconUrl(food.imageId));
   const [imageFailed, setImageFailed] = useState(false);
+  const hasRetriedRef = useRef(false);
 
   useEffect(() => {
     let isCurrent = true;
+    hasRetriedRef.current = false;
     setImageFailed(false);
-    setIconUrl("");
+    setIconUrl(resolveCachedFoodIconUrl(food.imageId));
 
     void resolveFoodIconUrl(food.imageId)
       .then((url) => {
@@ -57,13 +59,36 @@ function FoodIcon({ food }: { food: FoodItem }) {
     };
   }, [food.imageId]);
 
+  const handleImageError = useCallback(() => {
+    if (hasRetriedRef.current) {
+      setImageFailed(true);
+      return;
+    }
+
+    hasRetriedRef.current = true;
+
+    void resolveFoodIconUrl(food.imageId, { forceRefresh: true })
+      .then((url) => {
+        if (url) {
+          setImageFailed(false);
+          setIconUrl(url);
+          return;
+        }
+
+        setImageFailed(true);
+      })
+      .catch(() => {
+        setImageFailed(true);
+      });
+  }, [food.imageId]);
+
   if (iconUrl && !imageFailed) {
     return (
       <Image
         className="food-image"
         src={iconUrl}
         mode="aspectFit"
-        onError={() => setImageFailed(true)}
+        onError={handleImageError}
       />
     );
   }

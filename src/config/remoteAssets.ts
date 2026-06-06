@@ -77,6 +77,10 @@ type RemoteAssetCache = {
   assets: Record<string, CachedRemoteAsset>;
 };
 
+type ResolveCloudFileUrlOptions = {
+  forceRefresh?: boolean;
+};
+
 const REMOTE_ASSET_CACHE_KEY = "remote_asset_url_cache_v1";
 const tempFileUrlCache = new Map<string, string>();
 const tempFileUrlDateCache = new Map<string, string>();
@@ -213,7 +217,7 @@ async function refreshCloudFileUrl(fileID: string, todayKey: string): Promise<st
   }
 }
 
-async function resolveCloudFileUrl(path: string): Promise<string> {
+async function resolveCloudFileUrl(path: string, options?: ResolveCloudFileUrlOptions): Promise<string> {
   try {
     const fileID = toCloudFileId(path);
     if (!fileID) {
@@ -221,6 +225,10 @@ async function resolveCloudFileUrl(path: string): Promise<string> {
     }
 
     const todayKey = getTodayKey();
+    if (options?.forceRefresh) {
+      return refreshCloudFileUrl(fileID, todayKey);
+    }
+
     const cached = getCachedCloudFileUrl(fileID);
     if (cached?.url && cached.updatedDate === todayKey) {
       return cached.url;
@@ -245,11 +253,23 @@ export function resolveCachedPetSpriteUrl(skin: PetSkin, mood: PetSpriteMood): s
   return getCachedCloudFileUrlByPath(PET_SPRITE_PATHS[skin][mood]);
 }
 
-export async function resolveFoodIconUrl(foodId: string): Promise<string> {
+export function resolveCachedFoodIconUrl(foodId: string): string {
   const path = FOOD_ICON_PATHS[foodId];
   if (!path) {
     return "";
   }
 
-  return resolveCloudFileUrl(path);
+  return getCachedCloudFileUrlByPath(path);
+}
+
+export async function resolveFoodIconUrl(
+  foodId: string,
+  options?: ResolveCloudFileUrlOptions,
+): Promise<string> {
+  const path = FOOD_ICON_PATHS[foodId];
+  if (!path) {
+    return "";
+  }
+
+  return resolveCloudFileUrl(path, options);
 }

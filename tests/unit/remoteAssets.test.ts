@@ -20,6 +20,7 @@ const CACHE_KEY = "remote_asset_url_cache_v1";
 const CAT_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/pets/cat-idle.png";
 const GECKO_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/pets/gecko-idle.png";
 const TURTLE_CUDDLE_FILE_ID = "cloud://test-env.test-bucket/assets/pets/turtle-cuddle.png";
+const BISCUIT_FILE_ID = "cloud://test-env.test-bucket/assets/pets/food-biscuit.png";
 const GENERATED_FOOD_IMAGE_IDS = [
   "biscuit",
   "salmon",
@@ -38,6 +39,21 @@ function writeAssetCache(updatedDate: string, url: string) {
       version: 1,
       assets: {
         [CAT_IDLE_FILE_ID]: {
+          updatedDate,
+          url,
+        },
+      },
+    }),
+  );
+}
+
+function writeFoodAssetCache(updatedDate: string, url: string) {
+  mockStorage.set(
+    CACHE_KEY,
+    JSON.stringify({
+      version: 1,
+      assets: {
+        [BISCUIT_FILE_ID]: {
           updatedDate,
           url,
         },
@@ -116,6 +132,15 @@ describe("remoteAssets", () => {
     });
   });
 
+  test("reads same-day cached food icon URL before any cloud refresh", async () => {
+    writeFoodAssetCache("2026-06-05", "https://cached.example/food-biscuit.png");
+
+    const { resolveCachedFoodIconUrl } = await import("../../src/config/remoteAssets");
+
+    expect(resolveCachedFoodIconUrl("biscuit")).toBe("https://cached.example/food-biscuit.png");
+    expect(mockEnsureCloudReady).not.toHaveBeenCalled();
+  });
+
   test("resolves new gecko and turtle pet sprite storage paths", async () => {
     mockGetTempFileURL
       .mockResolvedValueOnce({
@@ -185,5 +210,24 @@ describe("remoteAssets", () => {
     for (const foodImageId of GENERATED_FOOD_IMAGE_IDS) {
       await expect(resolveFoodIconUrl(foodImageId)).resolves.toBe(`https://fresh.example/food-${foodImageId}.png`);
     }
+  });
+
+  test("forces a fresh food icon URL when the cached temp URL has expired", async () => {
+    writeFoodAssetCache("2026-06-04", "https://cached.example/food-biscuit.png");
+    mockGetTempFileURL.mockResolvedValue({
+      fileList: [{ tempFileURL: "https://fresh.example/food-biscuit.png" }],
+    });
+    mockEnsureCloudReady.mockResolvedValue({
+      getTempFileURL: mockGetTempFileURL,
+    });
+
+    const { resolveFoodIconUrl } = await import("../../src/config/remoteAssets");
+
+    await expect(resolveFoodIconUrl("biscuit", { forceRefresh: true })).resolves.toBe(
+      "https://fresh.example/food-biscuit.png",
+    );
+    expect(mockGetTempFileURL).toHaveBeenCalledWith({
+      fileList: [BISCUIT_FILE_ID],
+    });
   });
 });
