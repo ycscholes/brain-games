@@ -32,7 +32,7 @@ describe("petStorage", () => {
     jest.useRealTimers();
   });
 
-  test("first pet adoption is free and feeding consumes balance", () => {
+  test("first pet adoption is free and feeding restores reduced hunger while consuming balance", () => {
     const adoption = adoptPet("团子", "cat");
     expect(adoption.success).toBe(true);
     expect(adoption.cost).toBe(0);
@@ -40,9 +40,19 @@ describe("petStorage", () => {
 
     addPointsToPet("mental-math", 12);
     const petId = adoption.pet?.id || "";
-    const fed = feedPet(petId, 20, 5);
+    const data = readPetData();
+    mockStorage.set(
+      "pet_data",
+      JSON.stringify({
+        ...data,
+        pets: data.pets.map((pet) => (pet.id === petId ? { ...pet, hunger: 40 } : pet)),
+      }),
+    );
+
+    const fed = feedPet(petId, 8, 5);
 
     expect(fed.success).toBe(true);
+    expect(fed.pet?.hunger).toBe(48);
     expect(fed.data.balance).toBe(7);
   });
 

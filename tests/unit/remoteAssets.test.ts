@@ -129,4 +129,32 @@ describe("remoteAssets", () => {
       fileList: [TURTLE_CUDDLE_FILE_ID],
     });
   });
+
+  test("resolves every configured pet food icon storage path", async () => {
+    mockGetTempFileURL.mockImplementation(({ fileList }) => {
+      const fileID = fileList[0];
+      const fileName = String(fileID).split("/").pop();
+      return Promise.resolve({
+        fileList: [{ tempFileURL: `https://fresh.example/${fileName}` }],
+      });
+    });
+    mockEnsureCloudReady.mockResolvedValue({
+      getTempFileURL: mockGetTempFileURL,
+    });
+
+    const [{ resolveFoodIconUrl }, { PET_SKIN_NAME, getFoodItemsForPetSkin }] = await Promise.all([
+      import("../../src/config/remoteAssets"),
+      import("../../src/pages/pet/types"),
+    ]);
+
+    const foodImageIds = new Set(
+      Object.keys(PET_SKIN_NAME).flatMap((skin) =>
+        getFoodItemsForPetSkin(skin as keyof typeof PET_SKIN_NAME).map((food) => food.imageId),
+      ),
+    );
+
+    for (const foodImageId of foodImageIds) {
+      await expect(resolveFoodIconUrl(foodImageId)).resolves.toBe(`https://fresh.example/food-${foodImageId}.png`);
+    }
+  });
 });

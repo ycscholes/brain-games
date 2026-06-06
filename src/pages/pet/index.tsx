@@ -15,23 +15,20 @@ import {
   PetData,
   PetSkin,
   PetStorageData,
-  FOOD_ITEMS,
+  getFoodItemsForPetSkin,
   PET_SKIN_NAME,
   MAX_HUNGER,
 } from "./types";
 import PetSprite from "./components/PetSprite";
 import type { PetSpriteMood } from "./components/PetSprite/types";
 import { resolveFoodIconUrl } from "../../config/remoteAssets";
-import { PET_ADOPTION_AVATAR_SRC } from "./adoptionAvatars";
 import "./index.scss";
 
 type PetFeedbackKind = "idle" | "switch" | "feed" | "cuddle" | "error";
 
 interface FeedBurst {
   id: number;
-  emoji: string;
-  restoreHunger: number;
-  cost: number;
+  food: FoodItem;
 }
 
 function FoodIcon({ food }: { food: FoodItem }) {
@@ -43,7 +40,7 @@ function FoodIcon({ food }: { food: FoodItem }) {
     setImageFailed(false);
     setIconUrl("");
 
-    void resolveFoodIconUrl(food.id)
+    void resolveFoodIconUrl(food.imageId)
       .then((url) => {
         if (isCurrent) {
           setIconUrl(url);
@@ -58,7 +55,7 @@ function FoodIcon({ food }: { food: FoodItem }) {
     return () => {
       isCurrent = false;
     };
-  }, [food.id]);
+  }, [food.imageId]);
 
   if (iconUrl && !imageFailed) {
     return (
@@ -71,7 +68,7 @@ function FoodIcon({ food }: { food: FoodItem }) {
     );
   }
 
-  return <Text className="food-emoji">{food.emoji}</Text>;
+  return <View className="food-image-placeholder" />;
 }
 
 export default function PetPage() {
@@ -127,9 +124,7 @@ export default function PetPage() {
       clearFeedBurstTimer();
       setFeedBurst({
         id: Date.now(),
-        emoji: food.emoji,
-        restoreHunger: food.restoreHunger,
-        cost: food.cost,
+        food,
       });
       feedBurstTimerRef.current = setTimeout(() => {
         setFeedBurst(null);
@@ -177,6 +172,10 @@ export default function PetPage() {
   const pets = storageData.pets;
   const activePet = pets.find((pet) => pet.id === storageData.activePetId) || null;
   const nextAdoptionCost = getNextAdoptionCost(storageData);
+  const foodItems = useMemo(
+    () => getFoodItemsForPetSkin(activePet?.skin || selectedSkin),
+    [activePet?.skin, selectedSkin],
+  );
 
   const getHungerPercent = (pet: PetData | null) => {
     if (!pet) return 0;
@@ -290,7 +289,7 @@ export default function PetPage() {
         return;
       }
 
-      const food = FOOD_ITEMS.find((item) => item.id === foodId);
+      const food = foodItems.find((item) => item.id === foodId);
       if (!food) {
         return;
       }
@@ -313,12 +312,8 @@ export default function PetPage() {
       playPetMotion("feed", 760);
       playFeedback("feed", 1400);
       showFeedBurst(food);
-      Taro.showToast({
-        title: `${result.pet?.name} 吃完了 ${food.name}`,
-        icon: "success",
-      });
     },
-    [activePet, playFeedback, playPetMotion, showFeedBurst],
+    [activePet, foodItems, playFeedback, playPetMotion, showFeedBurst],
   );
 
   const handleCuddle = useCallback(() => {
@@ -361,7 +356,6 @@ export default function PetPage() {
                     skin={skin}
                     size="sm"
                     selected={selectedSkin === skin}
-                    staticImageSrc={PET_ADOPTION_AVATAR_SRC[skin]}
                   />
                   <Text className="skin-name">{PET_SKIN_NAME[skin]}</Text>
                 </View>
@@ -491,9 +485,11 @@ export default function PetPage() {
 
           {feedBurst ? (
             <View key={feedBurst.id} className="feed-burst stage-feed-burst">
-              <Text className="feed-burst-food">{feedBurst.emoji}</Text>
-              <Text className="feed-burst-value">+{feedBurst.restoreHunger}</Text>
-              <Text className="feed-burst-cost">-{feedBurst.cost}分</Text>
+              <View className="feed-burst-food">
+                <FoodIcon food={feedBurst.food} />
+              </View>
+              <Text className="feed-burst-value">+{feedBurst.food.restoreHunger}</Text>
+              <Text className="feed-burst-cost">-{feedBurst.food.cost}分</Text>
             </View>
           ) : null}
         </View>
@@ -501,7 +497,7 @@ export default function PetPage() {
         <View className="stage-controls">
           {canFeed ? (
             <View className="food-dock">
-              {FOOD_ITEMS.map((food) => (
+              {foodItems.map((food) => (
                 <View
                   key={food.id}
                   className={`food-button ${storageData.balance >= food.cost ? "food-button-ready" : "food-button-disabled"}`}

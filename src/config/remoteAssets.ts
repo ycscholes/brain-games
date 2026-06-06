@@ -51,8 +51,20 @@ const PET_SPRITE_PATHS: Record<PetSkin, Record<PetSpriteMood, string>> = {
 
 const FOOD_ICON_PATHS: Partial<Record<string, string>> = {
   apple: "assets/pets/food-apple.png",
+  berry: "assets/pets/food-berry.png",
+  carrot: "assets/pets/food-carrot.png",
   fish: "assets/pets/food-fish.png",
-  steak: "assets/pets/food-steak.png",
+  meat: "assets/pets/food-meat.png",
+  greens: "assets/pets/food-greens.png",
+  pumpkin: "assets/pets/food-pumpkin.png",
+  biscuit: "assets/pets/food-biscuit.png",
+  salmon: "assets/pets/food-salmon.png",
+  "beef-bone": "assets/pets/food-beef-bone.png",
+  "strawberry-basket": "assets/pets/food-strawberry-basket.png",
+  "honey-jar": "assets/pets/food-honey-jar.png",
+  "bamboo-rice": "assets/pets/food-bamboo-rice.png",
+  "cricket-cup": "assets/pets/food-cricket-cup.png",
+  "shrimp-greens": "assets/pets/food-shrimp-greens.png",
 };
 
 type CachedRemoteAsset = {

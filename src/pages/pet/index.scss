@@ -405,8 +405,11 @@
   display: block;
 }
 
-.food-emoji {
-  font-size: 38px;
+.food-image-placeholder {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.36);
 }
 
 .food-button-copy {
@@ -499,7 +502,11 @@
 }
 
 .feed-burst-food {
-  font-size: 30px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .feed-burst-value {
@@ -828,13 +835,10 @@
     border-radius: 16px;
   }
 
-  .food-image {
+  .food-image,
+  .food-image-placeholder {
     width: 34px;
     height: 34px;
-  }
-
-  .food-emoji {
-    font-size: 31px;
   }
 
   .food-button-name {
