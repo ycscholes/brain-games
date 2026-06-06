@@ -9,7 +9,9 @@ import {
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
-import { PET_SKIN_EMOJI, PET_SKIN_NAME, type PetSkin } from "../pet/types";
+import PetSprite from "../pet/components/PetSprite";
+import type { PetSpriteSize } from "../pet/components/PetSprite/types";
+import { PET_SKIN_NAME, type PetSkin } from "../pet/types";
 import {
   BIRD_COUNT_TOTAL_QUESTIONS,
   createBirdCountSession,
@@ -93,6 +95,18 @@ function getYardCountText(phase: Phase, displayCount: number, answer: number) {
   if (phase === "feedback") return `${answer}`;
   if (phase === "answering") return "?";
   return "清点中";
+}
+
+function CountPetSprite({
+  skin,
+  size = "sm",
+  className = "",
+}: {
+  skin: PetSkin;
+  size?: PetSpriteSize;
+  className?: string;
+}) {
+  return <PetSprite skin={skin} mood="idle" size={size} className={`count-pet-sprite ${className}`} />;
 }
 
 export default function FarmCount() {
@@ -552,15 +566,6 @@ export default function FarmCount() {
             </View>
           ) : null}
 
-          <View className="pet-pool-strip">
-            <Text className="pet-pool-label">本局优先出现</Text>
-            <View className="pet-pool-icons">
-              {petSkinPool.slice(0, 6).map((skin) => (
-                <Text key={skin} className="pet-pool-icon">{PET_SKIN_EMOJI[skin]}</Text>
-              ))}
-            </View>
-          </View>
-
           <View className="primary-button" onClick={startGame}>
             <Text className="primary-button-text">开始训练</Text>
           </View>
@@ -619,7 +624,11 @@ export default function FarmCount() {
                   <View className="yard-pet-row">
                     {Array.from({ length: Math.min(staticPetCount, 10) }, (_, index) => (
                       <View key={`yard-pet-${index}`} className="yard-pet-token">
-                        <Text className="yard-pet-emoji">{PET_SKIN_EMOJI[getPetSkinForIndex(petSkinPool, index)]}</Text>
+                        <CountPetSprite
+                          skin={getPetSkinForIndex(petSkinPool, index)}
+                          size="xxs"
+                          className="yard-pet-sprite"
+                        />
                       </View>
                     ))}
                   </View>
@@ -634,9 +643,11 @@ export default function FarmCount() {
                             animationDelay: `${petIndex * 70}ms`,
                           }}
                         >
-                          <Text className="moving-yard-pet-emoji">
-                            {PET_SKIN_EMOJI[getPetSkinForIndex(petSkinPool, eventIndex + petIndex)]}
-                          </Text>
+                          <CountPetSprite
+                            skin={getPetSkinForIndex(petSkinPool, eventIndex + petIndex)}
+                            size="xs"
+                            className="moving-yard-pet-sprite"
+                          />
                         </View>
                       ))}
                     </View>
@@ -653,7 +664,7 @@ export default function FarmCount() {
             <View className={`farm-scene farm-scene-${phase}`}>
               <View className="target-banner">
                 <View className="target-pet">
-                  <Text className="target-pet-emoji">{PET_SKIN_EMOJI[speedQuestion.targetSkin]}</Text>
+                  <CountPetSprite skin={speedQuestion.targetSkin} size="sm" className="target-pet-sprite" />
                 </View>
                 <View className="target-copy">
                   <Text className="farm-prompt">
@@ -686,14 +697,18 @@ export default function FarmCount() {
                         className={`pet-count-token pet-count-${pet.size} ${pet.mirror ? "pet-count-mirror" : ""} ${pet.skin === speedQuestion.targetSkin ? "pet-count-target" : ""}`}
                         style={{ left: `${pet.x}%`, top: `${pet.y}%`, animationDelay: `${pet.delayMs}ms` }}
                       >
-                        <Text className="pet-count-emoji">{PET_SKIN_EMOJI[pet.skin]}</Text>
+                        <CountPetSprite skin={pet.skin} size="xs" className="pet-count-sprite" />
                       </View>
                     ))}
                   </View>
                 </View>
               ) : (
                 <View className="scroll-viewport scroll-viewport-empty">
-                  <Text className="hidden-count">{phase === "answering" ? "?" : PET_SKIN_EMOJI[speedQuestion.targetSkin]}</Text>
+                  {phase === "answering" ? (
+                    <Text className="hidden-count">?</Text>
+                  ) : (
+                    <CountPetSprite skin={speedQuestion.targetSkin} size="lg" className="hidden-count-pet" />
+                  )}
                 </View>
               )}
             </View>

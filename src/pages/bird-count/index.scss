@@ -34,8 +34,7 @@ $page: #f7fee7;
 .prompt-card,
 .farm-pen,
 .feedback-card,
-.result-card,
-.pet-pool-strip {
+.result-card {
   border-radius: 22px;
   background: $card;
   border: 2px solid rgba(63, 98, 18, 0.12);
@@ -194,43 +193,6 @@ $page: #f7fee7;
   text-align: center;
 }
 
-.pet-pool-strip {
-  min-height: 80px;
-  padding: 16px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.pet-pool-label {
-  flex: 0 0 auto;
-  font-size: 23px;
-  line-height: 1.25;
-  font-weight: 850;
-  color: $primary-dark;
-}
-
-.pet-pool-icons {
-  min-width: 0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.pet-pool-icon {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 14px;
-  background: #fefce8;
-  font-size: 28px;
-  line-height: 1;
-}
-
 .primary-button,
 .secondary-button {
   min-height: 82px;
@@ -299,9 +261,13 @@ $page: #f7fee7;
   box-shadow: inset 0 -6px 12px rgba(202, 138, 4, 0.12);
 }
 
-.target-pet-emoji {
-  font-size: 48px;
-  line-height: 1;
+.count-pet-sprite {
+  animation: none;
+  pointer-events: none;
+}
+
+.target-pet-sprite {
+  --pet-sprite-size: 76px;
 }
 
 .target-copy {
@@ -414,14 +380,12 @@ $page: #f7fee7;
   border-color: rgba(202, 138, 4, 0.5);
 }
 
-.pet-count-mirror .pet-count-emoji {
+.pet-count-mirror .count-pet-sprite {
   transform: scaleX(-1);
 }
 
-.pet-count-emoji {
-  display: block;
-  font-size: 40px;
-  line-height: 1;
+.pet-count-sprite {
+  --pet-sprite-size: 42px;
 }
 
 .pet-count-small {
@@ -429,8 +393,8 @@ $page: #f7fee7;
   height: 54px;
 }
 
-.pet-count-small .pet-count-emoji {
-  font-size: 34px;
+.pet-count-small .pet-count-sprite {
+  --pet-sprite-size: 36px;
 }
 
 .pet-count-medium {
@@ -443,8 +407,13 @@ $page: #f7fee7;
   height: 76px;
 }
 
-.pet-count-large .pet-count-emoji {
-  font-size: 48px;
+.pet-count-large .pet-count-sprite {
+  --pet-sprite-size: 54px;
+}
+
+.hidden-count-pet {
+  --pet-sprite-size: 172px;
+  opacity: 0.72;
 }
 
 .farm-pen {
@@ -532,10 +501,12 @@ $page: #f7fee7;
   border-radius: 16px;
 }
 
-.yard-pet-emoji,
-.moving-yard-pet-emoji {
-  font-size: 28px;
-  line-height: 1;
+.yard-pet-sprite {
+  --pet-sprite-size: 34px;
+}
+
+.moving-yard-pet-sprite {
+  --pet-sprite-size: 42px;
 }
 
 .moving-yard-layer {
