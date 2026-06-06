@@ -153,25 +153,14 @@ const BASE_GAMES = [
     level: "进阶",
   },
   {
-    id: "head-count",
-    title: "小剧场清点",
-    badge: "专注",
-    cardClass: "card-head-count",
-    url: "/pages/head-count/index",
-    category: "advanced",
-    duration: "约 2 分钟",
-    skill: "动态计数",
-    level: "进阶",
-  },
-  {
     id: "bird-count",
-    title: "宠物速数",
+    title: "农场清点",
     badge: "观察",
     cardClass: "card-bird-count",
     url: "/pages/bird-count/index",
     category: "advanced",
-    duration: "约 90 秒",
-    skill: "选择性计数",
+    duration: "约 2 分钟",
+    skill: "动态计数",
     level: "标准",
   },
   {
@@ -201,9 +190,9 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   pattern: "找规律",
   "pattern-completion": "找规律",
   "number-order": "星链回响",
-  "head-count": "小剧场清点",
+  "head-count": "农场进出",
   "word-scramble": "词语拼盘",
-  "bird-count": "宠物速数",
+  "bird-count": "农场清点",
 };
 
 function formatPlayedAt(value: string) {

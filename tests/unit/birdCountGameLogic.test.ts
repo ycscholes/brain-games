@@ -20,6 +20,23 @@ describe("bird-count game logic", () => {
     expect(PET_COUNT_SKINS).toEqual(["cat", "dog", "rabbit", "bear", "panda", "gecko", "turtle"]);
   });
 
+  test("uses a provided pet skin pool for target and decoy pets", () => {
+    const question = createBirdCountQuestion("normal", 0, ["dog", "rabbit"]);
+    const usedSkins = new Set(question.pets.map((pet) => pet.skin));
+
+    expect(["dog", "rabbit"]).toContain(question.targetSkin);
+    usedSkins.forEach((skin) => {
+      expect(["dog", "rabbit"]).toContain(skin);
+    });
+  });
+
+  test("falls back to the full pet pool when a provided pool is empty", () => {
+    const question = createBirdCountQuestion("normal", 0, []);
+
+    expect(PET_COUNT_SKINS).toContain(question.targetSkin);
+    expect(question.pets).toHaveLength(question.totalPets);
+  });
+
   test("normal questions use target pets, decoys, and slower reveal timing", () => {
     createBirdCountSession("normal").forEach((question, index) => {
       expect(question.answer).toBe(getBirdCountTarget("normal", index));

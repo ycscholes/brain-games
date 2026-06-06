@@ -1,3 +1,5 @@
 export default definePageConfig({
-  navigationBarTitleText: "宠物速数",
+  navigationBarTitleText: "农场清点",
+  enableShareAppMessage: true,
+  enableShareTimeline: true,
 });
