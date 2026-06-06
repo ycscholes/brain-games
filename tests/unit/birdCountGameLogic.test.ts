@@ -105,6 +105,33 @@ describe("bird-count game logic", () => {
     });
   });
 
+  test("generated pets use bounded scale without changing target counts", () => {
+    createBirdCountSession("hard").forEach((question) => {
+      question.pets.forEach((pet) => {
+        expect(pet.scale).toBeGreaterThanOrEqual(1);
+        expect(pet.scale).toBeLessThanOrEqual(1.5);
+      });
+
+      expect(question.pets.filter((pet) => pet.skin === question.targetSkin)).toHaveLength(question.answer);
+    });
+  });
+
+  test("target pets have continuous order labels by appearance", () => {
+    createBirdCountSession("normal").forEach((question) => {
+      const targets = question.pets
+        .filter((pet) => pet.skin === question.targetSkin)
+        .sort((left, right) => left.x - right.x);
+      const decoys = question.pets.filter((pet) => pet.skin !== question.targetSkin);
+
+      expect(targets.map((pet) => pet.targetOrder)).toEqual(
+        Array.from({ length: question.answer }, (_, index) => index + 1),
+      );
+      decoys.forEach((pet) => {
+        expect(pet.targetOrder).toBeUndefined();
+      });
+    });
+  });
+
   test("options include the correct answer once", () => {
     for (let answer = 4; answer <= 12; answer += 1) {
       const options = createBirdCountOptions(answer);

@@ -10,6 +10,7 @@ import {
   recommendNextGame,
   type TrainingGameId,
 } from "../../utils/trainingStorage";
+import { preloadGameAssets, type AssetPreloadProgress } from "../../utils/resourcePreloader";
 import { usePageShare } from "../../utils/share";
 import { MAX_HUNGER, PetData, PetStorageData } from "../../pages/pet/types";
 import PetSprite from "../pet/components/PetSprite";
@@ -195,6 +196,9 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   "bird-count": "农场清点",
 };
 
+const HOME_ASSET_LOADING_TIMEOUT_MS = 3500;
+const HOME_ASSET_LOADING_MIN_MS = 520;
+
 function formatPlayedAt(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -216,6 +220,12 @@ function formatPlayedAt(value: string) {
   return `${diffDays} 天前`;
 }
 
+function waitForMs(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export default function Index() {
   usePageShare("pages/index/index");
 
@@ -230,6 +240,12 @@ export default function Index() {
   const [recommendedGameId, setRecommendedGameId] = useState<TrainingGameId>("memory");
   const [petData, setPetData] = useState<PetStorageData>(() => readPetData());
   const [isFloatingPetReady, setIsFloatingPetReady] = useState(false);
+  const [isHomeAssetsReady, setIsHomeAssetsReady] = useState(false);
+  const [homeAssetProgress, setHomeAssetProgress] = useState<AssetPreloadProgress>({
+    loaded: 0,
+    total: 0,
+    failed: 0,
+  });
   const [homePetMotion, setHomePetMotion] = useState<PetSpriteMood>("idle");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -284,6 +300,25 @@ export default function Index() {
 
   useEffect(() => {
     let isCurrent = true;
+
+    void Promise.all([
+      preloadGameAssets({
+        timeoutMs: HOME_ASSET_LOADING_TIMEOUT_MS,
+        onProgress: (progress) => {
+          if (isCurrent) {
+            setHomeAssetProgress(progress);
+          }
+        },
+      }),
+      waitForMs(HOME_ASSET_LOADING_MIN_MS),
+    ]).then(([progress]) => {
+      if (!isCurrent) {
+        return;
+      }
+
+      setHomeAssetProgress(progress);
+      setIsHomeAssetsReady(true);
+    });
 
     void initializeCloudSync()
       .then(() => {
@@ -363,7 +398,18 @@ export default function Index() {
 
   return (
     <View className="game-hub">
-      <View className="hub-shell">
+      {!isHomeAssetsReady ? (
+        <View className="home-resource-loading">
+          <View className="home-resource-loading-mark" />
+          <Text className="home-resource-loading-title">资源准备中</Text>
+          <Text className="home-resource-loading-copy">
+            {homeAssetProgress.total > 0
+              ? `${homeAssetProgress.loaded}/${homeAssetProgress.total}`
+              : "检查宠物图片"}
+          </Text>
+        </View>
+      ) : null}
+      <View className={`hub-shell ${isHomeAssetsReady ? "" : "hub-shell-loading"}`}>
         <View className="top-bar">
           <View>
             <Text className="page-eyebrow">Brain Yard</Text>
@@ -517,7 +563,7 @@ export default function Index() {
         </View>
       </View>
 
-      {isFloatingPetReady ? (
+      {isHomeAssetsReady && isFloatingPetReady ? (
         <View
           className={`floating-pet ${activePet ? "" : "floating-pet-empty"}`}
           onClick={navigateToPet}

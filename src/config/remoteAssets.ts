@@ -81,6 +81,21 @@ type ResolveCloudFileUrlOptions = {
   forceRefresh?: boolean;
 };
 
+export type PetSpriteRemoteAsset = {
+  skin: PetSkin;
+  mood: PetSpriteMood;
+};
+
+export type RemoteAssetPreloadResult = {
+  loaded: number;
+  total: number;
+  failed: number;
+};
+
+export type RemoteAssetPreloadProgress = RemoteAssetPreloadResult & {
+  current?: string;
+};
+
 const REMOTE_ASSET_CACHE_KEY = "remote_asset_url_cache_v1";
 const tempFileUrlCache = new Map<string, string>();
 const tempFileUrlDateCache = new Map<string, string>();
@@ -272,4 +287,51 @@ export async function resolveFoodIconUrl(
   }
 
   return resolveCloudFileUrl(path, options);
+}
+
+export function getAllPetSpriteRemoteAssets(): PetSpriteRemoteAsset[] {
+  return (Object.keys(PET_SPRITE_PATHS) as PetSkin[]).flatMap((skin) =>
+    (Object.keys(PET_SPRITE_PATHS[skin]) as PetSpriteMood[]).map((mood) => ({ skin, mood })),
+  );
+}
+
+export function getAllFoodIconIds(): string[] {
+  return Object.keys(FOOD_ICON_PATHS);
+}
+
+export async function resolveAllRemoteAssetUrls(
+  onProgress?: (progress: RemoteAssetPreloadProgress) => void,
+): Promise<string[]> {
+  const petAssets = getAllPetSpriteRemoteAssets().map((asset) => ({
+    id: `pet:${asset.skin}:${asset.mood}`,
+    resolve: () => resolvePetSpriteUrl(asset.skin, asset.mood),
+  }));
+  const foodAssets = getAllFoodIconIds().map((foodId) => ({
+    id: `food:${foodId}`,
+    resolve: () => resolveFoodIconUrl(foodId),
+  }));
+  const assets = [...petAssets, ...foodAssets];
+  const urls: string[] = [];
+  let loaded = 0;
+  let failed = 0;
+
+  onProgress?.({ loaded, total: assets.length, failed });
+
+  await Promise.all(
+    assets.map(async (asset) => {
+      try {
+        const url = await asset.resolve();
+        if (url) {
+          urls.push(url);
+        }
+      } catch {
+        failed += 1;
+      } finally {
+        loaded += 1;
+        onProgress?.({ loaded, total: assets.length, failed, current: asset.id });
+      }
+    }),
+  );
+
+  return urls;
 }

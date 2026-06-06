@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { resolvePetSpriteUrl } from "../../config/remoteAssets";
@@ -36,7 +36,16 @@ import {
 import "./index.scss";
 
 type FarmCountMode = "speed" | "yard";
-type Phase = "start" | "loading" | "ready" | "watching" | "playing-event" | "answering" | "feedback" | "finished";
+type Phase =
+  | "start"
+  | "loading"
+  | "ready"
+  | "watching"
+  | "replay"
+  | "playing-event"
+  | "answering"
+  | "feedback"
+  | "finished";
 
 const SPEED_STORAGE_KEY_PREFIX = "bird_count_best";
 const YARD_STORAGE_KEY_PREFIX = "head_count_best";
@@ -450,6 +459,15 @@ export default function FarmCount() {
     void startSpeedGame();
   };
 
+  const advanceAfterSpeedQuestion = useCallback((nextScore: number, nextCorrectQuestions: number) => {
+    if (currentIndex >= BIRD_COUNT_TOTAL_QUESTIONS - 1) {
+      finishSpeedGame(nextScore, nextCorrectQuestions);
+      return;
+    }
+
+    beginSpeedQuestion(currentIndex + 1);
+  }, [beginSpeedQuestion, currentIndex, finishSpeedGame]);
+
   const handleSpeedAnswer = (answer: number) => {
     if (phase !== "answering" || !speedQuestion || selectedAnswer !== null) {
       return;
@@ -471,16 +489,16 @@ export default function FarmCount() {
     setCombo(nextCombo);
     setBestCombo(Math.max(bestCombo, nextCombo));
     setCorrectQuestions(nextCorrectQuestions);
-    setPhase("feedback");
 
+    if (result.correct) {
+      advanceAfterSpeedQuestion(nextScore, nextCorrectQuestions);
+      return;
+    }
+
+    setPhase("replay");
     schedule(() => {
-      if (currentIndex >= BIRD_COUNT_TOTAL_QUESTIONS - 1) {
-        finishSpeedGame(nextScore, nextCorrectQuestions);
-        return;
-      }
-
-      beginSpeedQuestion(currentIndex + 1);
-    }, FEEDBACK_MS);
+      advanceAfterSpeedQuestion(nextScore, nextCorrectQuestions);
+    }, speedQuestion.revealMs);
   };
 
   const handleYardAnswer = (answer: number) => {
@@ -609,7 +627,7 @@ export default function FarmCount() {
             ) : (
               <>
                 <Text className="rule-line">1. 每局 8 题，先看本题要数哪种宠物。</Text>
-                <Text className="rule-line">2. 宠物穿过农场小路时，只统计目标宠物。</Text>
+                <Text className="rule-line">2. 宠物经过农场时，只统计目标宠物。</Text>
                 <Text className="rule-line">3. 速度会逐题提升，快速正确和连击有额外分。</Text>
               </>
             )}
@@ -625,8 +643,8 @@ export default function FarmCount() {
                 </>
               ) : (
                 <>
-                  {renderSpeedDifficultyCard("normal", "8-15 只宠物 · 3 条地面小路")}
-                  {renderSpeedDifficultyCard("hard", "14-21 只宠物 · 4 条地面小路")}
+                  {renderSpeedDifficultyCard("normal", "8-15 只宠物")}
+                  {renderSpeedDifficultyCard("hard", "14-21 只宠物")}
                 </>
               )}
             </View>
@@ -746,11 +764,13 @@ export default function FarmCount() {
                 <View className="target-copy">
                   <Text className="farm-prompt">
                     {phase === "loading"
-                      ? "准备农场"
+                      ? "准备中"
                       : phase === "ready"
                       ? "准备观察目标"
                       : phase === "watching"
                         ? `只数${PET_SKIN_NAME[speedQuestion.targetSkin]}`
+                        : phase === "replay"
+                          ? "正确顺序"
                         : phase === "answering"
                           ? `${PET_SKIN_NAME[speedQuestion.targetSkin]}有几只`
                           : lastSpeedResult?.correct
@@ -759,9 +779,7 @@ export default function FarmCount() {
                   </Text>
                   <Text className="target-meta">
                     {phase === "loading"
-                      ? `加载宠物图片 ${loadProgress.loaded}/${loadProgress.total || "..."}`
-                      : phase === "watching"
-                      ? `${speedQuestion.totalPets} 只混排 · ${speedQuestion.laneCount} 条小路`
+                      ? `资源检查 ${loadProgress.loaded}/${loadProgress.total || "..."}`
                       : `目标：${PET_SKIN_NAME[speedQuestion.targetSkin]}`}
                   </Text>
                 </View>
@@ -769,13 +787,12 @@ export default function FarmCount() {
               {phase === "loading" ? (
                 <View className="scroll-viewport scroll-viewport-loading">
                   <View className="scroll-world scroll-world-paused" />
-                  <View className="speed-loading">
-                    <View className="speed-loading-spinner" />
-                    <Text className="speed-loading-title">整理农场小路</Text>
-                    <Text className="speed-loading-copy">宠物图片加载完成后开始</Text>
+                  <View className="speed-loading-inline">
+                    <View className="speed-loading-dot" />
+                    <Text className="speed-loading-inline-text">准备宠物图片</Text>
                   </View>
                 </View>
-              ) : phase === "watching" || phase === "feedback" ? (
+              ) : phase === "watching" || phase === "replay" ? (
                 <View className="scroll-viewport">
                   <View
                     className="scroll-world"
@@ -786,7 +803,12 @@ export default function FarmCount() {
                         <View
                           key={pet.id}
                           className={`pet-count-token pet-count-${pet.size} ${pet.mirror ? "pet-count-mirror" : ""} ${pet.skin === speedQuestion.targetSkin ? "pet-count-target" : ""}`}
-                          style={{ left: `${pet.x}%`, top: `${pet.y}%`, animationDelay: `${pet.delayMs}ms` }}
+                          style={{
+                            left: `${pet.x}%`,
+                            top: `${pet.y}%`,
+                            animationDelay: `${pet.delayMs}ms`,
+                            "--pet-count-scale": pet.scale,
+                          } as CSSProperties}
                         >
                           <CountPetSprite
                             skin={pet.skin}
@@ -794,6 +816,9 @@ export default function FarmCount() {
                             size="xs"
                             className="pet-count-sprite"
                           />
+                          {phase === "replay" && pet.targetOrder ? (
+                            <Text className="pet-count-order">{pet.targetOrder}</Text>
+                          ) : null}
                         </View>
                       ))}
                     </View>

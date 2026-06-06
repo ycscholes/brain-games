@@ -13,9 +13,11 @@ export interface BirdCountItem {
   y: number;
   lane: number;
   size: PetCountSize;
+  scale: number;
   mirror: boolean;
   delayMs: number;
   mood: PetSpriteMood;
+  targetOrder?: number;
 }
 
 export interface BirdCountQuestion {
@@ -66,6 +68,8 @@ const SCROLL_MS: Record<BirdCountDifficulty, number[]> = {
 const GROUND_LANE_Y = [60, 68, 76, 84];
 const STRIP_X_MIN = 5;
 const STRIP_X_MAX = 95;
+const PET_SCALE_MIN = 1;
+const PET_SCALE_MAX = 1.5;
 
 function clampQuestionIndex(questionIndex: number) {
   return Math.max(0, Math.min(BIRD_COUNT_TOTAL_QUESTIONS - 1, questionIndex));
@@ -162,7 +166,7 @@ export function createBirdCountQuestion(
   const laneCount = difficulty === "hard" ? 4 : 3;
   const usableWidth = STRIP_X_MAX - STRIP_X_MIN;
   const segmentWidth = usableWidth / totalPets;
-  const pets = skinPool.map((skin, index) => {
+  const petsWithoutTargetOrder = skinPool.map((skin, index) => {
     const lane = (index * 2 + safeQuestionIndex) % laneCount;
     const segmentCenter = STRIP_X_MIN + segmentWidth * (index + 0.5);
     const xJitter = (Math.random() - 0.5) * Math.min(5.5, segmentWidth * 0.72);
@@ -181,6 +185,7 @@ export function createBirdCountQuestion(
       y: GROUND_LANE_Y[lane] + yJitter,
       lane,
       size,
+      scale: Number((PET_SCALE_MIN + Math.random() * (PET_SCALE_MAX - PET_SCALE_MIN)).toFixed(2)),
       mirror: index % 2 === 1,
       delayMs: index * 35,
       mood: PET_COUNT_MOODS[
@@ -188,6 +193,16 @@ export function createBirdCountQuestion(
       ],
     };
   });
+  const targetOrderById = new Map(
+    petsWithoutTargetOrder
+      .filter((pet) => pet.skin === targetSkin)
+      .sort((left, right) => left.x - right.x)
+      .map((pet, index) => [pet.id, index + 1]),
+  );
+  const pets = petsWithoutTargetOrder.map((pet) => ({
+    ...pet,
+    targetOrder: targetOrderById.get(pet.id),
+  }));
 
   return {
     id: `pet-count-${difficulty}-${safeQuestionIndex + 1}`,

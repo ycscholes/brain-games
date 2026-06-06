@@ -344,49 +344,33 @@ $page: #f7fee7;
   justify-content: center;
 }
 
-.speed-loading {
+.speed-loading-inline {
   position: relative;
   z-index: 2;
-  min-width: 260px;
-  padding: 24px 28px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.82);
-  border: 2px solid rgba(63, 98, 18, 0.14);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 0 12px 24px rgba(31, 61, 10, 0.12);
-}
-
-.speed-loading-spinner {
-  width: 54px;
-  height: 54px;
+  padding: 12px 18px;
   border-radius: 999px;
-  border: 6px solid rgba(132, 204, 22, 0.28);
-  border-top-color: rgba(63, 98, 18, 0.88);
-  animation: speed-loading-spin 820ms linear infinite;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(63, 98, 18, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 18px rgba(31, 61, 10, 0.1);
 }
 
-.speed-loading-title,
-.speed-loading-copy {
+.speed-loading-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: $primary;
+  animation: speed-loading-pulse 820ms ease-in-out infinite;
+}
+
+.speed-loading-inline-text {
   display: block;
-  text-align: center;
-}
-
-.speed-loading-title {
-  margin-top: 14px;
-  color: $primary-dark;
-  font-size: 28px;
+  color: $primary;
+  font-size: 22px;
   line-height: 1.2;
-  font-weight: 950;
-}
-
-.speed-loading-copy {
-  margin-top: 6px;
-  color: $muted;
-  font-size: 21px;
-  line-height: 1.35;
-  font-weight: 750;
+  font-weight: 850;
 }
 
 .hidden-count {
@@ -431,7 +415,8 @@ $page: #f7fee7;
 
 .pet-count-token {
   position: absolute;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(var(--pet-count-scale, 1));
+  transform-origin: center bottom;
   width: 62px;
   height: 62px;
   display: flex;
@@ -448,6 +433,28 @@ $page: #f7fee7;
 
 .pet-count-mirror .count-pet-sprite {
   transform: scaleX(-1);
+}
+
+.pet-count-order {
+  position: absolute;
+  right: -4px;
+  top: -8px;
+  z-index: 3;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 999px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(250, 204, 21, 0.94);
+  border: 2px solid rgba(146, 64, 14, 0.28);
+  color: #713f12;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 950;
+  box-shadow: 0 4px 10px rgba(120, 53, 15, 0.16);
 }
 
 .pet-count-sprite {
@@ -735,9 +742,16 @@ $page: #f7fee7;
   }
 }
 
-@keyframes speed-loading-spin {
-  to {
-    transform: rotate(360deg);
+@keyframes speed-loading-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.86);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
