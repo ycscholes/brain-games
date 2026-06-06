@@ -1,4 +1,5 @@
 import type { PetSkin } from "../pet/types";
+import type { PetSpriteMood } from "../pet/components/PetSprite/types";
 import type { TrainingDifficulty } from "../../utils/trainingStorage";
 
 export type BirdCountDifficulty = TrainingDifficulty;
@@ -14,6 +15,7 @@ export interface BirdCountItem {
   size: PetCountSize;
   mirror: boolean;
   delayMs: number;
+  mood: PetSpriteMood;
 }
 
 export interface BirdCountQuestion {
@@ -39,6 +41,7 @@ export const BIRD_COUNT_TOTAL_QUESTIONS = 8;
 export const PET_COUNT_TOTAL_QUESTIONS = BIRD_COUNT_TOTAL_QUESTIONS;
 
 export const PET_COUNT_SKINS: PetSkin[] = ["cat", "dog", "rabbit", "bear", "panda", "gecko", "turtle"];
+export const PET_COUNT_MOODS: PetSpriteMood[] = ["idle", "feed", "cuddle", "hungry"];
 
 const TARGET_COUNT_STEPS: Record<BirdCountDifficulty, number[]> = {
   normal: [3, 4, 4, 5, 5, 6, 6, 7],
@@ -167,6 +170,9 @@ export function createBirdCountQuestion(
       size: index % 5 === 0 ? "large" as const : index % 3 === 0 ? "small" as const : "medium" as const,
       mirror: index % 2 === 1,
       delayMs: Math.floor(index / laneCount) * 85,
+      mood: PET_COUNT_MOODS[
+        (index + safeQuestionIndex + Math.floor(Math.random() * PET_COUNT_MOODS.length)) % PET_COUNT_MOODS.length
+      ],
     };
   });
 

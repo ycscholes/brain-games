@@ -10,7 +10,7 @@ import {
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
 import PetSprite from "../pet/components/PetSprite";
-import type { PetSpriteSize } from "../pet/components/PetSprite/types";
+import type { PetSpriteMood, PetSpriteSize } from "../pet/components/PetSprite/types";
 import { PET_SKIN_NAME, type PetSkin } from "../pet/types";
 import {
   BIRD_COUNT_TOTAL_QUESTIONS,
@@ -99,14 +99,16 @@ function getYardCountText(phase: Phase, displayCount: number, answer: number) {
 
 function CountPetSprite({
   skin,
+  mood = "idle",
   size = "sm",
   className = "",
 }: {
   skin: PetSkin;
+  mood?: PetSpriteMood;
   size?: PetSpriteSize;
   className?: string;
 }) {
-  return <PetSprite skin={skin} mood="idle" size={size} className={`count-pet-sprite ${className}`} />;
+  return <PetSprite skin={skin} mood={mood} size={size} className={`count-pet-sprite ${className}`} />;
 }
 
 export default function FarmCount() {
@@ -688,18 +690,25 @@ export default function FarmCount() {
               {phase === "watching" || phase === "feedback" ? (
                 <View className="scroll-viewport">
                   <View
-                    className="scroll-track"
+                    className="scroll-world"
                     style={{ animationDuration: `${speedQuestion.scrollMs}ms` }}
                   >
-                    {speedQuestion.pets.map((pet) => (
-                      <View
-                        key={pet.id}
-                        className={`pet-count-token pet-count-${pet.size} ${pet.mirror ? "pet-count-mirror" : ""} ${pet.skin === speedQuestion.targetSkin ? "pet-count-target" : ""}`}
-                        style={{ left: `${pet.x}%`, top: `${pet.y}%`, animationDelay: `${pet.delayMs}ms` }}
-                      >
-                        <CountPetSprite skin={pet.skin} size="xs" className="pet-count-sprite" />
-                      </View>
-                    ))}
+                    <View className="scroll-pet-layer">
+                      {speedQuestion.pets.map((pet) => (
+                        <View
+                          key={pet.id}
+                          className={`pet-count-token pet-count-${pet.size} ${pet.mirror ? "pet-count-mirror" : ""} ${pet.skin === speedQuestion.targetSkin ? "pet-count-target" : ""}`}
+                          style={{ left: `${pet.x}%`, top: `${pet.y}%`, animationDelay: `${pet.delayMs}ms` }}
+                        >
+                          <CountPetSprite
+                            skin={pet.skin}
+                            mood={pet.mood}
+                            size="xs"
+                            className="pet-count-sprite"
+                          />
+                        </View>
+                      ))}
+                    </View>
                   </View>
                 </View>
               ) : (

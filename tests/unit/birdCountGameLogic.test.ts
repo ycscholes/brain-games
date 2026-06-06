@@ -6,6 +6,7 @@ import {
   getBirdCountRevealMs,
   getBirdCountTarget,
   getPetCountTotal,
+  PET_COUNT_MOODS,
   PET_COUNT_SKINS,
   scoreBirdCountQuestion,
 } from "../../src/pages/bird-count/gameLogic";
@@ -78,6 +79,16 @@ describe("bird-count game logic", () => {
       expect(pet.y).toBeLessThanOrEqual(100);
       expect(pet.lane).toBeGreaterThanOrEqual(0);
       expect(pet.lane).toBeLessThan(question.laneCount);
+    });
+  });
+
+  test("generated pets use valid stable moods without changing target counts", () => {
+    createBirdCountSession("hard").forEach((question) => {
+      question.pets.forEach((pet) => {
+        expect(PET_COUNT_MOODS).toContain(pet.mood);
+      });
+
+      expect(question.pets.filter((pet) => pet.skin === question.targetSkin)).toHaveLength(question.answer);
     });
   });
 
