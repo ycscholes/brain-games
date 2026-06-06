@@ -8,6 +8,15 @@ import {
 } from "../../src/pages/pet/types";
 
 const PET_SKINS = Object.keys(PET_SKIN_NAME) as PetSkin[];
+const GENERATED_FOOD_LOADOUTS: Record<PetSkin, readonly string[]> = {
+  cat: ["biscuit", "salmon"],
+  dog: ["biscuit", "beef-bone"],
+  rabbit: ["strawberry-basket"],
+  bear: ["honey-jar"],
+  panda: ["bamboo-rice"],
+  gecko: ["cricket-cup"],
+  turtle: ["shrimp-greens"],
+};
 
 describe("pet food config", () => {
   test("uses an eight item shared food pool and one exclusive premium food per pet", () => {
@@ -40,6 +49,14 @@ describe("pet food config", () => {
       expect(sharedFoodIds.has(smallFoodId)).toBe(true);
       expect(sharedFoodIds.has(mediumFoodId)).toBe(true);
       expect(premiumFood?.exclusiveFor).toBe(skin);
+    }
+  });
+
+  test("includes every generated food icon in the active feeding loadouts", () => {
+    for (const skin of PET_SKINS) {
+      const loadoutIds = getFoodItemsForPetSkin(skin).map((food) => food.imageId);
+
+      expect(loadoutIds).toEqual(expect.arrayContaining(GENERATED_FOOD_LOADOUTS[skin]));
     }
   });
 });

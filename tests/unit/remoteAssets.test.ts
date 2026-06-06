@@ -20,6 +20,16 @@ const CACHE_KEY = "remote_asset_url_cache_v1";
 const CAT_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/pets/cat-idle.png";
 const GECKO_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/pets/gecko-idle.png";
 const TURTLE_CUDDLE_FILE_ID = "cloud://test-env.test-bucket/assets/pets/turtle-cuddle.png";
+const GENERATED_FOOD_IMAGE_IDS = [
+  "biscuit",
+  "salmon",
+  "beef-bone",
+  "strawberry-basket",
+  "honey-jar",
+  "bamboo-rice",
+  "cricket-cup",
+  "shrimp-greens",
+] as const;
 
 function writeAssetCache(updatedDate: string, url: string) {
   mockStorage.set(
@@ -154,6 +164,25 @@ describe("remoteAssets", () => {
     );
 
     for (const foodImageId of foodImageIds) {
+      await expect(resolveFoodIconUrl(foodImageId)).resolves.toBe(`https://fresh.example/food-${foodImageId}.png`);
+    }
+  });
+
+  test("resolves every generated feeding icon used by the pet menu", async () => {
+    mockGetTempFileURL.mockImplementation(({ fileList }) => {
+      const fileID = fileList[0];
+      const fileName = String(fileID).split("/").pop();
+      return Promise.resolve({
+        fileList: [{ tempFileURL: `https://fresh.example/${fileName}` }],
+      });
+    });
+    mockEnsureCloudReady.mockResolvedValue({
+      getTempFileURL: mockGetTempFileURL,
+    });
+
+    const { resolveFoodIconUrl } = await import("../../src/config/remoteAssets");
+
+    for (const foodImageId of GENERATED_FOOD_IMAGE_IDS) {
       await expect(resolveFoodIconUrl(foodImageId)).resolves.toBe(`https://fresh.example/food-${foodImageId}.png`);
     }
   });
