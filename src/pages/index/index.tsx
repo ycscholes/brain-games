@@ -88,17 +88,6 @@ const BASE_GAMES = [
     level: "轻松",
   },
   {
-    id: "word-scramble",
-    title: "词语拼盘",
-    badge: "语言",
-    cardClass: "card-word-scramble",
-    url: "/pages/word-scramble/index",
-    category: "daily",
-    duration: "约 2 分钟",
-    skill: "语言重组",
-    level: "标准",
-  },
-  {
     id: "twenty-four",
     title: "24 点",
     badge: "计算",
