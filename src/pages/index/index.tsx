@@ -225,6 +225,15 @@ function waitForMs(ms: number) {
   });
 }
 
+function formatHomeAssetProgressPercent(progress: AssetPreloadProgress) {
+  if (progress.total <= 0) {
+    return "0%";
+  }
+
+  const percent = Math.round((Math.min(progress.loaded, progress.total) / progress.total) * 100);
+  return `${Math.max(0, Math.min(100, percent))}%`;
+}
+
 function publishHomeAssetProgress(progress: AssetPreloadProgress) {
   lastHomeAssetProgress = progress;
   homeAssetProgressListeners.forEach((listener) => listener(progress));
@@ -426,9 +435,7 @@ export default function Index() {
           <View className="home-resource-loading-mark" />
           <Text className="home-resource-loading-title">资源准备中</Text>
           <Text className="home-resource-loading-copy">
-            {homeAssetProgress.total > 0
-              ? `${homeAssetProgress.loaded}/${homeAssetProgress.total}`
-              : "检查宠物图片"}
+            {formatHomeAssetProgressPercent(homeAssetProgress)}
           </Text>
         </View>
       ) : null}
