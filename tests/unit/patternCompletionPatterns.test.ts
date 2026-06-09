@@ -1,12 +1,10 @@
 import {
-  createArithmeticQuestion,
-  createFibonacciQuestion,
-  createIncreasingDifferenceQuestion,
-  createInterleavedQuestion,
+  createCountSizeTransformQuestion,
+  createPositionShiftQuestion,
+  createRowColumnMatrixQuestion,
   generatePatternSession,
   PATTERN_SESSION_LENGTH,
   scorePatternQuestion,
-  type NumericPatternOption,
   type PatternQuestion,
 } from "../../src/pages/pattern-completion/patterns";
 import { getAwardedPoints } from "../../src/utils/trainingStorage";
@@ -22,86 +20,91 @@ jest.mock("@tarojs/taro", () => ({
 
 const getOptionIds = (question: PatternQuestion) => question.options.map((option) => option.id);
 
-const getNumericAnswer = (question: PatternQuestion) => question.answer as NumericPatternOption;
+const expectValidQuestion = (question: PatternQuestion) => {
+  const optionIds = getOptionIds(question);
 
-describe("pattern-completion question generation", () => {
+  expect(question.options).toHaveLength(4);
+  expect(optionIds).toContain(question.answer.id);
+  expect(optionIds.filter((id) => id === question.answer.id)).toHaveLength(1);
+  expect(new Set(optionIds).size).toBe(optionIds.length);
+  expect(question.missingIndex).toBeGreaterThanOrEqual(0);
+  expect(question.missingIndex).toBeLessThan(question.cells.length);
+  expect(question.cells[question.missingIndex]).toBeNull();
+  expect(question.columns).toBeGreaterThan(0);
+  expect(question.hint.length).toBeGreaterThan(0);
+  expect(question.ruleSummary.length).toBeGreaterThan(0);
+  expect(question.explanation.length).toBeGreaterThan(0);
+  expect(question.ruleCount).toBeGreaterThanOrEqual(1);
+};
+
+describe("pattern-completion multirule generation", () => {
   test("creates 8-question sessions for normal and hard difficulty", () => {
     expect(generatePatternSession("normal")).toHaveLength(PATTERN_SESSION_LENGTH);
     expect(generatePatternSession("hard")).toHaveLength(PATTERN_SESSION_LENGTH);
   });
 
-  test("normal session follows the expected family distribution", () => {
-    const session = generatePatternSession("normal");
+  test("normal session includes the first-version rule families", () => {
+    const families = new Set(generatePatternSession("normal").map((question) => question.family));
 
-    expect(session.slice(0, 2).map((question) => question.kind)).toEqual(["visual", "visual"]);
-    expect(session.slice(2, 4).map((question) => question.kind)).toEqual(["numeric", "numeric"]);
-    expect(session.slice(4, 6).every((question) => question.family === "dual-sync")).toBe(true);
-    expect(session.slice(6).map((question) => question.family)).toEqual(["odd-even", "size-count"]);
+    expect(families).toEqual(
+      new Set([
+        "dual-attribute-sequence",
+        "row-column-matrix",
+        "count-size-transform",
+        "position-shift",
+      ]),
+    );
   });
 
-  test("hard session includes numeric logic in the middle and advanced families later", () => {
-    const session = generatePatternSession("hard");
+  test("hard session has at least six cases with two or more rules", () => {
+    const hardSession = generatePatternSession("hard");
 
-    expect(session.slice(2, 5).every((question) => question.kind === "numeric")).toBe(true);
-    expect(session.slice(5).map((question) => question.family)).toEqual([
-      "size-count",
-      "missing-position",
-      "shape-cycle",
-    ]);
+    expect(hardSession.filter((question) => question.ruleCount >= 2)).toHaveLength(8);
+    expect(hardSession.filter((question) => question.ruleCount >= 3).length).toBeGreaterThanOrEqual(6);
   });
 
-  test("every generated question has one answer option, unique options, hint, and explanation", () => {
-    [...generatePatternSession("normal"), ...generatePatternSession("hard")].forEach((question) => {
-      const optionIds = getOptionIds(question);
+  test("every generated question has one unique answer, valid missing cell, hint, and explanation", () => {
+    [...generatePatternSession("normal"), ...generatePatternSession("hard")].forEach(expectValidQuestion);
+  });
 
-      expect(optionIds).toContain(question.answer.id);
-      expect(optionIds.filter((id) => id === question.answer.id)).toHaveLength(1);
-      expect(new Set(optionIds).size).toBe(optionIds.length);
-      expect(question.missingIndex).toBeGreaterThanOrEqual(0);
-      expect(question.missingIndex).toBeLessThan(question.sequence.length);
-      expect(question.sequence[question.missingIndex]).toBeNull();
-      expect(question.hint.length).toBeGreaterThan(0);
-      expect(question.explanation.length).toBeGreaterThan(0);
+  test("hard questions expose at least two partial-rule distractors when supported", () => {
+    generatePatternSession("hard").forEach((question) => {
+      expect(question.partialDistractorIds.length).toBeGreaterThanOrEqual(2);
+      question.partialDistractorIds.forEach((id) => {
+        expect(getOptionIds(question)).toContain(id);
+        expect(id).not.toBe(question.answer.id);
+      });
     });
   });
 });
 
-describe("pattern-completion numeric rules", () => {
-  test("arithmetic progression produces the expected answer", () => {
-    const question = createArithmeticQuestion(2, "normal");
-    const visibleValues = question.sequence
-      .filter((cell): cell is NumericPatternOption => cell?.type === "number")
-      .map((cell) => cell.value);
-    const step = visibleValues[1] - visibleValues[0];
+describe("pattern-completion rule families", () => {
+  test("row-column matrix derives a visible answer from row and column position", () => {
+    const question = createRowColumnMatrixQuestion(1, "hard");
 
-    expect(getNumericAnswer(question).value).toBe(visibleValues[visibleValues.length - 1] + step);
+    expect(question.layout).toBe("grid");
+    expect(question.columns).toBe(3);
+    expect(question.answer.shape).toBe("circle");
+    expect(question.answer.colorName).toBe("amber");
+    expect(question.answer.count).toBe(3);
   });
 
-  test("increasing-difference question exposes a middle missing value", () => {
-    const question = createIncreasingDifferenceQuestion(3, "hard");
+  test("position-shift derives the expected missing position", () => {
+    const question = createPositionShiftQuestion(2, "hard");
 
+    expect(question.family).toBe("position-shift");
     expect(question.missingIndex).toBe(3);
-    expect(getNumericAnswer(question).value).toBe(15);
+    expect(question.answer.position).toBe("top-right");
   });
 
-  test("fibonacci-like question uses previous two values", () => {
-    const question = createFibonacciQuestion(1, "normal");
-    const cells = question.sequence;
-    const first = cells[0] as NumericPatternOption;
-    const second = cells[1] as NumericPatternOption;
-    const third = cells[2] as NumericPatternOption;
+  test("count-size transform derives the expected count and size", () => {
+    const question = createCountSizeTransformQuestion(2, "hard");
 
-    expect(third.value).toBe(first.value + second.value);
-    expect(getNumericAnswer(question).value).toBe(13);
-  });
-
-  test("interleaved numeric question has a unique answer option", () => {
-    const question = createInterleavedQuestion(2);
-    const optionIds = getOptionIds(question);
-
-    expect(question.missingIndex).toBe(3);
-    expect(optionIds.filter((id) => id === question.answer.id)).toHaveLength(1);
-    expect(new Set(optionIds).size).toBe(optionIds.length);
+    expect(question.family).toBe("count-size-transform");
+    expect(question.missingIndex).toBe(2);
+    expect(question.answer.count).toBe(2);
+    expect(question.answer.size).toBe("small");
+    expect(question.answer.position).toBe("top");
   });
 });
 
@@ -129,10 +132,10 @@ describe("pattern-completion scoring", () => {
       }),
     ).toMatchObject({
       baseScore: 3,
-      comboBonus: 2,
+      comboBonus: 1,
       speedBonus: 1,
       hintPenalty: 1,
-      score: 5,
+      score: 4,
     });
   });
 
@@ -148,9 +151,10 @@ describe("pattern-completion scoring", () => {
     ).toBe(2);
   });
 
-  test("ordinary normal scores do not trivially hit the pet point cap", () => {
+  test("score economy fits ordinary normal and strong hard sessions", () => {
     expect(getAwardedPoints("pattern-completion", 30, "normal")).toBe(36);
     expect(getAwardedPoints("pattern-completion", 34, "normal")).toBe(40);
-    expect(getAwardedPoints("pattern-completion", 38, "hard")).toBe(60);
+    expect(getAwardedPoints("pattern-completion", 34, "hard")).toBe(60);
+    expect(getAwardedPoints("pattern-completion", 40, "hard")).toBe(60);
   });
 });

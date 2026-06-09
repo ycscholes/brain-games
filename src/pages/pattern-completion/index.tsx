@@ -23,13 +23,6 @@ import "./index.scss";
 
 type Phase = "start" | "playing" | "reveal" | "finished";
 
-interface KindStats {
-  visualCorrect: number;
-  visualTotal: number;
-  numericCorrect: number;
-  numericTotal: number;
-}
-
 const STORAGE_KEY_PREFIX = "pattern_completion_best";
 const OPTION_LETTERS = ["A", "B", "C", "D"] as const;
 const SPEED_TARGET_MS: Record<TrainingDifficulty, number> = {
@@ -50,13 +43,6 @@ const difficultyLabelMap: Record<number, string> = {
   10: "大师",
 };
 
-const getDefaultKindStats = (): KindStats => ({
-  visualCorrect: 0,
-  visualTotal: 0,
-  numericCorrect: 0,
-  numericTotal: 0,
-});
-
 const formatElapsed = (elapsedMs: number) => {
   const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
   const minutes = Math.floor(totalSeconds / 60)
@@ -73,22 +59,11 @@ function PatternToken({
   option: PatternOption;
   compact?: boolean;
 }) {
-  if (option.type === "number") {
-    return (
-      <View className={`pattern-token number-token ${compact ? "pattern-token-compact" : ""}`}>
-        <View className="number-shell">
-          <Text className="number-value">{option.value}</Text>
-        </View>
-        {!compact ? <Text className="token-label">数字 {option.value}</Text> : null}
-      </View>
-    );
-  }
-
   const shapeItems = Array.from({ length: option.count }, (_, index) => index);
 
   return (
     <View className={`pattern-token ${compact ? "pattern-token-compact" : ""}`}>
-      <View className={`shape-shell shape-shell-${option.size}`}>
+      <View className={`shape-shell shape-shell-${option.size} shape-position-${option.position}`}>
         {shapeItems.map((item) => (
           <View
             key={`${option.id}-${item}`}
@@ -102,7 +77,7 @@ function PatternToken({
   );
 }
 
-function SequenceCell({
+function PatternBoardCell({
   cell,
   index,
   isAnswerVisible,
@@ -120,6 +95,35 @@ function SequenceCell({
   return (
     <View className={`answer-slot ${isAnswerVisible ? "answer-slot-revealed" : ""}`}>
       {isAnswerVisible ? <PatternToken option={answer} compact /> : <Text className="answer-slot-text">?</Text>}
+    </View>
+    );
+}
+
+function PatternBoard({
+  question,
+  isAnswerVisible,
+}: {
+  question: PatternQuestion;
+  isAnswerVisible: boolean;
+}) {
+  const className = [
+    question.layout === "grid" ? "pattern-grid" : "sequence-row",
+    question.layout === "grid" ? `pattern-grid-${question.columns}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <View className={className}>
+      {question.cells.map((cell, index) => (
+        <PatternBoardCell
+          key={`${question.id}-cell-${index}`}
+          cell={cell}
+          index={index}
+          isAnswerVisible={isAnswerVisible}
+          answer={question.answer}
+        />
+      ))}
     </View>
   );
 }
@@ -143,7 +147,6 @@ export default function PatternCompletion() {
   const [currentScoreResult, setCurrentScoreResult] = useState<PatternScoreResult | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [finalScore, setFinalScore] = useState(0);
-  const [kindStats, setKindStats] = useState<KindStats>(getDefaultKindStats);
   const [isNewBest, setIsNewBest] = useState(false);
 
   const startTimeRef = useRef(0);
@@ -155,10 +158,11 @@ export default function PatternCompletion() {
   const currentQuestion =
     phase === "playing" || phase === "reveal" ? session[currentIndex] ?? null : null;
   const hintsUsed = PATTERN_HINTS_PER_SESSION - remainingHints;
-  const numericAccuracy =
-    kindStats.numericTotal > 0
-      ? Math.round((kindStats.numericCorrect / kindStats.numericTotal) * 100)
-      : 0;
+  const multiruleCases = session.filter((question) => question.ruleCount >= 2).length;
+  const selectedDistractorExplanation =
+    currentQuestion && selectedOptionId
+      ? currentQuestion.distractorExplanations?.[selectedOptionId] ?? ""
+      : "";
 
   const clearTicker = () => {
     if (tickerRef.current) {
@@ -270,7 +274,6 @@ export default function PatternCompletion() {
     setLongestCombo(0);
     setElapsedMs(0);
     setFinalScore(0);
-    setKindStats(getDefaultKindStats());
     setIsNewBest(false);
     resetRoundState();
   };
@@ -287,7 +290,6 @@ export default function PatternCompletion() {
     setLongestCombo(0);
     setElapsedMs(0);
     setFinalScore(0);
-    setKindStats(getDefaultKindStats());
     setIsNewBest(false);
     resetRoundState();
     refreshBest();
@@ -327,21 +329,6 @@ export default function PatternCompletion() {
     setCorrectCount((prev) => prev + (isCorrect ? 1 : 0));
     setCurrentCombo(nextCombo);
     setLongestCombo((prev) => Math.max(prev, nextCombo));
-    setKindStats((prev) => {
-      if (currentQuestion.kind === "numeric") {
-        return {
-          ...prev,
-          numericTotal: prev.numericTotal + 1,
-          numericCorrect: prev.numericCorrect + (isCorrect ? 1 : 0),
-        };
-      }
-
-      return {
-        ...prev,
-        visualTotal: prev.visualTotal + 1,
-        visualCorrect: prev.visualCorrect + (isCorrect ? 1 : 0),
-      };
-    });
 
     if (isCorrect) {
       if (currentIndex >= totalQuestions - 1) {
@@ -391,9 +378,9 @@ export default function PatternCompletion() {
 
           <View className="rules-card">
             <Text className="section-title">游戏规则</Text>
-            <Text className="rule-item">1. 每局共 {PATTERN_SESSION_LENGTH} 个规律案件，包含图形规律和数字规律。</Text>
-            <Text className="rule-item">2. 先观察序列并选择缺口答案，答对直接进入下一题。</Text>
-            <Text className="rule-item">3. 答错时会揭示正确答案和规律，帮助你调整下一题思路。</Text>
+            <Text className="rule-item">1. 每局共 {PATTERN_SESSION_LENGTH} 个规律案件，包含序列和矩阵推理。</Text>
+            <Text className="rule-item">2. 同时观察形状、颜色、数量、大小和位置，选择缺口答案。</Text>
+            <Text className="rule-item">3. 答错时会揭示正确答案、完整规律和关键干扰项。</Text>
             <Text className="rule-item">4. 每局有 {PATTERN_HINTS_PER_SESSION} 次线索，只提示观察方向，不直接给答案。</Text>
             <Text className="rule-item">5. 分数来自答对、连击和快速识破；使用线索会少拿 1 分。</Text>
           </View>
@@ -406,7 +393,7 @@ export default function PatternCompletion() {
                 <Text className="summary-label">案件数量</Text>
               </View>
               <View className="summary-item">
-                <Text className="summary-value">7</Text>
+                <Text className="summary-value">4</Text>
                 <Text className="summary-label">规律类型</Text>
               </View>
               <View className="summary-item">
@@ -424,14 +411,14 @@ export default function PatternCompletion() {
                 onClick={() => setRewardDifficulty("normal")}
               >
                 <Text className="summary-value">普通</Text>
-                <Text className="summary-label">渐进规律 · 1.0x</Text>
+                <Text className="summary-label">双线索推理 · 1.0x</Text>
               </View>
               <View
                 className={`summary-item ${rewardDifficulty === "hard" ? "summary-item-active" : ""}`}
                 onClick={() => setRewardDifficulty("hard")}
               >
                 <Text className="summary-value">困难</Text>
-                <Text className="summary-label">强干扰项 · 1.5x</Text>
+                <Text className="summary-label">多规则强干扰 · 1.5x</Text>
               </View>
             </View>
           </View>
@@ -471,17 +458,7 @@ export default function PatternCompletion() {
             <Text className="question-title">{currentQuestion.title}</Text>
             <Text className="question-subtitle">{currentQuestion.prompt}</Text>
 
-            <View className="sequence-row">
-              {currentQuestion.sequence.map((cell, index) => (
-                <SequenceCell
-                  key={`${currentQuestion.id}-cell-${index}`}
-                  cell={cell}
-                  index={index}
-                  isAnswerVisible={phase === "reveal"}
-                  answer={currentQuestion.answer}
-                />
-              ))}
-            </View>
+            <PatternBoard question={currentQuestion} isAnswerVisible={phase === "reveal"} />
           </View>
 
           {hintVisible ? (
@@ -541,7 +518,11 @@ export default function PatternCompletion() {
               ) : null}
               <View className="rule-card">
                 <Text className="rule-card-title">{currentQuestion.explanationTitle}</Text>
+                <Text className="rule-card-summary">{currentQuestion.ruleSummary}</Text>
                 <Text className="rule-card-text">{currentQuestion.explanation}</Text>
+                {!lastAnswerCorrect && selectedDistractorExplanation ? (
+                  <Text className="rule-card-text rule-card-distractor">{selectedDistractorExplanation}</Text>
+                ) : null}
               </View>
               <View className="primary-button next-button" onClick={handleNextCase}>
                 <Text className="button-text">{currentIndex >= totalQuestions - 1 ? "查看成绩" : "下一案"}</Text>
@@ -558,9 +539,7 @@ export default function PatternCompletion() {
             <Text className="result-score">{finalScore}</Text>
             <Text className="result-desc">识破 {correctCount} / {totalQuestions} 个案件</Text>
             <Text className="result-desc">最长连击 {longestCombo}，使用线索 {hintsUsed} 次</Text>
-            <Text className="result-desc">
-              数字题正确率 {kindStats.numericCorrect}/{kindStats.numericTotal}（{numericAccuracy}%）
-            </Text>
+            <Text className="result-desc">多规则案件 {multiruleCases} 个，最高单题 5 分</Text>
             <Text className="result-desc">完成用时 {formatElapsed(elapsedMs)}</Text>
             <Text className="result-desc">
               积分{getTrainingDifficultyLabel(rewardDifficulty)} · 获得 {getAwardedPoints("pattern-completion", finalScore, rewardDifficulty)} 积分
