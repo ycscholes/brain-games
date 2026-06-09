@@ -20,9 +20,21 @@ Do not use for: refactoring, writing scripts from scratch, debugging business lo
 - Do not include unrelated existing worktree changes in the commit.
 - If verification or commit cannot be completed, report the exact command, failure reason, and affected files.
 
+## Gameplay and Points Economy
+
+- Any new game, game rewrite, scoring change, difficulty change, training record change, or pet reward change must stay aligned with `docs/points-economy.md`.
+- Award pet points only through the shared points pipeline (`getAwardedPoints()` and `addPointsToPet()`); do not hand-roll game-specific multipliers or caps in page components.
+- When changing a game's score range, difficulty mapping, `gameId`, mode format, or reward behavior, update `docs/points-economy.md` and the relevant unit tests in the same task.
+
 ## Image Generation Workflow
 
 - For all generated project images, use the built-in Codex `image_gen` tool.
 - Do not generate project image assets with Pillow-only drawing scripts, SVG placeholders, Midjourney, Stable Diffusion, DALL-E web prompts, or other external generators unless the user explicitly overrides this.
 - For transparent PNG assets, generate with `image_gen` on a flat chroma-key background, remove the key locally, validate alpha/edges/bounds, and save the final asset into the repository.
 - Follow `docs/superpowers/generation/image-gen-asset-workflow.md` for pet sprites and other generated bitmap assets.
+
+## Remote Asset and Package Size Workflow
+
+- App image assets that can materially increase the WeChat Mini Program package size should be stored under `asset-backups/cloudbase-images/`, uploaded to CloudBase Storage, and loaded from remote paths such as `assets/pets/`.
+- Do not add new pet sprites, pet food icons, or other reusable generated bitmap asset packs under `src/assets/` unless the user explicitly asks for local bundling.
+- After adding or replacing CloudBase-backed images, run `npm run assets:check`; run `npm run assets:upload` when the task requires refreshing the remote Tencent Cloud / CloudBase copies and credentials are available.
