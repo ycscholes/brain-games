@@ -187,6 +187,16 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
 
 const HOME_ASSET_LOADING_TIMEOUT_MS = 3500;
 const HOME_ASSET_LOADING_MIN_MS = 520;
+const DEFAULT_HOME_ASSET_PROGRESS: AssetPreloadProgress = {
+  loaded: 0,
+  total: 0,
+  failed: 0,
+};
+
+let isHomeAssetPreloadComplete = false;
+let homeAssetPreloadPromise: Promise<AssetPreloadProgress> | null = null;
+let lastHomeAssetProgress: AssetPreloadProgress = DEFAULT_HOME_ASSET_PROGRESS;
+const homeAssetProgressListeners = new Set<(progress: AssetPreloadProgress) => void>();
 
 function formatPlayedAt(value: string) {
   const date = new Date(value);
@@ -215,6 +225,37 @@ function waitForMs(ms: number) {
   });
 }
 
+function publishHomeAssetProgress(progress: AssetPreloadProgress) {
+  lastHomeAssetProgress = progress;
+  homeAssetProgressListeners.forEach((listener) => listener(progress));
+}
+
+function ensureHomeAssetsPreloaded() {
+  if (isHomeAssetPreloadComplete) {
+    return Promise.resolve(lastHomeAssetProgress);
+  }
+
+  if (homeAssetPreloadPromise) {
+    return homeAssetPreloadPromise;
+  }
+
+  homeAssetPreloadPromise = Promise.all([
+    preloadGameAssets({
+      timeoutMs: HOME_ASSET_LOADING_TIMEOUT_MS,
+      onProgress: publishHomeAssetProgress,
+    }),
+    waitForMs(HOME_ASSET_LOADING_MIN_MS),
+  ]).then(([progress]) => {
+    publishHomeAssetProgress(progress);
+    isHomeAssetPreloadComplete = true;
+    return progress;
+  }).finally(() => {
+    homeAssetPreloadPromise = null;
+  });
+
+  return homeAssetPreloadPromise;
+}
+
 export default function Index() {
   usePageShare("pages/index/index");
 
@@ -229,12 +270,8 @@ export default function Index() {
   const [recommendedGameId, setRecommendedGameId] = useState<TrainingGameId>("memory");
   const [petData, setPetData] = useState<PetStorageData>(() => readPetData());
   const [isFloatingPetReady, setIsFloatingPetReady] = useState(false);
-  const [isHomeAssetsReady, setIsHomeAssetsReady] = useState(false);
-  const [homeAssetProgress, setHomeAssetProgress] = useState<AssetPreloadProgress>({
-    loaded: 0,
-    total: 0,
-    failed: 0,
-  });
+  const [isHomeAssetsReady, setIsHomeAssetsReady] = useState(isHomeAssetPreloadComplete);
+  const [homeAssetProgress, setHomeAssetProgress] = useState<AssetPreloadProgress>(lastHomeAssetProgress);
   const [homePetMotion, setHomePetMotion] = useState<PetSpriteMood>("idle");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -289,18 +326,14 @@ export default function Index() {
 
   useEffect(() => {
     let isCurrent = true;
+    const handleAssetProgress = (progress: AssetPreloadProgress) => {
+      if (isCurrent) {
+        setHomeAssetProgress(progress);
+      }
+    };
 
-    void Promise.all([
-      preloadGameAssets({
-        timeoutMs: HOME_ASSET_LOADING_TIMEOUT_MS,
-        onProgress: (progress) => {
-          if (isCurrent) {
-            setHomeAssetProgress(progress);
-          }
-        },
-      }),
-      waitForMs(HOME_ASSET_LOADING_MIN_MS),
-    ]).then(([progress]) => {
+    homeAssetProgressListeners.add(handleAssetProgress);
+    void ensureHomeAssetsPreloaded().then((progress) => {
       if (!isCurrent) {
         return;
       }
@@ -329,6 +362,7 @@ export default function Index() {
 
     return () => {
       isCurrent = false;
+      homeAssetProgressListeners.delete(handleAssetProgress);
     };
   }, [refreshDashboard]);
 
