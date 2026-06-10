@@ -68,17 +68,22 @@ const FOOD_ICON_PATHS: Partial<Record<string, string>> = {
 };
 
 type CachedRemoteAsset = {
-  updatedDate: string;
+  expiresAt: number;
   url: string;
 };
 
 type RemoteAssetCache = {
-  version: 1;
+  version: 2;
   assets: Record<string, CachedRemoteAsset>;
 };
 
 type ResolveCloudFileUrlOptions = {
   forceRefresh?: boolean;
+};
+
+type ResolvedCloudFile = {
+  maxAge?: number;
+  tempFileURL?: string;
 };
 
 export type PetSpriteRemoteAsset = {
@@ -96,9 +101,11 @@ export type RemoteAssetPreloadProgress = RemoteAssetPreloadResult & {
   current?: string;
 };
 
-const REMOTE_ASSET_CACHE_KEY = "remote_asset_url_cache_v1";
+const REMOTE_ASSET_CACHE_KEY = "remote_asset_url_cache_v2";
+const DEFAULT_TEMP_URL_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+const TEMP_URL_EXPIRY_BUFFER_MS = 60 * 1000;
 const tempFileUrlCache = new Map<string, string>();
-const tempFileUrlDateCache = new Map<string, string>();
+const tempFileUrlExpiryCache = new Map<string, number>();
 const refreshPromiseCache = new Map<string, Promise<string>>();
 const CLOUD_STORAGE_BUCKET =
   typeof __CLOUD_STORAGE_BUCKET__ !== "undefined"
@@ -113,17 +120,9 @@ function toCloudFileId(path: string): string {
   return `cloud://${CLOUD_ENV_ID}.${CLOUD_STORAGE_BUCKET}/${path}`;
 }
 
-function getTodayKey(): string {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function createEmptyCache(): RemoteAssetCache {
   return {
-    version: 1,
+    version: 2,
     assets: {},
   };
 }
@@ -135,12 +134,12 @@ function parseRemoteAssetCache(raw: unknown): RemoteAssetCache {
 
   try {
     const parsed = JSON.parse(raw) as Partial<RemoteAssetCache>;
-    if (parsed.version !== 1 || !parsed.assets || typeof parsed.assets !== "object") {
+    if (parsed.version !== 2 || !parsed.assets || typeof parsed.assets !== "object") {
       return createEmptyCache();
     }
 
     return {
-      version: 1,
+      version: 2,
       assets: parsed.assets,
     };
   } catch {
@@ -156,11 +155,11 @@ function readRemoteAssetCache(): RemoteAssetCache {
   }
 }
 
-function writeRemoteAssetCache(fileID: string, url: string, updatedDate: string): void {
+function writeRemoteAssetCache(fileID: string, url: string, expiresAt: number): void {
   try {
     const cache = readRemoteAssetCache();
     cache.assets[fileID] = {
-      updatedDate,
+      expiresAt,
       url,
     };
     Taro.setStorageSync(REMOTE_ASSET_CACHE_KEY, JSON.stringify(cache));
@@ -171,21 +170,23 @@ function writeRemoteAssetCache(fileID: string, url: string, updatedDate: string)
 
 function getCachedCloudFileUrl(fileID: string): CachedRemoteAsset | null {
   const memoryUrl = tempFileUrlCache.get(fileID);
-  const memoryDate = tempFileUrlDateCache.get(fileID);
-  if (memoryUrl && memoryDate) {
+  const memoryExpiresAt = tempFileUrlExpiryCache.get(fileID);
+  if (memoryUrl && memoryExpiresAt && memoryExpiresAt > Date.now()) {
     return {
-      updatedDate: memoryDate,
+      expiresAt: memoryExpiresAt,
       url: memoryUrl,
     };
   }
 
   const cached = readRemoteAssetCache().assets[fileID];
-  if (!cached?.url || !cached.updatedDate) {
+  if (!cached?.url || !cached.expiresAt || cached.expiresAt <= Date.now()) {
+    tempFileUrlCache.delete(fileID);
+    tempFileUrlExpiryCache.delete(fileID);
     return null;
   }
 
   tempFileUrlCache.set(fileID, cached.url);
-  tempFileUrlDateCache.set(fileID, cached.updatedDate);
+  tempFileUrlExpiryCache.set(fileID, cached.expiresAt);
   return cached;
 }
 
@@ -198,7 +199,13 @@ function getCachedCloudFileUrlByPath(path: string): string {
   return getCachedCloudFileUrl(fileID)?.url || "";
 }
 
-async function refreshCloudFileUrl(fileID: string, todayKey: string): Promise<string> {
+function getTempUrlExpiresAt(maxAge: unknown): number {
+  const reportedMaxAge = typeof maxAge === "number" && maxAge > 0 ? maxAge : DEFAULT_TEMP_URL_MAX_AGE_MS;
+  const usableMaxAge = Math.max(0, reportedMaxAge - TEMP_URL_EXPIRY_BUFFER_MS);
+  return Date.now() + usableMaxAge;
+}
+
+async function refreshCloudFileUrl(fileID: string): Promise<string> {
   const cachedRefresh = refreshPromiseCache.get(fileID);
   if (cachedRefresh) {
     return cachedRefresh;
@@ -213,12 +220,14 @@ async function refreshCloudFileUrl(fileID: string, todayKey: string): Promise<st
     const result = await cloud.getTempFileURL({
       fileList: [fileID],
     });
-    const tempFileURL = result.fileList?.[0]?.tempFileURL || "";
+    const resolvedFile = result.fileList?.[0] as ResolvedCloudFile | undefined;
+    const tempFileURL = resolvedFile?.tempFileURL || "";
 
     if (tempFileURL) {
+      const expiresAt = getTempUrlExpiresAt(resolvedFile?.maxAge);
       tempFileUrlCache.set(fileID, tempFileURL);
-      tempFileUrlDateCache.set(fileID, todayKey);
-      writeRemoteAssetCache(fileID, tempFileURL, todayKey);
+      tempFileUrlExpiryCache.set(fileID, expiresAt);
+      writeRemoteAssetCache(fileID, tempFileURL, expiresAt);
     }
 
     return tempFileURL;
@@ -239,29 +248,27 @@ async function resolveCloudFileUrl(path: string, options?: ResolveCloudFileUrlOp
       return "";
     }
 
-    const todayKey = getTodayKey();
     if (options?.forceRefresh) {
-      return refreshCloudFileUrl(fileID, todayKey);
+      return refreshCloudFileUrl(fileID);
     }
 
     const cached = getCachedCloudFileUrl(fileID);
-    if (cached?.url && cached.updatedDate === todayKey) {
-      return cached.url;
-    }
-
     if (cached?.url) {
-      void refreshCloudFileUrl(fileID, todayKey).catch(() => "");
       return cached.url;
     }
 
-    return refreshCloudFileUrl(fileID, todayKey);
+    return refreshCloudFileUrl(fileID);
   } catch {
     return "";
   }
 }
 
-export async function resolvePetSpriteUrl(skin: PetSkin, mood: PetSpriteMood): Promise<string> {
-  return resolveCloudFileUrl(PET_SPRITE_PATHS[skin][mood]);
+export async function resolvePetSpriteUrl(
+  skin: PetSkin,
+  mood: PetSpriteMood,
+  options?: ResolveCloudFileUrlOptions,
+): Promise<string> {
+  return resolveCloudFileUrl(PET_SPRITE_PATHS[skin][mood], options);
 }
 
 export function resolveCachedPetSpriteUrl(skin: PetSkin, mood: PetSpriteMood): string {

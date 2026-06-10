@@ -1,5 +1,5 @@
 import { Image, View } from "@tarojs/components";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { resolveCachedPetSpriteUrl, resolvePetSpriteUrl } from "../../../../config/remoteAssets";
 import { PET_SKIN_EMOJI } from "../../types";
 import type { PetSpriteProps } from "./types";
@@ -26,10 +26,12 @@ export default function PetSprite({
   const safeMood = status === "dead" ? "idle" : status === "hungry" ? "hungry" : mood;
   const [imageSrc, setImageSrc] = useState(() => staticImageSrc || resolveCachedPetSpriteUrl(skin, safeMood));
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
+  const hasRetriedRef = useRef(false);
   const shouldShowImage = Boolean(imageSrc) && !imageLoadFailed;
 
   useEffect(() => {
     let isCurrent = true;
+    hasRetriedRef.current = false;
     setImageLoadFailed(false);
 
     if (staticImageSrc) {
@@ -57,6 +59,29 @@ export default function PetSprite({
       isCurrent = false;
     };
   }, [safeMood, skin, staticImageSrc]);
+
+  const handleImageError = useCallback(() => {
+    if (staticImageSrc || hasRetriedRef.current) {
+      setImageLoadFailed(true);
+      return;
+    }
+
+    hasRetriedRef.current = true;
+    void resolvePetSpriteUrl(skin, safeMood, { forceRefresh: true })
+      .then((url) => {
+        if (url) {
+          setImageLoadFailed(false);
+          setImageSrc(url);
+          return;
+        }
+
+        setImageLoadFailed(true);
+      })
+      .catch(() => {
+        setImageLoadFailed(true);
+      });
+  }, [safeMood, skin, staticImageSrc]);
+
   const classes = [
     "pet-sprite",
     sizeClassMap[size],
@@ -78,7 +103,7 @@ export default function PetSprite({
           src={imageSrc}
           mode="aspectFit"
           lazyLoad={false}
-          onError={() => setImageLoadFailed(true)}
+          onError={handleImageError}
         />
       ) : (
         <View className="pet-sprite__fallback">{PET_SKIN_EMOJI[skin]}</View>
