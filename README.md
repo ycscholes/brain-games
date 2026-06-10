@@ -69,7 +69,7 @@ npm install
 - `TARO_CLOUD_ENV_ID`
 - `TARO_CLOUD_STORAGE_BUCKET`
 
-不要在文档或提交中写入真实标识、密钥或云环境名称。微信小程序 App ID 写入被忽略的 `project.private.config.json`，云环境配置只写入 `.env.*.local`。提交前运行 `npm run secrets:check`。
+不要在文档或提交中写入真实标识、密钥或云环境名称。微信小程序 App ID 写入被忽略的 `project.private.config.json`，云环境配置只写入 `.env.*.local`。提交前运行 `npm run secrets:check`；本地提交钩子和 GitHub Actions 会重复执行检查。
 
 ## 开发命令
 
