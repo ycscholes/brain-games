@@ -3,77 +3,80 @@ import type { PetSkin } from "../pages/pet/types";
 import type { PetSpriteMood } from "../pages/pet/components/PetSprite/types";
 import { CLOUD_ENV_ID } from "./cloud";
 import { ensureCloudReady } from "../services/user-data/cloud/cloudFunctionsClient";
+import remoteAssetManifest from "../../config/remote-assets.json";
 
+const PET_ASSET_BASE_PATH = `assets/${remoteAssetManifest.petAssetVersion}/pets`;
 const PET_SPRITE_PATHS: Record<PetSkin, Record<PetSpriteMood, string>> = {
   cat: {
-    idle: "assets/pets/cat-idle.png",
-    feed: "assets/pets/cat-feed.png",
-    cuddle: "assets/pets/cat-cuddle.png",
-    hungry: "assets/pets/cat-hungry.png",
+    idle: `${PET_ASSET_BASE_PATH}/cat-idle.png`,
+    feed: `${PET_ASSET_BASE_PATH}/cat-feed.png`,
+    cuddle: `${PET_ASSET_BASE_PATH}/cat-cuddle.png`,
+    hungry: `${PET_ASSET_BASE_PATH}/cat-hungry.png`,
   },
   dog: {
-    idle: "assets/pets/dog-idle.png",
-    feed: "assets/pets/dog-feed.png",
-    cuddle: "assets/pets/dog-cuddle.png",
-    hungry: "assets/pets/dog-hungry.png",
+    idle: `${PET_ASSET_BASE_PATH}/dog-idle.png`,
+    feed: `${PET_ASSET_BASE_PATH}/dog-feed.png`,
+    cuddle: `${PET_ASSET_BASE_PATH}/dog-cuddle.png`,
+    hungry: `${PET_ASSET_BASE_PATH}/dog-hungry.png`,
   },
   rabbit: {
-    idle: "assets/pets/rabbit-idle.png",
-    feed: "assets/pets/rabbit-feed.png",
-    cuddle: "assets/pets/rabbit-cuddle.png",
-    hungry: "assets/pets/rabbit-hungry.png",
+    idle: `${PET_ASSET_BASE_PATH}/rabbit-idle.png`,
+    feed: `${PET_ASSET_BASE_PATH}/rabbit-feed.png`,
+    cuddle: `${PET_ASSET_BASE_PATH}/rabbit-cuddle.png`,
+    hungry: `${PET_ASSET_BASE_PATH}/rabbit-hungry.png`,
   },
   bear: {
-    idle: "assets/pets/bear-idle.png",
-    feed: "assets/pets/bear-feed.png",
-    cuddle: "assets/pets/bear-cuddle.png",
-    hungry: "assets/pets/bear-hungry.png",
+    idle: `${PET_ASSET_BASE_PATH}/bear-idle.png`,
+    feed: `${PET_ASSET_BASE_PATH}/bear-feed.png`,
+    cuddle: `${PET_ASSET_BASE_PATH}/bear-cuddle.png`,
+    hungry: `${PET_ASSET_BASE_PATH}/bear-hungry.png`,
   },
   panda: {
-    idle: "assets/pets/panda-idle.png",
-    feed: "assets/pets/panda-feed.png",
-    cuddle: "assets/pets/panda-cuddle.png",
-    hungry: "assets/pets/panda-hungry.png",
+    idle: `${PET_ASSET_BASE_PATH}/panda-idle.png`,
+    feed: `${PET_ASSET_BASE_PATH}/panda-feed.png`,
+    cuddle: `${PET_ASSET_BASE_PATH}/panda-cuddle.png`,
+    hungry: `${PET_ASSET_BASE_PATH}/panda-hungry.png`,
   },
   gecko: {
-    idle: "assets/pets/gecko-idle.png",
-    feed: "assets/pets/gecko-feed.png",
-    cuddle: "assets/pets/gecko-cuddle.png",
-    hungry: "assets/pets/gecko-hungry.png",
+    idle: `${PET_ASSET_BASE_PATH}/gecko-idle.png`,
+    feed: `${PET_ASSET_BASE_PATH}/gecko-feed.png`,
+    cuddle: `${PET_ASSET_BASE_PATH}/gecko-cuddle.png`,
+    hungry: `${PET_ASSET_BASE_PATH}/gecko-hungry.png`,
   },
   turtle: {
-    idle: "assets/pets/turtle-idle.png",
-    feed: "assets/pets/turtle-feed.png",
-    cuddle: "assets/pets/turtle-cuddle.png",
-    hungry: "assets/pets/turtle-hungry.png",
+    idle: `${PET_ASSET_BASE_PATH}/turtle-idle.png`,
+    feed: `${PET_ASSET_BASE_PATH}/turtle-feed.png`,
+    cuddle: `${PET_ASSET_BASE_PATH}/turtle-cuddle.png`,
+    hungry: `${PET_ASSET_BASE_PATH}/turtle-hungry.png`,
   },
 };
 
 const FOOD_ICON_PATHS: Partial<Record<string, string>> = {
-  apple: "assets/pets/food-apple.png",
-  berry: "assets/pets/food-berry.png",
-  carrot: "assets/pets/food-carrot.png",
-  fish: "assets/pets/food-fish.png",
-  meat: "assets/pets/food-meat.png",
-  greens: "assets/pets/food-greens.png",
-  pumpkin: "assets/pets/food-pumpkin.png",
-  biscuit: "assets/pets/food-biscuit.png",
-  salmon: "assets/pets/food-salmon.png",
-  "beef-bone": "assets/pets/food-beef-bone.png",
-  "strawberry-basket": "assets/pets/food-strawberry-basket.png",
-  "honey-jar": "assets/pets/food-honey-jar.png",
-  "bamboo-rice": "assets/pets/food-bamboo-rice.png",
-  "cricket-cup": "assets/pets/food-cricket-cup.png",
-  "shrimp-greens": "assets/pets/food-shrimp-greens.png",
+  apple: `${PET_ASSET_BASE_PATH}/food-apple.png`,
+  berry: `${PET_ASSET_BASE_PATH}/food-berry.png`,
+  carrot: `${PET_ASSET_BASE_PATH}/food-carrot.png`,
+  fish: `${PET_ASSET_BASE_PATH}/food-fish.png`,
+  meat: `${PET_ASSET_BASE_PATH}/food-meat.png`,
+  greens: `${PET_ASSET_BASE_PATH}/food-greens.png`,
+  pumpkin: `${PET_ASSET_BASE_PATH}/food-pumpkin.png`,
+  biscuit: `${PET_ASSET_BASE_PATH}/food-biscuit.png`,
+  salmon: `${PET_ASSET_BASE_PATH}/food-salmon.png`,
+  "beef-bone": `${PET_ASSET_BASE_PATH}/food-beef-bone.png`,
+  "strawberry-basket": `${PET_ASSET_BASE_PATH}/food-strawberry-basket.png`,
+  "honey-jar": `${PET_ASSET_BASE_PATH}/food-honey-jar.png`,
+  "bamboo-rice": `${PET_ASSET_BASE_PATH}/food-bamboo-rice.png`,
+  "cricket-cup": `${PET_ASSET_BASE_PATH}/food-cricket-cup.png`,
+  "shrimp-greens": `${PET_ASSET_BASE_PATH}/food-shrimp-greens.png`,
 };
 
 type CachedRemoteAsset = {
-  expiresAt: number;
+  expiresAt?: number;
+  permanent: boolean;
   url: string;
 };
 
 type RemoteAssetCache = {
-  version: 2;
+  version: 3;
   assets: Record<string, CachedRemoteAsset>;
 };
 
@@ -101,16 +104,20 @@ export type RemoteAssetPreloadProgress = RemoteAssetPreloadResult & {
   current?: string;
 };
 
-const REMOTE_ASSET_CACHE_KEY = "remote_asset_url_cache_v2";
+const REMOTE_ASSET_CACHE_KEY = "remote_asset_url_cache_v3";
 const DEFAULT_TEMP_URL_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 const TEMP_URL_EXPIRY_BUFFER_MS = 60 * 1000;
-const tempFileUrlCache = new Map<string, string>();
-const tempFileUrlExpiryCache = new Map<string, number>();
+const SIGNED_URL_QUERY_PATTERN = /[?&](?:q-sign-[^=&]+|x-cos-security-token|sign|token)=/i;
+const memoryAssetCache = new Map<string, CachedRemoteAsset>();
 const refreshPromiseCache = new Map<string, Promise<string>>();
 const CLOUD_STORAGE_BUCKET =
   typeof __CLOUD_STORAGE_BUCKET__ !== "undefined"
     ? __CLOUD_STORAGE_BUCKET__
     : process.env.TARO_CLOUD_STORAGE_BUCKET || "";
+const REMOTE_ASSETS_PUBLIC =
+  typeof __REMOTE_ASSETS_PUBLIC__ !== "undefined"
+    ? __REMOTE_ASSETS_PUBLIC__
+    : process.env.TARO_REMOTE_ASSETS_PUBLIC === "true";
 
 function toCloudFileId(path: string): string {
   if (!CLOUD_ENV_ID || !CLOUD_STORAGE_BUCKET) {
@@ -122,7 +129,7 @@ function toCloudFileId(path: string): string {
 
 function createEmptyCache(): RemoteAssetCache {
   return {
-    version: 2,
+    version: 3,
     assets: {},
   };
 }
@@ -134,12 +141,12 @@ function parseRemoteAssetCache(raw: unknown): RemoteAssetCache {
 
   try {
     const parsed = JSON.parse(raw) as Partial<RemoteAssetCache>;
-    if (parsed.version !== 2 || !parsed.assets || typeof parsed.assets !== "object") {
+    if (parsed.version !== 3 || !parsed.assets || typeof parsed.assets !== "object") {
       return createEmptyCache();
     }
 
     return {
-      version: 2,
+      version: 3,
       assets: parsed.assets,
     };
   } catch {
@@ -155,13 +162,10 @@ function readRemoteAssetCache(): RemoteAssetCache {
   }
 }
 
-function writeRemoteAssetCache(fileID: string, url: string, expiresAt: number): void {
+function writeRemoteAssetCache(fileID: string, asset: CachedRemoteAsset): void {
   try {
     const cache = readRemoteAssetCache();
-    cache.assets[fileID] = {
-      expiresAt,
-      url,
-    };
+    cache.assets[fileID] = asset;
     Taro.setStorageSync(REMOTE_ASSET_CACHE_KEY, JSON.stringify(cache));
   } catch {
     // Storage failures should not prevent the remote image from rendering.
@@ -169,24 +173,19 @@ function writeRemoteAssetCache(fileID: string, url: string, expiresAt: number): 
 }
 
 function getCachedCloudFileUrl(fileID: string): CachedRemoteAsset | null {
-  const memoryUrl = tempFileUrlCache.get(fileID);
-  const memoryExpiresAt = tempFileUrlExpiryCache.get(fileID);
-  if (memoryUrl && memoryExpiresAt && memoryExpiresAt > Date.now()) {
-    return {
-      expiresAt: memoryExpiresAt,
-      url: memoryUrl,
-    };
+  const memoryAsset = memoryAssetCache.get(fileID);
+  if (memoryAsset && (memoryAsset.permanent || (memoryAsset.expiresAt || 0) > Date.now())) {
+    return memoryAsset;
   }
 
   const cached = readRemoteAssetCache().assets[fileID];
-  if (!cached?.url || !cached.expiresAt || cached.expiresAt <= Date.now()) {
-    tempFileUrlCache.delete(fileID);
-    tempFileUrlExpiryCache.delete(fileID);
+  const isValid = cached?.url && (cached.permanent || (cached.expiresAt || 0) > Date.now());
+  if (!isValid) {
+    memoryAssetCache.delete(fileID);
     return null;
   }
 
-  tempFileUrlCache.set(fileID, cached.url);
-  tempFileUrlExpiryCache.set(fileID, cached.expiresAt);
+  memoryAssetCache.set(fileID, cached);
   return cached;
 }
 
@@ -203,6 +202,22 @@ function getTempUrlExpiresAt(maxAge: unknown): number {
   const reportedMaxAge = typeof maxAge === "number" && maxAge > 0 ? maxAge : DEFAULT_TEMP_URL_MAX_AGE_MS;
   const usableMaxAge = Math.max(0, reportedMaxAge - TEMP_URL_EXPIRY_BUFFER_MS);
   return Date.now() + usableMaxAge;
+}
+
+function createCachedRemoteAsset(url: string, maxAge: unknown): CachedRemoteAsset {
+  const permanent = REMOTE_ASSETS_PUBLIC && !SIGNED_URL_QUERY_PATTERN.test(url);
+  if (permanent) {
+    return {
+      permanent: true,
+      url,
+    };
+  }
+
+  return {
+    expiresAt: getTempUrlExpiresAt(maxAge),
+    permanent: false,
+    url,
+  };
 }
 
 async function refreshCloudFileUrl(fileID: string): Promise<string> {
@@ -224,10 +239,9 @@ async function refreshCloudFileUrl(fileID: string): Promise<string> {
     const tempFileURL = resolvedFile?.tempFileURL || "";
 
     if (tempFileURL) {
-      const expiresAt = getTempUrlExpiresAt(resolvedFile?.maxAge);
-      tempFileUrlCache.set(fileID, tempFileURL);
-      tempFileUrlExpiryCache.set(fileID, expiresAt);
-      writeRemoteAssetCache(fileID, tempFileURL, expiresAt);
+      const cachedAsset = createCachedRemoteAsset(tempFileURL, resolvedFile?.maxAge);
+      memoryAssetCache.set(fileID, cachedAsset);
+      writeRemoteAssetCache(fileID, cachedAsset);
     }
 
     return tempFileURL;

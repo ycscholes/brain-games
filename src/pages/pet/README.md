@@ -42,7 +42,11 @@
 
 宠物和食物图片从 CloudBase Storage 加载。仓库源文件存放在 `asset-backups/cloudbase-images/`，运行时代码不得从备份目录导入图片。
 
-`PetSprite` 先读取缓存 URL，再异步解析远程地址。图片加载失败时保留固定尺寸占位，不回退到本地宠物图片或 emoji，以避免增加小程序包体。
+`PetSprite` 先读取缓存 URL，再异步解析远程地址。公有读素材返回的无签名 HTTPS 地址永久缓存；私有或带签名地址仍按有效期刷新。图片加载失败时会重新解析一次，随后保留固定尺寸占位，不回退到本地宠物图片或 emoji，以避免增加小程序包体。
+
+素材路径通过 `config/remote-assets.json` 版本化。发布替换图片时提升版本并上传到新目录，禁止覆盖现有版本路径。
+
+永久缓存还要求本地环境设置 `TARO_REMOTE_ASSETS_PUBLIC=true`。若云端套餐不支持修改存储规则，必须保持为 `false`，系统会继续使用临时链接缓存。
 
 生成或替换素材时遵循 [图片生成与验收流程](../../../docs/superpowers/generation/image-gen-asset-workflow.md)，并运行：
 

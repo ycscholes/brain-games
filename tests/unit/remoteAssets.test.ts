@@ -16,11 +16,11 @@ jest.mock("../../src/services/user-data/cloud/cloudFunctionsClient", () => ({
   ensureCloudReady: mockEnsureCloudReady,
 }));
 
-const CACHE_KEY = "remote_asset_url_cache_v2";
-const CAT_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/pets/cat-idle.png";
-const GECKO_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/pets/gecko-idle.png";
-const TURTLE_CUDDLE_FILE_ID = "cloud://test-env.test-bucket/assets/pets/turtle-cuddle.png";
-const BISCUIT_FILE_ID = "cloud://test-env.test-bucket/assets/pets/food-biscuit.png";
+const CACHE_KEY = "remote_asset_url_cache_v3";
+const CAT_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/cat-idle.png";
+const GECKO_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/gecko-idle.png";
+const TURTLE_CUDDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/turtle-cuddle.png";
+const BISCUIT_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/food-biscuit.png";
 const GENERATED_FOOD_IMAGE_IDS = [
   "biscuit",
   "salmon",
@@ -32,31 +32,25 @@ const GENERATED_FOOD_IMAGE_IDS = [
   "shrimp-greens",
 ] as const;
 
-function writeAssetCache(expiresAt: number, url: string) {
+function writeAssetCache(asset: { expiresAt?: number; permanent: boolean; url: string }) {
   mockStorage.set(
     CACHE_KEY,
     JSON.stringify({
-      version: 2,
+      version: 3,
       assets: {
-        [CAT_IDLE_FILE_ID]: {
-          expiresAt,
-          url,
-        },
+        [CAT_IDLE_FILE_ID]: asset,
       },
     }),
   );
 }
 
-function writeFoodAssetCache(expiresAt: number, url: string) {
+function writeFoodAssetCache(asset: { expiresAt?: number; permanent: boolean; url: string }) {
   mockStorage.set(
     CACHE_KEY,
     JSON.stringify({
-      version: 2,
+      version: 3,
       assets: {
-        [BISCUIT_FILE_ID]: {
-          expiresAt,
-          url,
-        },
+        [BISCUIT_FILE_ID]: asset,
       },
     }),
   );
@@ -70,6 +64,7 @@ describe("remoteAssets", () => {
     mockEnsureCloudReady.mockReset();
     process.env.TARO_CLOUD_ENV_ID = "test-env";
     process.env.TARO_CLOUD_STORAGE_BUCKET = "test-bucket";
+    process.env.TARO_REMOTE_ASSETS_PUBLIC = "true";
     jest.useFakeTimers().setSystemTime(new Date("2026-06-05T08:00:00.000Z"));
   });
 
@@ -77,18 +72,34 @@ describe("remoteAssets", () => {
     jest.useRealTimers();
   });
 
-  test("uses an unexpired local pet image cache without requesting cloud URL", async () => {
-    writeAssetCache(Date.now() + 30 * 60 * 1000, "https://cached.example/cat-idle.png");
+  test("uses a permanent local pet image cache without requesting cloud URL", async () => {
+    writeAssetCache({
+      permanent: true,
+      url: "https://cached.example/cat-idle.png",
+    });
 
     const { resolvePetSpriteUrl } = await import("../../src/config/remoteAssets");
-    const url = await resolvePetSpriteUrl("cat", "idle");
 
-    expect(url).toBe("https://cached.example/cat-idle.png");
+    await expect(resolvePetSpriteUrl("cat", "idle")).resolves.toBe("https://cached.example/cat-idle.png");
+    jest.advanceTimersByTime(30 * 24 * 60 * 60 * 1000);
+    await expect(resolvePetSpriteUrl("cat", "idle")).resolves.toBe("https://cached.example/cat-idle.png");
     expect(mockEnsureCloudReady).not.toHaveBeenCalled();
   });
 
-  test("refreshes an expired cached pet image before returning it", async () => {
-    writeAssetCache(Date.now() - 1, "https://cached.example/cat-idle.png");
+  test("uses an unexpired signed URL cache without requesting cloud URL", async () => {
+    writeAssetCache({
+      expiresAt: Date.now() + 30 * 60 * 1000,
+      permanent: false,
+      url: "https://cached.example/cat-idle.png?q-sign-algorithm=test",
+    });
+
+    const { resolvePetSpriteUrl } = await import("../../src/config/remoteAssets");
+
+    await expect(resolvePetSpriteUrl("cat", "idle")).resolves.toContain("q-sign-algorithm");
+    expect(mockEnsureCloudReady).not.toHaveBeenCalled();
+  });
+
+  test("stores a clean public URL as permanent", async () => {
     mockGetTempFileURL.mockResolvedValue({
       fileList: [{ tempFileURL: "https://fresh.example/cat-idle.png", maxAge: 2 * 60 * 60 * 1000 }],
     });
@@ -97,23 +108,30 @@ describe("remoteAssets", () => {
     });
 
     const { resolvePetSpriteUrl } = await import("../../src/config/remoteAssets");
-    const url = await resolvePetSpriteUrl("cat", "idle");
-
-    expect(url).toBe("https://fresh.example/cat-idle.png");
-    expect(mockGetTempFileURL).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(mockStorage.get(CACHE_KEY) || "{}").assets[CAT_IDLE_FILE_ID]).toMatchObject({
+    await expect(resolvePetSpriteUrl("cat", "idle")).resolves.toBe("https://fresh.example/cat-idle.png");
+    expect(JSON.parse(mockStorage.get(CACHE_KEY) || "{}").assets[CAT_IDLE_FILE_ID]).toEqual({
+      permanent: true,
       url: "https://fresh.example/cat-idle.png",
-      expiresAt: Date.now() + 2 * 60 * 60 * 1000 - 60 * 1000,
     });
   });
 
-  test("refreshes an in-memory URL after its reported max age", async () => {
+  test("keeps a signed URL temporary even when public caching is enabled", async () => {
     mockGetTempFileURL
       .mockResolvedValueOnce({
-        fileList: [{ tempFileURL: "https://fresh.example/first.png", maxAge: 2 * 60 * 1000 }],
+        fileList: [
+          {
+            tempFileURL: "https://fresh.example/first.png?q-sign-algorithm=test",
+            maxAge: 2 * 60 * 1000,
+          },
+        ],
       })
       .mockResolvedValueOnce({
-        fileList: [{ tempFileURL: "https://fresh.example/second.png", maxAge: 2 * 60 * 1000 }],
+        fileList: [
+          {
+            tempFileURL: "https://fresh.example/second.png?q-sign-algorithm=test",
+            maxAge: 2 * 60 * 1000,
+          },
+        ],
       });
     mockEnsureCloudReady.mockResolvedValue({
       getTempFileURL: mockGetTempFileURL,
@@ -121,20 +139,42 @@ describe("remoteAssets", () => {
 
     const { resolvePetSpriteUrl } = await import("../../src/config/remoteAssets");
 
-    await expect(resolvePetSpriteUrl("cat", "idle")).resolves.toBe("https://fresh.example/first.png");
+    await expect(resolvePetSpriteUrl("cat", "idle")).resolves.toContain("first.png");
+    expect(JSON.parse(mockStorage.get(CACHE_KEY) || "{}").assets[CAT_IDLE_FILE_ID]).toMatchObject({
+      expiresAt: Date.now() + 60 * 1000,
+      permanent: false,
+    });
     jest.advanceTimersByTime(61 * 1000);
-    await expect(resolvePetSpriteUrl("cat", "idle")).resolves.toBe("https://fresh.example/second.png");
+    await expect(resolvePetSpriteUrl("cat", "idle")).resolves.toContain("second.png");
     expect(mockGetTempFileURL).toHaveBeenCalledTimes(2);
   });
 
-  test("does not reuse legacy date-based cache entries", async () => {
+  test("keeps a clean URL temporary when public caching is disabled", async () => {
+    process.env.TARO_REMOTE_ASSETS_PUBLIC = "false";
+    mockGetTempFileURL.mockResolvedValue({
+      fileList: [{ tempFileURL: "https://fresh.example/cat-idle.png", maxAge: 2 * 60 * 1000 }],
+    });
+    mockEnsureCloudReady.mockResolvedValue({
+      getTempFileURL: mockGetTempFileURL,
+    });
+
+    const { resolvePetSpriteUrl } = await import("../../src/config/remoteAssets");
+
+    await expect(resolvePetSpriteUrl("cat", "idle")).resolves.toBe("https://fresh.example/cat-idle.png");
+    expect(JSON.parse(mockStorage.get(CACHE_KEY) || "{}").assets[CAT_IDLE_FILE_ID]).toMatchObject({
+      expiresAt: Date.now() + 60 * 1000,
+      permanent: false,
+    });
+  });
+
+  test("does not reuse legacy expiring cache entries", async () => {
     mockStorage.set(
-      "remote_asset_url_cache_v1",
+      "remote_asset_url_cache_v2",
       JSON.stringify({
-        version: 1,
+        version: 2,
         assets: {
           [CAT_IDLE_FILE_ID]: {
-            updatedDate: "2026-06-05",
+            expiresAt: Date.now() + 30 * 60 * 1000,
             url: "https://cached.example/legacy.png",
           },
         },
@@ -165,14 +205,17 @@ describe("remoteAssets", () => {
     const url = await resolvePetSpriteUrl("cat", "idle");
 
     expect(url).toBe("https://fresh.example/cat-idle.png");
-    expect(JSON.parse(mockStorage.get(CACHE_KEY) || "{}").assets[CAT_IDLE_FILE_ID]).toMatchObject({
+    expect(JSON.parse(mockStorage.get(CACHE_KEY) || "{}").assets[CAT_IDLE_FILE_ID]).toEqual({
+      permanent: true,
       url: "https://fresh.example/cat-idle.png",
-      expiresAt: Date.now() + 2 * 60 * 60 * 1000 - 60 * 1000,
     });
   });
 
-  test("reads an unexpired cached food icon URL before any cloud refresh", async () => {
-    writeFoodAssetCache(Date.now() + 30 * 60 * 1000, "https://cached.example/food-biscuit.png");
+  test("reads a permanent cached food icon URL before any cloud refresh", async () => {
+    writeFoodAssetCache({
+      permanent: true,
+      url: "https://cached.example/food-biscuit.png",
+    });
 
     const { resolveCachedFoodIconUrl } = await import("../../src/config/remoteAssets");
 
@@ -252,7 +295,11 @@ describe("remoteAssets", () => {
   });
 
   test("forces a fresh food icon URL when the cached temp URL has expired", async () => {
-    writeFoodAssetCache(Date.now() - 1, "https://cached.example/food-biscuit.png");
+    writeFoodAssetCache({
+      expiresAt: Date.now() - 1,
+      permanent: false,
+      url: "https://cached.example/food-biscuit.png?q-sign-algorithm=test",
+    });
     mockGetTempFileURL.mockResolvedValue({
       fileList: [{ tempFileURL: "https://fresh.example/food-biscuit.png" }],
     });

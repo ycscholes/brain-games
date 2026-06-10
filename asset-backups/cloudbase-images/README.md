@@ -8,4 +8,6 @@ Runtime code must not import files from this directory. Upload these files to Cl
 TARO_CLOUD_ENV_ID=<env-id> npm run assets:upload
 ```
 
-The app builds remote image URLs from `TARO_REMOTE_ASSET_BASE_URL` and the storage paths under `assets/`.
+Pet assets are uploaded to the versioned path configured in `config/remote-assets.json`, for example
+`assets/v1/pets/`. Increment the version before replacing a published image; do not overwrite an existing
+version because clients and CDN nodes may retain its permanent URL.

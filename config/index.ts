@@ -48,6 +48,7 @@ function resolveEnvValue(key: string): string {
 export default defineConfig<"webpack5">(async (merge) => {
   const cloudEnvId = resolveEnvValue("TARO_CLOUD_ENV_ID");
   const cloudStorageBucket = resolveEnvValue("TARO_CLOUD_STORAGE_BUCKET");
+  const remoteAssetsPublic = resolveEnvValue("TARO_REMOTE_ASSETS_PUBLIC") === "true";
   const baseConfig: UserConfigExport<"webpack5"> = {
     projectName: "cici-brain-training",
     date: "2024-11-19",
@@ -68,10 +69,12 @@ export default defineConfig<"webpack5">(async (merge) => {
     defineConstants: {
       __CLOUD_ENV_ID__: JSON.stringify(cloudEnvId),
       __CLOUD_STORAGE_BUCKET__: JSON.stringify(cloudStorageBucket),
+      __REMOTE_ASSETS_PUBLIC__: JSON.stringify(remoteAssetsPublic),
     },
     env: {
       TARO_CLOUD_ENV_ID: JSON.stringify(cloudEnvId),
       TARO_CLOUD_STORAGE_BUCKET: JSON.stringify(cloudStorageBucket),
+      TARO_REMOTE_ASSETS_PUBLIC: JSON.stringify(String(remoteAssetsPublic)),
     },
     copy: {
       patterns: [],

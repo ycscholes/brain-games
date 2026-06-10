@@ -13,6 +13,7 @@ declare module '*.styl';
 
 declare const __CLOUD_ENV_ID__: string;
 declare const __CLOUD_STORAGE_BUCKET__: string;
+declare const __REMOTE_ASSETS_PUBLIC__: boolean;
 
 declare namespace NodeJS {
   interface ProcessEnv {

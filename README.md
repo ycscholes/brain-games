@@ -68,6 +68,7 @@ npm install
 
 - `TARO_CLOUD_ENV_ID`
 - `TARO_CLOUD_STORAGE_BUCKET`
+- `TARO_REMOTE_ASSETS_PUBLIC`：生产素材桶确认“所有用户可读”后设为 `true`
 
 不要在文档或提交中写入真实标识、密钥或云环境名称。微信小程序 App ID 写入被忽略的 `project.private.config.json`，云环境配置只写入 `.env.*.local`。提交前运行 `npm run secrets:check`；本地提交钩子和 GitHub Actions 会重复执行检查。
 
@@ -84,6 +85,10 @@ npm test                # Jest 单元测试
 npm run assets:check    # 校验 CloudBase 远程图片备份
 npm run assets:upload   # 上传远程图片，需要有效云环境配置
 ```
+
+宠物素材使用 `config/remote-assets.json` 中的版本化目录。替换图片时应提升版本号并上传到新目录，不要覆盖线上同一路径文件，以避免 CDN 和客户端继续使用旧缓存。
+
+`TARO_REMOTE_ASSETS_PUBLIC` 默认保持 `false`。只有 CloudBase 存储规则已成功切换为公有读并验证匿名访问后才能启用；部分套餐不允许修改存储安全规则，此时继续使用自动续期的临时链接。
 
 提交代码前至少运行与改动相关的检查。项目禁止显式 `any`，异步调用需要遵守项目规则校验器的错误处理约束。
 
