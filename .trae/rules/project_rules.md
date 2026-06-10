@@ -1,4 +1,4 @@
-# Project Development Rules - cici-brain-training
+# Project Development Rules - Cici的脑部锻炼
 
 | 版本   | 修订日期   | 修订人       | 变更摘要                                           |
 | :----- | :--------- | :----------- | :------------------------------------------------- |

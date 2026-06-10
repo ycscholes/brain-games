@@ -1,8 +1,8 @@
 {
   "miniprogramRoot": "dist/",
   "projectname": "cici-brain-training",
-  "description": "教育工具",
-  "appid": "<PRIVATE_VALUE_REMOVED>",
+  "description": "Cici的脑部锻炼",
+  "appid": "touristappid",
   "setting": {
     "urlCheck": true,
     "es6": true,

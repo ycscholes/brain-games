@@ -3,7 +3,7 @@ const cloud = require("wx-server-sdk");
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
-const COLLECTION = "cici-brain-training_user_snapshots";
+const COLLECTION = "user_snapshots";
 
 function normalizeSnapshot(snapshot, openid) {
   return {

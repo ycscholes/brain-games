@@ -64,12 +64,12 @@ nvm use
 npm install
 ```
 
-按目标环境配置 `.env.development`、`.env.production` 或 `.env.test`。CloudBase 相关配置包括：
+复制 `.env.example` 为 `.env.development.local`、`.env.production.local` 或 `.env.test.local`，再按目标环境填写配置。CloudBase 相关配置包括：
 
 - `TARO_CLOUD_ENV_ID`
 - `TARO_CLOUD_STORAGE_BUCKET`
 
-不要在文档或提交中写入真实密钥。微信小程序 App ID 使用 `project.config.json` 或本地私有配置管理。
+不要在文档或提交中写入真实标识、密钥或云环境名称。微信小程序 App ID 写入被忽略的 `project.private.config.json`，云环境配置只写入 `.env.*.local`。提交前运行 `npm run secrets:check`。
 
 ## 开发命令
 

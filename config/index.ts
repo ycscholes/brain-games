@@ -31,8 +31,17 @@ function resolveEnvValue(key: string): string {
     return process.env[key] || "";
   }
 
-  const envFileName = process.env.NODE_ENV === "development" ? ".env.development" : ".env.production";
-  return readEnvValue(path.resolve(__dirname, "..", envFileName), key);
+  const mode = process.env.NODE_ENV === "development" ? "development" : "production";
+  const envFileNames = [`.env.${mode}.local`, ".env.local", `.env.${mode}`];
+
+  for (const envFileName of envFileNames) {
+    const value = readEnvValue(path.resolve(__dirname, "..", envFileName), key);
+    if (value) {
+      return value;
+    }
+  }
+
+  return "";
 }
 
 // https://taro-docs.jd.com/docs/next/config#defineconfig-辅助函数

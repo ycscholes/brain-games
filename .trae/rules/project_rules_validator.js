@@ -1,5 +1,5 @@
 /**
- * Project Rules Validator for cici-brain-training
+ * Project Rules Validator for Cici的脑部锻炼
  * Validates code against defined project rules.
  */
 

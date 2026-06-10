@@ -8,3 +8,20 @@ node_modules/
 .superpowers/
 .codegraph/
 *.local
+
+# Local environment and cloud credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+project.private.config.json
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+tcb_custom_login.json
+
+# Local agent/editor state
+.claude/settings.local.json

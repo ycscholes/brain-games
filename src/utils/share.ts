@@ -32,16 +32,16 @@ interface SharePageContent {
   timelineTitle?: string;
 }
 
-const APP_SHARE_TITLE = "Cici的脑部锻炼每日脑力训练";
+const APP_SHARE_TITLE = "Cici的脑部锻炼";
 const DEFAULT_SHARE_CONTENT: SharePageContent = {
-  title: "来Cici的脑部锻炼做一组轻量脑力训练",
-  timelineTitle: "Cici的脑部锻炼：每天一点脑力训练",
+  title: "来Cici的脑部锻炼做一组轻量训练",
+  timelineTitle: "Cici的脑部锻炼：每天练一点",
 };
 
 export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/index/index": {
     title: APP_SHARE_TITLE,
-    timelineTitle: "Cici的脑部锻炼：每天一点脑力训练",
+    timelineTitle: "Cici的脑部锻炼：每天练一点",
   },
   "pages/memory-challenge/index": {
     title: "来挑战奇趣图形记忆",
@@ -92,15 +92,15 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
     timelineTitle: "宠物速数观察训练",
   },
   "pages/pet/index": {
-    title: "来看看我的Cici的脑部锻炼宠物",
+    title: "来看看我在Cici的脑部锻炼里养的宠物",
     timelineTitle: "Cici的脑部锻炼宠物养成",
   },
   "pages/settings/index": {
     title: APP_SHARE_TITLE,
-    timelineTitle: "Cici的脑部锻炼：每天一点脑力训练",
+    timelineTitle: "Cici的脑部锻炼：每天练一点",
   },
   "pages/training-records/index": {
-    title: "来Cici的脑部锻炼记录每日脑力训练",
+    title: "来Cici的脑部锻炼记录每日训练",
     timelineTitle: "Cici的脑部锻炼训练记录",
   },
 };
