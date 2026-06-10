@@ -186,7 +186,3 @@ async function initializeCloudSyncOnce() {
 
   await bootstrapCloudSync();
 }
-
-export function onLocalDataChanged() {
-  scheduleCloudBackup();
-}

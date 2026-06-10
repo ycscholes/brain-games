@@ -384,13 +384,3 @@ export function feedPet(
     pet: nextPet,
   };
 }
-
-export function getPetPoints(): number {
-  const data = readPetData();
-  return data.balance;
-}
-
-export function isPetAlive(): boolean {
-  const data = readPetData();
-  return data.pets.some((pet) => pet.status !== "dead");
-}

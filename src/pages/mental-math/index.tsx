@@ -25,7 +25,6 @@ import {
   type MathStageId,
 } from "./mathStages";
 import "./index.scss";
-import { config } from "process";
 
 type GameState = "start" | "playing" | "gameover";
 type GameMode = "timed" | "death";
@@ -45,7 +44,6 @@ export default function MentalMath() {
   const [customConfig, setCustomConfig] = useState(DEFAULT_CUSTOM_MATH_CONFIG);
   const [highScoreTimed, setHighScoreTimed] = useState(0);
   const [highScoreDeath, setHighScoreDeath] = useState(0);
-  const [highScoreRecord, setHighScoreRecord] = useState<HighScoreRecord | null>(null);
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const [currentProblem, setCurrentProblem] = useState<MathProblem | null>(null);
@@ -62,8 +60,6 @@ export default function MentalMath() {
   const isCustomStage = selectedStageId === CUSTOM_MATH_STAGE_ID;
   const rewardDifficulty = isCustomStage ? customProfile.difficulty : selectedStage.difficulty;
   const selectedStageShortName = isCustomStage ? customProfile.summary : selectedStage.shortName;
-  const selectedStageRangeLabel = isCustomStage ? customProfile.rangeLabel : selectedStage.rangeLabel;
-  const selectedStageOperationsLabel = isCustomStage ? customProfile.operationsLabel : selectedStage.operationsLabel;
 
   // Keep ref updated with latest correctCount for timer closure
   useEffect(() => {
@@ -134,7 +130,6 @@ export default function MentalMath() {
         achievedAt: new Date().toISOString(),
       };
       Taro.setStorageSync(key, JSON.stringify(newRecord));
-      setHighScoreRecord(newRecord);
       setIsNewRecord(true);
       // Update the corresponding state based on current mode
       if (gameMode === "timed") {
@@ -191,13 +186,6 @@ export default function MentalMath() {
       setHighScoreDeath(0);
     }
 
-    // Update current record for selected mode
-    const record = getCurrentHighScore();
-    if (record) {
-      setHighScoreRecord(record);
-    } else {
-      setHighScoreRecord(null);
-    }
   }, [gameMode, selectedStageId]);
 
   const getEffectiveScoreForPoints = (score: number) => {

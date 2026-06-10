@@ -281,7 +281,6 @@ export default function DualTaskGame() {
     clearTimers();
     finishedRef.current = false;
 
-    const config = getDualTaskDifficultyConfig(difficulty);
     const initialStats = createInitialDualTaskStats();
     const initialFrame = createFrame(difficulty, 0, 0.5);
     const firstDelay = getNextInsertDelay(difficulty, "warmup");

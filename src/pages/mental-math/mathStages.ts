@@ -205,18 +205,6 @@ function createMultiplicationProblem(max: number, factorMin = 1, factorMax = max
   return { question: `${a} × ${b} = ?`, answer: a * b, operation: "multiply" };
 }
 
-function createDivisionProblem(divisorMin: number, divisorMax: number, quotientMin: number, quotientMax: number): MathProblem {
-  const divisor = randomInt(divisorMin, Math.max(divisorMin, divisorMax));
-  const quotient = randomInt(quotientMin, Math.max(quotientMin, quotientMax));
-  const dividend = divisor * quotient;
-
-  return {
-    question: `${dividend} ÷ ${divisor} = ?`,
-    answer: quotient,
-    operation: "divide",
-  };
-}
-
 function createCustomDivisionProblem(max: number): MathProblem {
   const divisor = randomInt(2, Math.max(2, Math.min(max, 999)));
   const quotient = randomInt(1, Math.max(1, Math.floor(max / divisor)));

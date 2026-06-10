@@ -3,7 +3,6 @@ import type { PetSpriteMood } from "../pet/components/PetSprite/types";
 import type { TrainingDifficulty } from "../../utils/trainingStorage";
 
 export type BirdCountDifficulty = TrainingDifficulty;
-export type PetCountDifficulty = BirdCountDifficulty;
 export type PetCountSize = "small" | "medium" | "large";
 
 export interface BirdCountItem {
@@ -40,7 +39,6 @@ export interface BirdCountQuestionResult {
 }
 
 export const BIRD_COUNT_TOTAL_QUESTIONS = 8;
-export const PET_COUNT_TOTAL_QUESTIONS = BIRD_COUNT_TOTAL_QUESTIONS;
 
 export const PET_COUNT_SKINS: PetSkin[] = ["cat", "dog", "rabbit", "bear", "panda", "gecko", "turtle"];
 export const PET_COUNT_MOODS: PetSpriteMood[] = ["idle", "feed", "cuddle", "hungry"];

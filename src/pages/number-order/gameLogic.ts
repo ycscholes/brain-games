@@ -197,10 +197,6 @@ export function isCorrectPathPrefix(question: NumberOrderQuestion, tappedIds: st
   return getCorrectTapCount(question, tappedIds) === tappedIds.length;
 }
 
-export function isCorrectTap(question: NumberOrderQuestion, tappedIds: string[]) {
-  return isCorrectPathPrefix(question, tappedIds);
-}
-
 function getCompletionScore(sequenceLength: number) {
   return sequenceLength >= 6 ? 5 : sequenceLength >= 4 ? 4 : 3;
 }

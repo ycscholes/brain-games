@@ -57,7 +57,6 @@ export default function RockPaperScissors() {
   const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">("none");
   const [selectedHand, setSelectedHand] = useState<HandType | null>(null);
   const [highScore, setHighScore] = useState(0);
-  const [highScoreRecord, setHighScoreRecord] = useState<HighScoreRecord | null>(null);
   const [isNewRecord, setIsNewRecord] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -81,7 +80,6 @@ export default function RockPaperScissors() {
         achievedAt: new Date().toISOString(),
       };
       Taro.setStorageSync(key, JSON.stringify(newRecord));
-      setHighScoreRecord(newRecord);
       setIsNewRecord(true);
       return true;
     }
@@ -93,10 +91,8 @@ export default function RockPaperScissors() {
   const refreshHighScore = useCallback(() => {
     const record = getCurrentHighScore();
     if (record) {
-      setHighScoreRecord(record);
       setHighScore(record.score);
     } else {
-      setHighScoreRecord(null);
       setHighScore(0);
     }
   }, [difficulty]);

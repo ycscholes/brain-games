@@ -2,7 +2,7 @@ import { Image, View } from "@tarojs/components";
 import { useEffect, useState } from "react";
 import { resolveCachedPetSpriteUrl, resolvePetSpriteUrl } from "../../../../config/remoteAssets";
 import { PET_SKIN_EMOJI } from "../../types";
-import type { PetSpriteMood, PetSpriteProps } from "./types";
+import type { PetSpriteProps } from "./types";
 import "./index.scss";
 
 const sizeClassMap: Record<NonNullable<PetSpriteProps["size"]>, string> = {

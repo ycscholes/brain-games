@@ -198,27 +198,6 @@ let homeAssetPreloadPromise: Promise<AssetPreloadProgress> | null = null;
 let lastHomeAssetProgress: AssetPreloadProgress = DEFAULT_HOME_ASSET_PROGRESS;
 const homeAssetProgressListeners = new Set<(progress: AssetPreloadProgress) => void>();
 
-function formatPlayedAt(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "刚刚";
-  }
-
-  const now = Date.now();
-  const diffMinutes = Math.max(1, Math.floor((now - date.getTime()) / (1000 * 60)));
-  if (diffMinutes < 60) {
-    return `${diffMinutes} 分钟前`;
-  }
-
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) {
-    return `${diffHours} 小时前`;
-  }
-
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} 天前`;
-}
-
 function waitForMs(ms: number) {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, ms);

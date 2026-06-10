@@ -77,9 +77,7 @@ export default function MemoryChallenge() {
   const [gameState, setGameState] = useState<GameState>("start");
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
-  const [highScoreRecord, setHighScoreRecord] = useState<HighScoreRecord | null>(null);
   const [isNewRecord, setIsNewRecord] = useState(false);
-  const [streak, setStreak] = useState(0);
   const [round, setRound] = useState(1);
   const [timeLeft, setTimeLeft] = useState(8);
   const [timeDifficulty, setTimeDifficulty] = useState<TimeDifficulty>(1);
@@ -88,7 +86,6 @@ export default function MemoryChallenge() {
   const [history, setHistory] = useState<(typeof ALL_SHAPES)[0][]>([]);
   const [currentShape, setCurrentShape] = useState<(typeof ALL_SHAPES)[0] | null>(null);
   const [targetShape, setTargetShape] = useState<(typeof ALL_SHAPES)[0] | null>(null);
-  const [memorizeShapes, setMemorizeShapes] = useState<(typeof ALL_SHAPES)[0][]>([]);
   const [memorizeIndex, setMemorizeIndex] = useState(0);
 
   const [options, setOptions] = useState<(typeof ALL_SHAPES)[0][]>([]);
@@ -127,7 +124,6 @@ export default function MemoryChallenge() {
         achievedAt: new Date().toISOString(),
       };
       Taro.setStorageSync(key, JSON.stringify(newRecord));
-      setHighScoreRecord(newRecord);
       setIsNewRecord(true);
       return true;
     }
@@ -139,19 +135,13 @@ export default function MemoryChallenge() {
   const refreshHighScore = useCallback(() => {
     const record = getCurrentHighScore();
     if (record) {
-      setHighScoreRecord(record);
       setHighScore(record.score);
     } else {
-      setHighScoreRecord(null);
       setHighScore(0);
     }
   }, [timeDifficulty, memoryDifficulty]);
 
   useLoad(() => {
-    // 加载连胜记录
-    const storedStreak = Taro.getStorageSync("game_streak");
-    if (storedStreak) setStreak(parseInt(storedStreak));
-
     // 加载当前难度组合的最高分
     refreshHighScore();
   });
@@ -172,10 +162,6 @@ export default function MemoryChallenge() {
       refreshHighScore();
     }
   }, [gameState, refreshHighScore]);
-
-  const playSound = (type: "success" | "fail") => {
-    // Audio placeholder
-  };
 
   const getMaxTime = () => {
     return TIME_CONFIG[timeDifficulty].time;
@@ -218,7 +204,6 @@ export default function MemoryChallenge() {
     setRound(1);
     setCorrectCount(0);
     setHistory([...initialShapes]);
-    setMemorizeShapes([...initialShapes]);
     setMemorizeIndex(0);
     setCurrentShape(initialShapes[0]);
     setTargetShape(null);
@@ -305,24 +290,15 @@ export default function MemoryChallenge() {
 
     if (id === targetShape.id) {
       setFeedback("correct");
-      playSound("success");
       const pts = POINTS_PER_CORRECT[`T${timeDifficulty}M${memoryDifficulty}`] || 2;
       setScore((s) => Math.min(MAX_POINTS_PER_SESSION, s + pts));
       setCorrectCount((c) => c + 1);
-      setStreak((s) => {
-        const newStreak = s + 1;
-        Taro.setStorageSync("game_streak", newStreak);
-        return newStreak;
-      });
 
       setTimeout(() => {
         nextRound();
       }, 500);
     } else {
       setFeedback("wrong");
-      playSound("fail");
-      setStreak(0);
-      Taro.setStorageSync("game_streak", 0);
 
       setTimeout(() => {
         handleGameOver();
