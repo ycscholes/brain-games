@@ -46,7 +46,7 @@
 
 素材路径通过 `config/remote-assets.json` 版本化。发布替换图片时提升版本并上传到新目录，禁止覆盖现有版本路径。
 
-永久缓存还要求本地环境设置 `TARO_REMOTE_ASSETS_PUBLIC=true`。若云端套餐不支持修改存储规则，必须保持为 `false`，系统会继续使用临时链接缓存。
+永久缓存还要求本地环境设置 `TARO_REMOTE_ASSETS_PUBLIC=true`。若云端套餐不支持修改存储规则，必须保持为 `false`。私有素材会请求最长 30 天的临时链接，并按服务端返回值或 URL 签名中的实际截止时间提前一分钟刷新；图片加载失败时也会立即重新解析链接。
 
 生成或替换素材时遵循 [图片生成与验收流程](../../../docs/superpowers/generation/image-gen-asset-workflow.md)，并运行：
 

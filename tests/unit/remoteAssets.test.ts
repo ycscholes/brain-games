@@ -16,7 +16,8 @@ jest.mock("../../src/services/user-data/cloud/cloudFunctionsClient", () => ({
   ensureCloudReady: mockEnsureCloudReady,
 }));
 
-const CACHE_KEY = "remote_asset_url_cache_v3";
+const CACHE_KEY = "remote_asset_url_cache_v4";
+const TEMP_URL_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 const CAT_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/cat-idle.png";
 const GECKO_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/gecko-idle.png";
 const TURTLE_CUDDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/turtle-cuddle.png";
@@ -36,7 +37,7 @@ function writeAssetCache(asset: { expiresAt?: number; permanent: boolean; url: s
   mockStorage.set(
     CACHE_KEY,
     JSON.stringify({
-      version: 3,
+      version: 4,
       assets: {
         [CAT_IDLE_FILE_ID]: asset,
       },
@@ -48,7 +49,7 @@ function writeFoodAssetCache(asset: { expiresAt?: number; permanent: boolean; ur
   mockStorage.set(
     CACHE_KEY,
     JSON.stringify({
-      version: 3,
+      version: 4,
       assets: {
         [BISCUIT_FILE_ID]: asset,
       },
@@ -121,7 +122,7 @@ describe("remoteAssets", () => {
         fileList: [
           {
             tempFileURL: "https://fresh.example/first.png?q-sign-algorithm=test",
-            maxAge: 2 * 60 * 1000,
+            maxAge: 2 * 60,
           },
         ],
       })
@@ -129,7 +130,7 @@ describe("remoteAssets", () => {
         fileList: [
           {
             tempFileURL: "https://fresh.example/second.png?q-sign-algorithm=test",
-            maxAge: 2 * 60 * 1000,
+            maxAge: 2 * 60,
           },
         ],
       });
@@ -152,7 +153,7 @@ describe("remoteAssets", () => {
   test("keeps a clean URL temporary when public caching is disabled", async () => {
     process.env.TARO_REMOTE_ASSETS_PUBLIC = "false";
     mockGetTempFileURL.mockResolvedValue({
-      fileList: [{ tempFileURL: "https://fresh.example/cat-idle.png", maxAge: 2 * 60 * 1000 }],
+      fileList: [{ tempFileURL: "https://fresh.example/cat-idle.png", maxAge: 2 * 60 }],
     });
     mockEnsureCloudReady.mockResolvedValue({
       getTempFileURL: mockGetTempFileURL,
@@ -169,9 +170,9 @@ describe("remoteAssets", () => {
 
   test("does not reuse legacy expiring cache entries", async () => {
     mockStorage.set(
-      "remote_asset_url_cache_v2",
+      "remote_asset_url_cache_v3",
       JSON.stringify({
-        version: 2,
+        version: 3,
         assets: {
           [CAT_IDLE_FILE_ID]: {
             expiresAt: Date.now() + 30 * 60 * 1000,
@@ -240,16 +241,16 @@ describe("remoteAssets", () => {
     await expect(resolvePetSpriteUrl("gecko", "idle")).resolves.toBe("https://fresh.example/gecko-idle.png");
     await expect(resolvePetSpriteUrl("turtle", "cuddle")).resolves.toBe("https://fresh.example/turtle-cuddle.png");
     expect(mockGetTempFileURL).toHaveBeenNthCalledWith(1, {
-      fileList: [GECKO_IDLE_FILE_ID],
+      fileList: [{ fileID: GECKO_IDLE_FILE_ID, maxAge: TEMP_URL_MAX_AGE_SECONDS }],
     });
     expect(mockGetTempFileURL).toHaveBeenNthCalledWith(2, {
-      fileList: [TURTLE_CUDDLE_FILE_ID],
+      fileList: [{ fileID: TURTLE_CUDDLE_FILE_ID, maxAge: TEMP_URL_MAX_AGE_SECONDS }],
     });
   });
 
   test("resolves every configured pet food icon storage path", async () => {
     mockGetTempFileURL.mockImplementation(({ fileList }) => {
-      const fileID = fileList[0];
+      const fileID = fileList[0].fileID;
       const fileName = String(fileID).split("/").pop();
       return Promise.resolve({
         fileList: [{ tempFileURL: `https://fresh.example/${fileName}` }],
@@ -277,7 +278,7 @@ describe("remoteAssets", () => {
 
   test("resolves every generated feeding icon used by the pet menu", async () => {
     mockGetTempFileURL.mockImplementation(({ fileList }) => {
-      const fileID = fileList[0];
+      const fileID = fileList[0].fileID;
       const fileName = String(fileID).split("/").pop();
       return Promise.resolve({
         fileList: [{ tempFileURL: `https://fresh.example/${fileName}` }],
@@ -313,7 +314,58 @@ describe("remoteAssets", () => {
       "https://fresh.example/food-biscuit.png",
     );
     expect(mockGetTempFileURL).toHaveBeenCalledWith({
-      fileList: [BISCUIT_FILE_ID],
+      fileList: [{ fileID: BISCUIT_FILE_ID, maxAge: TEMP_URL_MAX_AGE_SECONDS }],
+    });
+  });
+
+  test("requests a 30-day private URL and treats returned maxAge as seconds", async () => {
+    process.env.TARO_REMOTE_ASSETS_PUBLIC = "false";
+    mockGetTempFileURL.mockResolvedValue({
+      fileList: [
+        {
+          tempFileURL: "https://fresh.example/cat-idle.png?q-sign-algorithm=test",
+          maxAge: TEMP_URL_MAX_AGE_SECONDS,
+        },
+      ],
+    });
+    mockEnsureCloudReady.mockResolvedValue({
+      getTempFileURL: mockGetTempFileURL,
+    });
+
+    const { resolvePetSpriteUrl } = await import("../../src/config/remoteAssets");
+    await resolvePetSpriteUrl("cat", "idle");
+
+    expect(mockGetTempFileURL).toHaveBeenCalledWith({
+      fileList: [{ fileID: CAT_IDLE_FILE_ID, maxAge: TEMP_URL_MAX_AGE_SECONDS }],
+    });
+    expect(JSON.parse(mockStorage.get(CACHE_KEY) || "{}").assets[CAT_IDLE_FILE_ID]).toMatchObject({
+      expiresAt: Date.now() + (TEMP_URL_MAX_AGE_SECONDS - 60) * 1000,
+      permanent: false,
+    });
+  });
+
+  test("uses the signed URL deadline when it is shorter than the requested cache duration", async () => {
+    process.env.TARO_REMOTE_ASSETS_PUBLIC = "false";
+    const signedExpirySeconds = Math.floor(Date.now() / 1000) + 20 * 60;
+    mockGetTempFileURL.mockResolvedValue({
+      fileList: [
+        {
+          tempFileURL:
+            `https://fresh.example/cat-idle.png?q-sign-algorithm=test` +
+            `&q-sign-time=${Math.floor(Date.now() / 1000)}%3B${signedExpirySeconds}`,
+        },
+      ],
+    });
+    mockEnsureCloudReady.mockResolvedValue({
+      getTempFileURL: mockGetTempFileURL,
+    });
+
+    const { resolvePetSpriteUrl } = await import("../../src/config/remoteAssets");
+    await resolvePetSpriteUrl("cat", "idle");
+
+    expect(JSON.parse(mockStorage.get(CACHE_KEY) || "{}").assets[CAT_IDLE_FILE_ID]).toMatchObject({
+      expiresAt: signedExpirySeconds * 1000 - 60 * 1000,
+      permanent: false,
     });
   });
 });

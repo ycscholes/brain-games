@@ -76,7 +76,7 @@ type CachedRemoteAsset = {
 };
 
 type RemoteAssetCache = {
-  version: 3;
+  version: 4;
   assets: Record<string, CachedRemoteAsset>;
 };
 
@@ -87,6 +87,11 @@ type ResolveCloudFileUrlOptions = {
 type ResolvedCloudFile = {
   maxAge?: number;
   tempFileURL?: string;
+};
+
+type CloudFileUrlRequest = {
+  fileID: string;
+  maxAge: number;
 };
 
 export type PetSpriteRemoteAsset = {
@@ -104,10 +109,11 @@ export type RemoteAssetPreloadProgress = RemoteAssetPreloadResult & {
   current?: string;
 };
 
-const REMOTE_ASSET_CACHE_KEY = "remote_asset_url_cache_v3";
-const DEFAULT_TEMP_URL_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+const REMOTE_ASSET_CACHE_KEY = "remote_asset_url_cache_v4";
+const TEMP_URL_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 const TEMP_URL_EXPIRY_BUFFER_MS = 60 * 1000;
 const SIGNED_URL_QUERY_PATTERN = /[?&](?:q-sign-[^=&]+|x-cos-security-token|sign|token)=/i;
+const SIGNED_URL_TIME_PATTERN = /[?&](?:q-sign-time|q-key-time)=([^&]+)/i;
 const memoryAssetCache = new Map<string, CachedRemoteAsset>();
 const refreshPromiseCache = new Map<string, Promise<string>>();
 const CLOUD_STORAGE_BUCKET =
@@ -129,7 +135,7 @@ function toCloudFileId(path: string): string {
 
 function createEmptyCache(): RemoteAssetCache {
   return {
-    version: 3,
+    version: 4,
     assets: {},
   };
 }
@@ -141,12 +147,12 @@ function parseRemoteAssetCache(raw: unknown): RemoteAssetCache {
 
   try {
     const parsed = JSON.parse(raw) as Partial<RemoteAssetCache>;
-    if (parsed.version !== 3 || !parsed.assets || typeof parsed.assets !== "object") {
+    if (parsed.version !== 4 || !parsed.assets || typeof parsed.assets !== "object") {
       return createEmptyCache();
     }
 
     return {
-      version: 3,
+      version: 4,
       assets: parsed.assets,
     };
   } catch {
@@ -198,10 +204,28 @@ function getCachedCloudFileUrlByPath(path: string): string {
   return getCachedCloudFileUrl(fileID)?.url || "";
 }
 
-function getTempUrlExpiresAt(maxAge: unknown): number {
-  const reportedMaxAge = typeof maxAge === "number" && maxAge > 0 ? maxAge : DEFAULT_TEMP_URL_MAX_AGE_MS;
-  const usableMaxAge = Math.max(0, reportedMaxAge - TEMP_URL_EXPIRY_BUFFER_MS);
-  return Date.now() + usableMaxAge;
+function getSignedUrlExpiresAt(url: string): number | null {
+  const match = url.match(SIGNED_URL_TIME_PATTERN);
+  if (!match?.[1]) {
+    return null;
+  }
+
+  try {
+    const endTimeSeconds = Number(decodeURIComponent(match[1]).split(";")[1]);
+    return Number.isFinite(endTimeSeconds) && endTimeSeconds > 0 ? endTimeSeconds * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+function getTempUrlExpiresAt(url: string, maxAge: unknown): number {
+  const reportedMaxAgeSeconds =
+    typeof maxAge === "number" && maxAge > 0 ? maxAge : TEMP_URL_MAX_AGE_SECONDS;
+  const reportedExpiresAt = Date.now() + reportedMaxAgeSeconds * 1000;
+  const signedExpiresAt = getSignedUrlExpiresAt(url);
+  const expiresAt = signedExpiresAt ? Math.min(signedExpiresAt, reportedExpiresAt) : reportedExpiresAt;
+
+  return Math.max(Date.now(), expiresAt - TEMP_URL_EXPIRY_BUFFER_MS);
 }
 
 function createCachedRemoteAsset(url: string, maxAge: unknown): CachedRemoteAsset {
@@ -214,7 +238,7 @@ function createCachedRemoteAsset(url: string, maxAge: unknown): CachedRemoteAsse
   }
 
   return {
-    expiresAt: getTempUrlExpiresAt(maxAge),
+    expiresAt: getTempUrlExpiresAt(url, maxAge),
     permanent: false,
     url,
   };
@@ -232,8 +256,13 @@ async function refreshCloudFileUrl(fileID: string): Promise<string> {
       return "";
     }
 
+    const fileRequest: CloudFileUrlRequest = {
+      fileID,
+      maxAge: TEMP_URL_MAX_AGE_SECONDS,
+    };
     const result = await cloud.getTempFileURL({
-      fileList: [fileID],
+      // WeChat supports object entries with maxAge, but the bundled Taro type still declares string[].
+      fileList: [fileRequest] as unknown as string[],
     });
     const resolvedFile = result.fileList?.[0] as ResolvedCloudFile | undefined;
     const tempFileURL = resolvedFile?.tempFileURL || "";
