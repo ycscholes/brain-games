@@ -153,17 +153,6 @@ const BASE_GAMES = [
     skill: "动态计数",
     level: "标准",
   },
-  {
-    id: "dual-task",
-    title: "多任务处理",
-    badge: "双任务",
-    cardClass: "card-dual",
-    url: "/pages/dual-task/index",
-    category: "advanced",
-    duration: "60 秒",
-    skill: "任务切换",
-    level: "进阶",
-  },
 ] satisfies Array<Omit<GameItem, "summary">>;
 
 const GAME_TITLES: Record<TrainingGameId, string> = {
