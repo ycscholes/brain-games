@@ -1,3 +1,6 @@
+import type { PetSpriteMood } from "../pet/components/PetSprite/types";
+import { PET_SKIN_NAME, type PetSkin } from "../pet/types";
+
 export type MemoryChallengeMode = "shape" | "pet" | "calculation";
 export type MemoryChallengeN = 1 | 2 | 3 | 4;
 
@@ -7,6 +10,7 @@ export interface MemoryChallengeItem {
   answerId: string;
   answerLabel: string;
   imageSrc?: string;
+  petMood?: PetSpriteMood;
 }
 
 export interface MemoryChallengeOption {
@@ -22,8 +26,71 @@ const ROUND_POINTS: Record<MemoryChallengeN, number> = {
   4: 8,
 };
 
+export const PET_MOOD_UNLOCK_ORDER: readonly PetSpriteMood[] = [
+  "idle",
+  "feed",
+  "cuddle",
+  "hungry",
+];
+
+const PET_MOOD_NAME: Record<PetSpriteMood, string> = {
+  idle: "待机",
+  feed: "进食",
+  cuddle: "互动",
+  hungry: "饥饿",
+};
+
 function randomInteger(maxInclusive: number, random: () => number) {
   return Math.floor(random() * (maxInclusive + 1));
+}
+
+export function getUnlockedPetMoods(correctCount: number): PetSpriteMood[] {
+  const unlockedCount = Math.min(
+    PET_MOOD_UNLOCK_ORDER.length,
+    Math.floor(Math.max(0, correctCount) / 5) + 1,
+  );
+  return PET_MOOD_UNLOCK_ORDER.slice(0, unlockedCount);
+}
+
+export function getUnlockedPetItems(
+  items: MemoryChallengeItem[],
+  correctCount: number,
+): MemoryChallengeItem[] {
+  const unlockedMoods = new Set(getUnlockedPetMoods(correctCount));
+  return items.filter((item) => item.petMood && unlockedMoods.has(item.petMood));
+}
+
+export async function loadPetMemoryItems(
+  skins: readonly PetSkin[],
+  moods: readonly PetSpriteMood[],
+  resolveImage: (skin: PetSkin, mood: PetSpriteMood) => Promise<string>,
+  preloadImage: (url: string) => Promise<boolean>,
+): Promise<MemoryChallengeItem[]> {
+  try {
+    return await Promise.all(
+      skins.flatMap((skin) =>
+        moods.map(async (mood) => {
+          const imageSrc = await resolveImage(skin, mood);
+          if (!imageSrc || !(await preloadImage(imageSrc))) {
+            throw new Error(`Unable to load ${skin}-${mood}`);
+          }
+
+          const id = `pet-${skin}-${mood}`;
+          const label = `${PET_SKIN_NAME[skin]}·${PET_MOOD_NAME[mood]}`;
+          return {
+            id,
+            prompt: label,
+            answerId: id,
+            answerLabel: label,
+            imageSrc,
+            petMood: mood,
+          };
+        }),
+      ),
+    );
+  } catch (error) {
+    throw error instanceof Error ? error : new Error("Unable to load pet memory images");
+  }
 }
 
 export function shuffleMemoryOptions<T>(items: T[], random: () => number = Math.random): T[] {

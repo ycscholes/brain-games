@@ -10,7 +10,7 @@ import {
   type TrainingRewardPolicy,
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
-import { PET_SKIN_NAME, type PetSkin } from "../pet/types";
+import type { PetSkin } from "../pet/types";
 import {
   addMemoryChallengeRoundScore,
   createCalculationItem,
@@ -20,6 +20,9 @@ import {
   getMemoryChallengeRewardCap,
   getMemoryChallengeRoundPoints,
   getNBackTarget,
+  getUnlockedPetItems,
+  loadPetMemoryItems,
+  PET_MOOD_UNLOCK_ORDER,
   type MemoryChallengeItem,
   type MemoryChallengeMode,
   type MemoryChallengeN,
@@ -132,24 +135,12 @@ function preloadImage(url: string) {
 }
 
 async function resolvePetItems(): Promise<MemoryChallengeItem[]> {
-  const items = await Promise.all(
-    PET_SKINS.map(async (skin) => {
-      const imageSrc = await resolvePetSpriteUrl(skin, "idle");
-      if (!imageSrc || !(await preloadImage(imageSrc))) {
-        throw new Error(`Unable to load ${skin}`);
-      }
-
-      return {
-        id: `pet-${skin}`,
-        prompt: PET_SKIN_NAME[skin],
-        answerId: `pet-${skin}`,
-        answerLabel: PET_SKIN_NAME[skin],
-        imageSrc,
-      };
-    }),
+  return loadPetMemoryItems(
+    PET_SKINS,
+    PET_MOOD_UNLOCK_ORDER,
+    resolvePetSpriteUrl,
+    preloadImage,
   );
-
-  return items;
 }
 
 function getRewardDifficulty(n: MemoryChallengeN): TrainingDifficulty {
@@ -193,10 +184,12 @@ export default function MemoryChallenge() {
   const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
   const historyRef = useRef<MemoryChallengeItem[]>([]);
   const scoreRef = useRef(0);
+  const correctCountRef = useRef(0);
   const finishedRef = useRef(false);
   const activeModeRef = useRef<MemoryChallengeMode>("shape");
   const activeNRef = useRef<MemoryChallengeN>(1);
   const activePoolRef = useRef<MemoryChallengeItem[]>(SHAPE_ITEMS);
+  const allPetItemsRef = useRef<MemoryChallengeItem[]>([]);
   const startedAtRef = useRef(0);
 
   const clearTimers = useCallback(() => {
@@ -268,14 +261,19 @@ export default function MemoryChallenge() {
     clearTimers();
     activeModeRef.current = selectedMode;
     activeNRef.current = selectedN;
-    activePoolRef.current = itemPool;
+    const initialPool = selectedMode === "pet"
+      ? getUnlockedPetItems(itemPool, 0)
+      : itemPool;
+    activePoolRef.current = initialPool;
+    allPetItemsRef.current = selectedMode === "pet" ? itemPool : [];
     finishedRef.current = false;
     startedAtRef.current = Date.now();
     scoreRef.current = 0;
+    correctCountRef.current = 0;
 
     const initialItems = Array.from(
       { length: selectedN },
-      () => selectedMode === "calculation" ? createCalculationItem() : pickRandomItem(itemPool),
+      () => selectedMode === "calculation" ? createCalculationItem() : pickRandomItem(initialPool),
     );
 
     historyRef.current = initialItems;
@@ -445,7 +443,12 @@ export default function MemoryChallenge() {
     );
     scoreRef.current = nextScore;
     setScore(nextScore);
-    setCorrectCount((value) => value + 1);
+    const nextCorrectCount = correctCountRef.current + 1;
+    correctCountRef.current = nextCorrectCount;
+    setCorrectCount(nextCorrectCount);
+    if (activeModeRef.current === "pet") {
+      activePoolRef.current = getUnlockedPetItems(allPetItemsRef.current, nextCorrectCount);
+    }
     setFeedback("correct");
     schedule(nextRound, FEEDBACK_MS);
   }, [feedback, gameState, handleGameOver, nextRound, schedule, targetItem]);

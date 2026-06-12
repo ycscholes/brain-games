@@ -2,11 +2,33 @@ import {
   addMemoryChallengeRoundScore,
   createCalculationItem,
   createNumericOptions,
+  createVisualOptions,
+  getUnlockedPetItems,
+  getUnlockedPetMoods,
   getMemoryChallengeRewardCap,
   getMemoryChallengeRoundPoints,
   getNBackTarget,
+  loadPetMemoryItems,
   type MemoryChallengeItem,
 } from "../../src/pages/memory-challenge/gameLogic";
+import type { PetSpriteMood } from "../../src/pages/pet/components/PetSprite/types";
+import type { PetSkin } from "../../src/pages/pet/types";
+
+const PET_SKINS: PetSkin[] = ["cat", "dog", "rabbit", "bear", "panda", "gecko", "turtle"];
+const PET_MOODS: PetSpriteMood[] = ["idle", "feed", "cuddle", "hungry"];
+
+function createPetItems(): MemoryChallengeItem[] {
+  return PET_SKINS.flatMap((skin) =>
+    PET_MOODS.map((mood) => ({
+      id: `pet-${skin}-${mood}`,
+      prompt: `${skin}-${mood}`,
+      answerId: `pet-${skin}-${mood}`,
+      answerLabel: `${skin}-${mood}`,
+      imageSrc: `${skin}-${mood}.png`,
+      petMood: mood,
+    })),
+  );
+}
 
 describe("memory challenge game logic", () => {
   test("finds the item shown N rounds earlier", () => {
@@ -72,5 +94,61 @@ describe("memory challenge game logic", () => {
     expect(getMemoryChallengeRewardCap("pet", 4)).toBe(80);
     expect(getMemoryChallengeRewardCap("calculation", 3)).toBe(100);
     expect(getMemoryChallengeRewardCap("calculation", 4)).toBe(100);
+  });
+
+  test.each([
+    [0, ["idle"]],
+    [4, ["idle"]],
+    [5, ["idle", "feed"]],
+    [9, ["idle", "feed"]],
+    [10, ["idle", "feed", "cuddle"]],
+    [14, ["idle", "feed", "cuddle"]],
+    [15, ["idle", "feed", "cuddle", "hungry"]],
+    [99, ["idle", "feed", "cuddle", "hungry"]],
+  ])("unlocks cumulative pet moods after %i correct answers", (correctCount, moods) => {
+    expect(getUnlockedPetMoods(correctCount)).toEqual(moods);
+  });
+
+  test.each([
+    [0, 7],
+    [5, 14],
+    [10, 21],
+    [15, 28],
+  ])("expands the pet item pool after %i correct answers", (correctCount, expectedSize) => {
+    const unlockedItems = getUnlockedPetItems(createPetItems(), correctCount);
+
+    expect(unlockedItems).toHaveLength(expectedSize);
+    expect(new Set(unlockedItems.map((item) => item.answerId)).size).toBe(expectedSize);
+  });
+
+  test("treats different moods of the same pet as unique visual answers", () => {
+    const catItems = createPetItems().filter((item) => item.id.startsWith("pet-cat-"));
+    const options = createVisualOptions(catItems[0], catItems, () => 0.5);
+
+    expect(options).toHaveLength(4);
+    expect(new Set(options.map((option) => option.id)).size).toBe(4);
+    expect(options.map((option) => option.id)).toContain("pet-cat-idle");
+  });
+
+  test("rejects pet item loading when any required image fails to preload", async () => {
+    await expect(loadPetMemoryItems(
+      ["cat"],
+      ["idle", "feed"],
+      async (_skin, mood) => `${mood}.png`,
+      async (url) => url !== "feed.png",
+    )).rejects.toThrow("Unable to load cat-feed");
+  });
+
+  test("builds unique pet items for every loaded skin and mood", async () => {
+    const items = await loadPetMemoryItems(
+      PET_SKINS,
+      PET_MOODS,
+      async (skin, mood) => `${skin}-${mood}.png`,
+      async () => true,
+    );
+
+    expect(items).toHaveLength(28);
+    expect(new Set(items.map((item) => item.answerId)).size).toBe(28);
+    expect(items.find((item) => item.answerId === "pet-cat-feed")?.petMood).toBe("feed");
   });
 });
