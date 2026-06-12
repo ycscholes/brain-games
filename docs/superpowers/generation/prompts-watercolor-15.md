@@ -507,4 +507,4 @@ background, scenery, floor, shadow, frame, border, text, watermark, logo, extra 
 
 ## 替换方式
 
-生成并检查通过后，将 15 张 PNG 文件放入 `src/assets/pets/` 目录，直接覆盖原有文件即可。**无需修改任何代码**，因为文件名保持完全一致，现有 `PetSprite` 组件可以直接使用。
+生成并检查通过后，将 PNG 文件放入 `asset-backups/cloudbase-images/pets/` 目录，并通过 `npm run assets:upload` 上传到 CloudBase Storage 的 `assets/pets/` 路径。不要放入 `src/assets/pets/`，宠物图片必须统一从云端获取，避免增加微信小程序本地包体积。

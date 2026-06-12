@@ -116,11 +116,17 @@ export const PET_ADOPTION_COST = 50;
 
 **文件**：`src/pages/pet/types.ts`
 
-| 食物 | 价格 | 恢复饥饿值 | 每积分恢复 |
+| 档位 | 价格 | 恢复饥饿值 | 每积分恢复 |
 |-----|------|----------|-----------|
-| 苹果 🍎 | 5 积分 | 20 | 4.0 |
-| 鲜鱼 🐟 | 10 积分 | 40 | 4.0 |
-| 大牛排 🥩 | 20 积分 | 100 | 5.0 |
+| 小份公共食物 | 5 积分 | 8 | 1.6 |
+| 中份公共食物 | 10 积分 | 16 | 1.6 |
+| 宠物专属奖励 | 20 积分 | 32 | 1.6 |
+
+食物展示使用公共食物池加宠物专属奖励：
+
+- 公共食物池：苹果、浆果、胡萝卜、小鱼、肉块、青菜、南瓜、饼干。
+- 每只宠物低/中档食物从公共池分配，可以复用。
+- 每只宠物最高档配置 1 个专属食物：小猫三文鱼、小狗牛肉骨、小兔草莓篮、小熊蜂蜜罐、熊猫竹筒饭、守宫蟋蟀杯、小乌龟小虾水草盘。
 
 ### 2.3 饥饿衰减机制
 
@@ -199,7 +205,7 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 |-----|------|-------------|
 | 积分转换率/难度倍率 | `src/utils/trainingStorage.ts` | `getAwardedPoints()`, `TrainingDifficulty` |
 | 积分获取/消费 | `src/utils/petStorage.ts` | `addPointsToPet()`, `adoptPet()`, `feedPet()` |
-| 领养/食物定价 | `src/pages/pet/types.ts` | `PET_ADOPTION_COST`, `FOOD_ITEMS` |
+| 领养/食物定价 | `src/pages/pet/types.ts` | `PET_ADOPTION_COST`, `FOOD_POOL`, `PET_FOOD_LOADOUTS`, `getFoodItemsForPetSkin()` |
 | 饥饿参数 | `src/pages/pet/types.ts` | `HUNGER_POINT_PER_MINUTE`, `MAX_HUNGER` |
 | 测试用例 | `tests/unit/trainingStorage.test.ts` | `getAwardedPoints` 测试套件 |
 

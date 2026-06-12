@@ -84,7 +84,7 @@ const FOOD_BY_ID = FOOD_CATALOG.reduce<Record<string, FoodCatalogItem>>((acc, fo
 export const PET_FOOD_LOADOUTS: Record<PetSkin, [string, string, string]> = {
   cat: ["fish", "biscuit", "salmon"],
   dog: ["biscuit", "meat", "beef-bone"],
-  rabbit: ["carrot", "greens", "strawberry-basket"],
+  rabbit: ["greens", "carrot", "strawberry-basket"],
   bear: ["berry", "fish", "honey-jar"],
   panda: ["greens", "pumpkin", "bamboo-rice"],
   gecko: ["berry", "apple", "cricket-cup"],

@@ -1,7 +1,6 @@
 import { Image, View } from "@tarojs/components";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { resolveCachedPetSpriteUrl, resolvePetSpriteUrl } from "../../../../config/remoteAssets";
-import { PET_SKIN_EMOJI } from "../../types";
 import type { PetSpriteProps } from "./types";
 import "./index.scss";
 
@@ -21,10 +20,9 @@ export default function PetSprite({
   size = "md",
   selected = false,
   className = "",
-  staticImageSrc = "",
 }: PetSpriteProps) {
   const safeMood = status === "dead" ? "idle" : status === "hungry" ? "hungry" : mood;
-  const [imageSrc, setImageSrc] = useState(() => staticImageSrc || resolveCachedPetSpriteUrl(skin, safeMood));
+  const [imageSrc, setImageSrc] = useState(() => resolveCachedPetSpriteUrl(skin, safeMood));
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const hasRetriedRef = useRef(false);
   const shouldShowImage = Boolean(imageSrc) && !imageLoadFailed;
@@ -33,14 +31,6 @@ export default function PetSprite({
     let isCurrent = true;
     hasRetriedRef.current = false;
     setImageLoadFailed(false);
-
-    if (staticImageSrc) {
-      setImageSrc(staticImageSrc);
-      return () => {
-        isCurrent = false;
-      };
-    }
-
     setImageSrc(resolveCachedPetSpriteUrl(skin, safeMood));
 
     void resolvePetSpriteUrl(skin, safeMood)
@@ -58,10 +48,10 @@ export default function PetSprite({
     return () => {
       isCurrent = false;
     };
-  }, [safeMood, skin, staticImageSrc]);
+  }, [safeMood, skin]);
 
   const handleImageError = useCallback(() => {
-    if (staticImageSrc || hasRetriedRef.current) {
+    if (hasRetriedRef.current) {
       setImageLoadFailed(true);
       return;
     }
@@ -80,7 +70,7 @@ export default function PetSprite({
       .catch(() => {
         setImageLoadFailed(true);
       });
-  }, [safeMood, skin, staticImageSrc]);
+  }, [safeMood, skin]);
 
   const classes = [
     "pet-sprite",
@@ -106,7 +96,7 @@ export default function PetSprite({
           onError={handleImageError}
         />
       ) : (
-        <View className="pet-sprite__fallback">{PET_SKIN_EMOJI[skin]}</View>
+        <View className="pet-sprite__fallback" />
       )}
     </View>
   );
