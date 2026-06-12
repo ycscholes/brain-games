@@ -63,6 +63,16 @@ describe("petStorage", () => {
     expect(readPetData().balance).toBe(30);
   });
 
+  test("adds points using a special game reward policy", () => {
+    adoptPet("团子", "cat");
+    addPointsToPet("memory-challenge", 120, "hard", {
+      applyDifficultyMultiplier: false,
+      maxPoints: 100,
+    });
+
+    expect(readPetData().balance).toBe(100);
+  });
+
   test("reads empty storage as empty pet yard", () => {
     const data = readPetData();
     expect(data.pets).toHaveLength(0);

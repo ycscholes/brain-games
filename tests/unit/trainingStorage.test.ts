@@ -181,6 +181,8 @@ describe("trainingStorage", () => {
     mockStorage.set("head_count_best_hard_fast", "48");
     mockStorage.set("word_scramble_best_normal", "33");
     mockStorage.set("bird_count_best_hard", "41");
+    mockStorage.set("memory_highscore_shape_M1", JSON.stringify({ score: 42 }));
+    mockStorage.set("memory_highscore_calculation_M4", JSON.stringify({ score: 128 }));
 
     clearProductData();
 
@@ -228,6 +230,17 @@ describe("trainingStorage", () => {
     test("memory-challenge: capped score maps directly to points", () => {
       expect(getAwardedPoints("memory-challenge", 10)).toBe(10);
       expect(getAwardedPoints("memory-challenge", 40)).toBe(40);
+    });
+
+    test("supports an explicit reward policy for special game modes", () => {
+      expect(getAwardedPoints("memory-challenge", 90, "hard", {
+        applyDifficultyMultiplier: false,
+        maxPoints: 100,
+      })).toBe(90);
+      expect(getAwardedPoints("memory-challenge", 120, "hard", {
+        applyDifficultyMultiplier: false,
+        maxPoints: 100,
+      })).toBe(100);
     });
 
     test("number-order: capped score maps directly to points", () => {

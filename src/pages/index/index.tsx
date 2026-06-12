@@ -122,7 +122,7 @@ const BASE_GAMES = [
   },
   {
     id: "memory-challenge",
-    title: "记忆图形",
+    title: "奇趣记忆",
     badge: "记忆",
     cardClass: "card-memory",
     url: "/pages/memory-challenge/index",
@@ -156,8 +156,8 @@ const BASE_GAMES = [
 ] satisfies Array<Omit<GameItem, "summary">>;
 
 const GAME_TITLES: Record<TrainingGameId, string> = {
-  memory: "记忆图形",
-  "memory-challenge": "记忆图形",
+  memory: "奇趣记忆",
+  "memory-challenge": "奇趣记忆",
   rps: "逆向猜拳",
   "rock-paper-scissors": "逆向猜拳",
   "dual-task": "多任务处理",

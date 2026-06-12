@@ -23,6 +23,11 @@ export type TrainingGameId =
 export type TrainingOutcome = "completed" | "interrupted";
 export type TrainingDifficulty = "normal" | "hard";
 
+export interface TrainingRewardPolicy {
+  applyDifficultyMultiplier?: boolean;
+  maxPoints?: number;
+}
+
 export interface TrainingRecord {
   id: string;
   gameId: TrainingGameId;
@@ -325,15 +330,29 @@ export function getTrainingDifficultyLabel(difficulty?: string) {
   return TRAINING_DIFFICULTY_LABELS[normalizeTrainingDifficulty(difficulty)];
 }
 
-export function getAwardedPoints(gameId: string, score: number, difficulty?: TrainingDifficulty) {
+export function getAwardedPoints(
+  gameId: string,
+  score: number,
+  difficulty?: TrainingDifficulty,
+  rewardPolicy?: TrainingRewardPolicy,
+) {
   const rate = TRAINING_POINT_RATES[gameId] ?? 0;
   const safeScore = Number.isFinite(score) ? score : 0;
   const normalizedDifficulty = normalizeTrainingDifficulty(difficulty);
+  const difficultyMultiplier = rewardPolicy?.applyDifficultyMultiplier === false
+    ? 1
+    : TRAINING_DIFFICULTY_MULTIPLIERS[normalizedDifficulty];
+  const configuredMaxPoints = rewardPolicy?.maxPoints;
+  const maxPoints = typeof configuredMaxPoints === "number"
+    && Number.isFinite(configuredMaxPoints)
+    && configuredMaxPoints >= 0
+    ? Math.floor(configuredMaxPoints)
+    : TRAINING_DIFFICULTY_POINT_CAPS[normalizedDifficulty];
   const rawPoints = Math.max(
     0,
-    Math.floor(safeScore * rate * TRAINING_DIFFICULTY_MULTIPLIERS[normalizedDifficulty]),
+    Math.floor(safeScore * rate * difficultyMultiplier),
   );
-  return Math.min(rawPoints, TRAINING_DIFFICULTY_POINT_CAPS[normalizedDifficulty]);
+  return Math.min(rawPoints, maxPoints);
 }
 
 function runMigrationsIfNeeded() {
@@ -534,6 +553,12 @@ export function clearProductData() {
       gameSpecificKeys.push(`memory_highscore_T${timeDifficulty}M${memoryDifficulty}`);
     }
   }
+
+  ["shape", "pet", "calculation"].forEach((mode) => {
+    for (let memoryN = 1; memoryN <= 4; memoryN += 1) {
+      gameSpecificKeys.push(`memory_highscore_${mode}_M${memoryN}`);
+    }
+  });
 
   for (let difficulty = 1; difficulty <= 4; difficulty += 1) {
     gameSpecificKeys.push(`rps_highscore_D${difficulty}`);

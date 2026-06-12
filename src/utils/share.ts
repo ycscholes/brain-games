@@ -44,8 +44,8 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
     timelineTitle: "Cici的脑部锻炼：每天练一点",
   },
   "pages/memory-challenge/index": {
-    title: "来挑战奇趣图形记忆",
-    timelineTitle: "奇趣图形记忆训练",
+    title: "来挑战奇趣记忆",
+    timelineTitle: "奇趣记忆 N-Back 训练",
   },
   "pages/rock-paper-scissors/index": {
     title: "来玩逆向猜拳，练反应和抑制力",

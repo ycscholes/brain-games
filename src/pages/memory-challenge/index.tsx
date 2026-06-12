@@ -1,18 +1,32 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, Image } from "@tarojs/components";
-import Taro, { useLoad, useDidShow } from "@tarojs/taro";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Image, Text, View } from "@tarojs/components";
+import Taro, { useDidShow, useLoad } from "@tarojs/taro";
+import { resolvePetSpriteUrl } from "../../config/remoteAssets";
 import { addPointsToPet } from "../../utils/petStorage";
 import {
   getAwardedPoints,
-  getTrainingDifficultyLabel,
-  MAX_POINTS_PER_SESSION,
   recordTrainingSession,
   type TrainingDifficulty,
+  type TrainingRewardPolicy,
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
+import { PET_SKIN_NAME, type PetSkin } from "../pet/types";
+import {
+  addMemoryChallengeRoundScore,
+  createCalculationItem,
+  createNumericOptions,
+  createVisualOptions,
+  getMemoryChallengeModeRecord,
+  getMemoryChallengeRewardCap,
+  getMemoryChallengeRoundPoints,
+  getNBackTarget,
+  type MemoryChallengeItem,
+  type MemoryChallengeMode,
+  type MemoryChallengeN,
+  type MemoryChallengeOption,
+} from "./gameLogic";
 import "./index.scss";
 
-// Import Shapes
 import shape01 from "../../assets/shapes/shape_01.svg";
 import shape02 from "../../assets/shapes/shape_02.svg";
 import shape03 from "../../assets/shapes/shape_03.svg";
@@ -24,434 +38,512 @@ import shape08 from "../../assets/shapes/shape_08.svg";
 import shape09 from "../../assets/shapes/shape_09.svg";
 import shape10 from "../../assets/shapes/shape_10.svg";
 
-const ALL_SHAPES = [
-  { id: "shape_01", src: shape01 },
-  { id: "shape_02", src: shape02 },
-  { id: "shape_03", src: shape03 },
-  { id: "shape_04", src: shape04 },
-  { id: "shape_05", src: shape05 },
-  { id: "shape_06", src: shape06 },
-  { id: "shape_07", src: shape07 },
-  { id: "shape_08", src: shape08 },
-  { id: "shape_09", src: shape09 },
-  { id: "shape_10", src: shape10 },
-];
-
 type GameState = "start" | "memorize" | "playing" | "gameover";
-type TimeDifficulty = 1 | 2 | 3 | 4;
-type MemoryDifficulty = 1 | 2 | 3 | 4;
 
-// 时间维度配置（答题时间）
-const TIME_CONFIG = {
-  1: { label: "简单", color: "#22C55E", time: 8 },
-  2: { label: "中等", color: "#EAB308", time: 6 },
-  3: { label: "困难", color: "#F97316", time: 4 },
-  4: { label: "专家", color: "#EF4444", time: 2 },
-} as const;
-
-// 记忆维度配置（N-Back的N值）
-const MEMORY_CONFIG = {
-  1: { label: "1-Back", color: "#22C55E", n: 1, desc: "记忆前1个" },
-  2: { label: "2-Back", color: "#EAB308", n: 2, desc: "记忆前2个" },
-  3: { label: "3-Back", color: "#F97316", n: 3, desc: "记忆前3个" },
-  4: { label: "4-Back", color: "#EF4444", n: 4, desc: "记忆前4个" },
-} as const;
-
-// 难度系数积分表
-const POINTS_PER_CORRECT: Record<string, number> = {
-  "T1M1": 2, "T2M1": 2, "T3M1": 3, "T4M1": 3,
-  "T1M2": 2, "T2M2": 3, "T3M2": 3, "T4M2": 3,
-  "T1M3": 3, "T2M3": 3, "T3M3": 3, "T4M3": 4,
-  "T1M4": 3, "T2M4": 3, "T3M4": 4, "T4M4": 4,
-};
-
-// 最高分记录接口
 interface HighScoreRecord {
   score: number;
   achievedAt: string;
+}
+
+const ANSWER_TIME_SECONDS = 6;
+const MEMORIZE_ITEM_MS = 1500;
+const FEEDBACK_MS = 500;
+const PET_SKINS: PetSkin[] = ["cat", "dog", "rabbit", "bear", "panda", "gecko", "turtle"];
+
+const SHAPE_ITEMS: MemoryChallengeItem[] = [
+  shape01,
+  shape02,
+  shape03,
+  shape04,
+  shape05,
+  shape06,
+  shape07,
+  shape08,
+  shape09,
+  shape10,
+].map((imageSrc, index) => {
+  const id = `shape_${`${index + 1}`.padStart(2, "0")}`;
+  return {
+    id,
+    prompt: id,
+    answerId: id,
+    answerLabel: `图形${index + 1}`,
+    imageSrc,
+  };
+});
+
+const MODE_CONFIG: Record<MemoryChallengeMode, {
+  label: string;
+  icon: string;
+  description: string;
+}> = {
+  shape: {
+    label: "图形",
+    icon: "🔷",
+    description: "记住抽象图形",
+  },
+  pet: {
+    label: "宠物",
+    icon: "🐾",
+    description: "记住云端宠物",
+  },
+  calculation: {
+    label: "计算",
+    icon: "➕",
+    description: "记住算式答案",
+  },
+};
+
+const MEMORY_CONFIG: Record<MemoryChallengeN, {
+  label: string;
+  color: string;
+  description: string;
+}> = {
+  1: { label: "1-Back", color: "#22C55E", description: "每题基础 1 分" },
+  2: { label: "2-Back", color: "#EAB308", description: "每题基础 2 分" },
+  3: { label: "3-Back", color: "#F97316", description: "每题基础 4 分" },
+  4: { label: "4-Back", color: "#EF4444", description: "每题基础 8 分" },
+};
+
+function getHighScoreKey(mode: MemoryChallengeMode, n: MemoryChallengeN) {
+  return `memory_highscore_${mode}_M${n}`;
+}
+
+function readHighScore(mode: MemoryChallengeMode, n: MemoryChallengeN): HighScoreRecord | null {
+  const raw = Taro.getStorageSync(getHighScoreKey(mode, n));
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as HighScoreRecord;
+    return typeof parsed.score === "number" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function preloadImage(url: string) {
+  return new Promise<boolean>((resolve) => {
+    Taro.getImageInfo({
+      src: url,
+      success: () => resolve(true),
+      fail: () => resolve(false),
+    });
+  });
+}
+
+async function resolvePetItems(): Promise<MemoryChallengeItem[]> {
+  const items = await Promise.all(
+    PET_SKINS.map(async (skin) => {
+      const imageSrc = await resolvePetSpriteUrl(skin, "idle");
+      if (!imageSrc || !(await preloadImage(imageSrc))) {
+        throw new Error(`Unable to load ${skin}`);
+      }
+
+      return {
+        id: `pet-${skin}`,
+        prompt: PET_SKIN_NAME[skin],
+        answerId: `pet-${skin}`,
+        answerLabel: PET_SKIN_NAME[skin],
+        imageSrc,
+      };
+    }),
+  );
+
+  return items;
+}
+
+function getRewardDifficulty(n: MemoryChallengeN): TrainingDifficulty {
+  return n >= 3 ? "hard" : "normal";
+}
+
+function getRewardPolicy(mode: MemoryChallengeMode, n: MemoryChallengeN): TrainingRewardPolicy {
+  return {
+    applyDifficultyMultiplier: false,
+    maxPoints: getMemoryChallengeRewardCap(mode, n),
+  };
+}
+
+function pickRandomItem(items: MemoryChallengeItem[]) {
+  return items[Math.floor(Math.random() * items.length)];
 }
 
 export default function MemoryChallenge() {
   usePageShare("pages/memory-challenge/index");
 
   const [gameState, setGameState] = useState<GameState>("start");
+  const [mode, setMode] = useState<MemoryChallengeMode>("shape");
+  const [memoryN, setMemoryN] = useState<MemoryChallengeN>(1);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [round, setRound] = useState(1);
-  const [timeLeft, setTimeLeft] = useState(8);
-  const [timeDifficulty, setTimeDifficulty] = useState<TimeDifficulty>(1);
-  const [memoryDifficulty, setMemoryDifficulty] = useState<MemoryDifficulty>(1);
-
-  const [history, setHistory] = useState<(typeof ALL_SHAPES)[0][]>([]);
-  const [currentShape, setCurrentShape] = useState<(typeof ALL_SHAPES)[0] | null>(null);
-  const [targetShape, setTargetShape] = useState<(typeof ALL_SHAPES)[0] | null>(null);
+  const [timeLeft, setTimeLeft] = useState(ANSWER_TIME_SECONDS);
+  const [currentItem, setCurrentItem] = useState<MemoryChallengeItem | null>(null);
+  const [targetItem, setTargetItem] = useState<MemoryChallengeItem | null>(null);
   const [memorizeIndex, setMemorizeIndex] = useState(0);
-
-  const [options, setOptions] = useState<(typeof ALL_SHAPES)[0][]>([]);
-
+  const [options, setOptions] = useState<MemoryChallengeOption[]>([]);
   const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">("none");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
   const [correctCount, setCorrectCount] = useState(0);
+  const [awardedPoints, setAwardedPoints] = useState(0);
+  const [isLoadingPets, setIsLoadingPets] = useState(false);
+  const [petItems, setPetItems] = useState<MemoryChallengeItem[]>([]);
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const memorizeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const historyRef = useRef<MemoryChallengeItem[]>([]);
+  const scoreRef = useRef(0);
+  const finishedRef = useRef(false);
+  const activeModeRef = useRef<MemoryChallengeMode>("shape");
+  const activeNRef = useRef<MemoryChallengeN>(1);
+  const activePoolRef = useRef<MemoryChallengeItem[]>(SHAPE_ITEMS);
+  const startedAtRef = useRef(0);
 
-  // 获取当前难度组合的存储键名
-  const getHighScoreKey = () => {
-    return `memory_highscore_T${timeDifficulty}M${memoryDifficulty}`;
-  };
-
-  // 获取当前难度组合的最高分
-  const getCurrentHighScore = (): HighScoreRecord | null => {
-    const key = getHighScoreKey();
-    const record = Taro.getStorageSync(key);
-    if (record) {
-      return JSON.parse(record) as HighScoreRecord;
+  const clearTimers = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
-    return null;
-  };
+    timeoutRefs.current.forEach((timeout) => clearTimeout(timeout));
+    timeoutRefs.current = [];
+  }, []);
 
-  // 更新当前难度组合的最高分
-  const updateHighScore = (newScore: number) => {
-    const key = getHighScoreKey();
-    const currentRecord = getCurrentHighScore();
+  const schedule = useCallback((callback: () => void, delayMs: number) => {
+    const timeout = setTimeout(callback, delayMs);
+    timeoutRefs.current.push(timeout);
+  }, []);
 
-    if (!currentRecord || newScore > currentRecord.score) {
-      const newRecord: HighScoreRecord = {
-        score: newScore,
-        achievedAt: new Date().toISOString(),
-      };
-      Taro.setStorageSync(key, JSON.stringify(newRecord));
-      setIsNewRecord(true);
-      return true;
-    }
-    setIsNewRecord(false);
-    return false;
-  };
-
-  // 刷新最高分显示
   const refreshHighScore = useCallback(() => {
-    const record = getCurrentHighScore();
-    if (record) {
-      setHighScore(record.score);
-    } else {
-      setHighScore(0);
-    }
-  }, [timeDifficulty, memoryDifficulty]);
+    setHighScore(readHighScore(mode, memoryN)?.score ?? 0);
+  }, [memoryN, mode]);
 
-  useLoad(() => {
-    // 加载当前难度组合的最高分
-    refreshHighScore();
-  });
+  useLoad(refreshHighScore);
+  useDidShow(refreshHighScore);
 
-  // 每次页面显示时刷新最高分
-  useDidShow(() => {
-    refreshHighScore();
-  });
-
-  // 监听难度变化，更新显示的最高分
   useEffect(() => {
     refreshHighScore();
-  }, [timeDifficulty, memoryDifficulty, refreshHighScore]);
+  }, [refreshHighScore]);
 
-  // 监听游戏状态变化，当返回首页时刷新最高分
-  useEffect(() => {
-    if (gameState === "start") {
-      refreshHighScore();
+  useEffect(() => clearTimers, [clearTimers]);
+
+  const createNextItem = useCallback((selectedMode: MemoryChallengeMode) => {
+    if (selectedMode === "calculation") {
+      return createCalculationItem();
     }
-  }, [gameState, refreshHighScore]);
+    return pickRandomItem(activePoolRef.current);
+  }, []);
 
-  const getMaxTime = () => {
-    return TIME_CONFIG[timeDifficulty].time;
-  };
+  const buildOptions = useCallback((
+    selectedMode: MemoryChallengeMode,
+    target: MemoryChallengeItem,
+  ) => {
+    return selectedMode === "calculation"
+      ? createNumericOptions(Number(target.answerId))
+      : createVisualOptions(target, activePoolRef.current);
+  }, []);
 
-  const getNValue = () => {
-    return MEMORY_CONFIG[memoryDifficulty].n;
-  };
+  const startPlaying = useCallback((currentHistory: MemoryChallengeItem[]) => {
+    const selectedMode = activeModeRef.current;
+    const selectedN = activeNRef.current;
+    const nextItem = createNextItem(selectedMode);
+    const nextHistory = [...currentHistory, nextItem];
+    const target = getNBackTarget(nextHistory, selectedN);
+    if (!target) return;
 
-  const getRewardDifficulty = (): TrainingDifficulty => {
-    return timeDifficulty >= 3 || memoryDifficulty >= 3 ? "hard" : "normal";
-  };
+    historyRef.current = nextHistory;
+    setCurrentItem(nextItem);
+    setTargetItem(target);
+    setOptions(buildOptions(selectedMode, target));
+    setGameState("playing");
+    setFeedback("none");
+    setSelectedId(null);
+    setTimeLeft(ANSWER_TIME_SECONDS);
+  }, [buildOptions, createNextItem]);
 
-  const getRandomShape = () => {
-    const idx = Math.floor(Math.random() * ALL_SHAPES.length);
-    return ALL_SHAPES[idx];
-  };
+  const beginSession = useCallback((
+    selectedMode: MemoryChallengeMode,
+    selectedN: MemoryChallengeN,
+    itemPool: MemoryChallengeItem[],
+  ) => {
+    clearTimers();
+    activeModeRef.current = selectedMode;
+    activeNRef.current = selectedN;
+    activePoolRef.current = itemPool;
+    finishedRef.current = false;
+    startedAtRef.current = Date.now();
+    scoreRef.current = 0;
 
-  const generateOptions = (correctShape: (typeof ALL_SHAPES)[0]) => {
-    const opts = [correctShape];
-    while (opts.length < 4) {
-      const random = getRandomShape();
-      if (!opts.find((o) => o.id === random.id)) {
-        opts.push(random);
-      }
-    }
-    return opts.sort(() => Math.random() - 0.5);
-  };
+    const initialItems = Array.from(
+      { length: selectedN },
+      () => selectedMode === "calculation" ? createCalculationItem() : pickRandomItem(itemPool),
+    );
 
-  const startGame = () => {
-    const n = getNValue();
-    const initialShapes: (typeof ALL_SHAPES)[0][] = [];
-
-    // 生成N个初始图形用于记忆
-    for (let i = 0; i < n; i++) {
-      initialShapes.push(getRandomShape());
-    }
-
+    historyRef.current = initialItems;
     setScore(0);
     setRound(1);
     setCorrectCount(0);
-    setHistory([...initialShapes]);
+    setAwardedPoints(0);
     setMemorizeIndex(0);
-    setCurrentShape(initialShapes[0]);
-    setTargetShape(null);
+    setCurrentItem(initialItems[0]);
+    setTargetItem(null);
+    setOptions([]);
     setGameState("memorize");
     setFeedback("none");
     setSelectedId(null);
 
-    // 依次展示N个图形，每个1.5秒
     let index = 0;
-    const showNextShape = () => {
-      index++;
-      if (index < n) {
+    const showNextItem = () => {
+      index += 1;
+      if (index < selectedN) {
         setMemorizeIndex(index);
-        setCurrentShape(initialShapes[index]);
-        memorizeTimerRef.current = setTimeout(showNextShape, 1500);
-      } else {
-        // 展示完毕，开始游戏
-        setTimeout(() => {
-          startPlaying([...initialShapes]);
-        }, 1500);
+        setCurrentItem(initialItems[index]);
+        schedule(showNextItem, MEMORIZE_ITEM_MS);
+        return;
       }
+      schedule(() => startPlaying(initialItems), MEMORIZE_ITEM_MS);
     };
 
-    memorizeTimerRef.current = setTimeout(showNextShape, 1500);
-  };
+    schedule(showNextItem, MEMORIZE_ITEM_MS);
+  }, [clearTimers, schedule, startPlaying]);
 
-  const startPlaying = (currentHistory: (typeof ALL_SHAPES)[0][]) => {
-    const n = getNValue();
-    const next = getRandomShape();
-    const newHistory = [...currentHistory, next];
+  const startGame = useCallback(async () => {
+    if (isLoadingPets) return;
 
-    setHistory(newHistory);
-    setCurrentShape(next);
-    // 目标是要回忆前N个图形
-    setTargetShape(newHistory[newHistory.length - n - 1]);
-    setOptions(generateOptions(newHistory[newHistory.length - n - 1]));
-
-    setGameState("playing");
-    setFeedback("none");
-    setSelectedId(null);
-    setTimeLeft(getMaxTime());
-  };
-
-  const nextRound = () => {
-    const n = getNValue();
-    const next = getRandomShape();
-    const newHistory = [...history, next];
-
-    setHistory(newHistory);
-    setCurrentShape(next);
-    // 目标是要回忆前N个图形
-    setTargetShape(newHistory[newHistory.length - n - 1]);
-    setOptions(generateOptions(newHistory[newHistory.length - n - 1]));
-
-    setRound((r) => r + 1);
-    setFeedback("none");
-    setSelectedId(null);
-    setTimeLeft(getMaxTime());
-  };
-
-  useEffect(() => {
-    if (gameState === "playing" && feedback === "none") {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((t) => {
-          if (t <= 0.1) {
-            handleGameOver();
-            return 0;
-          }
-          return t - 0.1;
-        });
-      }, 100);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
+    if (mode !== "pet") {
+      beginSession(mode, memoryN, mode === "shape" ? SHAPE_ITEMS : []);
+      return;
     }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [gameState, feedback]);
 
-  const handleSelect = (id: string) => {
-    if (gameState !== "playing" || feedback !== "none" || !targetShape) return;
-
-    setSelectedId(id);
-
-    if (id === targetShape.id) {
-      setFeedback("correct");
-      const pts = POINTS_PER_CORRECT[`T${timeDifficulty}M${memoryDifficulty}`] || 2;
-      setScore((s) => Math.min(MAX_POINTS_PER_SESSION, s + pts));
-      setCorrectCount((c) => c + 1);
-
-      setTimeout(() => {
-        nextRound();
-      }, 500);
-    } else {
-      setFeedback("wrong");
-
-      setTimeout(() => {
-        handleGameOver();
-      }, 500);
+    setIsLoadingPets(true);
+    try {
+      const resolvedItems = petItems.length > 0 ? petItems : await resolvePetItems();
+      setPetItems(resolvedItems);
+      beginSession(mode, memoryN, resolvedItems);
+    } catch {
+      Taro.showToast({
+        title: "宠物图片加载失败，请重试",
+        icon: "none",
+      });
+    } finally {
+      setIsLoadingPets(false);
     }
-  };
+  }, [beginSession, isLoadingPets, memoryN, mode, petItems]);
 
-  const handleGameOver = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    const finalScore = Math.min(MAX_POINTS_PER_SESSION, score);
-    const rewardDifficulty = getRewardDifficulty();
-    const awardedPoints = getAwardedPoints("memory-challenge", finalScore, rewardDifficulty);
+  const updateHighScore = useCallback((
+    finalScore: number,
+    selectedMode: MemoryChallengeMode,
+    selectedN: MemoryChallengeN,
+  ) => {
+    const currentRecord = readHighScore(selectedMode, selectedN);
+    if (!currentRecord || finalScore > currentRecord.score) {
+      const nextRecord: HighScoreRecord = {
+        score: finalScore,
+        achievedAt: new Date().toISOString(),
+      };
+      Taro.setStorageSync(getHighScoreKey(selectedMode, selectedN), JSON.stringify(nextRecord));
+      setHighScore(finalScore);
+      setIsNewRecord(true);
+      return;
+    }
+    setHighScore(currentRecord.score);
+    setIsNewRecord(false);
+  }, []);
+
+  const handleGameOver = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    clearTimers();
+
+    const selectedMode = activeModeRef.current;
+    const selectedN = activeNRef.current;
+    const finalScore = scoreRef.current;
+    const rewardDifficulty = getRewardDifficulty(selectedN);
+    const rewardPolicy = getRewardPolicy(selectedMode, selectedN);
+    const finalAwardedPoints = getAwardedPoints(
+      "memory-challenge",
+      finalScore,
+      rewardDifficulty,
+      rewardPolicy,
+    );
+
     Taro.setStorageSync("memory_last_score", finalScore);
-    addPointsToPet("memory-challenge", finalScore, rewardDifficulty);
+    addPointsToPet("memory-challenge", finalScore, rewardDifficulty, rewardPolicy);
     recordTrainingSession({
       gameId: "memory-challenge",
       score: finalScore,
-      awardedPoints,
-      mode: `T${timeDifficulty}M${memoryDifficulty}`,
+      awardedPoints: finalAwardedPoints,
+      mode: getMemoryChallengeModeRecord(selectedMode, selectedN),
       difficulty: rewardDifficulty,
+      durationSeconds: Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000)),
       outcome: "completed",
     });
-    setGameState("gameover");
-    // 更新当前难度组合的最高分
-    updateHighScore(finalScore);
-  };
 
-  const getStatusText = () => {
-    const n = getNValue();
-    if (gameState === "memorize") {
-      return `请记住第 ${memorizeIndex + 1}/${n} 个图形`;
+    setAwardedPoints(finalAwardedPoints);
+    updateHighScore(finalScore, selectedMode, selectedN);
+    setGameState("gameover");
+  }, [clearTimers, updateHighScore]);
+
+  const nextRound = useCallback(() => {
+    const selectedMode = activeModeRef.current;
+    const selectedN = activeNRef.current;
+    const nextItem = createNextItem(selectedMode);
+    const nextHistory = [...historyRef.current, nextItem];
+    const target = getNBackTarget(nextHistory, selectedN);
+    if (!target) return;
+
+    historyRef.current = nextHistory;
+    setCurrentItem(nextItem);
+    setTargetItem(target);
+    setOptions(buildOptions(selectedMode, target));
+    setRound((value) => value + 1);
+    setFeedback("none");
+    setSelectedId(null);
+    setTimeLeft(ANSWER_TIME_SECONDS);
+  }, [buildOptions, createNextItem]);
+
+  useEffect(() => {
+    if (gameState !== "playing" || feedback !== "none") {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
     }
-    return `请选择前${n}个图形`;
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft((current) => {
+        if (current <= 0.1) {
+          handleGameOver();
+          return 0;
+        }
+        return current - 0.1;
+      });
+    }, 100);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [feedback, gameState, handleGameOver]);
+
+  const handleSelect = useCallback((id: string) => {
+    if (gameState !== "playing" || feedback !== "none" || !targetItem) return;
+
+    setSelectedId(id);
+    if (id !== targetItem.answerId) {
+      setFeedback("wrong");
+      schedule(handleGameOver, FEEDBACK_MS);
+      return;
+    }
+
+    const nextScore = addMemoryChallengeRoundScore(
+      scoreRef.current,
+      activeModeRef.current,
+      activeNRef.current,
+    );
+    scoreRef.current = nextScore;
+    setScore(nextScore);
+    setCorrectCount((value) => value + 1);
+    setFeedback("correct");
+    schedule(nextRound, FEEDBACK_MS);
+  }, [feedback, gameState, handleGameOver, nextRound, schedule, targetItem]);
+
+  const statusText = gameState === "memorize"
+    ? `请记住第 ${memorizeIndex + 1}/${memoryN} 题`
+    : mode === "calculation"
+      ? `请选择前 ${memoryN} 题的答案`
+      : `请选择前 ${memoryN} 题的内容`;
+
+  const renderItemContent = (item: MemoryChallengeItem, className: string) => {
+    if (item.imageSrc) {
+      return <Image src={item.imageSrc} className={className} mode="aspectFit" />;
+    }
+    return <Text className={`${className} calculation-text`}>{item.prompt}</Text>;
   };
 
   return (
     <View className="game-container">
-      {/* ---------------- START SCREEN ---------------- */}
       {gameState === "start" && (
         <View className="start-screen">
-          {/* Header Section */}
           <View className="header-section">
             <View className="logo-container">
               <View className="logo-icon">
                 <Text className="logo-emoji">🎯</Text>
               </View>
             </View>
-            <Text className="game-title">奇趣图形记忆</Text>
-            <Text className="game-subtitle">挑战你的大脑，记住每一个图形！</Text>
-
-            {/* High Score Display */}
+            <Text className="game-title">奇趣记忆</Text>
+            <Text className="game-subtitle">6 秒判断，挑战持续更新记忆</Text>
             <View className="high-score-badge">
               <View className="high-score-icon">
                 <Text className="high-score-icon-text">🏆</Text>
               </View>
               <View className="high-score-content">
-                <Text className="high-score-label">当前难度最高分</Text>
+                <Text className="high-score-label">当前模式最高分</Text>
                 <Text className="high-score-value">{highScore}</Text>
               </View>
             </View>
           </View>
 
-          {/* Rules Section */}
           <View className="rules-card">
             <View className="rules-header">
-              <View className="rules-icon">
-                <Text className="rules-icon-text">📋</Text>
-              </View>
+              <Text className="rules-icon-text">📋</Text>
               <Text className="rules-title">游戏规则</Text>
             </View>
             <View className="rules-list">
-              <View className="rule-item">
-                <Text className="rule-number">1.</Text>
-                <Text className="rule-text">选择时间和记忆数量难度</Text>
-              </View>
-              <View className="rule-item">
-                <Text className="rule-number">2.</Text>
-                <Text className="rule-text">系统展示图形，请记住它们</Text>
-              </View>
-              <View className="rule-item">
-                <Text className="rule-number">3.</Text>
-                <Text className="rule-text">选出前N个出现的图形（N由难度决定）</Text>
-              </View>
-              <View className="rule-item">
-                <Text className="rule-number">4.</Text>
-                <Text className="rule-text">答对得分，答错或超时游戏结束</Text>
-              </View>
+              <Text className="rule-text">1. 依次记住最开始的 {memoryN} 题</Text>
+              <Text className="rule-text">2. 每轮选出前 {memoryN} 题的内容或答案</Text>
+              <Text className="rule-text">3. 每题限时 {ANSWER_TIME_SECONDS} 秒，答错或超时结束</Text>
+              <Text className="rule-text">4. 游戏分数无限累计，宠物积分按模式封顶</Text>
             </View>
           </View>
 
-          {/* Time Difficulty Section */}
           <View className="difficulty-section">
             <View className="difficulty-header">
-              <View className="difficulty-icon">
-                <Text className="difficulty-icon-text">⏱️</Text>
-              </View>
-              <Text className="difficulty-title">答题时间</Text>
+              <Text className="difficulty-icon-text">🎮</Text>
+              <Text className="difficulty-title">游戏模式</Text>
             </View>
-            <View className="difficulty-grid">
-              {([1, 2, 3, 4] as TimeDifficulty[]).map((d) => {
-                const isSelected = timeDifficulty === d;
-                const config = TIME_CONFIG[d];
-
+            <View className="mode-grid">
+              {(Object.keys(MODE_CONFIG) as MemoryChallengeMode[]).map((itemMode) => {
+                const config = MODE_CONFIG[itemMode];
                 return (
                   <View
-                    key={`time-${d}`}
-                    className={`difficulty-item ${isSelected ? "difficulty-item-selected" : ""}`}
-                    onClick={() => setTimeDifficulty(d)}
+                    key={itemMode}
+                    className={`mode-item ${mode === itemMode ? "mode-item-selected" : ""}`}
+                    onClick={() => setMode(itemMode)}
                   >
-                    <View
-                      className="difficulty-badge"
-                      style={{ backgroundColor: config.color }}
-                    >
-                      <Text className="difficulty-badge-text">{config.time}s</Text>
-                    </View>
+                    <Text className="mode-icon">{config.icon}</Text>
                     <Text className="difficulty-label">{config.label}</Text>
-                    <Text className="difficulty-desc">
-                      积分{getTrainingDifficultyLabel(d >= 3 ? "hard" : "normal")}
-                    </Text>
+                    <Text className="difficulty-desc">{config.description}</Text>
                   </View>
                 );
               })}
             </View>
           </View>
 
-          {/* Memory Difficulty Section */}
           <View className="difficulty-section">
             <View className="difficulty-header">
-              <View className="difficulty-icon">
-                <Text className="difficulty-icon-text">🧠</Text>
-              </View>
+              <Text className="difficulty-icon-text">🧠</Text>
               <Text className="difficulty-title">记忆数量</Text>
             </View>
             <View className="difficulty-grid">
-              {([1, 2, 3, 4] as MemoryDifficulty[]).map((d) => {
-                const isSelected = memoryDifficulty === d;
-                const config = MEMORY_CONFIG[d];
-
+              {([1, 2, 3, 4] as MemoryChallengeN[]).map((n) => {
+                const config = MEMORY_CONFIG[n];
                 return (
                   <View
-                    key={`memory-${d}`}
-                    className={`difficulty-item ${isSelected ? "difficulty-item-selected" : ""}`}
-                    onClick={() => setMemoryDifficulty(d)}
+                    key={n}
+                    className={`difficulty-item ${memoryN === n ? "difficulty-item-selected" : ""}`}
+                    onClick={() => setMemoryN(n)}
                   >
-                    <View
-                      className="difficulty-badge"
-                      style={{ backgroundColor: config.color }}
-                    >
-                      <Text className="difficulty-badge-text">{config.n}</Text>
+                    <View className="difficulty-badge" style={{ backgroundColor: config.color }}>
+                      <Text className="difficulty-badge-text">{n}</Text>
                     </View>
                     <Text className="difficulty-label">{config.label}</Text>
                     <Text className="difficulty-desc">
-                      积分{getTrainingDifficultyLabel(d >= 3 ? "hard" : "normal")}
+                      {mode === "calculation"
+                        ? `计算 ${getMemoryChallengeRoundPoints(mode, n)} 分/题`
+                        : config.description}
                     </Text>
                   </View>
                 );
@@ -459,91 +551,76 @@ export default function MemoryChallenge() {
             </View>
           </View>
 
-          {/* Start Button */}
           <View className="start-button-container floating-start-action">
-            <View className="start-button" onClick={startGame}>
-              <Text className="start-button-text">开始游戏</Text>
+            <View
+              className={`start-button ${isLoadingPets ? "start-button-disabled" : ""}`}
+              onClick={startGame}
+            >
+              <Text className="start-button-text">
+                {isLoadingPets ? "加载宠物图片..." : "开始游戏"}
+              </Text>
             </View>
           </View>
           <View className="floating-start-spacer" />
         </View>
       )}
 
-      {/* ---------------- MEMORIZE & PLAYING SCREEN ---------------- */}
-      {(gameState === "memorize" || gameState === "playing") && currentShape && (
+      {(gameState === "memorize" || gameState === "playing") && currentItem && (
         <View className="game-screen">
-          {/* Top Bar */}
           <View className="top-bar">
             <View className="top-bar-item">
-              <View className="top-bar-icon top-bar-icon-eye">
-                <Text className="top-bar-icon-text">👁️</Text>
-              </View>
+              <Text className="top-bar-icon-text">{MODE_CONFIG[activeModeRef.current].icon}</Text>
               <Text className="top-bar-text">题目 {round}</Text>
             </View>
             <View className="top-bar-item">
-              <View className="top-bar-icon top-bar-icon-trophy">
-                <Text className="top-bar-icon-text">🏆</Text>
-              </View>
+              <Text className="top-bar-icon-text">🏆</Text>
               <Text className="top-bar-text">{score} 分</Text>
             </View>
           </View>
 
-          {/* Main Card */}
           <View className="main-card">
-            <View
-              className={`status-badge ${gameState === "memorize" ? "status-badge-memorize" : "status-badge-play"}`}
-            >
-              <Text className="status-badge-text">{getStatusText()}</Text>
+            <View className={`status-badge ${gameState === "memorize" ? "status-badge-memorize" : "status-badge-play"}`}>
+              <Text className="status-badge-text">{statusText}</Text>
             </View>
-
             <View className="shape-display">
-              <Image src={currentShape.src} className="shape-image" />
+              {renderItemContent(currentItem, "shape-image")}
             </View>
 
-            {/* Countdown Number */}
             {gameState === "playing" && (
-              <View className="countdown">
-                <Text className={`countdown-text ${timeLeft < 3 ? "countdown-urgent" : ""}`}>
-                  {timeLeft.toFixed(1)}
-                </Text>
-              </View>
-            )}
-
-            {/* Progress Bar */}
-            {gameState === "playing" && (
-              <View className="progress-bar">
-                <View
-                  className="progress-bar-fill"
-                  style={{
-                    width: `${(timeLeft / getMaxTime()) * 100}%`,
-                  }}
-                />
-              </View>
+              <>
+                <View className="countdown">
+                  <Text className={`countdown-text ${timeLeft < 3 ? "countdown-urgent" : ""}`}>
+                    {timeLeft.toFixed(1)}
+                  </Text>
+                </View>
+                <View className="progress-bar">
+                  <View
+                    className="progress-bar-fill"
+                    style={{ width: `${(timeLeft / ANSWER_TIME_SECONDS) * 100}%` }}
+                  />
+                </View>
+              </>
             )}
           </View>
 
-          {/* Options Grid */}
           {gameState === "playing" ? (
             <View className="options-grid">
-              {options.map((shape) => {
-                const isSelected = selectedId === shape.id;
-                let itemClass = "option-item";
-
-                if (isSelected) {
-                  if (feedback === "correct") {
-                    itemClass += " option-item-correct";
-                  } else if (feedback === "wrong") {
-                    itemClass += " option-item-wrong";
-                  }
-                }
-
+              {options.map((option) => {
+                const isSelected = selectedId === option.id;
+                const optionClass = isSelected
+                  ? `option-item ${feedback === "correct" ? "option-item-correct" : "option-item-wrong"}`
+                  : "option-item";
                 return (
                   <View
-                    key={shape.id}
-                    className={itemClass}
-                    onClick={() => handleSelect(shape.id)}
+                    key={option.id}
+                    className={optionClass}
+                    onClick={() => handleSelect(option.id)}
                   >
-                    <Image src={shape.src} className="option-image" />
+                    {option.imageSrc ? (
+                      <Image src={option.imageSrc} className="option-image" mode="aspectFit" />
+                    ) : (
+                      <Text className="option-number">{option.label}</Text>
+                    )}
                   </View>
                 );
               })}
@@ -560,22 +637,21 @@ export default function MemoryChallenge() {
         </View>
       )}
 
-      {/* ---------------- GAME OVER SCREEN ---------------- */}
       {gameState === "gameover" && (
         <View className="result-screen">
           <View className="result-card">
             <Text className="result-title">本局成绩</Text>
-            <Text className="result-score">{Math.min(MAX_POINTS_PER_SESSION, score)}</Text>
+            <Text className="result-score">{score}</Text>
             <Text className="result-desc">答对 {correctCount} 题</Text>
             <Text className="result-desc">
-              {TIME_CONFIG[timeDifficulty].label} · {MEMORY_CONFIG[memoryDifficulty].label} · 积分{getTrainingDifficultyLabel(getRewardDifficulty())}
+              {MODE_CONFIG[activeModeRef.current].label} · {MEMORY_CONFIG[activeNRef.current].label}
             </Text>
             <Text className="result-desc">
-              获得 {getAwardedPoints("memory-challenge", Math.min(MAX_POINTS_PER_SESSION, score), getRewardDifficulty())} 积分
+              获得 {awardedPoints} 宠物积分，上限 {getMemoryChallengeRewardCap(activeModeRef.current, activeNRef.current)}
             </Text>
             <Text className="result-desc">
               历史最高 {highScore}
-              {isNewRecord && score > 0 ? <Text className="result-highlight">，刷新纪录</Text> : null}
+              {isNewRecord && score > 0 ? <Text className="result-highlight">刷新纪录</Text> : null}
             </Text>
           </View>
 
@@ -586,7 +662,7 @@ export default function MemoryChallenge() {
             <View className="secondary-button" onClick={() => setGameState("start")}>
               <Text className="button-text">返回开始页</Text>
             </View>
-            <View className="secondary-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
+            <View className="secondary-button" onClick={() => Taro.reLaunch({ url: "/pages/index/index" })}>
               <Text className="button-text">返回游戏主页</Text>
             </View>
           </View>
