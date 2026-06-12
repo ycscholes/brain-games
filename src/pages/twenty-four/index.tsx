@@ -9,40 +9,25 @@ import {
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
+import {
+  POINTS_PER_SOLVED_ROUND,
+  evaluateExpression,
+  generateRound,
+  type CardValue,
+  type Operator,
+  type Token,
+} from "./gameLogic";
 import "./index.scss";
 
 type Phase = "start" | "playing" | "finished";
-type Token =
-  | { type: "number"; value: number; cardIndex: number; label: string }
-  | { type: "operator"; value: Operator }
-  | { type: "paren"; value: "(" | ")" };
-type Operator = "+" | "-" | "*" | "/";
-
-interface CardValue {
-  value: number;
-  label: string;
-}
-
-interface GeneratedRound {
-  cards: CardValue[];
-  solution: string;
-}
 
 const STORAGE_KEY_PREFIX = "twenty_four_best";
 const ROUND_SECONDS: Record<TrainingDifficulty, number> = {
   normal: 90,
   hard: 60,
 };
-const MAX_CARD_VALUE: Record<TrainingDifficulty, number> = {
-  normal: 10,
-  hard: 13,
-};
 const EPSILON = 1e-6;
 const OPERATORS: Operator[] = ["+", "-", "*", "/"];
-
-function randomInt(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 function formatOperator(operator: Operator) {
   if (operator === "*") return "×";
@@ -56,134 +41,15 @@ function tokenToText(token: Token) {
   return token.value;
 }
 
-function getPrecedence(operator: Operator) {
-  return operator === "+" || operator === "-" ? 1 : 2;
-}
-
-function solveTwentyFour(values: number[]): string | null {
-  const search = (items: Array<{ value: number; expression: string }>): string | null => {
-    if (items.length === 1) {
-      return Math.abs(items[0].value - 24) < EPSILON ? items[0].expression : null;
-    }
-
-    for (let leftIndex = 0; leftIndex < items.length; leftIndex += 1) {
-      for (let rightIndex = 0; rightIndex < items.length; rightIndex += 1) {
-        if (leftIndex === rightIndex) continue;
-
-        const left = items[leftIndex];
-        const right = items[rightIndex];
-        const rest = items.filter((_, index) => index !== leftIndex && index !== rightIndex);
-        const candidates = [
-          { value: left.value + right.value, expression: `(${left.expression}+${right.expression})` },
-          { value: left.value - right.value, expression: `(${left.expression}-${right.expression})` },
-          { value: left.value * right.value, expression: `(${left.expression}×${right.expression})` },
-        ];
-
-        if (Math.abs(right.value) > EPSILON) {
-          candidates.push({
-            value: left.value / right.value,
-            expression: `(${left.expression}÷${right.expression})`,
-          });
-        }
-
-        for (const candidate of candidates) {
-          const result = search([...rest, candidate]);
-          if (result) return result;
-        }
-      }
-    }
-
-    return null;
-  };
-
-  return search(values.map((value) => ({ value, expression: String(value) })));
-}
-
-function generateRound(maxCardValue: number): GeneratedRound {
-  for (let attempt = 0; attempt < 200; attempt += 1) {
-    const values = Array.from({ length: 4 }, () => randomInt(1, maxCardValue));
-    const solution = solveTwentyFour(values);
-    if (solution) {
-      return {
-        cards: values.map((value) => ({ value, label: String(value) })),
-        solution,
-      };
-    }
-  }
-
-  return {
-    cards: [3, 3, 8, 8].map((value) => ({ value, label: String(value) })),
-    solution: "(8÷(3-8÷3))",
-  };
-}
-
-function evaluateExpression(tokens: Token[]): number | null {
-  const values: number[] = [];
-  const operators: Array<Operator | "("> = [];
-
-  const applyOperator = () => {
-    const operator = operators.pop();
-    const right = values.pop();
-    const left = values.pop();
-    if (!operator || operator === "(" || right === undefined || left === undefined) {
-      return false;
-    }
-
-    if (operator === "+") values.push(left + right);
-    if (operator === "-") values.push(left - right);
-    if (operator === "*") values.push(left * right);
-    if (operator === "/") {
-      if (Math.abs(right) < EPSILON) return false;
-      values.push(left / right);
-    }
-
-    return true;
-  };
-
-  for (const token of tokens) {
-    if (token.type === "number") {
-      values.push(token.value);
-      continue;
-    }
-
-    if (token.type === "paren") {
-      if (token.value === "(") {
-        operators.push("(");
-      } else {
-        while (operators.length > 0 && operators[operators.length - 1] !== "(") {
-          if (!applyOperator()) return null;
-        }
-        if (operators.pop() !== "(") return null;
-      }
-      continue;
-    }
-
-    while (
-      operators.length > 0 &&
-      operators[operators.length - 1] !== "(" &&
-      getPrecedence(operators[operators.length - 1] as Operator) >= getPrecedence(token.value)
-    ) {
-      if (!applyOperator()) return null;
-    }
-    operators.push(token.value);
-  }
-
-  while (operators.length > 0) {
-    if (operators[operators.length - 1] === "(") return null;
-    if (!applyOperator()) return null;
-  }
-
-  return values.length === 1 ? values[0] : null;
-}
-
 export default function TwentyFour() {
   usePageShare("pages/twenty-four/index");
 
   const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
-  const [round, setRound] = useState<GeneratedRound>(() => generateRound(MAX_CARD_VALUE.normal));
+  const [round, setRound] = useState(() => generateRound());
   const [phase, setPhase] = useState<Phase>("start");
   const [tokens, setTokens] = useState<Token[]>([]);
   const [score, setScore] = useState(0);
+  const [solvedCount, setSolvedCount] = useState(0);
   const [best, setBest] = useState(0);
   const [timeLeft, setTimeLeft] = useState(ROUND_SECONDS.normal);
   const [feedback, setFeedback] = useState("用四张牌和运算符凑出 24");
@@ -272,9 +138,10 @@ export default function TwentyFour() {
 
   const startGame = () => {
     clearTimer();
-    setRound(generateRound(MAX_CARD_VALUE[rewardDifficulty]));
+    setRound(generateRound());
     setTokens([]);
     setScore(0);
+    setSolvedCount(0);
     setTimeLeft(ROUND_SECONDS[rewardDifficulty]);
     setFeedback("用四张牌和运算符凑出 24");
     setIsNewBest(false);
@@ -283,7 +150,7 @@ export default function TwentyFour() {
   };
 
   const nextRound = () => {
-    setRound(generateRound(MAX_CARD_VALUE[rewardDifficulty]));
+    setRound(generateRound());
     setTokens([]);
     setHintUsed(false);
     setFeedback("继续凑出 24");
@@ -342,7 +209,8 @@ export default function TwentyFour() {
 
     if (Math.abs(result - 24) < EPSILON) {
       if (!hintUsed) {
-        setScore((current) => current + 1);
+        setScore((current) => current + POINTS_PER_SOLVED_ROUND);
+        setSolvedCount((current) => current + 1);
         setFeedback("正确，进入下一题");
       } else {
         setFeedback("已完成提示题，进入下一题");
@@ -373,7 +241,7 @@ export default function TwentyFour() {
             <Text className="tf-section-title">规则</Text>
             <Text className="tf-rule">1. 每轮四张数字牌都必须使用一次。</Text>
             <Text className="tf-rule">2. 可以使用 +、-、×、÷ 和括号。</Text>
-            <Text className="tf-rule">3. 每解出一题得 1 分，限时结束后记录成绩。</Text>
+            <Text className="tf-rule">3. 数字范围为 0 至 10，每解出一题得 2 分。</Text>
           </View>
 
           <View className="tf-rules">
@@ -412,7 +280,7 @@ export default function TwentyFour() {
             </View>
             <View className="tf-status-card">
               <Text className="tf-status-value">{score}</Text>
-              <Text className="tf-status-label">已解题数</Text>
+              <Text className="tf-status-label">当前得分</Text>
             </View>
             <View className="tf-status-card">
               <Text className="tf-status-value">{best}</Text>
@@ -479,7 +347,7 @@ export default function TwentyFour() {
           <Text className="tf-result-title">本局结束</Text>
           <Text className="tf-result-score">{score}</Text>
           <Text className="tf-result-copy">
-            解出 {score} 题，积分{getTrainingDifficultyLabel(rewardDifficulty)}，获得 {getAwardedPoints("twenty-four", score, rewardDifficulty)} 积分
+            解出 {solvedCount} 题，游戏得分 {score}，积分{getTrainingDifficultyLabel(rewardDifficulty)}，获得 {getAwardedPoints("twenty-four", score, rewardDifficulty)} 积分
           </Text>
           {isNewBest ? <Text className="tf-result-highlight">刷新历史最高</Text> : null}
 

@@ -201,7 +201,8 @@ describe("trainingStorage", () => {
     });
 
     test("twenty-four: 2x conversion", () => {
-      expect(getAwardedPoints("twenty-four", 5)).toBe(10);
+      expect(getAwardedPoints("twenty-four", 2)).toBe(4);
+      expect(getAwardedPoints("twenty-four", 10)).toBe(20);
       expect(getAwardedPoints("twenty-four", 20)).toBe(40);
     });
 
