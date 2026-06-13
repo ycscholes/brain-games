@@ -16,6 +16,7 @@ export interface GeneratedRound {
 
 export const MIN_CARD_VALUE = 1;
 export const MAX_CARD_VALUE = 10;
+export const GAME_SECONDS = 60;
 export const BASE_POINTS_PER_SOLVED_ROUND = 2;
 export const SOLVED_ROUNDS_PER_POINT_INCREASE = 3;
 

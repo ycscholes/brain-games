@@ -1,5 +1,6 @@
 import {
   BASE_POINTS_PER_SOLVED_ROUND,
+  GAME_SECONDS,
   MAX_CARD_VALUE,
   MIN_CARD_VALUE,
   evaluateExpression,
@@ -13,6 +14,10 @@ import {
 describe("twenty-four game logic", () => {
   afterEach(() => {
     jest.restoreAllMocks();
+  });
+
+  test("uses one fixed sixty-second game duration", () => {
+    expect(GAME_SECONDS).toBe(60);
   });
 
   test("starts at two points and increases after every three solved rounds", () => {
