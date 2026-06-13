@@ -77,6 +77,38 @@ describe("petStorage", () => {
     const data = readPetData();
     expect(data.pets).toHaveLength(0);
     expect(data.balance).toBe(0);
+    expect(data.reservedBalance).toBe(0);
+  });
+
+  test("migrates legacy pets to standard asset references", () => {
+    mockStorage.set(
+      "pet_data",
+      JSON.stringify({
+        pets: [
+          {
+            id: "legacy-pet",
+            name: "旧伙伴",
+            skin: "cat",
+            status: "alive",
+            hunger: 80,
+            level: 1,
+            experience: 0,
+            createdAt: "2026-06-01T00:00:00.000Z",
+            lastUpdated: "2026-06-01T00:00:00.000Z",
+            deathTime: null,
+          },
+        ],
+        activePetId: "legacy-pet",
+        balance: 20,
+        adoptedCount: 1,
+        lastCheckTime: "2026-06-01T00:00:00.000Z",
+      }),
+    );
+
+    const data = readPetData();
+
+    expect(data.pets[0].assetRef).toEqual({ kind: "standard", skin: "cat" });
+    expect(data.reservedBalance).toBe(0);
   });
 
   test("marks pets hungry only when hunger is below twenty percent", () => {

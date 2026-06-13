@@ -1,5 +1,6 @@
 import Taro from "@tarojs/taro";
 import type { PetData, PetSkin, PetStorageData } from "../pages/pet/types";
+import { createStandardPetAssetRef, getPetTemplateSkin } from "../pages/pet/petAssets";
 import { emitUserDataChanged } from "../services/user-data/local/changeNotifier";
 import {
   getAwardedPoints,
@@ -30,6 +31,7 @@ function createEmptyPetStorage(): PetStorageData {
     pets: [],
     activePetId: null,
     balance: 0,
+    reservedBalance: 0,
     adoptedCount: 0,
     lastCheckTime: new Date().toISOString(),
   };
@@ -46,6 +48,7 @@ function normalizePet(raw: LegacyPetData): PetData {
     id: raw.id || createPetId(),
     name: raw.name,
     skin: raw.skin,
+    assetRef: raw.assetRef ?? createStandardPetAssetRef(raw.skin),
     status: raw.status,
     hunger: Math.max(0, Math.min(MAX_HUNGER, raw.hunger)),
     level: raw.level ?? 1,
@@ -78,6 +81,7 @@ function migratePetStorage(raw: string): PetStorageData {
         pets,
         activePetId: getValidActivePetId(pets, parsed.activePetId ?? null),
         balance: Number(parsed.balance ?? 0),
+        reservedBalance: Number(parsed.reservedBalance ?? 0),
         adoptedCount: Number(parsed.adoptedCount ?? pets.length),
         lastCheckTime: parsed.lastCheckTime || new Date().toISOString(),
       };
@@ -89,6 +93,7 @@ function migratePetStorage(raw: string): PetStorageData {
       pets: legacyPet ? [legacyPet] : [],
       activePetId: legacyPet?.id || null,
       balance: Number(legacy.pet?.points ?? 0),
+      reservedBalance: 0,
       adoptedCount: legacyPet ? 1 : 0,
       lastCheckTime: legacy.lastCheckTime || new Date().toISOString(),
     };
@@ -272,6 +277,7 @@ export function createPet(name: string, skin: PetSkin): PetData {
     id: createPetId(),
     name,
     skin,
+    assetRef: createStandardPetAssetRef(skin),
     status: "alive",
     hunger: MAX_HUNGER,
     level: 1,
@@ -280,6 +286,10 @@ export function createPet(name: string, skin: PetSkin): PetData {
     lastUpdated: now,
     deathTime: null,
   };
+}
+
+export function getFoodSkinForPet(pet: Pick<PetData, "skin" | "assetRef">): PetSkin {
+  return getPetTemplateSkin(pet);
 }
 
 export function adoptPet(

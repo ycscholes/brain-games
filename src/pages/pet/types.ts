@@ -1,3 +1,5 @@
+import type { PetAssetRef } from "./petAssets";
+
 export type PetStatus = "alive" | "hungry" | "dead";
 export type PetSkin = "cat" | "dog" | "rabbit" | "bear" | "panda" | "gecko" | "turtle";
 
@@ -5,6 +7,7 @@ export interface PetData {
   id: string;
   name: string;
   skin: PetSkin;
+  assetRef?: PetAssetRef;
   status: PetStatus;
   hunger: number;
   level: number;
@@ -18,6 +21,7 @@ export interface PetStorageData {
   pets: PetData[];
   activePetId: string | null;
   balance: number;
+  reservedBalance?: number;
   adoptedCount: number;
   lastCheckTime: string;
 }
