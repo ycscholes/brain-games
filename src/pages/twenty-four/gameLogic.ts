@@ -14,9 +14,10 @@ export interface GeneratedRound {
   solution: string;
 }
 
-export const MIN_CARD_VALUE = 0;
+export const MIN_CARD_VALUE = 1;
 export const MAX_CARD_VALUE = 10;
-export const POINTS_PER_SOLVED_ROUND = 2;
+export const BASE_POINTS_PER_SOLVED_ROUND = 2;
+export const SOLVED_ROUNDS_PER_POINT_INCREASE = 3;
 
 const EPSILON = 1e-6;
 
@@ -26,6 +27,22 @@ function randomInt(min: number, max: number) {
 
 function getPrecedence(operator: Operator) {
   return operator === "+" || operator === "-" ? 1 : 2;
+}
+
+export function getPointsForSolvedRound(solvedCount: number) {
+  const safeSolvedCount = Number.isFinite(solvedCount)
+    ? Math.max(0, Math.floor(solvedCount))
+    : 0;
+  return BASE_POINTS_PER_SOLVED_ROUND
+    + Math.floor(safeSolvedCount / SOLVED_ROUNDS_PER_POINT_INCREASE);
+}
+
+export function getPointsForAttempt(
+  solvedCount: number,
+  isCorrect: boolean,
+  hintUsed: boolean,
+) {
+  return isCorrect && !hintUsed ? getPointsForSolvedRound(solvedCount) : 0;
 }
 
 export function solveTwentyFour(values: number[]): string | null {

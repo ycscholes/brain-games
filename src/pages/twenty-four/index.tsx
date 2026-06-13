@@ -10,9 +10,9 @@ import {
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
 import {
-  POINTS_PER_SOLVED_ROUND,
   evaluateExpression,
   generateRound,
+  getPointsForAttempt,
   type CardValue,
   type Operator,
   type Token,
@@ -207,11 +207,13 @@ export default function TwentyFour() {
       return;
     }
 
-    if (Math.abs(result - 24) < EPSILON) {
-      if (!hintUsed) {
-        setScore((current) => current + POINTS_PER_SOLVED_ROUND);
+    const isCorrect = Math.abs(result - 24) < EPSILON;
+    if (isCorrect) {
+      const roundPoints = getPointsForAttempt(solvedCount, isCorrect, hintUsed);
+      if (roundPoints > 0) {
+        setScore((current) => current + roundPoints);
         setSolvedCount((current) => current + 1);
-        setFeedback("正确，进入下一题");
+        setFeedback(`正确，获得 ${roundPoints} 分，进入下一题`);
       } else {
         setFeedback("已完成提示题，进入下一题");
       }
@@ -241,7 +243,7 @@ export default function TwentyFour() {
             <Text className="tf-section-title">规则</Text>
             <Text className="tf-rule">1. 每轮四张数字牌都必须使用一次。</Text>
             <Text className="tf-rule">2. 可以使用 +、-、×、÷ 和括号。</Text>
-            <Text className="tf-rule">3. 数字范围为 0 至 10，每解出一题得 2 分。</Text>
+            <Text className="tf-rule">3. 数字范围为 1 至 10，初始每题 2 分，每答对 3 题后续每题加 1 分。</Text>
           </View>
 
           <View className="tf-rules">

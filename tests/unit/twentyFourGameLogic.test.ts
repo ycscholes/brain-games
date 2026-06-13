@@ -1,9 +1,11 @@
 import {
+  BASE_POINTS_PER_SOLVED_ROUND,
   MAX_CARD_VALUE,
   MIN_CARD_VALUE,
-  POINTS_PER_SOLVED_ROUND,
   evaluateExpression,
   generateRound,
+  getPointsForAttempt,
+  getPointsForSolvedRound,
   solveTwentyFour,
   type Token,
 } from "../../src/pages/twenty-four/gameLogic";
@@ -13,25 +15,40 @@ describe("twenty-four game logic", () => {
     jest.restoreAllMocks();
   });
 
-  test("awards two game points for each solved round", () => {
-    expect(POINTS_PER_SOLVED_ROUND).toBe(2);
+  test("starts at two points and increases after every three solved rounds", () => {
+    expect(BASE_POINTS_PER_SOLVED_ROUND).toBe(2);
+    expect(Array.from({ length: 9 }, (_, solvedCount) => (
+      getPointsForSolvedRound(solvedCount)
+    ))).toEqual([2, 2, 2, 3, 3, 3, 4, 4, 4]);
   });
 
-  test("uses card values from zero through ten", () => {
-    expect(MIN_CARD_VALUE).toBe(0);
+  test("normalizes invalid solved counts without advancing the score tier", () => {
+    expect(getPointsForSolvedRound(-1)).toBe(2);
+    expect(getPointsForSolvedRound(Number.NaN)).toBe(2);
+    expect(getPointsForSolvedRound(3.9)).toBe(3);
+  });
+
+  test("does not award points or advance tiers for wrong or hinted attempts", () => {
+    expect(getPointsForAttempt(3, false, false)).toBe(0);
+    expect(getPointsForAttempt(3, true, true)).toBe(0);
+    expect(getPointsForAttempt(3, true, false)).toBe(3);
+  });
+
+  test("uses card values from one through ten", () => {
+    expect(MIN_CARD_VALUE).toBe(1);
     expect(MAX_CARD_VALUE).toBe(10);
   });
 
   test("can generate both numeric boundaries", () => {
     const randomValues = [
-      0, 10 / 11, 7 / 11, 7 / 11,
-      3 / 11, 3 / 11, 8 / 11, 8 / 11,
+      0, 0.99, 0.6, 0.6,
+      0.2, 0.2, 0.7, 0.7,
     ];
-    jest.spyOn(Math, "random").mockImplementation(() => randomValues.shift() ?? 3 / 11);
+    jest.spyOn(Math, "random").mockImplementation(() => randomValues.shift() ?? 0.2);
 
     const round = generateRound();
 
-    expect(round.cards.map((card) => card.value)).toEqual([0, 10, 7, 7]);
+    expect(round.cards.map((card) => card.value)).toEqual([1, 10, 7, 7]);
     expect(solveTwentyFour(round.cards.map((card) => card.value))).not.toBeNull();
   });
 
