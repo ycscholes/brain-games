@@ -130,7 +130,16 @@ export const PET_ADOPTION_COST = 50;
 - 每只宠物低/中档食物从公共池分配，可以复用。
 - 每只宠物最高档配置 1 个专属食物：小猫三文鱼、小狗牛肉骨、小兔草莓篮、小熊蜂蜜罐、熊猫竹筒饭、守宫蟋蟀杯、小乌龟小虾水草盘。
 
-### 2.3 饥饿衰减机制
+### 2.3 AI 自定义宠物
+
+- 每位用户最多成功生成 1 只。
+- 提交时由服务端冻结 300 积分；确认领养后转为实际消费。
+- 技术失败、内容拒绝或用户在首个预览前取消时退回 300 积分。
+- 首个完整预览生成后永久占用一次资格，放弃或永久删除均不恢复。
+- 每个任务提供 1 次免费整套重做；重做失败时保留首套可领养结果。
+- 自定义宠物的喂食、饱食衰减和游戏奖励规则继承 AI 映射的现有宠物模板。
+
+### 2.4 饥饿衰减机制
 
 - 满饱食 100 点：约 3 天降为 0
 - 平均衰减速度：每 43.2 分钟约 1 点饥饿值
@@ -161,6 +170,7 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 | 目标 | 所需积分 | 预计天数 |
 |-----|---------|---------|
 | 领养一只新宠物 | 50 | 1-2 天 |
+| 生成一只 AI 自定义宠物 | 300 | 约 3-10 天 |
 | 领养所有宠物（5 只） | 200 | 3-7 天 |
 | 每日喂养成本 | 10-15 | - |
 
@@ -199,6 +209,7 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 - ✅ 宠物领养成本计算（第一只免费）
 - ✅ 喂食消耗与饥饿值恢复
 - ✅ 积分不足时消费失败
+- ✅ AI 自定义宠物冻结、结算、失败退回和单次资格由服务端事务控制
 
 ---
 
@@ -209,10 +220,11 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 | 积分转换率/难度倍率 | `src/utils/trainingStorage.ts` | `getAwardedPoints()`, `TrainingDifficulty` |
 | 积分获取/消费 | `src/utils/petStorage.ts` | `addPointsToPet()`, `adoptPet()`, `feedPet()` |
 | 领养/食物定价 | `src/pages/pet/types.ts` | `PET_ADOPTION_COST`, `FOOD_POOL`, `PET_FOOD_LOADOUTS`, `getFoodItemsForPetSkin()` |
+| AI 自定义宠物 | `cloudfunctions/customPetApi`, `cloudfunctions/customPetWorker` | 300 积分冻结、生成资格、领养结算 |
 | 饥饿参数 | `src/pages/pet/types.ts` | `HUNGER_POINT_PER_MINUTE`, `MAX_HUNGER` |
 | 测试用例 | `tests/unit/trainingStorage.test.ts` | `getAwardedPoints` 测试套件 |
 
 ---
 
-**最后更新**：2026-06-13
-**版本**：v1.5
+**最后更新**：2026-06-14
+**版本**：v1.6

@@ -6,7 +6,7 @@
 
 **Architecture:** Extend the local pet model with a stable `PetAssetRef`, while keeping custom-pet generation state and point reservations authoritative in CloudBase. A step-based worker analyzes the source image, creates an idle identity anchor, derives the other moods, validates and stores private files, then exposes short-lived URLs only to the owner. Standard pets continue using the current public asset manifest.
 
-**Tech Stack:** Taro 4, React 18, TypeScript, Jest, WeChat Cloud Development, CloudBase document database/storage/functions, `@cloudbase/node-sdk`, Tencent AIArt image-to-image API, Sharp.
+**Tech Stack:** Taro 4, React 18, TypeScript, Jest, WeChat Cloud Development, CloudBase document database/storage/functions, `@cloudbase/node-sdk`, Tencent AIArt image-to-image API, Jimp.
 
 ---
 
@@ -275,7 +275,7 @@ async function generateMood({ referenceUrl, mood, traits, mappedSkin, seed }) {}
 async function normalizeSprite({ inputBuffer, aiMetadata }) {}
 ```
 
-`normalizeSprite` writes a square RGBA PNG, removes the generated flat chroma-key background with Sharp, trims transparent overflow, restores safe padding and writes AI metadata.
+`normalizeSprite` writes a square RGBA PNG, removes the generated flat chroma-key background with Jimp, trims transparent overflow, restores safe padding and writes AI metadata.
 
 - [ ] **Step 4: Implement idempotent worker steps**
 

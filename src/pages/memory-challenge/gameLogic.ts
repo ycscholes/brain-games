@@ -1,5 +1,7 @@
 import type { PetSpriteMood } from "../pet/components/PetSprite/types";
 import { PET_SKIN_NAME, type PetSkin } from "../pet/types";
+import type { PetAssetRef } from "../pet/petAssets";
+import { getPetAssetKey } from "../pet/petAssets";
 
 export type MemoryChallengeMode = "shape" | "pet" | "calculation";
 export type MemoryChallengeN = 1 | 2 | 3 | 4;
@@ -91,6 +93,38 @@ export async function loadPetMemoryItems(
   } catch (error) {
     throw error instanceof Error ? error : new Error("Unable to load pet memory images");
   }
+}
+
+export async function loadPetMemoryItemsFromAssets(
+  pets: ReadonlyArray<{
+    name: string;
+    skin: PetSkin;
+    assetRef: PetAssetRef;
+  }>,
+  moods: readonly PetSpriteMood[],
+  resolveImage: (assetRef: PetAssetRef, skin: PetSkin, mood: PetSpriteMood) => Promise<string>,
+  preloadImage: (url: string) => Promise<boolean>,
+): Promise<MemoryChallengeItem[]> {
+  return Promise.all(
+    pets.flatMap((pet) =>
+      moods.map(async (mood) => {
+        const imageSrc = await resolveImage(pet.assetRef, pet.skin, mood);
+        if (!imageSrc || !(await preloadImage(imageSrc))) {
+          throw new Error(`Unable to load ${getPetAssetKey(pet.assetRef)}-${mood}`);
+        }
+        const id = `pet-${getPetAssetKey(pet.assetRef)}-${mood}`;
+        const label = `${pet.name}·${PET_MOOD_NAME[mood]}`;
+        return {
+          id,
+          prompt: label,
+          answerId: id,
+          answerLabel: label,
+          imageSrc,
+          petMood: mood,
+        };
+      }),
+    ),
+  );
 }
 
 export function shuffleMemoryOptions<T>(items: T[], random: () => number = Math.random): T[] {

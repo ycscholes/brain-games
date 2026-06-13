@@ -4,6 +4,9 @@
   "private": true,
   "main": "index.js",
   "dependencies": {
-    "wx-server-sdk": "^3.0.1"
+    "@cloudbase/node-sdk": "^3.18.1",
+    "jimp": "^1.6.1",
+    "tencentcloud-sdk-nodejs-aiart": "^4.1.218",
+    "wx-server-sdk": "^3.0.4"
   }
 }

@@ -570,6 +570,7 @@ export default function Index() {
           <View className="floating-pet-avatar">
             <PetSprite
               skin={activePet?.skin ?? "cat"}
+              assetRef={activePet?.assetRef}
               size="sm"
               mood={activePet ? homePetMotion : "idle"}
               status={activePet?.status}

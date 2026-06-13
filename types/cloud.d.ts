@@ -8,6 +8,15 @@ declare interface MiniProgramCloudFunctionApi {
     name: string;
     data?: Record<string, unknown>;
   }): Promise<MiniProgramCloudCallResult<T>>;
+  uploadFile(options: {
+    cloudPath: string;
+    filePath: string;
+  }): Promise<{
+    fileID: string;
+  }>;
+  deleteFile(options: {
+    fileList: string[];
+  }): Promise<unknown>;
   getTempFileURL(options: {
     fileList: string[];
   }): Promise<{

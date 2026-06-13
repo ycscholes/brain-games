@@ -15,6 +15,16 @@ const ACTIVE_STATUSES = new Set([
   "deleting",
 ]);
 
+const WORKER_STATUSES = new Set([
+  "uploaded",
+  "analyzing",
+  "generating_idle",
+  "generating_variants",
+  "validating",
+  "rerolling",
+  "deleting",
+]);
+
 const TRANSITIONS = {
   uploaded: new Set(["analyzing", "failed", "cancelled"]),
   analyzing: new Set(["generating_idle", "failed", "cancelled"]),
@@ -129,6 +139,7 @@ function sanitizeTask(task) {
 
 module.exports = {
   ACTIVE_STATUSES,
+  WORKER_STATUSES,
   CUSTOM_PET_MOODS,
   CUSTOM_PET_PRICE,
   MAX_REROLLS,

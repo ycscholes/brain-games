@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Image, Text, View } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { resolvePetSpriteUrl } from "../../config/remoteAssets";
-import { addPointsToPet } from "../../utils/petStorage";
+import { addPointsToPet, syncPetData } from "../../utils/petStorage";
+import { resolveCustomPetSpriteUrl } from "../../services/custom-pet/customPetService";
 import {
   getAwardedPoints,
   recordTrainingSession,
@@ -10,7 +11,8 @@ import {
   type TrainingRewardPolicy,
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
-import type { PetSkin } from "../pet/types";
+import { PET_SKIN_NAME, type PetSkin } from "../pet/types";
+import { createStandardPetAssetRef, getPetAssetRef } from "../pet/petAssets";
 import {
   addMemoryChallengeRoundScore,
   createCalculationItem,
@@ -21,7 +23,7 @@ import {
   getMemoryChallengeRoundPoints,
   getNBackTarget,
   getUnlockedPetItems,
-  loadPetMemoryItems,
+  loadPetMemoryItemsFromAssets,
   PET_MOOD_UNLOCK_ORDER,
   type MemoryChallengeItem,
   type MemoryChallengeMode,
@@ -135,10 +137,28 @@ function preloadImage(url: string) {
 }
 
 async function resolvePetItems(): Promise<MemoryChallengeItem[]> {
-  return loadPetMemoryItems(
-    PET_SKINS,
+  const petData = syncPetData({ markChanged: false });
+  const ownedPets = petData.pets
+    .filter((pet) => pet.status !== "dead")
+    .map((pet) => ({
+      name: pet.name,
+      skin: pet.skin,
+      assetRef: getPetAssetRef(pet),
+    }));
+  const pets = ownedPets.length > 0
+    ? ownedPets
+    : PET_SKINS.map((skin) => ({
+        name: PET_SKIN_NAME[skin],
+        skin,
+        assetRef: createStandardPetAssetRef(skin),
+      }));
+  return loadPetMemoryItemsFromAssets(
+    pets,
     PET_MOOD_UNLOCK_ORDER,
-    resolvePetSpriteUrl,
+    (assetRef, skin, mood) =>
+      assetRef.kind === "custom"
+        ? resolveCustomPetSpriteUrl(assetRef.customAssetId, mood)
+        : resolvePetSpriteUrl(skin, mood),
     preloadImage,
   );
 }

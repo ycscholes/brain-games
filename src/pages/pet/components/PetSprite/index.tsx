@@ -1,6 +1,10 @@
 import { Image, View } from "@tarojs/components";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { resolveCachedPetSpriteUrl, resolvePetSpriteUrl } from "../../../../config/remoteAssets";
+import {
+  resolveCachedCustomPetSpriteUrl,
+  resolveCustomPetSpriteUrl,
+} from "../../../../services/custom-pet/customPetService";
 import type { PetSpriteProps } from "./types";
 import "./index.scss";
 
@@ -15,6 +19,7 @@ const sizeClassMap: Record<NonNullable<PetSpriteProps["size"]>, string> = {
 
 export default function PetSprite({
   skin,
+  assetRef,
   status = "alive",
   mood = "idle",
   size = "md",
@@ -22,7 +27,12 @@ export default function PetSprite({
   className = "",
 }: PetSpriteProps) {
   const safeMood = status === "dead" ? "idle" : status === "hungry" ? "hungry" : mood;
-  const [imageSrc, setImageSrc] = useState(() => resolveCachedPetSpriteUrl(skin, safeMood));
+  const customAssetId = assetRef?.kind === "custom" ? assetRef.customAssetId : null;
+  const [imageSrc, setImageSrc] = useState(() =>
+    customAssetId
+      ? resolveCachedCustomPetSpriteUrl(customAssetId, safeMood)
+      : resolveCachedPetSpriteUrl(skin, safeMood),
+  );
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const hasRetriedRef = useRef(false);
   const shouldShowImage = Boolean(imageSrc) && !imageLoadFailed;
@@ -31,9 +41,16 @@ export default function PetSprite({
     let isCurrent = true;
     hasRetriedRef.current = false;
     setImageLoadFailed(false);
-    setImageSrc(resolveCachedPetSpriteUrl(skin, safeMood));
+    setImageSrc(
+      customAssetId
+        ? resolveCachedCustomPetSpriteUrl(customAssetId, safeMood)
+        : resolveCachedPetSpriteUrl(skin, safeMood),
+    );
 
-    void resolvePetSpriteUrl(skin, safeMood)
+    const resolver = customAssetId
+      ? resolveCustomPetSpriteUrl(customAssetId, safeMood)
+      : resolvePetSpriteUrl(skin, safeMood);
+    void resolver
       .then((url) => {
         if (isCurrent) {
           setImageSrc(url);
@@ -48,7 +65,7 @@ export default function PetSprite({
     return () => {
       isCurrent = false;
     };
-  }, [safeMood, skin]);
+  }, [customAssetId, safeMood, skin]);
 
   const handleImageError = useCallback(() => {
     if (hasRetriedRef.current) {
@@ -57,7 +74,10 @@ export default function PetSprite({
     }
 
     hasRetriedRef.current = true;
-    void resolvePetSpriteUrl(skin, safeMood, { forceRefresh: true })
+    const resolver = customAssetId
+      ? resolveCustomPetSpriteUrl(customAssetId, safeMood, { forceRefresh: true })
+      : resolvePetSpriteUrl(skin, safeMood, { forceRefresh: true });
+    void resolver
       .then((url) => {
         if (url) {
           setImageLoadFailed(false);
@@ -70,7 +90,7 @@ export default function PetSprite({
       .catch(() => {
         setImageLoadFailed(true);
       });
-  }, [safeMood, skin]);
+  }, [customAssetId, safeMood, skin]);
 
   const classes = [
     "pet-sprite",

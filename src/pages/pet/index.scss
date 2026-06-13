@@ -7,6 +7,18 @@
     linear-gradient(180deg, #aee7ff 0%, #d8f7ff 34%, #b9ec96 35%, #66b654 100%);
 }
 
+.custom-adoption-button {
+  margin-top: 12px;
+  background: #d9f1e1;
+}
+
+.pet-picker-delete {
+  padding: 8px 10px;
+  color: #9b3028;
+  font-size: 18px;
+  font-weight: 900;
+}
+
 .pet-stage {
   position: relative;
   min-height: 100vh;

@@ -3,7 +3,7 @@ const cloud = require("wx-server-sdk");
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
 const db = cloud.database();
-const COLLECTION = "user_snapshots";
+const COLLECTION = "xiaoyuyuan_user_snapshots";
 
 exports.main = async () => {
   const wxContext = cloud.getWXContext();

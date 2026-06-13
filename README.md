@@ -38,6 +38,7 @@ Cici的脑部锻炼是一个基于 Taro 和 React 的微信小程序脑力训练
 - SCSS、Tailwind CSS、weapp-tailwindcss
 - Jest
 - CloudBase 云函数、云存储和用户数据同步
+- 腾讯 AIArt 图生图（AI 自定义宠物）
 
 运行环境要求 Node.js 22，版本记录在 `.nvmrc`。
 
@@ -70,6 +71,8 @@ npm install
 - `TARO_CLOUD_STORAGE_BUCKET`
 - `TARO_REMOTE_ASSETS_PUBLIC`：生产素材桶确认“所有用户可读”后设为 `true`
 
+AI 自定义宠物的 `customPetWorker` 需要可调用腾讯混元生图 `ImageToImage` 的服务身份。推荐给云函数绑定最小权限角色；也可在函数环境变量中配置 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选的 `TENCENTCLOUD_AI_REGION`。
+
 不要在文档或提交中写入真实标识、密钥或云环境名称。微信小程序 App ID 写入被忽略的 `project.private.config.json`，云环境配置只写入 `.env.*.local`。提交前运行 `npm run secrets:check`；本地提交钩子和 GitHub Actions 会重复执行检查。
 
 ## 开发命令
@@ -84,7 +87,10 @@ npm run typecheck       # TypeScript 类型检查
 npm test                # Jest 单元测试
 npm run assets:check    # 校验 CloudBase 远程图片备份
 npm run assets:upload   # 上传远程图片，需要有效云环境配置
+npm run deploy:cloudfunctions # 部署云函数与自定义宠物恢复定时器
 ```
+
+部署脚本会使用 `Nodejs20.19` 部署自定义宠物 Worker、把超时设为 900 秒，并确保恢复函数每五分钟运行一次。
 
 宠物素材使用 `config/remote-assets.json` 中的版本化目录。替换图片时应提升版本号并上传到新目录，不要覆盖线上同一路径文件，以避免 CDN 和客户端继续使用旧缓存。
 

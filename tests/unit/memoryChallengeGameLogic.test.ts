@@ -9,6 +9,7 @@ import {
   getMemoryChallengeRoundPoints,
   getNBackTarget,
   loadPetMemoryItems,
+  loadPetMemoryItemsFromAssets,
   type MemoryChallengeItem,
 } from "../../src/pages/memory-challenge/gameLogic";
 import type { PetSpriteMood } from "../../src/pages/pet/components/PetSprite/types";
@@ -150,5 +151,28 @@ describe("memory challenge game logic", () => {
     expect(items).toHaveLength(28);
     expect(new Set(items.map((item) => item.answerId)).size).toBe(28);
     expect(items.find((item) => item.answerId === "pet-cat-feed")?.petMood).toBe("feed");
+  });
+
+  test("uses custom asset identity for private pet memory items", async () => {
+    const items = await loadPetMemoryItemsFromAssets(
+      [{
+        name: "豆豆",
+        skin: "dog",
+        assetRef: {
+          kind: "custom",
+          templateSkin: "dog",
+          customAssetId: "asset-1",
+        },
+      }],
+      ["idle", "feed"],
+      async (assetRef, _skin, mood) => `${assetRef.kind}-${mood}.png`,
+      async () => true,
+    );
+
+    expect(items.map((item) => item.answerId)).toEqual([
+      "pet-custom:asset-1-idle",
+      "pet-custom:asset-1-feed",
+    ]);
+    expect(items[0].answerLabel).toBe("豆豆·待机");
   });
 });

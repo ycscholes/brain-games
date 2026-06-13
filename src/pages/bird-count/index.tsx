@@ -2,6 +2,7 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState }
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { resolvePetSpriteUrl } from "../../config/remoteAssets";
+import { resolveCustomPetSpriteUrl } from "../../services/custom-pet/customPetService";
 import { addPointsToPet, syncPetData } from "../../utils/petStorage";
 import {
   getAwardedPoints,
@@ -13,6 +14,7 @@ import { usePageShare } from "../../utils/share";
 import PetSprite from "../pet/components/PetSprite";
 import type { PetSpriteMood, PetSpriteSize } from "../pet/components/PetSprite/types";
 import { PET_SKIN_NAME, type PetSkin } from "../pet/types";
+import { getPetAssetRef, type PetAssetRef } from "../pet/petAssets";
 import {
   BIRD_COUNT_TOTAL_QUESTIONS,
   createBirdCountSession,
@@ -79,7 +81,7 @@ function readYardBestScore(difficulty: HeadCountDifficulty, speedDifficulty: Hea
   return Number.isFinite(value) ? value : 0;
 }
 
-function getPrioritizedPetSkins() {
+function getPrioritizedPetAssets() {
   const petData = syncPetData({ markChanged: false });
   const alivePets = petData.pets.filter((pet) => pet.status !== "dead");
   const activePet = alivePets.find((pet) => pet.id === petData.activePetId) ?? null;
@@ -87,9 +89,17 @@ function getPrioritizedPetSkins() {
     ...(activePet ? [activePet] : []),
     ...alivePets.filter((pet) => pet.id !== activePet?.id),
   ];
+  const assetsBySkin = orderedPets.reduce<Partial<Record<PetSkin, PetAssetRef>>>((acc, pet) => {
+    if (!acc[pet.skin] || pet.assetRef?.kind === "custom") {
+      acc[pet.skin] = getPetAssetRef(pet);
+    }
+    return acc;
+  }, {});
   const skins = Array.from(new Set(orderedPets.map((pet) => pet.skin)));
-
-  return skins.length > 0 ? skins : PET_COUNT_SKINS;
+  return {
+    assetsBySkin,
+    skins: skins.length > 0 ? skins : PET_COUNT_SKINS,
+  };
 }
 
 function getPetSkinForIndex(petSkinPool: PetSkin[], index: number) {
@@ -113,13 +123,23 @@ function CountPetSprite({
   mood = "idle",
   size = "sm",
   className = "",
+  assetRef,
 }: {
   skin: PetSkin;
+  assetRef?: PetAssetRef;
   mood?: PetSpriteMood;
   size?: PetSpriteSize;
   className?: string;
 }) {
-  return <PetSprite skin={skin} mood={mood} size={size} className={`count-pet-sprite ${className}`} />;
+  return (
+    <PetSprite
+      skin={skin}
+      assetRef={assetRef}
+      mood={mood}
+      size={size}
+      className={`count-pet-sprite ${className}`}
+    />
+  );
 }
 
 function preloadImage(url: string) {
@@ -144,6 +164,7 @@ function waitForMs(ms: number) {
 
 async function preloadSpeedQuestionImages(
   questions: BirdCountQuestion[],
+  assetsBySkin: Partial<Record<PetSkin, PetAssetRef>>,
   onProgress: (loaded: number, total: number) => void,
 ) {
   const imageKeys = new Map<string, { skin: PetSkin; mood: PetSpriteMood }>();
@@ -162,7 +183,10 @@ async function preloadSpeedQuestionImages(
   await Promise.all(
     images.map(async ({ skin, mood }) => {
       try {
-        const url = await resolvePetSpriteUrl(skin, mood);
+        const assetRef = assetsBySkin[skin];
+        const url = assetRef?.kind === "custom"
+          ? await resolveCustomPetSpriteUrl(assetRef.customAssetId, mood)
+          : await resolvePetSpriteUrl(skin, mood);
         await preloadImage(url);
       } finally {
         loaded += 1;
@@ -182,6 +206,7 @@ export default function FarmCount() {
   const [speedDifficulty, setSpeedDifficulty] = useState<HeadCountSpeedDifficulty>("slow");
   const [best, setBest] = useState(0);
   const [petSkinPool, setPetSkinPool] = useState<PetSkin[]>(PET_COUNT_SKINS);
+  const [petAssetBySkin, setPetAssetBySkin] = useState<Partial<Record<PetSkin, PetAssetRef>>>({});
   const [speedQuestions, setSpeedQuestions] = useState<BirdCountQuestion[]>([]);
   const [yardQuestions, setYardQuestions] = useState<HeadCountQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -227,7 +252,9 @@ export default function FarmCount() {
   }, []);
 
   const refreshPetSkinPool = useCallback(() => {
-    setPetSkinPool(getPrioritizedPetSkins());
+    const next = getPrioritizedPetAssets();
+    setPetSkinPool(next.skins);
+    setPetAssetBySkin(next.assetsBySkin);
   }, []);
 
   const refreshBest = useCallback(() => {
@@ -422,7 +449,7 @@ export default function FarmCount() {
     setCurrentIndex(0);
 
     await Promise.all([
-      preloadSpeedQuestionImages(nextQuestions, (loaded, total) => {
+      preloadSpeedQuestionImages(nextQuestions, petAssetBySkin, (loaded, total) => {
         if (preloadRunIdRef.current === preloadRunId) {
           setLoadProgress({ loaded, total });
         }
@@ -721,6 +748,7 @@ export default function FarmCount() {
                       <View key={`yard-pet-${index}`} className="yard-pet-token">
                         <CountPetSprite
                           skin={getPetSkinForIndex(petSkinPool, index)}
+                          assetRef={petAssetBySkin[getPetSkinForIndex(petSkinPool, index)]}
                           size="xxs"
                           className="yard-pet-sprite"
                         />
@@ -740,6 +768,7 @@ export default function FarmCount() {
                         >
                           <CountPetSprite
                             skin={getPetSkinForIndex(petSkinPool, eventIndex + petIndex)}
+                            assetRef={petAssetBySkin[getPetSkinForIndex(petSkinPool, eventIndex + petIndex)]}
                             size="xs"
                             className="moving-yard-pet-sprite"
                           />
@@ -759,7 +788,12 @@ export default function FarmCount() {
             <View className={`farm-scene farm-scene-${phase}`}>
               <View className="target-banner">
                 <View className="target-pet">
-                  <CountPetSprite skin={speedQuestion.targetSkin} size="sm" className="target-pet-sprite" />
+                  <CountPetSprite
+                    skin={speedQuestion.targetSkin}
+                    assetRef={petAssetBySkin[speedQuestion.targetSkin]}
+                    size="sm"
+                    className="target-pet-sprite"
+                  />
                 </View>
                 <View className="target-copy">
                   <Text className="farm-prompt">
@@ -812,6 +846,7 @@ export default function FarmCount() {
                         >
                           <CountPetSprite
                             skin={pet.skin}
+                            assetRef={petAssetBySkin[pet.skin]}
                             mood={pet.mood}
                             size="xs"
                             className="pet-count-sprite"
@@ -829,7 +864,12 @@ export default function FarmCount() {
                   {phase === "answering" ? (
                     <Text className="hidden-count">?</Text>
                   ) : (
-                    <CountPetSprite skin={speedQuestion.targetSkin} size="lg" className="hidden-count-pet" />
+                    <CountPetSprite
+                      skin={speedQuestion.targetSkin}
+                      assetRef={petAssetBySkin[speedQuestion.targetSkin]}
+                      size="lg"
+                      className="hidden-count-pet"
+                    />
                   )}
                 </View>
               )}

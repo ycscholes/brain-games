@@ -20,7 +20,9 @@ import {
   MAX_HUNGER,
 } from "./types";
 import PetSprite from "./components/PetSprite";
+import CustomPetFlow from "./components/CustomPetFlow";
 import type { PetSpriteMood } from "./components/PetSprite/types";
+import { deleteCustomPet } from "../../services/custom-pet/customPetService";
 import { resolveCachedFoodIconUrl, resolveFoodIconUrl } from "../../config/remoteAssets";
 import "./index.scss";
 
@@ -104,6 +106,7 @@ export default function PetPage() {
   const [selectedSkin, setSelectedSkin] = useState<PetSkin>("cat");
   const [showAdoptionDialog, setShowAdoptionDialog] = useState(false);
   const [showPetPickerDialog, setShowPetPickerDialog] = useState(false);
+  const [showCustomPetFlow, setShowCustomPetFlow] = useState(false);
   const [petMotion, setPetMotion] = useState<PetSpriteMood>("idle");
   const [feedbackKind, setFeedbackKind] = useState<PetFeedbackKind>("idle");
   const [feedBurst, setFeedBurst] = useState<FeedBurst | null>(null);
@@ -348,6 +351,27 @@ export default function PetPage() {
     }
   }, [activePet, playFeedback, playPetMotion]);
 
+  const handleDeleteCustomPet = useCallback(async (pet: PetData) => {
+    const confirmed = await Taro.showModal({
+      title: `永久删除 ${pet.name}？`,
+      content: "原图、生成图片和宠物数据都会删除，生成资格不会恢复。",
+      confirmText: "永久删除",
+      confirmColor: "#b33a2f",
+    });
+    if (!confirmed.confirm) return;
+    try {
+      await deleteCustomPet(pet.id);
+      loadAndRefreshPets();
+      setShowPetPickerDialog(false);
+      Taro.showToast({ title: "已提交永久删除", icon: "success" });
+    } catch (error) {
+      Taro.showToast({
+        title: error instanceof Error ? error.message : "删除失败",
+        icon: "none",
+      });
+    }
+  }, [loadAndRefreshPets]);
+
   const renderAdoptionDialog = () => {
     if (!showAdoptionDialog) {
       return null;
@@ -404,6 +428,15 @@ export default function PetPage() {
               {nextAdoptionCost === 0 ? "免费领养" : `${nextAdoptionCost} 积分领养`}
             </Text>
           </View>
+          <View
+            className="stage-button custom-adoption-button"
+            onClick={() => {
+              setShowAdoptionDialog(false);
+              setShowCustomPetFlow(true);
+            }}
+          >
+            <Text className="stage-button-text">AI 自定义宠物 · 300 积分</Text>
+          </View>
         </View>
       </View>
     );
@@ -437,7 +470,13 @@ export default function PetPage() {
                 onClick={() => handleSelectPet(pet.id)}
               >
                 <View className="pet-picker-avatar">
-                  <PetSprite skin={pet.skin} size="sm" status={pet.status} selected={storageData.activePetId === pet.id} />
+                  <PetSprite
+                    skin={pet.skin}
+                    assetRef={pet.assetRef}
+                    size="sm"
+                    status={pet.status}
+                    selected={storageData.activePetId === pet.id}
+                  />
                 </View>
                 <View className="pet-picker-copy">
                   <Text className="pet-picker-name">{pet.name}</Text>
@@ -445,6 +484,17 @@ export default function PetPage() {
                 </View>
                 {storageData.activePetId === pet.id ? (
                   <Text className="pet-picker-current">当前</Text>
+                ) : null}
+                {pet.assetRef?.kind === "custom" ? (
+                  <View
+                    className="pet-picker-delete"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void handleDeleteCustomPet(pet);
+                    }}
+                  >
+                    <Text>删除</Text>
+                  </View>
                 ) : null}
               </View>
             ))}
@@ -498,6 +548,7 @@ export default function PetPage() {
           {activePet ? (
             <PetSprite
               skin={activePet.skin}
+              assetRef={activePet.assetRef}
               size="xl"
               status={activePet.status}
               mood={petMotion}
@@ -563,6 +614,15 @@ export default function PetPage() {
 
       {renderAdoptionDialog()}
       {renderPetPickerDialog()}
+      {showCustomPetFlow ? (
+        <CustomPetFlow
+          onClose={() => setShowCustomPetFlow(false)}
+          onAdopted={() => {
+            setShowCustomPetFlow(false);
+            loadAndRefreshPets();
+          }}
+        />
+      ) : null}
     </View>
   );
 }
