@@ -1,4 +1,5 @@
 const { normalizeMappedSkin } = require("./customPetDomain");
+const https = require("https");
 
 function getJimp() {
   return require("jimp");
@@ -52,10 +53,10 @@ function normalizeAnalysis(value) {
 }
 
 async function analyzeSource({ sourceBuffer, mimeType = "image/jpeg", app }) {
-  const tcb = getCloudBaseSdk();
-  const cloudApp = app || tcb.init({ env: tcb.SYMBOL_CURRENT_ENV });
-  const model = cloudApp.ai().createModel("hunyuan-exp");
   try {
+    const tcb = getCloudBaseSdk();
+    const cloudApp = app || tcb.init({ env: tcb.SYMBOL_CURRENT_ENV });
+    const model = cloudApp.ai().createModel("hunyuan-exp");
     const result = await model.generateText({
       model: "hunyuan-2.0-instruct-20251111",
       messages: [
@@ -132,7 +133,48 @@ function createAiArtClient() {
   });
 }
 
-async function generateMood({ referenceBuffer, mood, traits, speciesLabel, client }) {
+function createCloudBaseImageModel(app) {
+  const tcb = getCloudBaseSdk();
+  const cloudApp = app || tcb.init({ env: tcb.SYMBOL_CURRENT_ENV });
+  return cloudApp.ai().createImageModel("hunyuan-image");
+}
+
+function downloadRemoteImage(url) {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (response) => {
+        if (!response.statusCode || response.statusCode < 200 || response.statusCode >= 300) {
+          reject(new Error(`image download failed: ${response.statusCode || "unknown"}`));
+          response.resume();
+          return;
+        }
+        const chunks = [];
+        response.on("data", (chunk) => chunks.push(chunk));
+        response.on("end", () => resolve(Buffer.concat(chunks)));
+      })
+      .on("error", reject);
+  });
+}
+
+async function generateCloudBaseImage({ mood, traits, speciesLabel, imageModel, downloadImage }) {
+  const model = imageModel || createCloudBaseImageModel();
+  const response = await model.generateImage({
+    model: "hunyuan-image",
+    prompt: buildMoodPrompt({ mood, traits, speciesLabel }),
+    negative_prompt: "多人，多只动物，场景，地面，阴影，文字，边框，水印，裁切，模糊，畸形",
+    size: "1024x1024",
+    version: "v1.9",
+    revise: false,
+    n: 1,
+  });
+  const url = response && response.data && response.data[0] && response.data[0].url;
+  if (!url) {
+    throw new Error("CloudBase image response is empty");
+  }
+  return (downloadImage || downloadRemoteImage)(url);
+}
+
+async function generateAiArtImage({ referenceBuffer, mood, traits, speciesLabel, client }) {
   const aiClient = client || createAiArtClient();
   const response = await aiClient.ImageToImage({
     InputImage: referenceBuffer.toString("base64"),
@@ -151,6 +193,14 @@ async function generateMood({ referenceBuffer, mood, traits, speciesLabel, clien
     throw new Error("AI image response is empty");
   }
   return Buffer.from(response.ResultImage, "base64");
+}
+
+async function generateMood({ referenceBuffer, mood, traits, speciesLabel, client }) {
+  const provider = process.env.CUSTOM_PET_IMAGE_PROVIDER || "cloudbase";
+  if (provider === "aiart") {
+    return generateAiArtImage({ referenceBuffer, mood, traits, speciesLabel, client });
+  }
+  return generateCloudBaseImage({ mood, traits, speciesLabel, imageModel: client });
 }
 
 async function normalizeSprite({ inputBuffer }) {
@@ -231,9 +281,11 @@ function validateRuntimeDependencies() {
   const { Jimp } = getJimp();
   getCloudBaseSdk();
   getAiArtSdk();
+  require("ws");
   return {
     node: process.version,
     jimp: typeof Jimp.read === "function" ? "loaded" : "invalid",
+    ws: "loaded",
   };
 }
 
@@ -243,6 +295,8 @@ module.exports = {
   analyzeSource,
   buildMoodPrompt,
   generateMood,
+  generateCloudBaseImage,
+  generateAiArtImage,
   normalizeAnalysis,
   normalizeSprite,
   validateRuntimeDependencies,
