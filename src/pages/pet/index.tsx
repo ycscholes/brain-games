@@ -198,6 +198,14 @@ export default function PetPage() {
   useUserDataChange(loadAndRefreshPets);
 
   const pets = storageData.pets;
+  const orderedPets = useMemo(
+    () => [...pets].sort((left, right) => {
+      if (left.status === "dead" && right.status !== "dead") return 1;
+      if (left.status !== "dead" && right.status === "dead") return -1;
+      return 0;
+    }),
+    [pets],
+  );
   const activePet = pets.find((pet) => pet.id === storageData.activePetId) || null;
   const nextAdoptionCost = getNextAdoptionCost(storageData);
   const foodItems = useMemo(
@@ -393,7 +401,7 @@ export default function PetPage() {
             </View>
           </View>
 
-          <ScrollView className="skin-rail" scrollX enhanced showScrollbar={false}>
+          <View className="skin-rail">
             <View className="skin-rail-track">
               {(Object.keys(PET_SKIN_NAME) as PetSkin[]).map((skin) => (
                 <View
@@ -410,7 +418,7 @@ export default function PetPage() {
                 </View>
               ))}
             </View>
-          </ScrollView>
+          </View>
 
           <Input
             className="name-input"
@@ -462,7 +470,7 @@ export default function PetPage() {
           </View>
 
           <ScrollView className="pet-picker-list" scrollY enhanced showScrollbar={false}>
-            {pets.map((pet) => (
+            {orderedPets.map((pet) => (
               <View
                 key={pet.id}
                 className={`pet-picker-item ${storageData.activePetId === pet.id ? "pet-picker-item-active" : ""} ${pet.status === "dead" ? "pet-picker-item-dead" : ""
