@@ -80,6 +80,21 @@ function normalizeMappedSkin(value) {
   return PET_SKINS.includes(value) ? value : "cat";
 }
 
+function stripDatabaseIds(value) {
+  if (Array.isArray(value)) {
+    return value.map(stripDatabaseIds);
+  }
+  if (!value || typeof value !== "object" || Buffer.isBuffer(value)) {
+    return value;
+  }
+  return Object.keys(value).reduce((acc, key) => {
+    if (key !== "_id") {
+      acc[key] = stripDatabaseIds(value[key]);
+    }
+    return acc;
+  }, {});
+}
+
 function getOwnerRoot(ownerId, jobId) {
   return `users/${ownerId}/custom-pets/${jobId}`;
 }
@@ -154,4 +169,5 @@ module.exports = {
   isActiveStatus,
   normalizeMappedSkin,
   sanitizeTask,
+  stripDatabaseIds,
 };

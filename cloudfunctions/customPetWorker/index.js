@@ -5,6 +5,7 @@ const {
   WORKER_STATUSES,
   classifyProviderError,
   getCandidateMoodPath,
+  stripDatabaseIds,
 } = require("./shared/customPetDomain");
 const {
   analyzeSource,
@@ -145,7 +146,7 @@ async function processValidation(task) {
       .doc(task.ownerId)
       .get()
       .catch(() => null);
-    const entitlement = entitlementResult && entitlementResult.data ? entitlementResult.data : {};
+    const entitlement = stripDatabaseIds(entitlementResult && entitlementResult.data ? entitlementResult.data : {});
     await transaction.collection(ENTITLEMENT_COLLECTION).doc(task.ownerId).set({
       data: {
         ...entitlement,
@@ -246,13 +247,14 @@ async function releaseAfterFailure(task, error) {
       .catch(() => null);
     const snapshot = snapshotResult && snapshotResult.data ? snapshotResult.data.snapshot : null;
     if (snapshot && snapshot.petData) {
-      const petData = snapshot.petData;
+      const cleanSnapshot = stripDatabaseIds(snapshot);
+      const petData = stripDatabaseIds(snapshot.petData);
       const updatedAt = nowIso();
       await transaction.collection(SNAPSHOT_COLLECTION).doc(task.ownerId).set({
         data: {
           openid: task.ownerId,
           snapshot: {
-            ...snapshot,
+            ...cleanSnapshot,
             source: "cloud",
             updatedAt,
             petData: {

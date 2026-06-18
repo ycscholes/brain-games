@@ -1,4 +1,5 @@
 const cloud = require("wx-server-sdk");
+const { stripDatabaseIds } = require("./shared/customPetDomain");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
@@ -7,7 +8,7 @@ const COLLECTION = "xiaoyuyuan_user_snapshots";
 
 function normalizeSnapshot(snapshot, openid) {
   return {
-    ...snapshot,
+    ...stripDatabaseIds(snapshot),
     openid,
     source: "cloud",
     updatedAt: snapshot.updatedAt || new Date().toISOString(),
@@ -17,14 +18,14 @@ function normalizeSnapshot(snapshot, openid) {
 exports.main = async (event) => {
   const wxContext = cloud.getWXContext();
   const openid = wxContext.OPENID;
-  const snapshot = event && event.snapshot ? event.snapshot : null;
+  const snapshot = event && event.snapshot ? stripDatabaseIds(event.snapshot) : null;
 
   if (!openid || !snapshot) {
     throw new Error("missing openid or snapshot");
   }
 
   const existing = await db.collection(COLLECTION).doc(openid).get().catch(() => null);
-  const existingSnapshot = existing && existing.data ? existing.data.snapshot || null : null;
+  const existingSnapshot = existing && existing.data ? stripDatabaseIds(existing.data.snapshot || null) : null;
   const existingPetData = existingSnapshot && existingSnapshot.petData
     ? existingSnapshot.petData
     : null;

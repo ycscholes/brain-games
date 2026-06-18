@@ -5,6 +5,7 @@ const {
   getOwnerRoot,
   isActiveStatus,
   sanitizeTask,
+  stripDatabaseIds,
 } = require("./shared/customPetDomain");
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -37,7 +38,7 @@ async function getSnapshot(transaction, ownerId) {
 }
 
 function getPetData(snapshot) {
-  return snapshot && snapshot.petData
+  const petData = snapshot && snapshot.petData
     ? snapshot.petData
     : {
         pets: [],
@@ -47,20 +48,22 @@ function getPetData(snapshot) {
         adoptedCount: 0,
         lastCheckTime: nowIso(),
       };
+  return stripDatabaseIds(petData);
 }
 
 async function writeSnapshot(transaction, ownerId, snapshot, petData) {
   const updatedAt = nowIso();
-  const nextSnapshot = {
-    ...(snapshot || {}),
-    schemaVersion: snapshot && snapshot.schemaVersion ? snapshot.schemaVersion : 1,
+  const cleanSnapshot = stripDatabaseIds(snapshot || {});
+  const nextSnapshot = stripDatabaseIds({
+    ...cleanSnapshot,
+    schemaVersion: cleanSnapshot.schemaVersion || 1,
     openid: ownerId,
     source: "cloud",
     updatedAt,
-    trainingRecords: snapshot && Array.isArray(snapshot.trainingRecords) ? snapshot.trainingRecords : [],
-    appSettings: snapshot && snapshot.appSettings ? snapshot.appSettings : {},
+    trainingRecords: Array.isArray(cleanSnapshot.trainingRecords) ? cleanSnapshot.trainingRecords : [],
+    appSettings: cleanSnapshot.appSettings || {},
     petData,
-  };
+  });
   await transaction.collection(SNAPSHOT_COLLECTION).doc(ownerId).set({
     data: {
       openid: ownerId,
@@ -197,7 +200,7 @@ async function submit(ownerId, event) {
     await transaction.collection(JOB_COLLECTION).doc(jobId).set({ data: task });
     await transaction.collection(ENTITLEMENT_COLLECTION).doc(ownerId).set({
       data: {
-        ...(entitlementResult && entitlementResult.data ? entitlementResult.data : {}),
+        ...stripDatabaseIds(entitlementResult && entitlementResult.data ? entitlementResult.data : {}),
         ownerId,
         activeJobId: jobId,
         customPetGenerationUsed: false,

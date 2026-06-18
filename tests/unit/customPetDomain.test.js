@@ -9,6 +9,7 @@ const {
   isActiveStatus,
   normalizeMappedSkin,
   sanitizeTask,
+  stripDatabaseIds,
 } = require("../../cloudfunctions/shared/customPetDomain");
 
 describe("custom pet domain", () => {
@@ -84,6 +85,26 @@ describe("custom pet domain", () => {
       errorCode: null,
       createdAt: "2026-06-14T00:00:00.000Z",
       updatedAt: "2026-06-14T00:01:00.000Z",
+    });
+  });
+
+  test("strips CloudBase document ids recursively without changing business ids", () => {
+    expect(stripDatabaseIds({
+      _id: "doc-id",
+      id: "business-id",
+      petData: {
+        _id: "nested-doc-id",
+        pets: [
+          { _id: "pet-doc-id", id: "pet-id", name: "Cici" },
+        ],
+      },
+    })).toEqual({
+      id: "business-id",
+      petData: {
+        pets: [
+          { id: "pet-id", name: "Cici" },
+        ],
+      },
     });
   });
 });
