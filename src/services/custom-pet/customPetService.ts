@@ -11,6 +11,8 @@ import type {
 const FUNCTION_NAME = "customPetApi";
 const URL_CACHE_KEY = "custom_pet_url_cache_v1";
 const URL_CACHE_TTL_MS = 50 * 60 * 1000;
+const SOURCE_MAX_BYTES = 4 * 1024 * 1024;
+const SOURCE_COMPRESS_SIZE = 1280;
 const MOODS: PetSpriteMood[] = ["idle", "feed", "cuddle", "hungry"];
 
 type CachedMoodUrls = {
@@ -59,6 +61,29 @@ function applyServerSnapshot(value: { snapshot?: { petData?: Parameters<typeof s
   }
 }
 
+async function getLocalFileSize(filePath: string): Promise<number> {
+  const info = await Taro.getFileInfo({ filePath });
+  return "size" in info ? Number(info.size || 0) : 0;
+}
+
+async function prepareUploadImage(filePath: string, maxBytes: number): Promise<string> {
+  const cropped = await Taro.cropImage({
+    src: filePath,
+    cropScale: "1:1",
+  });
+  const compressed = await Taro.compressImage({
+    src: cropped.tempFilePath,
+    quality: 70,
+    compressedWidth: SOURCE_COMPRESS_SIZE,
+    compressedHeight: SOURCE_COMPRESS_SIZE,
+  });
+  const size = await getLocalFileSize(compressed.tempFilePath);
+  if (!size || size > maxBytes) {
+    throw new Error("图片处理后仍超过 4MB，请换一张更小的图片");
+  }
+  return compressed.tempFilePath;
+}
+
 export async function getCustomPetStatus(): Promise<{
   task: CustomPetTask | null;
   generationUsed: boolean;
@@ -89,20 +114,17 @@ export async function chooseAndSubmitCustomPet(): Promise<CustomPetTask> {
   if (!file?.tempFilePath) {
     throw new Error("没有选择图片");
   }
-  if (file.size > 4 * 1024 * 1024) {
+  if (Number(file.size || 0) > SOURCE_MAX_BYTES) {
     throw new Error("图片不能超过 4MB");
   }
-  const cropped = await Taro.cropImage({
-    src: file.tempFilePath,
-    cropScale: "1:1",
-  });
+  const uploadFilePath = await prepareUploadImage(file.tempFilePath, intent.maxBytes || SOURCE_MAX_BYTES);
   const cloud = await ensureCloudReady();
   if (!cloud) {
     throw new Error("云服务暂不可用");
   }
   const uploaded = await cloud.uploadFile({
     cloudPath: intent.cloudPath,
-    filePath: cropped.tempFilePath,
+    filePath: uploadFilePath,
   });
   try {
     const result = await callCustomPetApi<{

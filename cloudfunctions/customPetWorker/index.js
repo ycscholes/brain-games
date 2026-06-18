@@ -26,6 +26,11 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function getErrorSummary(error) {
+  const message = error && error.message ? String(error.message) : String(error || "unknown error");
+  return message.slice(0, 240);
+}
+
 async function getTask(jobId) {
   const result = await db.collection(JOB_COLLECTION).doc(jobId).get().catch(() => null);
   return result && result.data ? result.data : null;
@@ -199,6 +204,15 @@ async function processDeletion(task) {
 
 async function releaseAfterFailure(task, error) {
   const classified = classifyProviderError(error);
+  const errorMessage = getErrorSummary(error);
+  console.error("[customPetWorker] step failed", {
+    jobId: task.jobId,
+    status: task.status,
+    step: task.step,
+    code: classified.code,
+    category: classified.category,
+    message: errorMessage,
+  });
   const key = task.step || task.status;
   const attempts = Number(task.attemptsByStep?.[key] || 0) + 1;
   const retryable = classified.retryable && attempts < MAX_STEP_ATTEMPTS;
@@ -215,6 +229,7 @@ async function releaseAfterFailure(task, error) {
       candidateSpriteFileIds: task.previousCandidateSpriteFileIds,
       errorCode: classified.code,
       errorCategory: classified.category,
+      errorMessage,
       workerLockToken: null,
       workerLockUntil: null,
     });
@@ -229,6 +244,7 @@ async function releaseAfterFailure(task, error) {
     },
     errorCode: classified.code,
     errorCategory: classified.category,
+    errorMessage,
     retryAfter: retryable ? new Date(Date.now() + attempts * 60 * 1000).toISOString() : null,
     workerLockToken: null,
     workerLockUntil: null,

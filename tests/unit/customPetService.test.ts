@@ -1,12 +1,22 @@
 const mockStorage = new Map<string, string>();
 const mockCallFunction = jest.fn();
+const mockUploadFile = jest.fn();
+const mockDeleteFile = jest.fn();
 const mockEnsureCloudReady = jest.fn();
+const mockChooseMedia = jest.fn();
+const mockCropImage = jest.fn();
+const mockCompressImage = jest.fn();
+const mockGetFileInfo = jest.fn();
 
 jest.mock("@tarojs/taro", () => ({
   __esModule: true,
   default: {
     getStorageSync: jest.fn((key: string) => mockStorage.get(key) || ""),
     setStorageSync: jest.fn((key: string, value: string) => mockStorage.set(key, value)),
+    chooseMedia: mockChooseMedia,
+    cropImage: mockCropImage,
+    compressImage: mockCompressImage,
+    getFileInfo: mockGetFileInfo,
   },
 }));
 
@@ -23,8 +33,16 @@ describe("customPetService", () => {
     jest.resetModules();
     mockStorage.clear();
     mockCallFunction.mockReset();
+    mockUploadFile.mockReset();
+    mockDeleteFile.mockReset();
+    mockChooseMedia.mockReset();
+    mockCropImage.mockReset();
+    mockCompressImage.mockReset();
+    mockGetFileInfo.mockReset();
     mockEnsureCloudReady.mockResolvedValue({
       callFunction: mockCallFunction,
+      uploadFile: mockUploadFile,
+      deleteFile: mockDeleteFile,
     });
     jest.useFakeTimers().setSystemTime(new Date("2026-06-14T08:00:00.000Z"));
   });
@@ -89,5 +107,34 @@ describe("customPetService", () => {
 
     await expect(resolveCustomPetSpriteUrl("asset-1", "idle")).resolves.toContain("fresh.example");
     expect(mockCallFunction).toHaveBeenCalledTimes(1);
+  });
+
+  test("compresses the cropped source image and rejects it before upload when it is still too large", async () => {
+    mockCallFunction.mockResolvedValueOnce({
+      result: {
+        ok: true,
+        data: {
+          jobId: "job-1",
+          cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+          maxBytes: 4 * 1024 * 1024,
+        },
+      },
+    });
+    mockChooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: "/tmp/source.jpg", size: 1024 }],
+    });
+    mockCropImage.mockResolvedValue({ tempFilePath: "/tmp/cropped.jpg" });
+    mockCompressImage.mockResolvedValue({ tempFilePath: "/tmp/compressed.jpg" });
+    mockGetFileInfo.mockResolvedValue({ size: 5 * 1024 * 1024, errMsg: "ok", digest: "hash" });
+    const { chooseAndSubmitCustomPet } = await import(
+      "../../src/services/custom-pet/customPetService"
+    );
+
+    await expect(chooseAndSubmitCustomPet()).rejects.toThrow("图片处理后仍超过 4MB");
+    expect(mockCompressImage).toHaveBeenCalledWith(expect.objectContaining({
+      src: "/tmp/cropped.jpg",
+      quality: 70,
+    }));
+    expect(mockUploadFile).not.toHaveBeenCalled();
   });
 });

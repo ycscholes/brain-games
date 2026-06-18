@@ -26,6 +26,7 @@ export interface CustomPetTask {
   rerollUsed: boolean;
   errorCategory: string | null;
   errorCode: string | null;
+  errorMessage?: string | null;
   createdAt: string;
   updatedAt: string;
 }

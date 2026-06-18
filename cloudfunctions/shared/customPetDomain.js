@@ -147,6 +147,7 @@ function sanitizeTask(task) {
     rerollUsed: Boolean(task.rerollUsed),
     errorCategory: task.errorCategory || null,
     errorCode: task.errorCode || null,
+    errorMessage: task.errorMessage || null,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
   };
