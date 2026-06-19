@@ -1,5 +1,6 @@
 const {
   CUSTOM_PET_PRICE,
+  DEFAULT_CUSTOM_PET_TRAITS,
   MAX_REROLLS,
   canTransition,
   classifyProviderError,
@@ -16,6 +17,16 @@ describe("custom pet domain", () => {
   test("defines the approved price and reroll limit", () => {
     expect(CUSTOM_PET_PRICE).toBe(300);
     expect(MAX_REROLLS).toBe(1);
+  });
+
+  test("defines object-shaped default custom pet traits", () => {
+    expect(DEFAULT_CUSTOM_PET_TRAITS).toMatchObject({
+      primaryColor: expect.any(String),
+      secondaryColor: expect.any(String),
+      markings: expect.any(String),
+      bodyShape: expect.any(String),
+      accessories: expect.any(String),
+    });
   });
 
   test("allows only legal task transitions", () => {

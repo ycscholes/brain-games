@@ -71,11 +71,16 @@ async function claimTask(jobId) {
 }
 
 async function updateTask(jobId, data) {
-  await db.collection(JOB_COLLECTION).doc(jobId).update({
-    data: {
+  const task = await getTask(jobId);
+  if (!task) {
+    throw new Error("custom pet task not found");
+  }
+  await db.collection(JOB_COLLECTION).doc(jobId).set({
+    data: stripDatabaseIds({
+      ...task,
       ...data,
       updatedAt: nowIso(),
-    },
+    }),
   });
 }
 

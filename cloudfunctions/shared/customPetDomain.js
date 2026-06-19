@@ -4,6 +4,13 @@ const MAX_STEP_ATTEMPTS = 3;
 
 const CUSTOM_PET_MOODS = ["idle", "feed", "cuddle", "hungry"];
 const PET_SKINS = ["cat", "dog", "rabbit", "bear", "panda", "gecko", "turtle"];
+const DEFAULT_CUSTOM_PET_TRAITS = {
+  primaryColor: "保留原图主色",
+  secondaryColor: "保留原图辅助色",
+  markings: "保留原图明显花纹",
+  bodyShape: "保留原图体型",
+  accessories: "保留原图配饰",
+};
 
 const ACTIVE_STATUSES = new Set([
   "uploaded",
@@ -158,6 +165,7 @@ module.exports = {
   WORKER_STATUSES,
   CUSTOM_PET_MOODS,
   CUSTOM_PET_PRICE,
+  DEFAULT_CUSTOM_PET_TRAITS,
   MAX_REROLLS,
   MAX_STEP_ATTEMPTS,
   PET_SKINS,

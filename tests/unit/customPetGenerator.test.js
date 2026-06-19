@@ -35,6 +35,18 @@ describe("custom pet generator", () => {
     expect(normalizeAnalysis({ mappedSkin: "hamster" }).mappedSkin).toBe("cat");
   });
 
+  test("normalizes null traits into a writable object", () => {
+    expect(normalizeAnalysis({ traits: null })).toMatchObject({
+      traits: {
+        primaryColor: expect.any(String),
+        secondaryColor: expect.any(String),
+        markings: expect.any(String),
+        bodyShape: expect.any(String),
+        accessories: expect.any(String),
+      },
+    });
+  });
+
   test("falls back to default source analysis when the AI SDK is not ready", async () => {
     await expect(analyzeSource({ sourceBuffer: Buffer.from("source") })).resolves.toMatchObject({
       speciesLabel: "自定义宠物",

@@ -2,6 +2,7 @@ const cloud = require("wx-server-sdk");
 const {
   CUSTOM_PET_MOODS,
   CUSTOM_PET_PRICE,
+  DEFAULT_CUSTOM_PET_TRAITS,
   getOwnerRoot,
   isActiveStatus,
   sanitizeTask,
@@ -187,7 +188,7 @@ async function submit(ownerId, event) {
       candidateSpriteFileIds: {},
       mappedSkin: null,
       speciesLabel: null,
-      traits: null,
+      traits: DEFAULT_CUSTOM_PET_TRAITS,
       reservedPoints: CUSTOM_PET_PRICE,
       settlementStatus: "reserved",
       rerollUsed: false,

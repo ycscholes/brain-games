@@ -1,4 +1,7 @@
-const { normalizeMappedSkin } = require("./customPetDomain");
+const {
+  DEFAULT_CUSTOM_PET_TRAITS,
+  normalizeMappedSkin,
+} = require("./customPetDomain");
 const https = require("https");
 
 function getJimp() {
@@ -16,13 +19,7 @@ function getAiArtSdk() {
 const DEFAULT_ANALYSIS = {
   speciesLabel: "自定义宠物",
   mappedSkin: "cat",
-  traits: {
-    primaryColor: "保留原图主色",
-    secondaryColor: "保留原图辅助色",
-    markings: "保留原图明显花纹",
-    bodyShape: "保留原图体型",
-    accessories: "保留原图配饰",
-  },
+  traits: DEFAULT_CUSTOM_PET_TRAITS,
 };
 
 function parseJsonObject(text) {
@@ -39,14 +36,14 @@ function parseJsonObject(text) {
 }
 
 function normalizeAnalysis(value) {
-  const traits = value && typeof value.traits === "object" ? value.traits : {};
+  const traits = value && value.traits && typeof value.traits === "object" ? value.traits : {};
   return {
     speciesLabel: String(value && value.speciesLabel ? value.speciesLabel : DEFAULT_ANALYSIS.speciesLabel)
       .trim()
       .slice(0, 30),
     mappedSkin: normalizeMappedSkin(value && value.mappedSkin),
     traits: {
-      ...DEFAULT_ANALYSIS.traits,
+      ...DEFAULT_CUSTOM_PET_TRAITS,
       ...traits,
     },
   };
