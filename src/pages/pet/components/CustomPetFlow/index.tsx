@@ -46,6 +46,7 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
   const [busy, setBusy] = useState(false);
   const [generationUsed, setGenerationUsed] = useState(false);
   const isPreview = task?.status === "preview_ready";
+  const isQuotaWaiting = task?.errorCategory === "quota" && task.status !== "failed";
 
   const refresh = useCallback(async () => {
     try {
@@ -79,6 +80,13 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
     const index = Math.max(0, steps.indexOf(task?.status || "uploaded"));
     return Math.min(95, 10 + index * 20);
   }, [task?.status]);
+
+  const activeStatusText = isQuotaWaiting
+    ? "图片生成额度繁忙，已排队自动重试"
+    : STATUS_TEXT[task?.status || ""] || "正在处理";
+  const activeStatusCopy = isQuotaWaiting
+    ? "可以离开本页，额度恢复后云端会继续生成。"
+    : "可以离开本页，生成会在云端继续。";
 
   const handleSubmit = useCallback(async () => {
     setBusy(true);
@@ -248,11 +256,11 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
           </View>
         ) : (
           <View className="custom-pet-progress">
-            <Text className="custom-pet-status">{STATUS_TEXT[task.status] || "正在处理"}</Text>
+            <Text className="custom-pet-status">{activeStatusText}</Text>
             <View className="custom-pet-progress-track">
               <View className="custom-pet-progress-fill" style={{ width: `${progress}%` }} />
             </View>
-            <Text className="custom-pet-copy">可以离开本页，生成会在云端继续。</Text>
+            <Text className="custom-pet-copy">{activeStatusCopy}</Text>
             <View className="custom-pet-cancel" onClick={handleCancel}>
               <Text>取消并退回积分</Text>
             </View>

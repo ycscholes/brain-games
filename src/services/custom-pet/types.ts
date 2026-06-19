@@ -27,6 +27,7 @@ export interface CustomPetTask {
   errorCategory: string | null;
   errorCode: string | null;
   errorMessage?: string | null;
+  retryAfter?: string | null;
   createdAt: string;
   updatedAt: string;
 }

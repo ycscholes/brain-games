@@ -119,6 +119,7 @@ describe("custom pet domain", () => {
       speciesLabel: null,
       rerollUsed: false,
       errorMessage: null,
+      retryAfter: null,
       errorCategory: null,
       errorCode: null,
       createdAt: "2026-06-14T00:00:00.000Z",

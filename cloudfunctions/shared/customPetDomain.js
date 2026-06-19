@@ -200,6 +200,7 @@ function sanitizeTask(task) {
     errorCategory: task.errorCategory || null,
     errorCode: task.errorCode || null,
     errorMessage: task.errorMessage || null,
+    retryAfter: task.retryAfter || null,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
   };
