@@ -220,7 +220,8 @@ async function releaseAfterFailure(task, error) {
   });
   const key = task.step || task.status;
   const attempts = Number(task.attemptsByStep?.[key] || 0) + 1;
-  const retryable = classified.retryable && attempts < MAX_STEP_ATTEMPTS;
+  const retryLimit = Number(classified.retryLimit || MAX_STEP_ATTEMPTS);
+  const retryable = classified.retryable && attempts < retryLimit;
   if (
     !retryable &&
     task.rerollUsed &&
@@ -250,7 +251,9 @@ async function releaseAfterFailure(task, error) {
     errorCode: classified.code,
     errorCategory: classified.category,
     errorMessage,
-    retryAfter: retryable ? new Date(Date.now() + attempts * 60 * 1000).toISOString() : null,
+    retryAfter: retryable
+      ? new Date(Date.now() + Number(classified.retryDelayMs || attempts * 60 * 1000)).toISOString()
+      : null,
     workerLockToken: null,
     workerLockUntil: null,
     updatedAt: nowIso(),

@@ -1,6 +1,7 @@
 const {
   CUSTOM_PET_PRICE,
   DEFAULT_CUSTOM_PET_TRAITS,
+  MAX_QUOTA_RETRY_ATTEMPTS,
   MAX_REROLLS,
   canTransition,
   classifyProviderError,
@@ -9,6 +10,7 @@ const {
   getSourcePath,
   isActiveStatus,
   normalizeMappedSkin,
+  QUOTA_RETRY_DELAY_MS,
   sanitizeTask,
   stripDatabaseIds,
 } = require("../../cloudfunctions/shared/customPetDomain");
@@ -67,9 +69,33 @@ describe("custom pet domain", () => {
       category: "moderation",
       retryable: false,
     });
-    expect(classifyProviderError({ code: "RequestLimitExceeded" })).toMatchObject({
+    expect(classifyProviderError({ code: "FailedOperation.RequestTimeout" })).toMatchObject({
       category: "temporary",
       retryable: true,
+    });
+    expect(classifyProviderError({ code: "RequestLimitExceeded" })).toMatchObject({
+      category: "quota",
+      retryable: true,
+      retryLimit: MAX_QUOTA_RETRY_ATTEMPTS,
+    });
+    expect(classifyProviderError({ code: "429" })).toMatchObject({
+      category: "quota",
+      retryable: true,
+      retryLimit: MAX_QUOTA_RETRY_ATTEMPTS,
+      retryDelayMs: QUOTA_RETRY_DELAY_MS,
+    });
+    expect(classifyProviderError(new Error("Request failed with status code 429"))).toMatchObject({
+      category: "quota",
+      retryable: true,
+      code: "429",
+    });
+    expect(classifyProviderError({
+      code: "ERR_BAD_REQUEST",
+      response: { status: 429 },
+    })).toMatchObject({
+      category: "quota",
+      retryable: true,
+      code: "429",
     });
   });
 

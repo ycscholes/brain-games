@@ -1,6 +1,8 @@
 const CUSTOM_PET_PRICE = 300;
 const MAX_REROLLS = 1;
 const MAX_STEP_ATTEMPTS = 3;
+const MAX_QUOTA_RETRY_ATTEMPTS = 48;
+const QUOTA_RETRY_DELAY_MS = 30 * 60 * 1000;
 
 const CUSTOM_PET_MOODS = ["idle", "feed", "cuddle", "hungry"];
 const PET_SKINS = ["cat", "dog", "rabbit", "bear", "panda", "gecko", "turtle"];
@@ -48,12 +50,28 @@ const TRANSITIONS = {
 };
 
 const RETRYABLE_ERROR_CODES = new Set([
+  "408",
+  "409",
+  "425",
+  "500",
+  "502",
+  "503",
+  "504",
   "RequestLimitExceeded",
   "FailedOperation.RequestTimeout",
   "FailedOperation.InnerError",
   "FailedOperation.RpcFail",
   "FailedOperation.ServerError",
   "FailedOperation.ImageDownloadError",
+]);
+
+const QUOTA_ERROR_CODES = new Set([
+  "429",
+  "TooManyRequests",
+  "TooManyRequestsException",
+  "ResourceExhausted",
+  "ResourceExhaustedError",
+  "RequestLimitExceeded",
 ]);
 
 const MODERATION_ERROR_CODES = new Set([
@@ -117,12 +135,39 @@ function getCandidateMoodPath(ownerId, jobId, version, mood) {
   return `${getOwnerRoot(ownerId, jobId)}/candidates/${version}/${mood}.png`;
 }
 
+function getProviderErrorCode(error) {
+  const rawStatus = error && (error.status || error.statusCode || (error.response && error.response.status));
+  if (rawStatus) {
+    return String(rawStatus);
+  }
+  const rawCode = error && (error.code || error.Code);
+  if (rawCode) {
+    return String(rawCode);
+  }
+  const message = String(error && error.message ? error.message : "");
+  const statusMatch = message.match(/\bstatus code\s+(\d{3})\b/i);
+  if (statusMatch) {
+    return statusMatch[1];
+  }
+  const name = error && error.name;
+  return name && name !== "Error" ? String(name) : "";
+}
+
 function classifyProviderError(error) {
-  const code = String(error && (error.code || error.Code || error.name || ""));
+  const code = getProviderErrorCode(error);
   if (MODERATION_ERROR_CODES.has(code)) {
     return {
       category: "moderation",
       retryable: false,
+      code,
+    };
+  }
+  if (QUOTA_ERROR_CODES.has(code)) {
+    return {
+      category: "quota",
+      retryable: true,
+      retryLimit: MAX_QUOTA_RETRY_ATTEMPTS,
+      retryDelayMs: QUOTA_RETRY_DELAY_MS,
       code,
     };
   }
@@ -166,8 +211,10 @@ module.exports = {
   CUSTOM_PET_MOODS,
   CUSTOM_PET_PRICE,
   DEFAULT_CUSTOM_PET_TRAITS,
+  MAX_QUOTA_RETRY_ATTEMPTS,
   MAX_REROLLS,
   MAX_STEP_ATTEMPTS,
+  QUOTA_RETRY_DELAY_MS,
   PET_SKINS,
   canTransition,
   classifyProviderError,
