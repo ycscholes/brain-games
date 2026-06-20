@@ -10,13 +10,18 @@ jest.mock("tencentcloud-sdk-nodejs-aiart", () => ({
     },
   },
 }), { virtual: true });
+jest.mock("wx-server-sdk", () => ({
+  callFunction: jest.fn(),
+}), { virtual: true });
 
 const {
   analyzeSource,
   generateAiArtImage,
   generateCloudBaseImage,
+  generateCloudBaseFunctionImage,
   buildMoodPrompt,
   normalizeAnalysis,
+  parseImageGenerationFunctionResult,
 } = require("../../cloudfunctions/shared/customPetGenerator");
 
 describe("custom pet generator", () => {
@@ -67,7 +72,32 @@ describe("custom pet generator", () => {
     });
   });
 
-  test("uses CloudBase image model output URL as the default generated image source", async () => {
+  test("uses the generated image cloud function contract as the default source", async () => {
+    const cloudFunction = jest.fn().mockResolvedValue({
+      result: {
+        success: true,
+        imageUrl: "https://example.com/generated.png",
+        revised_prompt: "optimized prompt",
+      },
+    });
+    const downloadImage = jest.fn().mockResolvedValue(Buffer.from("png"));
+
+    await expect(
+      generateCloudBaseFunctionImage({
+        prompt: "一只小狗",
+        cloudFunction,
+        downloadImage,
+      }),
+    ).resolves.toEqual(Buffer.from("png"));
+
+    expect(cloudFunction).toHaveBeenCalledWith({
+      name: "customPetImageGenerator",
+      data: { prompt: "一只小狗" },
+    });
+    expect(downloadImage).toHaveBeenCalledWith("https://example.com/generated.png");
+  });
+
+  test("keeps CloudBase image model output URL as an injectable fallback", async () => {
     const generateImage = jest.fn().mockResolvedValue({
       data: [{ url: "https://example.com/generated.png" }],
     });
@@ -91,6 +121,18 @@ describe("custom pet generator", () => {
       }),
     );
     expect(downloadImage).toHaveBeenCalledWith("https://example.com/generated.png");
+  });
+
+  test("parses image generation cloud function failures", () => {
+    expect(() =>
+      parseImageGenerationFunctionResult({
+        result: {
+          success: false,
+          code: "429",
+          message: "quota exceeded",
+        },
+      }),
+    ).toThrow("quota exceeded");
   });
 
   test("keeps Tencent AIArt as an explicit image-to-image fallback", async () => {

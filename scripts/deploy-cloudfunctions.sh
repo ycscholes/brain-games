@@ -8,7 +8,7 @@ RUNTIME="${CLOUD_FUNCTION_RUNTIME:-Nodejs18.15}"
 WORKER_RUNTIME="${CUSTOM_PET_WORKER_RUNTIME:-Nodejs20.19}"
 DEPLOY_MODE="${CLOUD_FUNCTION_DEPLOY_MODE:-zip}"
 INCLUDE_SHARED_PACKAGE="${CLOUD_FUNCTION_INCLUDE_PACKAGE:-true}"
-DEFAULT_FUNCTIONS="login getUserData syncUserData customPetApi customPetWorker customPetRecovery"
+DEFAULT_FUNCTIONS="login getUserData syncUserData customPetApi customPetImageGenerator customPetWorker customPetRecovery"
 read -r -a FUNCTIONS <<< "${CLOUD_FUNCTIONS:-$DEFAULT_FUNCTIONS}"
 SHARED_PACKAGE_FILE="$ROOT_DIR/cloudfunctions/package.json"
 SHARED_PACKAGE_LOCK_FILE="$ROOT_DIR/cloudfunctions/package-lock.json"
@@ -90,6 +90,10 @@ for function_name in "${FUNCTIONS[@]}"; do
   if [[ "$function_name" == "customPetWorker" ]]; then
     timeout=900
     memory_size=1024
+    function_runtime="$WORKER_RUNTIME"
+  elif [[ "$function_name" == "customPetImageGenerator" ]]; then
+    timeout=240
+    memory_size=512
     function_runtime="$WORKER_RUNTIME"
   elif [[ "$function_name" == "customPetRecovery" ]]; then
     timeout=120

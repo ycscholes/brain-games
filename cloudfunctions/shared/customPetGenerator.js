@@ -16,6 +16,12 @@ function getAiArtSdk() {
   return require("tencentcloud-sdk-nodejs-aiart").aiart;
 }
 
+function getWxServerSdk() {
+  return require("wx-server-sdk");
+}
+
+const DEFAULT_IMAGE_GENERATION_FUNCTION_NAME = "customPetImageGenerator";
+
 const DEFAULT_ANALYSIS = {
   speciesLabel: "自定义宠物",
   mappedSkin: "cat",
@@ -154,10 +160,63 @@ function downloadRemoteImage(url) {
 }
 
 async function generateCloudBaseImage({ mood, traits, speciesLabel, imageModel, downloadImage }) {
+  const prompt = buildMoodPrompt({ mood, traits, speciesLabel });
+  if (!imageModel) {
+    return generateCloudBaseFunctionImage({ prompt, downloadImage });
+  }
+  return generateCloudBaseSdkImage({ prompt, imageModel, downloadImage });
+}
+
+function parseImageGenerationFunctionResult(response) {
+  const result = response && response.result ? response.result : response;
+  if (result && result.success === false) {
+    const error = new Error(result.message || "CloudBase image generation failed");
+    error.code = result.code || "Error";
+    throw error;
+  }
+  if (result && result.success === true && result.imageUrl) {
+    return {
+      imageUrl: result.imageUrl,
+      revisedPrompt: result.revised_prompt || null,
+    };
+  }
+  if (result && result.imageUrl) {
+    return {
+      imageUrl: result.imageUrl,
+      revisedPrompt: result.revised_prompt || null,
+    };
+  }
+  if (result && result.data && result.data[0] && result.data[0].url) {
+    return {
+      imageUrl: result.data[0].url,
+      revisedPrompt: result.data[0].revised_prompt || null,
+    };
+  }
+  throw new Error("CloudBase image response is empty");
+}
+
+async function generateCloudBaseFunctionImage({ prompt, cloudFunction, downloadImage }) {
+  const caller =
+    cloudFunction ||
+    ((params) => {
+      const cloud = getWxServerSdk();
+      return cloud.callFunction(params);
+    });
+  const functionName =
+    process.env.CUSTOM_PET_IMAGE_FUNCTION_NAME || DEFAULT_IMAGE_GENERATION_FUNCTION_NAME;
+  const response = await caller({
+    name: functionName,
+    data: { prompt },
+  });
+  const { imageUrl } = parseImageGenerationFunctionResult(response);
+  return (downloadImage || downloadRemoteImage)(imageUrl);
+}
+
+async function generateCloudBaseSdkImage({ prompt, imageModel, downloadImage }) {
   const model = imageModel || createCloudBaseImageModel();
   const response = await model.generateImage({
     model: "hunyuan-image",
-    prompt: buildMoodPrompt({ mood, traits, speciesLabel }),
+    prompt,
     negative_prompt: "多人，多只动物，场景，地面，阴影，文字，边框，水印，裁切，模糊，畸形",
     size: "1024x1024",
     version: "v1.9",
@@ -293,8 +352,10 @@ module.exports = {
   buildMoodPrompt,
   generateMood,
   generateCloudBaseImage,
+  generateCloudBaseFunctionImage,
   generateAiArtImage,
   normalizeAnalysis,
   normalizeSprite,
+  parseImageGenerationFunctionResult,
   validateRuntimeDependencies,
 };

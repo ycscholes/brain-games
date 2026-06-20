@@ -73,7 +73,8 @@ npm run assets:upload
 - `components/CustomPetFlow/`：上传、生成进度、预览、重做、领养和取消。
 - `src/services/custom-pet/`：云函数调用、私有图片 URL 与缓存。
 - `cloudfunctions/customPetApi`：资格、积分和领养事务。
-- `cloudfunctions/customPetWorker`：AIArt 图生图、透明 PNG 处理和可恢复任务。
+- `cloudfunctions/customPetImageGenerator`：按微信云开发生图云函数契约接收 `prompt`，返回 24 小时 `imageUrl` 与 `revised_prompt`。
+- `cloudfunctions/customPetWorker`：调用生图云函数、下载 24 小时图片 URL、透明 PNG 处理、上传私有云存储和可恢复任务。
 - `cloudfunctions/customPetRecovery`：每五分钟恢复停滞任务与执行删除。
 - `src/utils/petStorage.ts`：领养、喂食、状态更新和积分余额。
 - `tests/unit/petStorage.test.ts`：宠物状态与消费。
@@ -81,3 +82,28 @@ npm run assets:upload
 - `tests/unit/remoteAssets.test.ts`：远程地址解析。
 - `tests/unit/customPetService.test.ts`：私有图片 URL 缓存。
 - `tests/unit/customPetDomain.test.js`：任务状态和错误分类。
+
+### 生图云函数验收
+
+AI 生图服务开通后，可先单独验证 `customPetImageGenerator`：
+
+```js
+wx.cloud.callFunction({
+  name: "customPetImageGenerator",
+  data: {
+    prompt: "一只可爱的猫咪在阳光下玩耍",
+  },
+  success: (res) => {
+    const result = res.result;
+    if (result.success) {
+      console.log("图片URL:", result.imageUrl);
+      console.log("优化后的提示词:", result.revised_prompt);
+      console.log("注意: 图片URL有效期为24小时");
+    } else {
+      console.error("生成失败:", result.code, result.message);
+    }
+  },
+});
+```
+
+自定义宠物业务不会直接保存这个 24 小时 URL；`customPetWorker` 会下载该 URL、透明化处理，并上传到用户私有 CloudBase Storage 路径后再进入预览/领养流程。
