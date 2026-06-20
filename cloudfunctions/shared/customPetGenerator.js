@@ -108,6 +108,20 @@ function buildMoodPrompt({ mood, traits, speciesLabel }) {
   ].join("。").slice(0, 250);
 }
 
+function buildMoodSheetPrompt({ traits, speciesLabel }) {
+  return [
+    `单只${speciesLabel || "宠物"}的四状态角色设定图，2x2 四宫格`,
+    "左上 idle：自然站立或坐着，平静看向前方",
+    "右上 feed：开心进食，嘴边有轻微咀嚼动作，但不要出现具体食物",
+    "左下 cuddle：亲昵地靠近并露出享受抚摸的表情",
+    "右下 hungry：略显饥饿和期待，姿态仍然可爱，不要悲惨",
+    "四格必须是同一只宠物、同一水彩绘本风格、儿童友好、轮廓清楚、每格主体居中",
+    "纯亮绿色背景 #00FF00，无场景、无地面、无投影、无边框、无文字、无标签",
+    `身份特征：${Object.values(traits || {}).join("；")}`,
+    "保留参考图的物种、主色、花纹、体型和配饰，每格四周保留安全边距",
+  ].join("。").slice(0, 520);
+}
+
 function createAiArtClient() {
   const aiart = getAiArtSdk();
   const Client = aiart.v20221229.Client;
@@ -161,6 +175,14 @@ function downloadRemoteImage(url) {
 
 async function generateCloudBaseImage({ mood, traits, speciesLabel, imageModel, downloadImage }) {
   const prompt = buildMoodPrompt({ mood, traits, speciesLabel });
+  if (!imageModel) {
+    return generateCloudBaseFunctionImage({ prompt, downloadImage });
+  }
+  return generateCloudBaseSdkImage({ prompt, imageModel, downloadImage });
+}
+
+async function generateCloudBaseSheetImage({ traits, speciesLabel, imageModel, downloadImage }) {
+  const prompt = buildMoodSheetPrompt({ traits, speciesLabel });
   if (!imageModel) {
     return generateCloudBaseFunctionImage({ prompt, downloadImage });
   }
@@ -251,12 +273,68 @@ async function generateAiArtImage({ referenceBuffer, mood, traits, speciesLabel,
   return Buffer.from(response.ResultImage, "base64");
 }
 
+async function generateAiArtSheetImage({ referenceBuffer, traits, speciesLabel, client }) {
+  const aiClient = client || createAiArtClient();
+  const response = await aiClient.ImageToImage({
+    InputImage: referenceBuffer.toString("base64"),
+    Prompt: buildMoodSheetPrompt({ traits, speciesLabel }),
+    NegativePrompt: "多人，多只动物，场景，地面，阴影，文字，边框，水印，裁切，模糊，畸形",
+    Styles: ["104"],
+    ResultConfig: {
+      Resolution: "1024:1024",
+    },
+    LogoAdd: 0,
+    Strength: 0.56,
+    RspImgType: "base64",
+    EnhanceImage: 1,
+  });
+  if (!response.ResultImage) {
+    throw new Error("AI image response is empty");
+  }
+  return Buffer.from(response.ResultImage, "base64");
+}
+
 async function generateMood({ referenceBuffer, mood, traits, speciesLabel, client }) {
   const provider = process.env.CUSTOM_PET_IMAGE_PROVIDER || "cloudbase";
   if (provider === "aiart") {
     return generateAiArtImage({ referenceBuffer, mood, traits, speciesLabel, client });
   }
   return generateCloudBaseImage({ mood, traits, speciesLabel, imageModel: client });
+}
+
+async function generateMoodSheet({ referenceBuffer, traits, speciesLabel, client }) {
+  const provider = process.env.CUSTOM_PET_IMAGE_PROVIDER || "cloudbase";
+  if (provider === "aiart") {
+    return generateAiArtSheetImage({ referenceBuffer, traits, speciesLabel, client });
+  }
+  return generateCloudBaseSheetImage({ traits, speciesLabel, imageModel: client });
+}
+
+async function splitMoodSheet({ inputBuffer }) {
+  const { Jimp, JimpMime } = getJimp();
+  const image = await Jimp.read(inputBuffer);
+  const cellWidth = Math.floor(image.bitmap.width / 2);
+  const cellHeight = Math.floor(image.bitmap.height / 2);
+  if (cellWidth <= 0 || cellHeight <= 0) {
+    throw new Error("generated mood sheet is too small");
+  }
+  const frames = {
+    idle: { x: 0, y: 0 },
+    feed: { x: cellWidth, y: 0 },
+    cuddle: { x: 0, y: cellHeight },
+    hungry: { x: cellWidth, y: cellHeight },
+  };
+  const output = {};
+  for (const [mood, frame] of Object.entries(frames)) {
+    const cell = image.clone().crop({
+      x: frame.x,
+      y: frame.y,
+      w: cellWidth,
+      h: cellHeight,
+    });
+    output[mood] = await cell.getBuffer(JimpMime.png);
+  }
+  return output;
 }
 
 async function normalizeSprite({ inputBuffer }) {
@@ -350,12 +428,17 @@ module.exports = {
   addPngTextChunk,
   analyzeSource,
   buildMoodPrompt,
+  buildMoodSheetPrompt,
   generateMood,
+  generateMoodSheet,
   generateCloudBaseImage,
+  generateCloudBaseSheetImage,
   generateCloudBaseFunctionImage,
   generateAiArtImage,
+  generateAiArtSheetImage,
   normalizeAnalysis,
   normalizeSprite,
   parseImageGenerationFunctionResult,
+  splitMoodSheet,
   validateRuntimeDependencies,
 };

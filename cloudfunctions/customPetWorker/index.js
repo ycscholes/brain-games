@@ -10,7 +10,9 @@ const {
 const {
   analyzeSource,
   generateMood,
+  generateMoodSheet,
   normalizeSprite,
+  splitMoodSheet,
   validateRuntimeDependencies,
 } = require("./shared/customPetGenerator");
 
@@ -97,6 +99,43 @@ async function processAnalyzing(task) {
 
 async function processIdle(task) {
   const sourceBuffer = await download(task.sourceFileId);
+  const generatedSheet = await generateMoodSheet({
+    referenceBuffer: sourceBuffer,
+    traits: task.traits,
+    speciesLabel: task.speciesLabel,
+  });
+  let normalizedSprites = null;
+  try {
+    const sheetSprites = await splitMoodSheet({ inputBuffer: generatedSheet });
+    normalizedSprites = {};
+    for (const mood of CUSTOM_PET_MOODS) {
+      normalizedSprites[mood] = await normalizeSprite({ inputBuffer: sheetSprites[mood] });
+    }
+  } catch (error) {
+    console.warn("[customPetWorker] mood sheet post-processing failed; falling back to per-mood generation", {
+      jobId: task.jobId,
+      message: getErrorSummary(error),
+    });
+    await processIdleWithSeparateGeneration(task, sourceBuffer);
+    return;
+  }
+
+  const fileIds = {};
+  for (const mood of CUSTOM_PET_MOODS) {
+    fileIds[mood] = await upload(
+      getCandidateMoodPath(task.ownerId, task.jobId, task.candidateVersion || 1, mood),
+      normalizedSprites[mood],
+    );
+    await updateTask(task.jobId, { candidateSpriteFileIds: fileIds });
+  }
+  await updateTask(task.jobId, {
+    status: "validating",
+    step: "validating",
+    candidateSpriteFileIds: fileIds,
+  });
+}
+
+async function processIdleWithSeparateGeneration(task, sourceBuffer) {
   const generated = await generateMood({
     referenceBuffer: sourceBuffer,
     mood: "idle",
