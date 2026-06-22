@@ -1,4 +1,6 @@
 const cloud = require("wx-server-sdk");
+const fs = require("fs");
+const path = require("path");
 const {
   CUSTOM_PET_MOODS,
   MAX_STEP_ATTEMPTS,
@@ -9,6 +11,7 @@ const {
 } = require("./shared/customPetDomain");
 const {
   analyzeSource,
+  generateReferencedMoodSheet,
   generateMood,
   generateMoodSheet,
   normalizeSprite,
@@ -23,6 +26,7 @@ const JOB_COLLECTION = "custom_pet_jobs";
 const ENTITLEMENT_COLLECTION = "custom_pet_entitlements";
 const SNAPSHOT_COLLECTION = "xiaoyuyuan_user_snapshots";
 const LOCK_TTL_MS = 12 * 60 * 1000;
+const CAT_REFERENCE_SHEET_PATH = "assets/v1/pets/cat-reference-sheet.png";
 
 function nowIso() {
   return new Date().toISOString();
@@ -41,6 +45,41 @@ async function getTask(jobId) {
 async function download(fileID) {
   const result = await cloud.downloadFile({ fileID });
   return result.fileContent;
+}
+
+function getCatReferenceSheetFileId() {
+  const envId = process.env.TARO_CLOUD_ENV_ID || process.env.CLOUD_ENV_ID || process.env.TCB_ENV || "";
+  const bucket =
+    process.env.TARO_CLOUD_STORAGE_BUCKET ||
+    process.env.CLOUD_STORAGE_BUCKET ||
+    process.env.TCB_STORAGE_BUCKET ||
+    "";
+  return envId && bucket ? `cloud://${envId}.${bucket}/${CAT_REFERENCE_SHEET_PATH}` : "";
+}
+
+function readBundledCatReferenceSheet() {
+  const candidates = [
+    path.join(__dirname, "shared", "assets", "cat-reference-sheet.png"),
+    path.join(__dirname, "..", "shared", "assets", "cat-reference-sheet.png"),
+  ];
+  for (const filePath of candidates) {
+    if (fs.existsSync(filePath)) {
+      return fs.readFileSync(filePath);
+    }
+  }
+  throw new Error("bundled cat reference sheet not found");
+}
+
+async function loadCatReferenceSheet() {
+  const fileID = getCatReferenceSheetFileId();
+  if (fileID) {
+    try {
+      return await download(fileID);
+    } catch {
+      // The bundled asset keeps custom pet generation available before remote assets are uploaded.
+    }
+  }
+  return readBundledCatReferenceSheet();
 }
 
 async function upload(path, buffer) {
@@ -99,11 +138,25 @@ async function processAnalyzing(task) {
 
 async function processIdle(task) {
   const sourceBuffer = await download(task.sourceFileId);
-  const generatedSheet = await generateMoodSheet({
-    referenceBuffer: sourceBuffer,
-    traits: task.traits,
-    speciesLabel: task.speciesLabel,
-  });
+  let generatedSheet = null;
+  try {
+    generatedSheet = await generateReferencedMoodSheet({
+      userReferenceBuffer: sourceBuffer,
+      catReferenceBuffer: await loadCatReferenceSheet(),
+      traits: task.traits,
+      speciesLabel: task.speciesLabel,
+    });
+  } catch (error) {
+    console.warn("[customPetWorker] referenced mood sheet generation failed; falling back to single-reference sheet", {
+      jobId: task.jobId,
+      message: getErrorSummary(error),
+    });
+    generatedSheet = await generateMoodSheet({
+      referenceBuffer: sourceBuffer,
+      traits: task.traits,
+      speciesLabel: task.speciesLabel,
+    });
+  }
   let normalizedSprites = null;
   try {
     const sheetSprites = await splitMoodSheet({ inputBuffer: generatedSheet });

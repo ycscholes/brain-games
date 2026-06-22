@@ -23,8 +23,10 @@ const {
   generateCloudBaseSheetImage,
   buildMoodPrompt,
   buildMoodSheetPrompt,
+  generateReferencedMoodSheet,
   normalizeAnalysis,
   parseImageGenerationFunctionResult,
+  pollTextToImageJob,
   splitMoodSheet,
 } = require("../../cloudfunctions/shared/customPetGenerator");
 
@@ -222,6 +224,91 @@ describe("custom pet generator", () => {
         ResultConfig: { Resolution: "1024:1024" },
       }),
     );
+  });
+
+  test("submits a referenced mood sheet with cat and user reference images", async () => {
+    const SubmitTextToImageJob = jest.fn().mockResolvedValue({ JobId: "job-1" });
+    const QueryTextToImageJob = jest.fn().mockResolvedValue({
+      JobStatusCode: "5",
+      ResultImage: ["https://example.com/referenced-sheet.png"],
+    });
+    const downloadImage = jest.fn().mockResolvedValue(Buffer.from("referenced-sheet"));
+
+    await expect(
+      generateReferencedMoodSheet({
+        userReferenceBuffer: Buffer.from("user"),
+        catReferenceBuffer: Buffer.from("cat"),
+        speciesLabel: "小狗",
+        traits: { primaryColor: "黑白" },
+        client: { SubmitTextToImageJob, QueryTextToImageJob },
+        downloadImage,
+        sleepFn: jest.fn(),
+      }),
+    ).resolves.toEqual(Buffer.from("referenced-sheet"));
+
+    expect(SubmitTextToImageJob).toHaveBeenCalledWith(
+      expect.objectContaining({
+        Images: [
+          Buffer.from("cat").toString("base64"),
+          Buffer.from("user").toString("base64"),
+        ],
+        LogoAdd: 0,
+        Prompt: expect.stringContaining("2x2"),
+        Resolution: "1024:1024",
+        Revise: 0,
+      }),
+    );
+    expect(QueryTextToImageJob).toHaveBeenCalledWith({ JobId: "job-1" });
+    expect(downloadImage).toHaveBeenCalledWith("https://example.com/referenced-sheet.png");
+  });
+
+  test("polls Tencent text-to-image jobs until the result is ready", async () => {
+    const sleepFn = jest.fn();
+    const client = {
+      QueryTextToImageJob: jest
+        .fn()
+        .mockResolvedValueOnce({ JobStatusCode: "1" })
+        .mockResolvedValueOnce({ JobStatusCode: "2" })
+        .mockResolvedValueOnce({
+          JobStatusCode: "5",
+          ResultImage: ["https://example.com/ready.png"],
+          RevisedPrompt: ["optimized"],
+        }),
+    };
+
+    await expect(
+      pollTextToImageJob({
+        jobId: "job-1",
+        client,
+        sleepFn,
+        intervalMs: 10,
+        maxAttempts: 4,
+      }),
+    ).resolves.toEqual({
+      imageUrl: "https://example.com/ready.png",
+      revisedPrompt: "optimized",
+    });
+    expect(sleepFn).toHaveBeenCalledTimes(2);
+    expect(sleepFn).toHaveBeenCalledWith(10);
+  });
+
+  test("raises provider errors from failed text-to-image jobs", async () => {
+    await expect(
+      pollTextToImageJob({
+        jobId: "job-1",
+        client: {
+          QueryTextToImageJob: jest.fn().mockResolvedValue({
+            JobStatusCode: "4",
+            JobErrorCode: "OperationDenied.ImageIllegalDetected",
+            JobErrorMsg: "image rejected",
+          }),
+        },
+        sleepFn: jest.fn(),
+      }),
+    ).rejects.toMatchObject({
+      code: "OperationDenied.ImageIllegalDetected",
+      message: "image rejected",
+    });
   });
 
   test("splits a 2x2 mood sheet in the fixed mood order", async () => {

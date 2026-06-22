@@ -25,6 +25,7 @@ const mockCloud = {
 
 const mockGenerator = {
   analyzeSource: jest.fn(),
+  generateReferencedMoodSheet: jest.fn(async () => Buffer.from("referenced-sheet")),
   generateMood: jest.fn(),
   generateMoodSheet: jest.fn(async () => Buffer.from("sheet")),
   normalizeSprite: jest.fn(async ({ inputBuffer }) => Buffer.from(`normalized:${inputBuffer.toString()}`)),
@@ -98,9 +99,15 @@ describe("custom pet worker", () => {
     });
     mockCloud.downloadFile.mockClear();
     mockCloud.uploadFile.mockClear();
+    delete process.env.TARO_CLOUD_ENV_ID;
+    delete process.env.CLOUD_ENV_ID;
+    delete process.env.TCB_ENV;
+    delete process.env.TARO_CLOUD_STORAGE_BUCKET;
+    delete process.env.CLOUD_STORAGE_BUCKET;
+    delete process.env.TCB_STORAGE_BUCKET;
   });
 
-  test("generates one mood sheet and uploads compatible mood files", async () => {
+  test("generates one referenced mood sheet and uploads compatible mood files", async () => {
     mockTaskStore.set("job-1", {
       jobId: "job-1",
       ownerId: "user-1",
@@ -115,9 +122,18 @@ describe("custom pet worker", () => {
     const { runJob } = require("../../cloudfunctions/customPetWorker/index");
     const task = await runJob("job-1");
 
-    expect(mockGenerator.generateMoodSheet).toHaveBeenCalledTimes(1);
+    expect(mockGenerator.generateReferencedMoodSheet).toHaveBeenCalledTimes(1);
+    expect(mockGenerator.generateReferencedMoodSheet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userReferenceBuffer: Buffer.from("download:cloud://source"),
+        catReferenceBuffer: expect.any(Buffer),
+        speciesLabel: "小狗",
+        traits: { primaryColor: "黑白" },
+      }),
+    );
+    expect(mockGenerator.generateMoodSheet).not.toHaveBeenCalled();
     expect(mockGenerator.generateMood).not.toHaveBeenCalled();
-    expect(mockGenerator.splitMoodSheet).toHaveBeenCalledWith({ inputBuffer: Buffer.from("sheet") });
+    expect(mockGenerator.splitMoodSheet).toHaveBeenCalledWith({ inputBuffer: Buffer.from("referenced-sheet") });
     expect(mockGenerator.normalizeSprite).toHaveBeenCalledTimes(4);
     expect(mockUploadedFiles.map((file) => file.cloudPath)).toEqual([
       "users/user-1/custom-pets/job-1/candidates/1/idle.png",
@@ -132,5 +148,36 @@ describe("custom pet worker", () => {
       cuddle: "cloud://test-env/users/user-1/custom-pets/job-1/candidates/1/cuddle.png",
       hungry: "cloud://test-env/users/user-1/custom-pets/job-1/candidates/1/hungry.png",
     });
+  });
+
+  test("falls back to the single-reference sheet when referenced generation fails", async () => {
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      mockGenerator.generateReferencedMoodSheet.mockRejectedValueOnce(new Error("referenced unavailable"));
+      mockTaskStore.set("job-1", {
+        jobId: "job-1",
+        ownerId: "user-1",
+        sourceFileId: "cloud://source",
+        status: "generating_idle",
+        step: "generating_idle",
+        candidateVersion: 1,
+        traits: { primaryColor: "黑白" },
+        speciesLabel: "小狗",
+      });
+
+      const { runJob } = require("../../cloudfunctions/customPetWorker/index");
+      const task = await runJob("job-1");
+
+      expect(mockGenerator.generateReferencedMoodSheet).toHaveBeenCalledTimes(1);
+      expect(mockGenerator.generateMoodSheet).toHaveBeenCalledWith({
+        referenceBuffer: Buffer.from("download:cloud://source"),
+        speciesLabel: "小狗",
+        traits: { primaryColor: "黑白" },
+      });
+      expect(mockGenerator.splitMoodSheet).toHaveBeenCalledWith({ inputBuffer: Buffer.from("sheet") });
+      expect(task.status).toBe("preview_ready");
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });

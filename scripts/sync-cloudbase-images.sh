@@ -16,6 +16,7 @@ required_files=(
   "pets/cat-feed.png"
   "pets/cat-cuddle.png"
   "pets/cat-hungry.png"
+  "pets/cat-reference-sheet.png"
   "pets/dog-idle.png"
   "pets/dog-feed.png"
   "pets/dog-cuddle.png"

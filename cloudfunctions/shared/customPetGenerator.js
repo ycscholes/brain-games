@@ -21,6 +21,8 @@ function getWxServerSdk() {
 }
 
 const DEFAULT_IMAGE_GENERATION_FUNCTION_NAME = "customPetImageGenerator";
+const REFERENCED_SHEET_POLL_ATTEMPTS = 90;
+const REFERENCED_SHEET_POLL_INTERVAL_MS = 5000;
 
 const DEFAULT_ANALYSIS = {
   speciesLabel: "自定义宠物",
@@ -173,6 +175,12 @@ function downloadRemoteImage(url) {
   });
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 async function generateCloudBaseImage({ mood, traits, speciesLabel, imageModel, downloadImage }) {
   const prompt = buildMoodPrompt({ mood, traits, speciesLabel });
   if (!imageModel) {
@@ -292,6 +300,80 @@ async function generateAiArtSheetImage({ referenceBuffer, traits, speciesLabel, 
     throw new Error("AI image response is empty");
   }
   return Buffer.from(response.ResultImage, "base64");
+}
+
+function unwrapTencentResponse(response) {
+  return response && response.Response ? response.Response : response;
+}
+
+async function pollTextToImageJob({
+  jobId,
+  client,
+  sleepFn = sleep,
+  maxAttempts = REFERENCED_SHEET_POLL_ATTEMPTS,
+  intervalMs = REFERENCED_SHEET_POLL_INTERVAL_MS,
+}) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const result = unwrapTencentResponse(await client.QueryTextToImageJob({ JobId: jobId }));
+    const statusCode = String(result?.JobStatusCode || "");
+    if (statusCode === "5") {
+      const imageUrl = result.ResultImage?.[0];
+      if (!imageUrl) {
+        throw new Error("Tencent AIArt text-to-image result is empty");
+      }
+      return {
+        imageUrl,
+        revisedPrompt: result.RevisedPrompt?.[0] || null,
+      };
+    }
+    if (statusCode === "4") {
+      const error = new Error(result?.JobErrorMsg || "Tencent AIArt text-to-image job failed");
+      error.code = result?.JobErrorCode || "TextToImageJobFailed";
+      throw error;
+    }
+    if (attempt < maxAttempts - 1) {
+      await sleepFn(intervalMs);
+    }
+  }
+  const error = new Error("Tencent AIArt text-to-image job timed out");
+  error.code = "TextToImageJobTimeout";
+  throw error;
+}
+
+async function generateReferencedMoodSheet({
+  userReferenceBuffer,
+  catReferenceBuffer,
+  traits,
+  speciesLabel,
+  client,
+  downloadImage,
+  sleepFn,
+  maxAttempts,
+  intervalMs,
+}) {
+  const aiClient = client || createAiArtClient();
+  const submitResult = unwrapTencentResponse(await aiClient.SubmitTextToImageJob({
+    Prompt: buildMoodSheetPrompt({ traits, speciesLabel }),
+    Images: [
+      catReferenceBuffer.toString("base64"),
+      userReferenceBuffer.toString("base64"),
+    ],
+    Resolution: "1024:1024",
+    LogoAdd: 0,
+    Revise: 0,
+  }));
+  const jobId = submitResult?.JobId;
+  if (!jobId) {
+    throw new Error("Tencent AIArt text-to-image job id is empty");
+  }
+  const { imageUrl } = await pollTextToImageJob({
+    jobId,
+    client: aiClient,
+    sleepFn,
+    maxAttempts,
+    intervalMs,
+  });
+  return (downloadImage || downloadRemoteImage)(imageUrl);
 }
 
 async function generateMood({ referenceBuffer, mood, traits, speciesLabel, client }) {
@@ -436,9 +518,11 @@ module.exports = {
   generateCloudBaseFunctionImage,
   generateAiArtImage,
   generateAiArtSheetImage,
+  generateReferencedMoodSheet,
   normalizeAnalysis,
   normalizeSprite,
   parseImageGenerationFunctionResult,
+  pollTextToImageJob,
   splitMoodSheet,
   validateRuntimeDependencies,
 };
