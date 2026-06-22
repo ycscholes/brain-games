@@ -145,4 +145,71 @@ describe("custom pet api generation eligibility", () => {
       error: "custom pet task already active",
     });
   });
+
+  test("allows repeated rerolls for the same preview during testing", async () => {
+    const jobId = "custom_pet_job_preview";
+    stores.custom_pet_jobs.set(jobId, {
+      jobId,
+      ownerId: "user-1",
+      status: "preview_ready",
+      step: "preview_ready",
+      candidateVersion: 2,
+      candidateSpriteFileIds: {
+        idle: "cloud://idle",
+        feed: "cloud://feed",
+        cuddle: "cloud://cuddle",
+        hungry: "cloud://hungry",
+      },
+      rerollUsed: true,
+      updatedAt: "2026-06-22T00:00:00.000Z",
+    });
+
+    const { main } = require("../../cloudfunctions/customPetApi/index");
+    const response = await main({ action: "reroll", jobId });
+
+    expect(response.ok).toBe(true);
+    expect(response.data.task).toMatchObject({
+      jobId,
+      status: "rerolling",
+      candidateVersion: 3,
+      rerollUsed: true,
+    });
+  });
+
+  test("does not mark generation as used when a preview is cancelled during testing", async () => {
+    seedSnapshot(700);
+    stores.xiaoyuyuan_user_snapshots.get("user-1").snapshot.petData.reservedBalance = 300;
+    const jobId = "custom_pet_job_cancel";
+    stores.custom_pet_jobs.set(jobId, {
+      jobId,
+      ownerId: "user-1",
+      status: "preview_ready",
+      step: "preview_ready",
+      candidateVersion: 1,
+      settlementStatus: "reserved",
+      reservedPoints: 300,
+      rerollUsed: true,
+      updatedAt: "2026-06-22T00:00:00.000Z",
+    });
+    stores.custom_pet_entitlements.set("user-1", {
+      ownerId: "user-1",
+      activeJobId: jobId,
+      customPetGenerationUsed: true,
+      usedAt: "2026-06-22T00:00:00.000Z",
+    });
+
+    const { main } = require("../../cloudfunctions/customPetApi/index");
+    const response = await main({ action: "cancel", jobId });
+
+    expect(response.ok).toBe(true);
+    expect(stores.custom_pet_entitlements.get("user-1")).toMatchObject({
+      activeJobId: null,
+      customPetGenerationUsed: false,
+      usedAt: null,
+    });
+    expect(stores.xiaoyuyuan_user_snapshots.get("user-1").snapshot.petData).toMatchObject({
+      balance: 1000,
+      reservedBalance: 0,
+    });
+  });
 });

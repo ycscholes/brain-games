@@ -96,17 +96,10 @@ async function findCurrentTask(ownerId) {
 }
 
 async function getStatus(ownerId) {
-  const [task, entitlementResult] = await Promise.all([
-    findCurrentTask(ownerId),
-    db.collection(ENTITLEMENT_COLLECTION).doc(ownerId).get().catch(() => null),
-  ]);
+  const task = await findCurrentTask(ownerId);
   return {
     task: sanitizeTask(task),
-    generationUsed: Boolean(
-      entitlementResult &&
-      entitlementResult.data &&
-      entitlementResult.data.customPetGenerationUsed,
-    ),
+    generationUsed: false,
   };
 }
 
@@ -219,9 +212,6 @@ async function reroll(ownerId, event) {
   const task = await getOwnedTask(ownerId, String(event.jobId || ""));
   if (!task || task.status !== "preview_ready") {
     throw new Error("custom pet preview unavailable");
-  }
-  if (task.rerollUsed) {
-    throw new Error("custom pet reroll already used");
   }
 
   const updatedAt = nowIso();
@@ -389,8 +379,8 @@ async function cancel(ownerId, event) {
       data: {
         ownerId,
         activeJobId: null,
-        customPetGenerationUsed: Boolean(task.status === "preview_ready" || task.rerollUsed),
-        usedAt: task.status === "preview_ready" || task.rerollUsed ? task.updatedAt : null,
+        customPetGenerationUsed: false,
+        usedAt: null,
         updatedAt,
       },
     });

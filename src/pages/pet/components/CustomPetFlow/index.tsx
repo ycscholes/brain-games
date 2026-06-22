@@ -179,7 +179,7 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
         {!task ? (
           <View className="custom-pet-intro">
             <Text className="custom-pet-copy">
-              每次生成包含四种状态和一次免费整套重做。原图与结果仅本人可在应用内访问。
+              测试阶段暂不限制生成和重做次数。原图与结果仅本人可在应用内访问。
             </Text>
             <View className={`stage-button confirm-button ${busy ? "button-disabled" : ""}`} onClick={handleSubmit}>
               <Text className="stage-button-text">{busy ? "正在上传" : "选择图片并生成"}</Text>
@@ -212,10 +212,10 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
             />
             <View className="custom-pet-actions">
               <View
-                className={`stage-button custom-pet-secondary ${task.rerollUsed || busy ? "button-disabled" : ""}`}
-                onClick={task.rerollUsed || busy ? undefined : handleReroll}
+                className={`stage-button custom-pet-secondary ${busy ? "button-disabled" : ""}`}
+                onClick={busy ? undefined : handleReroll}
               >
-                <Text className="stage-button-text">{task.rerollUsed ? "已使用重做" : "免费重做"}</Text>
+                <Text className="stage-button-text">重新生成</Text>
               </View>
               <View className={`stage-button confirm-button ${busy ? "button-disabled" : ""}`} onClick={handleAdopt}>
                 <Text className="stage-button-text">确认领养</Text>

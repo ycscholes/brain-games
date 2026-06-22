@@ -16,9 +16,9 @@ const {
 } = require("../../cloudfunctions/shared/customPetDomain");
 
 describe("custom pet domain", () => {
-  test("defines the approved price and reroll limit", () => {
+  test("defines the approved price and test-stage reroll policy", () => {
     expect(CUSTOM_PET_PRICE).toBe(300);
-    expect(MAX_REROLLS).toBe(1);
+    expect(MAX_REROLLS).toBe(Number.POSITIVE_INFINITY);
   });
 
   test("defines object-shaped default custom pet traits", () => {
