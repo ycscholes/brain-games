@@ -362,7 +362,7 @@ export default function PetPage() {
   const handleDeleteCustomPet = useCallback(async (pet: PetData) => {
     const confirmed = await Taro.showModal({
       title: `永久删除 ${pet.name}？`,
-      content: "原图、生成图片和宠物数据都会删除，生成资格不会恢复。",
+      content: "原图、生成图片和宠物数据都会删除。之后仍可重新生成新的自定义宠物。",
       confirmText: "永久删除",
       confirmColor: "#b33a2f",
     });

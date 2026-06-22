@@ -209,7 +209,7 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 - ✅ 宠物领养成本计算（第一只免费）
 - ✅ 喂食消耗与饥饿值恢复
 - ✅ 积分不足时消费失败
-- ✅ AI 自定义宠物冻结、结算、失败退回和单次资格由服务端事务控制
+- ✅ AI 自定义宠物冻结、结算、失败退回和同时仅一个活动任务由服务端事务控制
 
 ---
 
@@ -220,11 +220,11 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 | 积分转换率/难度倍率 | `src/utils/trainingStorage.ts` | `getAwardedPoints()`, `TrainingDifficulty` |
 | 积分获取/消费 | `src/utils/petStorage.ts` | `addPointsToPet()`, `adoptPet()`, `feedPet()` |
 | 领养/食物定价 | `src/pages/pet/types.ts` | `PET_ADOPTION_COST`, `FOOD_POOL`, `PET_FOOD_LOADOUTS`, `getFoodItemsForPetSkin()` |
-| AI 自定义宠物 | `cloudfunctions/customPetApi`, `cloudfunctions/customPetWorker` | 300 积分冻结、生成资格、领养结算 |
+| AI 自定义宠物 | `cloudfunctions/customPetApi`, `cloudfunctions/customPetWorker` | 300 积分冻结、活动任务保护、领养结算 |
 | 饥饿参数 | `src/pages/pet/types.ts` | `HUNGER_POINT_PER_MINUTE`, `MAX_HUNGER` |
 | 测试用例 | `tests/unit/trainingStorage.test.ts` | `getAwardedPoints` 测试套件 |
 
 ---
 
-**最后更新**：2026-06-14
-**版本**：v1.6
+**最后更新**：2026-06-22
+**版本**：v1.7

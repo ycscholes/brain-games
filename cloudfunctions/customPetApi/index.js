@@ -120,9 +120,6 @@ async function createUploadIntent(ownerId) {
       .get(),
     db.collection(SNAPSHOT_COLLECTION).doc(ownerId).get().catch(() => null),
   ]);
-  if (entitlementResult && entitlementResult.data && entitlementResult.data.customPetGenerationUsed) {
-    throw new Error("custom pet generation already used");
-  }
   if (activeResult.data.some((task) => isActiveStatus(task.status))) {
     throw new Error("custom pet task already active");
   }
@@ -153,9 +150,6 @@ async function submit(ownerId, event) {
       transaction.collection(ENTITLEMENT_COLLECTION).doc(ownerId).get().catch(() => null),
       transaction.collection(JOB_COLLECTION).doc(jobId).get().catch(() => null),
     ]);
-    if (entitlementResult && entitlementResult.data && entitlementResult.data.customPetGenerationUsed) {
-      throw new Error("custom pet generation already used");
-    }
     if (
       entitlementResult &&
       entitlementResult.data &&

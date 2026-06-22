@@ -44,7 +44,6 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
   const [urls, setUrls] = useState<CustomPetMoodUrls>({});
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [generationUsed, setGenerationUsed] = useState(false);
   const isPreview = task?.status === "preview_ready";
   const isQuotaWaiting = task?.errorCategory === "quota" && task.status !== "failed";
 
@@ -52,7 +51,6 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
     try {
       const status = await getCustomPetStatus();
       setTask(status.task);
-      setGenerationUsed(status.generationUsed);
       if (status.task?.status === "preview_ready") {
         setUrls(await resolveCustomPetSpriteUrls(status.task.jobId));
       }
@@ -146,7 +144,7 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
     }
     const confirmed = await Taro.showModal({
       title: "放弃本次生成？",
-      content: "300 积分会退回；若已生成预览，单次生成资格不会恢复。",
+      content: "300 积分会退回；之后仍可重新上传图片生成。",
       confirmText: "确认放弃",
     });
     if (!confirmed.confirm) return;
@@ -178,18 +176,10 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
           </View>
         </View>
 
-        {!task && generationUsed ? (
-          <View className="custom-pet-progress">
-            <Text className="custom-pet-status">本账号的 AI 宠物生成资格已使用</Text>
-            <Text className="custom-pet-copy">永久删除或放弃预览不会恢复生成资格。</Text>
-            <View className="stage-button custom-pet-secondary" onClick={onClose}>
-              <Text className="stage-button-text">关闭</Text>
-            </View>
-          </View>
-        ) : !task ? (
+        {!task ? (
           <View className="custom-pet-intro">
             <Text className="custom-pet-copy">
-              每位用户只能成功生成一次，包含四种状态和一次免费整套重做。原图与结果仅本人可在应用内访问。
+              每次生成包含四种状态和一次免费整套重做。原图与结果仅本人可在应用内访问。
             </Text>
             <View className={`stage-button confirm-button ${busy ? "button-disabled" : ""}`} onClick={handleSubmit}>
               <Text className="stage-button-text">{busy ? "正在上传" : "选择图片并生成"}</Text>
@@ -247,11 +237,9 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
             <Text className="custom-pet-status">{STATUS_TEXT.failed}</Text>
             <View
               className="stage-button custom-pet-secondary"
-              onClick={generationUsed ? onClose : handleSubmit}
+              onClick={handleSubmit}
             >
-              <Text className="stage-button-text">
-                {generationUsed ? "关闭" : "重新选择图片"}
-              </Text>
+              <Text className="stage-button-text">重新选择图片</Text>
             </View>
           </View>
         ) : (
