@@ -21,6 +21,9 @@ function getWxServerSdk() {
 }
 
 const DEFAULT_IMAGE_GENERATION_FUNCTION_NAME = "customPetImageGenerator";
+// Multi-reference generation uses Tencent AIArt async jobs. The 90 x 5s window
+// matches the worker lock TTL and gives the provider enough time for image jobs
+// without blocking a locked task indefinitely.
 const REFERENCED_SHEET_POLL_ATTEMPTS = 90;
 const REFERENCED_SHEET_POLL_INTERVAL_MS = 5000;
 
@@ -111,6 +114,9 @@ function buildMoodPrompt({ mood, traits, speciesLabel }) {
 }
 
 function buildMoodSheetPrompt({ traits, speciesLabel }) {
+  // This prompt is part of the runtime contract with splitMoodSheet(): it must
+  // keep a deterministic 2x2 layout so the worker can crop by coordinates and
+  // still publish the existing four mood files expected by the mini program.
   return [
     `单只${speciesLabel || "宠物"}的四状态角色设定图，2x2 四宫格`,
     "左上 idle：自然站立或坐着，平静看向前方",
@@ -184,6 +190,8 @@ function sleep(ms) {
 async function generateCloudBaseImage({ mood, traits, speciesLabel, imageModel, downloadImage }) {
   const prompt = buildMoodPrompt({ mood, traits, speciesLabel });
   if (!imageModel) {
+    // In wx-server-sdk cloud functions the shared generator cannot always init
+    // CloudBase AI directly, so production can route through the image helper function.
     return generateCloudBaseFunctionImage({ prompt, downloadImage });
   }
   return generateCloudBaseSdkImage({ prompt, imageModel, downloadImage });
@@ -192,6 +200,8 @@ async function generateCloudBaseImage({ mood, traits, speciesLabel, imageModel, 
 async function generateCloudBaseSheetImage({ traits, speciesLabel, imageModel, downloadImage }) {
   const prompt = buildMoodSheetPrompt({ traits, speciesLabel });
   if (!imageModel) {
+    // Same transport as single-mood CloudBase generation, but the prompt asks for
+    // all states in one sheet so the worker can split locally.
     return generateCloudBaseFunctionImage({ prompt, downloadImage });
   }
   return generateCloudBaseSdkImage({ prompt, imageModel, downloadImage });
@@ -262,6 +272,8 @@ async function generateCloudBaseSdkImage({ prompt, imageModel, downloadImage }) 
 
 async function generateAiArtImage({ referenceBuffer, mood, traits, speciesLabel, client }) {
   const aiClient = client || createAiArtClient();
+  // Legacy fallback path: ImageToImage has stronger single-reference behavior
+  // but can only generate one target image at a time.
   const response = await aiClient.ImageToImage({
     InputImage: referenceBuffer.toString("base64"),
     Prompt: buildMoodPrompt({ mood, traits, speciesLabel }),
@@ -283,6 +295,8 @@ async function generateAiArtImage({ referenceBuffer, mood, traits, speciesLabel,
 
 async function generateAiArtSheetImage({ referenceBuffer, traits, speciesLabel, client }) {
   const aiClient = client || createAiArtClient();
+  // Single-reference sheet fallback used when multi-reference text-to-image is
+  // unavailable. It still reduces the four mood calls to one generated sheet.
   const response = await aiClient.ImageToImage({
     InputImage: referenceBuffer.toString("base64"),
     Prompt: buildMoodSheetPrompt({ traits, speciesLabel }),
@@ -303,6 +317,8 @@ async function generateAiArtSheetImage({ referenceBuffer, traits, speciesLabel, 
 }
 
 function unwrapTencentResponse(response) {
+  // Unit tests use plain mock payloads, while the Tencent SDK wraps live results
+  // under Response. Normalize both forms before reading JobId/status fields.
   return response && response.Response ? response.Response : response;
 }
 
@@ -328,6 +344,8 @@ async function pollTextToImageJob({
       };
     }
     if (statusCode === "4") {
+      // Provider-declared failure should surface immediately so the worker can
+      // switch to the single-reference path instead of waiting for timeout.
       const error = new Error(result?.JobErrorMsg || "Tencent AIArt text-to-image job failed");
       error.code = result?.JobErrorCode || "TextToImageJobFailed";
       throw error;
@@ -369,6 +387,8 @@ async function generateReferencedMoodSheet({
   if (!jobId) {
     throw new Error("Tencent AIArt text-to-image job id is empty");
   }
+  // The job returns a temporary image URL instead of bytes, so keep downloading
+  // inside this helper and expose the same Buffer contract as the other generators.
   const { imageUrl } = await pollTextToImageJob({
     jobId,
     client: aiClient,
@@ -382,6 +402,8 @@ async function generateReferencedMoodSheet({
 async function generateMood({ referenceBuffer, mood, traits, speciesLabel, client }) {
   const provider = process.env.CUSTOM_PET_IMAGE_PROVIDER || "cloudbase";
   if (provider === "aiart") {
+    // aiart mode is kept for environments that have Tencent AIArt credentials
+    // and want image-to-image reference control for the legacy per-mood fallback.
     return generateAiArtImage({ referenceBuffer, mood, traits, speciesLabel, client });
   }
   return generateCloudBaseImage({ mood, traits, speciesLabel, imageModel: client });
@@ -390,6 +412,7 @@ async function generateMood({ referenceBuffer, mood, traits, speciesLabel, clien
 async function generateMoodSheet({ referenceBuffer, traits, speciesLabel, client }) {
   const provider = process.env.CUSTOM_PET_IMAGE_PROVIDER || "cloudbase";
   if (provider === "aiart") {
+    // This is the one-reference sheet fallback after generateReferencedMoodSheet fails.
     return generateAiArtSheetImage({ referenceBuffer, traits, speciesLabel, client });
   }
   return generateCloudBaseSheetImage({ traits, speciesLabel, imageModel: client });
@@ -412,6 +435,8 @@ async function splitMoodSheet({ inputBuffer }) {
   };
   const output = {};
   for (const [mood, frame] of Object.entries(frames)) {
+    // Split first and normalize each cell separately so each mood keeps the same
+    // 768x768 transparent PNG contract as older custom pet assets.
     const cell = image.clone().crop({
       x: frame.x,
       y: frame.y,
@@ -426,6 +451,8 @@ async function splitMoodSheet({ inputBuffer }) {
 async function normalizeSprite({ inputBuffer }) {
   const { Jimp, JimpMime } = getJimp();
   const image = await Jimp.read(inputBuffer);
+  // The model renders on #00FF00 chroma key; containment fills any short edges
+  // with the same key before alpha removal so crop bounds stay predictable.
   image.contain({
     w: 768,
     h: 768,
@@ -442,6 +469,7 @@ async function normalizeSprite({ inputBuffer }) {
     const blue = image.bitmap.data[offset + 2];
     const greenDistance = Math.max(Math.abs(red), Math.abs(255 - green), Math.abs(blue));
     if (greenDistance < 42 || (green > red * 1.55 && green > blue * 1.55 && green > 120)) {
+      // Remove both exact #00FF00 and anti-aliased green spill around the sprite.
       image.bitmap.data[offset + 3] = 0;
       return;
     }
@@ -461,6 +489,8 @@ async function normalizeSprite({ inputBuffer }) {
       h: maxY - minY + 1,
     })
     .scaleToFit({ w: 660, h: 660 });
+  // Center on a stable 768 canvas so frontend Image sizing does not need to know
+  // whether the source came from sheets, per-mood generation, or old assets.
   const canvas = new Jimp({
     width: 768,
     height: 768,

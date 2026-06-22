@@ -9,6 +9,8 @@ let outputPaths = [
 ]
 // Must match splitMoodSheet(): top-left idle, top-right feed, bottom-left cuddle, bottom-right hungry.
 let moods = ["idle", "feed", "cuddle", "hungry"]
+// 384px cells produce a 768px sheet, matching the normalized sprite canvas used
+// after the generated sheet is split back into four mood PNGs.
 let cellSize = CGFloat(384)
 let pixelSize = 768
 
@@ -40,6 +42,8 @@ for (index, mood) in moods.enumerated() {
   }
   let row = index / 2
   let column = index % 2
+  // AppKit draws from a bottom-left origin, so invert the row to preserve the
+  // visual top-left/top-right/bottom-left/bottom-right order used by Jimp crops.
   let targetX = CGFloat(column) * cellSize
   let targetY = CGFloat(1 - row) * cellSize
   let scale = min(cellSize / source.size.width, cellSize / source.size.height)

@@ -26,6 +26,8 @@ const JOB_COLLECTION = "custom_pet_jobs";
 const ENTITLEMENT_COLLECTION = "custom_pet_entitlements";
 const SNAPSHOT_COLLECTION = "xiaoyuyuan_user_snapshots";
 const LOCK_TTL_MS = 12 * 60 * 1000;
+// CloudBase-backed copy used by production. The same PNG is also bundled under
+// cloudfunctions/shared/assets so fresh deployments work before asset upload.
 const CAT_REFERENCE_SHEET_PATH = "assets/v1/pets/cat-reference-sheet.png";
 
 function nowIso() {
@@ -48,6 +50,8 @@ async function download(fileID) {
 }
 
 function getCatReferenceSheetFileId() {
+  // Cloud file IDs need both env id and bucket. If either is absent, skip remote
+  // download and use the bundled reference sheet instead of constructing a bad ID.
   const envId = process.env.TARO_CLOUD_ENV_ID || process.env.CLOUD_ENV_ID || process.env.TCB_ENV || "";
   const bucket =
     process.env.TARO_CLOUD_STORAGE_BUCKET ||
@@ -58,6 +62,8 @@ function getCatReferenceSheetFileId() {
 }
 
 function readBundledCatReferenceSheet() {
+  // Deployment staging may place shared assets either inside the function folder
+  // or one level up, depending on whether tests or deploy scripts are loading it.
   const candidates = [
     path.join(__dirname, "shared", "assets", "cat-reference-sheet.png"),
     path.join(__dirname, "..", "shared", "assets", "cat-reference-sheet.png"),
@@ -71,6 +77,8 @@ function readBundledCatReferenceSheet() {
 }
 
 async function loadCatReferenceSheet() {
+  // Prefer the remote asset because it follows the normal package-size workflow,
+  // but do not make custom pet generation depend on a successful asset upload.
   const fileID = getCatReferenceSheetFileId();
   if (fileID) {
     try {
@@ -128,6 +136,8 @@ async function updateTask(jobId, data) {
 async function processAnalyzing(task) {
   await updateTask(task.jobId, { status: "analyzing", step: "analyzing" });
   const sourceBuffer = await download(task.sourceFileId);
+  // Analysis extracts lightweight traits for prompts only. Generation still uses
+  // the original image bytes as the identity reference.
   const analysis = await analyzeSource({ sourceBuffer });
   await updateTask(task.jobId, {
     ...analysis,
@@ -141,6 +151,7 @@ async function processIdle(task) {
   let generatedSheet = null;
   try {
     // Preferred path: one Tencent AIArt job receives the app style sheet plus the user's image.
+    // It should produce a full 2x2 sheet, not just an idle image despite this worker status name.
     generatedSheet = await generateReferencedMoodSheet({
       userReferenceBuffer: sourceBuffer,
       catReferenceBuffer: await loadCatReferenceSheet(),
@@ -161,6 +172,8 @@ async function processIdle(task) {
   }
   let normalizedSprites = null;
   try {
+    // Keep the database/client contract as four mood file IDs even though the
+    // AI call produced one sheet. This avoids migrating existing frontend code.
     const sheetSprites = await splitMoodSheet({ inputBuffer: generatedSheet });
     normalizedSprites = {};
     for (const mood of CUSTOM_PET_MOODS) {
@@ -178,6 +191,8 @@ async function processIdle(task) {
 
   const fileIds = {};
   for (const mood of CUSTOM_PET_MOODS) {
+    // Persist after each upload so a retry can see partial progress if the worker
+    // exits between mood uploads.
     fileIds[mood] = await upload(
       getCandidateMoodPath(task.ownerId, task.jobId, task.candidateVersion || 1, mood),
       normalizedSprites[mood],
@@ -192,6 +207,8 @@ async function processIdle(task) {
 }
 
 async function processIdleWithSeparateGeneration(task, sourceBuffer) {
+  // This fallback intentionally writes only idle and moves to generating_variants;
+  // the next worker step reuses the old variant pipeline for feed/cuddle/hungry.
   const generated = await generateMood({
     referenceBuffer: sourceBuffer,
     mood: "idle",
