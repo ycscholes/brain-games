@@ -313,6 +313,7 @@ async function pollTextToImageJob({
   maxAttempts = REFERENCED_SHEET_POLL_ATTEMPTS,
   intervalMs = REFERENCED_SHEET_POLL_INTERVAL_MS,
 }) {
+  // Tencent AIArt text-to-image is asynchronous; only status 5 exposes usable ResultImage URLs.
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const result = unwrapTencentResponse(await client.QueryTextToImageJob({ JobId: jobId }));
     const statusCode = String(result?.JobStatusCode || "");
@@ -352,6 +353,8 @@ async function generateReferencedMoodSheet({
   intervalMs,
 }) {
   const aiClient = client || createAiArtClient();
+  // SubmitTextToImageJob accepts multiple reference images, unlike ImageToImage's single InputImage.
+  // Keep the cat sheet first to anchor app style and pose layout, then pass the user's photo for identity.
   const submitResult = unwrapTencentResponse(await aiClient.SubmitTextToImageJob({
     Prompt: buildMoodSheetPrompt({ traits, speciesLabel }),
     Images: [
@@ -400,6 +403,7 @@ async function splitMoodSheet({ inputBuffer }) {
   if (cellWidth <= 0 || cellHeight <= 0) {
     throw new Error("generated mood sheet is too small");
   }
+  // The generation prompt and cat reference both use this 2x2 order; changing it requires updating both.
   const frames = {
     idle: { x: 0, y: 0 },
     feed: { x: cellWidth, y: 0 },

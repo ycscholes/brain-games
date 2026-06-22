@@ -76,7 +76,7 @@ async function loadCatReferenceSheet() {
     try {
       return await download(fileID);
     } catch {
-      // The bundled asset keeps custom pet generation available before remote assets are uploaded.
+      // Keep generation available when the CloudBase asset was not uploaded yet or the bucket env is stale.
     }
   }
   return readBundledCatReferenceSheet();
@@ -140,6 +140,7 @@ async function processIdle(task) {
   const sourceBuffer = await download(task.sourceFileId);
   let generatedSheet = null;
   try {
+    // Preferred path: one Tencent AIArt job receives the app style sheet plus the user's image.
     generatedSheet = await generateReferencedMoodSheet({
       userReferenceBuffer: sourceBuffer,
       catReferenceBuffer: await loadCatReferenceSheet(),
@@ -151,6 +152,7 @@ async function processIdle(task) {
       jobId: task.jobId,
       message: getErrorSummary(error),
     });
+    // Availability fallback: keep one-sheet generation even if multi-reference AIArt is rejected or times out.
     generatedSheet = await generateMoodSheet({
       referenceBuffer: sourceBuffer,
       traits: task.traits,
@@ -169,6 +171,7 @@ async function processIdle(task) {
       jobId: task.jobId,
       message: getErrorSummary(error),
     });
+    // Compatibility fallback: resume the pre-sheet per-mood pipeline if the model returns an unusable layout.
     await processIdleWithSeparateGeneration(task, sourceBuffer);
     return;
   }

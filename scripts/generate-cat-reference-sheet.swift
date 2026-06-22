@@ -7,6 +7,7 @@ let outputPaths = [
   root.appendingPathComponent("asset-backups/cloudbase-images/pets/cat-reference-sheet.png"),
   root.appendingPathComponent("cloudfunctions/shared/assets/cat-reference-sheet.png"),
 ]
+// Must match splitMoodSheet(): top-left idle, top-right feed, bottom-left cuddle, bottom-right hungry.
 let moods = ["idle", "feed", "cuddle", "hungry"]
 let cellSize = CGFloat(384)
 let pixelSize = 768
