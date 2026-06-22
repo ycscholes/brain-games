@@ -137,4 +137,112 @@ describe("customPetService", () => {
     }));
     expect(mockUploadFile).not.toHaveBeenCalled();
   });
+
+  test("compresses a large selected image instead of rejecting it before upload", async () => {
+    mockCallFunction
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            jobId: "job-1",
+            cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+            maxBytes: 4 * 1024 * 1024,
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            task: { jobId: "job-1", status: "uploaded" },
+          },
+        },
+      });
+    mockChooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: "/tmp/source.jpg", size: 8 * 1024 * 1024 }],
+    });
+    mockCropImage.mockResolvedValue({ tempFilePath: "/tmp/cropped.jpg" });
+    mockCompressImage.mockResolvedValue({ tempFilePath: "/tmp/compressed.jpg" });
+    mockGetFileInfo.mockResolvedValue({ size: 2 * 1024 * 1024, errMsg: "ok", digest: "hash" });
+    mockUploadFile.mockResolvedValue({ fileID: "cloud://env/test-openid/custom-pets/job-1/source/source.jpg" });
+    const { chooseAndSubmitCustomPet } = await import(
+      "../../src/services/custom-pet/customPetService"
+    );
+
+    await expect(chooseAndSubmitCustomPet()).resolves.toMatchObject({
+      jobId: "job-1",
+      status: "uploaded",
+    });
+    expect(mockUploadFile).toHaveBeenCalledWith({
+      cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+      filePath: "/tmp/compressed.jpg",
+    });
+  });
+
+  test("continues with compression when cropImage fails in the mini program runtime", async () => {
+    mockCallFunction
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            jobId: "job-1",
+            cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+            maxBytes: 4 * 1024 * 1024,
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            task: { jobId: "job-1", status: "uploaded" },
+          },
+        },
+      });
+    mockChooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: "/tmp/source.jpg", size: 1024 }],
+    });
+    mockCropImage.mockRejectedValue({ errMsg: "cropImage:fail unsupported" });
+    mockCompressImage.mockResolvedValue({ tempFilePath: "/tmp/compressed.jpg" });
+    mockGetFileInfo.mockResolvedValue({ size: 2 * 1024 * 1024, errMsg: "ok", digest: "hash" });
+    mockUploadFile.mockResolvedValue({ fileID: "cloud://env/test-openid/custom-pets/job-1/source/source.jpg" });
+    const { chooseAndSubmitCustomPet } = await import(
+      "../../src/services/custom-pet/customPetService"
+    );
+
+    await expect(chooseAndSubmitCustomPet()).resolves.toMatchObject({
+      jobId: "job-1",
+      status: "uploaded",
+    });
+    expect(mockCompressImage).toHaveBeenCalledWith(expect.objectContaining({
+      src: "/tmp/source.jpg",
+    }));
+  });
+
+  test("shows mini program upload failure details instead of a generic submit error", async () => {
+    mockCallFunction.mockResolvedValueOnce({
+      result: {
+        ok: true,
+        data: {
+          jobId: "job-1",
+          cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+          maxBytes: 4 * 1024 * 1024,
+        },
+      },
+    });
+    mockChooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: "/tmp/source.jpg", size: 1024 }],
+    });
+    mockCropImage.mockResolvedValue({ tempFilePath: "/tmp/cropped.jpg" });
+    mockCompressImage.mockResolvedValue({ tempFilePath: "/tmp/compressed.jpg" });
+    mockGetFileInfo.mockResolvedValue({ size: 2 * 1024 * 1024, errMsg: "ok", digest: "hash" });
+    mockUploadFile.mockRejectedValue({ errMsg: "uploadFile:fail permission denied" });
+    const { chooseAndSubmitCustomPet } = await import(
+      "../../src/services/custom-pet/customPetService"
+    );
+
+    await expect(chooseAndSubmitCustomPet()).rejects.toThrow(
+      "图片上传失败：uploadFile:fail permission denied",
+    );
+  });
 });

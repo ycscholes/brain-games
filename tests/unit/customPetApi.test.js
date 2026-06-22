@@ -146,6 +146,21 @@ describe("custom pet api generation eligibility", () => {
     });
   });
 
+  test("accepts CloudBase storage file IDs that include a bucket segment", async () => {
+    const jobId = "custom_pet_job_test";
+    const sourceFileId = `cloud://test-env.test-bucket/users/user-1/custom-pets/${jobId}/source/source.jpg`;
+
+    const { main } = require("../../cloudfunctions/customPetApi/index");
+    const response = await main({ action: "submit", jobId, sourceFileId });
+
+    expect(response.ok).toBe(true);
+    expect(response.data.task).toMatchObject({
+      jobId,
+      status: "uploaded",
+    });
+    expect(stores.custom_pet_jobs.get(jobId).sourceFileId).toBe(sourceFileId);
+  });
+
   test("allows repeated rerolls for the same preview during testing", async () => {
     const jobId = "custom_pet_job_preview";
     stores.custom_pet_jobs.set(jobId, {

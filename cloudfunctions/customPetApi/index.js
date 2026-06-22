@@ -25,6 +25,15 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function isExpectedSourceFileId(sourceFileId, ownerId, jobId) {
+  const expectedSourcePath = `${getOwnerRoot(ownerId, jobId)}/source/source.jpg`;
+  return (
+    sourceFileId === expectedSourcePath ||
+    sourceFileId.endsWith(`/${expectedSourcePath}`) ||
+    sourceFileId.includes(`/${getOwnerRoot(ownerId, jobId)}/source/`)
+  );
+}
+
 function requireOpenId() {
   const { OPENID } = cloud.getWXContext();
   if (!OPENID) {
@@ -132,8 +141,7 @@ async function createUploadIntent(ownerId) {
 async function submit(ownerId, event) {
   const jobId = String(event.jobId || "");
   const sourceFileId = String(event.sourceFileId || "");
-  const expectedSourcePath = ["", "users", ownerId, "custom-pets", jobId, ""].join("/");
-  if (!jobId || !sourceFileId || !sourceFileId.includes(expectedSourcePath)) {
+  if (!jobId || !sourceFileId || !isExpectedSourceFileId(sourceFileId, ownerId, jobId)) {
     throw new Error("invalid source file");
   }
 
@@ -522,6 +530,11 @@ exports.main = async (event = {}) => {
       data,
     };
   } catch (error) {
+    console.warn("[customPetApi] operation failed", {
+      action: event && event.action,
+      jobId: event && event.jobId,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return {
       ok: false,
       error: error instanceof Error ? error.message : "custom pet operation failed",

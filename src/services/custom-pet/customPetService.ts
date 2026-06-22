@@ -13,6 +13,11 @@ const URL_CACHE_KEY = "custom_pet_url_cache_v1";
 const URL_CACHE_TTL_MS = 50 * 60 * 1000;
 const SOURCE_MAX_BYTES = 4 * 1024 * 1024;
 const SOURCE_COMPRESS_SIZE = 1280;
+const SOURCE_COMPRESS_ATTEMPTS = [
+  { quality: 70, size: SOURCE_COMPRESS_SIZE },
+  { quality: 55, size: 1024 },
+  { quality: 40, size: 960 },
+];
 const MOODS: PetSpriteMood[] = ["idle", "feed", "cuddle", "hungry"];
 
 type CachedMoodUrls = {
@@ -55,6 +60,27 @@ async function callCustomPetApi<T>(data: Record<string, unknown>): Promise<T> {
   return response.data;
 }
 
+function getReadableErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (typeof error === "string" && error.trim()) {
+    return error.trim();
+  }
+  if (error && typeof error === "object") {
+    const value = error as { errMsg?: unknown; message?: unknown };
+    const message = typeof value.errMsg === "string" && value.errMsg.trim()
+      ? value.errMsg
+      : typeof value.message === "string" && value.message.trim()
+        ? value.message
+        : "";
+    if (message) {
+      return message;
+    }
+  }
+  return fallback;
+}
+
 function applyServerSnapshot(value: { snapshot?: { petData?: Parameters<typeof savePetData>[0] } | null }) {
   if (value.snapshot?.petData) {
     savePetData(value.snapshot.petData, { markChanged: false });
@@ -67,21 +93,47 @@ async function getLocalFileSize(filePath: string): Promise<number> {
 }
 
 async function prepareUploadImage(filePath: string, maxBytes: number): Promise<string> {
-  const cropped = await Taro.cropImage({
-    src: filePath,
-    cropScale: "1:1",
-  });
-  const compressed = await Taro.compressImage({
-    src: cropped.tempFilePath,
-    quality: 70,
-    compressedWidth: SOURCE_COMPRESS_SIZE,
-    compressedHeight: SOURCE_COMPRESS_SIZE,
-  });
-  const size = await getLocalFileSize(compressed.tempFilePath);
-  if (!size || size > maxBytes) {
-    throw new Error("图片处理后仍超过 4MB，请换一张更小的图片");
+  let sourcePath = filePath;
+  try {
+    const cropped = await Taro.cropImage({
+      src: filePath,
+      cropScale: "1:1",
+    });
+    if (cropped.tempFilePath) {
+      sourcePath = cropped.tempFilePath;
+    }
+  } catch {
+    // Some WeChat environments reject cropImage after chooseMedia; compression can still proceed.
   }
-  return compressed.tempFilePath;
+
+  let lastPath = sourcePath;
+  for (const attempt of SOURCE_COMPRESS_ATTEMPTS) {
+    try {
+      const compressed = await Taro.compressImage({
+        src: lastPath,
+        quality: attempt.quality,
+        compressedWidth: attempt.size,
+        compressedHeight: attempt.size,
+      });
+      if (compressed.tempFilePath) {
+        lastPath = compressed.tempFilePath;
+      }
+      const size = await getLocalFileSize(lastPath);
+      if (size > 0 && size <= maxBytes) {
+        return lastPath;
+      }
+    } catch (error) {
+      const size = await getLocalFileSize(lastPath).catch(() => 0);
+      if (size > 0 && size <= maxBytes) {
+        return lastPath;
+      }
+      if (attempt === SOURCE_COMPRESS_ATTEMPTS[SOURCE_COMPRESS_ATTEMPTS.length - 1]) {
+        throw new Error(`图片压缩失败：${getReadableErrorMessage(error, "请换一张更小的图片")}`);
+      }
+    }
+  }
+
+  throw new Error("图片处理后仍超过 4MB，请换一张更小的图片");
 }
 
 export async function getCustomPetStatus(): Promise<{
@@ -114,18 +166,20 @@ export async function chooseAndSubmitCustomPet(): Promise<CustomPetTask> {
   if (!file?.tempFilePath) {
     throw new Error("没有选择图片");
   }
-  if (Number(file.size || 0) > SOURCE_MAX_BYTES) {
-    throw new Error("图片不能超过 4MB");
-  }
   const uploadFilePath = await prepareUploadImage(file.tempFilePath, intent.maxBytes || SOURCE_MAX_BYTES);
   const cloud = await ensureCloudReady();
   if (!cloud) {
     throw new Error("云服务暂不可用");
   }
-  const uploaded = await cloud.uploadFile({
-    cloudPath: intent.cloudPath,
-    filePath: uploadFilePath,
-  });
+  let uploaded: { fileID: string };
+  try {
+    uploaded = await cloud.uploadFile({
+      cloudPath: intent.cloudPath,
+      filePath: uploadFilePath,
+    });
+  } catch (error) {
+    throw new Error(`图片上传失败：${getReadableErrorMessage(error, "请稍后重试")}`);
+  }
   try {
     const result = await callCustomPetApi<{
       task: CustomPetTask;
