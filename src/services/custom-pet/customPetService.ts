@@ -26,6 +26,12 @@ type CachedMoodUrls = {
 };
 
 type UrlCache = Record<string, CachedMoodUrls>;
+type ImageFileResult = {
+  filePath?: string;
+  path?: string;
+  tempFilePath?: string;
+  tempFilePaths?: string[];
+};
 
 function readUrlCache(): UrlCache {
   try {
@@ -92,6 +98,22 @@ async function getLocalFileSize(filePath: string): Promise<number> {
   return "size" in info ? Number(info.size || 0) : 0;
 }
 
+async function tryGetLocalFileSize(filePath: string): Promise<number | null> {
+  try {
+    return await getLocalFileSize(filePath);
+  } catch {
+    return null;
+  }
+}
+
+function resolveImageFilePath(result: ImageFileResult): string {
+  return result.tempFilePath
+    || result.filePath
+    || result.path
+    || result.tempFilePaths?.[0]
+    || "";
+}
+
 async function prepareUploadImage(filePath: string, maxBytes: number): Promise<string> {
   let sourcePath = filePath;
   try {
@@ -99,38 +121,50 @@ async function prepareUploadImage(filePath: string, maxBytes: number): Promise<s
       src: filePath,
       cropScale: "1:1",
     });
-    if (cropped.tempFilePath) {
-      sourcePath = cropped.tempFilePath;
+    const croppedPath = resolveImageFilePath(cropped);
+    if (croppedPath) {
+      sourcePath = croppedPath;
     }
   } catch {
     // Some WeChat environments reject cropImage after chooseMedia; compression can still proceed.
   }
 
-  let lastPath = sourcePath;
+  let lastSizedPath = sourcePath;
+  let lastUnknownSizePath = "";
   for (const attempt of SOURCE_COMPRESS_ATTEMPTS) {
     try {
       const compressed = await Taro.compressImage({
-        src: lastPath,
+        src: lastSizedPath,
         quality: attempt.quality,
         compressedWidth: attempt.size,
         compressedHeight: attempt.size,
       });
-      if (compressed.tempFilePath) {
-        lastPath = compressed.tempFilePath;
+      const compressedPath = resolveImageFilePath(compressed);
+      const candidatePath = compressedPath || lastSizedPath;
+      const size = await tryGetLocalFileSize(candidatePath);
+      if (size === null) {
+        // Some runtimes return http://tmp paths that uploadFile can consume but getFileInfo cannot stat.
+        // Keep the candidate for upload, but continue compressing from the last path whose size is known.
+        lastUnknownSizePath = candidatePath;
+        continue;
       }
-      const size = await getLocalFileSize(lastPath);
+      lastSizedPath = candidatePath;
       if (size > 0 && size <= maxBytes) {
-        return lastPath;
+        return candidatePath;
       }
     } catch (error) {
-      const size = await getLocalFileSize(lastPath).catch(() => 0);
-      if (size > 0 && size <= maxBytes) {
-        return lastPath;
+      const sourceSize = await tryGetLocalFileSize(lastSizedPath);
+      if (sourceSize !== null && sourceSize > 0 && sourceSize <= maxBytes) {
+        return lastSizedPath;
       }
       if (attempt === SOURCE_COMPRESS_ATTEMPTS[SOURCE_COMPRESS_ATTEMPTS.length - 1]) {
         throw new Error(`图片压缩失败：${getReadableErrorMessage(error, "请换一张更小的图片")}`);
       }
     }
+  }
+
+  if (lastUnknownSizePath) {
+    return lastUnknownSizePath;
   }
 
   throw new Error("图片处理后仍超过 4MB，请换一张更小的图片");

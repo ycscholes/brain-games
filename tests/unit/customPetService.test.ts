@@ -219,6 +219,102 @@ describe("customPetService", () => {
     }));
   });
 
+  test("uploads a compressed temp path when getFileInfo cannot stat the runtime path", async () => {
+    mockCallFunction
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            jobId: "job-1",
+            cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+            maxBytes: 4 * 1024 * 1024,
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            task: { jobId: "job-1", status: "uploaded" },
+          },
+        },
+      });
+    mockChooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: "/tmp/source.jpg", size: 1024 }],
+    });
+    mockCropImage.mockResolvedValue({ tempFilePath: "/tmp/cropped.jpg" });
+    mockCompressImage.mockResolvedValue({ tempFilePath: "http://tmp/wb-image.jpg" });
+    mockGetFileInfo.mockImplementation(({ filePath }: { filePath: string }) => {
+      if (filePath === "http://tmp/wb-image.jpg") {
+        return Promise.reject({
+          errMsg: "getFileInfo:fail no such file or directory http://tmp/wb-image.jpg",
+        });
+      }
+      return Promise.resolve({ size: 7 * 1024 * 1024, errMsg: "ok", digest: "hash" });
+    });
+    mockUploadFile.mockResolvedValue({
+      fileID: "cloud://env/test-openid/custom-pets/job-1/source/source.jpg",
+    });
+    const { chooseAndSubmitCustomPet } = await import(
+      "../../src/services/custom-pet/customPetService"
+    );
+
+    await expect(chooseAndSubmitCustomPet()).resolves.toMatchObject({
+      jobId: "job-1",
+      status: "uploaded",
+    });
+    expect(mockUploadFile).toHaveBeenCalledWith({
+      cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+      filePath: "http://tmp/wb-image.jpg",
+    });
+  });
+
+  test("accepts image runtime APIs that return path instead of tempFilePath", async () => {
+    mockCallFunction
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            jobId: "job-1",
+            cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+            maxBytes: 4 * 1024 * 1024,
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            task: { jobId: "job-1", status: "uploaded" },
+          },
+        },
+      });
+    mockChooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: "/tmp/source.jpg", size: 1024 }],
+    });
+    mockCropImage.mockResolvedValue({ path: "/tmp/cropped-from-path.jpg" });
+    mockCompressImage.mockResolvedValue({ path: "/tmp/compressed-from-path.jpg" });
+    mockGetFileInfo.mockResolvedValue({ size: 2 * 1024 * 1024, errMsg: "ok", digest: "hash" });
+    mockUploadFile.mockResolvedValue({
+      fileID: "cloud://env/test-openid/custom-pets/job-1/source/source.jpg",
+    });
+    const { chooseAndSubmitCustomPet } = await import(
+      "../../src/services/custom-pet/customPetService"
+    );
+
+    await expect(chooseAndSubmitCustomPet()).resolves.toMatchObject({
+      jobId: "job-1",
+      status: "uploaded",
+    });
+    expect(mockCompressImage).toHaveBeenCalledWith(expect.objectContaining({
+      src: "/tmp/cropped-from-path.jpg",
+    }));
+    expect(mockUploadFile).toHaveBeenCalledWith({
+      cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+      filePath: "/tmp/compressed-from-path.jpg",
+    });
+  });
+
   test("shows mini program upload failure details instead of a generic submit error", async () => {
     mockCallFunction.mockResolvedValueOnce({
       result: {
