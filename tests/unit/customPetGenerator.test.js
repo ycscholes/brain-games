@@ -226,6 +226,54 @@ describe("custom pet generator", () => {
     );
   });
 
+  test("uses CloudBase-safe AIArt credential environment aliases", async () => {
+    const { aiart } = require("tencentcloud-sdk-nodejs-aiart");
+    const previousEnv = {
+      CUSTOM_PET_AIART_SECRET_ID: process.env.CUSTOM_PET_AIART_SECRET_ID,
+      CUSTOM_PET_AIART_SECRET_KEY: process.env.CUSTOM_PET_AIART_SECRET_KEY,
+      CUSTOM_PET_AIART_REGION: process.env.CUSTOM_PET_AIART_REGION,
+      TENCENTCLOUD_SECRET_ID: process.env.TENCENTCLOUD_SECRET_ID,
+      TENCENTCLOUD_SECRET_KEY: process.env.TENCENTCLOUD_SECRET_KEY,
+    };
+    process.env.CUSTOM_PET_AIART_SECRET_ID = "cloudbase-safe-id";
+    process.env.CUSTOM_PET_AIART_SECRET_KEY = "cloudbase-safe-key";
+    process.env.CUSTOM_PET_AIART_REGION = "ap-shanghai";
+    delete process.env.TENCENTCLOUD_SECRET_ID;
+    delete process.env.TENCENTCLOUD_SECRET_KEY;
+
+    const ImageToImage = jest.fn().mockResolvedValue({
+      ResultImage: Buffer.from("sheet").toString("base64"),
+    });
+    aiart.v20221229.Client.mockImplementationOnce(() => ({ ImageToImage }));
+
+    try {
+      await generateAiArtSheetImage({
+        referenceBuffer: Buffer.from("source"),
+        speciesLabel: "小狗",
+        traits: { primaryColor: "黑白" },
+      });
+
+      expect(aiart.v20221229.Client).toHaveBeenCalledWith(
+        expect.objectContaining({
+          credential: {
+            secretId: "cloudbase-safe-id",
+            secretKey: "cloudbase-safe-key",
+            token: undefined,
+          },
+          region: "ap-shanghai",
+        }),
+      );
+    } finally {
+      Object.entries(previousEnv).forEach(([key, value]) => {
+        if (value === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = value;
+        }
+      });
+    }
+  });
+
   test("submits a referenced mood sheet with cat and user reference images", async () => {
     const SubmitTextToImageJob = jest.fn().mockResolvedValue({ JobId: "job-1" });
     const QueryTextToImageJob = jest.fn().mockResolvedValue({

@@ -20,6 +20,10 @@ function getWxServerSdk() {
   return require("wx-server-sdk");
 }
 
+function readFirstEnv(keys) {
+  return keys.map((key) => process.env[key]).find((value) => value);
+}
+
 const DEFAULT_IMAGE_GENERATION_FUNCTION_NAME = "customPetImageGenerator";
 // Multi-reference generation uses Tencent AIArt async jobs. The 90 x 5s window
 // matches the worker lock TTL and gives the provider enough time for image jobs
@@ -133,12 +137,33 @@ function buildMoodSheetPrompt({ traits, speciesLabel }) {
 function createAiArtClient() {
   const aiart = getAiArtSdk();
   const Client = aiart.v20221229.Client;
-  const secretId =
-    process.env.TENCENTCLOUD_SECRET_ID || process.env.TENCENTCLOUD_SECRETID;
-  const secretKey =
-    process.env.TENCENTCLOUD_SECRET_KEY || process.env.TENCENTCLOUD_SECRETKEY;
-  const token =
-    process.env.TENCENTCLOUD_SESSION_TOKEN || process.env.TENCENTCLOUD_SESSIONTOKEN;
+  // CloudBase/SCF rejects custom environment variable names prefixed with
+  // TENCENTCLOUD_, so production functions use CUSTOM_PET_AIART_* aliases.
+  // Keep the official Tencent Cloud names as local/CI fallbacks because the
+  // SDK and many developer shells already use them.
+  const secretId = readFirstEnv([
+    "CUSTOM_PET_AIART_SECRET_ID",
+    "AIART_SECRET_ID",
+    "TENCENTCLOUD_SECRET_ID",
+    "TENCENTCLOUD_SECRETID",
+  ]);
+  const secretKey = readFirstEnv([
+    "CUSTOM_PET_AIART_SECRET_KEY",
+    "AIART_SECRET_KEY",
+    "TENCENTCLOUD_SECRET_KEY",
+    "TENCENTCLOUD_SECRETKEY",
+  ]);
+  const token = readFirstEnv([
+    "CUSTOM_PET_AIART_SESSION_TOKEN",
+    "AIART_SESSION_TOKEN",
+    "TENCENTCLOUD_SESSION_TOKEN",
+    "TENCENTCLOUD_SESSIONTOKEN",
+  ]);
+  const region = readFirstEnv([
+    "CUSTOM_PET_AIART_REGION",
+    "AIART_REGION",
+    "TENCENTCLOUD_AI_REGION",
+  ]);
   return new Client({
     ...(secretId && secretKey
       ? {
@@ -149,7 +174,7 @@ function createAiArtClient() {
           },
         }
       : {}),
-    region: process.env.TENCENTCLOUD_AI_REGION || "ap-guangzhou",
+    region: region || "ap-guangzhou",
     profile: {
       httpProfile: {
         reqTimeout: 240,
