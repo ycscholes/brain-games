@@ -117,21 +117,25 @@ function buildMoodPrompt({ mood, traits, speciesLabel }) {
   ].join("。").slice(0, 250);
 }
 
-function buildMoodSheetPrompt({ traits, speciesLabel }) {
+function buildMoodSheetPrompt({ traits, speciesLabel, includeReferenceRoles = false }) {
   // This prompt is part of the runtime contract with splitMoodSheet(): it must
   // keep a deterministic 2x2 layout so the worker can crop by coordinates and
   // still publish the existing four mood files expected by the mini program.
   return [
+    includeReferenceRoles
+      ? "参考图规则：第 1 张用户上传图是唯一宠物身份和外观来源，必须以它的物种、脸型、耳朵、体型、主色、花纹和配饰为准；第 2 张小猫四状态图只参考四格状态构图、水彩画风和主体居中方式，不能把宠物改成猫"
+      : "",
     `单只${speciesLabel || "宠物"}的四状态角色设定图，2x2 四宫格`,
     "左上 idle：自然站立或坐着，平静看向前方",
     "右上 feed：开心进食，嘴边有轻微咀嚼动作，但不要出现具体食物",
     "左下 cuddle：亲昵地靠近并露出享受抚摸的表情",
     "右下 hungry：略显饥饿和期待，姿态仍然可爱，不要悲惨",
     "四格必须是同一只宠物、同一水彩绘本风格、儿童友好、轮廓清楚、每格主体居中",
+    includeReferenceRoles ? "如果第 1 张用户图是狗，四格必须都是同一只狗，禁止生成猫、猫耳或猫脸" : "",
     "纯亮绿色背景 #00FF00，无场景、无地面、无投影、无边框、无文字、无标签",
     `身份特征：${Object.values(traits || {}).join("；")}`,
     "保留参考图的物种、主色、花纹、体型和配饰，每格四周保留安全边距",
-  ].join("。").slice(0, 520);
+  ].filter(Boolean).join("。").slice(0, includeReferenceRoles ? 760 : 520);
 }
 
 function createAiArtClient() {
@@ -397,12 +401,12 @@ async function generateReferencedMoodSheet({
 }) {
   const aiClient = client || createAiArtClient();
   // SubmitTextToImageJob accepts multiple reference images, unlike ImageToImage's single InputImage.
-  // Keep the cat sheet first to anchor app style and pose layout, then pass the user's photo for identity.
+  // Put the user photo first because it is the identity source; the cat sheet is only a pose/style guide.
   const submitResult = unwrapTencentResponse(await aiClient.SubmitTextToImageJob({
-    Prompt: buildMoodSheetPrompt({ traits, speciesLabel }),
+    Prompt: buildMoodSheetPrompt({ traits, speciesLabel, includeReferenceRoles: true }),
     Images: [
-      catReferenceBuffer.toString("base64"),
       userReferenceBuffer.toString("base64"),
+      catReferenceBuffer.toString("base64"),
     ],
     Resolution: "1024:1024",
     LogoAdd: 0,

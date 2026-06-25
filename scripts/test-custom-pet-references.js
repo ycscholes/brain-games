@@ -16,6 +16,10 @@ const DEFAULT_CAT_REFERENCE = path.join(
   REPO_ROOT,
   "asset-backups/cloudbase-images/pets/cat-reference-sheet.png",
 );
+const DEFAULT_USER_REFERENCE = path.join(
+  REPO_ROOT,
+  "scripts/fixtures/custom-pet-user-reference-dog.jpg",
+);
 const DEFAULT_OUTPUT_DIR = path.join(REPO_ROOT, "tmp/custom-pet-reference-test");
 const MOODS = ["idle", "feed", "cuddle", "hungry"];
 
@@ -24,8 +28,8 @@ function parseArgs(argv) {
     catSheet: DEFAULT_CAT_REFERENCE,
     live: false,
     outputDir: DEFAULT_OUTPUT_DIR,
-    speciesLabel: "测试宠物",
-    userImage: process.env.CUSTOM_PET_TEST_USER_IMAGE || "",
+    speciesLabel: "柴犬",
+    userImage: process.env.CUSTOM_PET_TEST_USER_IMAGE || DEFAULT_USER_REFERENCE,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -58,7 +62,7 @@ function printHelp() {
   node scripts/test-custom-pet-references.js [--live] [options]
 
 Options:
-  --user-image <path>     User reference image. Can also be set with CUSTOM_PET_TEST_USER_IMAGE.
+  --user-image <path>     User reference image. Defaults to scripts/fixtures/custom-pet-user-reference-dog.jpg.
   --cat-sheet <path>      Cat 2x2 reference sheet. Defaults to asset-backups/cloudbase-images/pets/cat-reference-sheet.png.
   --output-dir <path>     Output directory. Defaults to tmp/custom-pet-reference-test.
   --species-label <text>  Species label used in the generation prompt.
@@ -129,11 +133,11 @@ async function runMockReferenceTest({
     sleepFn: async () => {},
     speciesLabel,
     traits: {
-      primaryColor: "来自用户参考图",
-      secondaryColor: "保持小猫参考图水彩风格",
-      markings: "按用户参考图保留花纹",
-      bodyShape: "按用户参考图保留体型",
-      accessories: "按用户参考图保留配饰",
+      primaryColor: "按第 1 张用户照片保留柴犬黄白主色",
+      secondaryColor: "按第 1 张用户照片保留白色脸颊和胸口",
+      markings: "按第 1 张用户照片保留柴犬脸部和耳朵特征",
+      bodyShape: "按第 1 张用户照片保留狗的体型，禁止猫脸猫耳",
+      accessories: "按第 1 张用户照片保留项圈等配饰",
     },
     userReferenceBuffer,
   });
@@ -144,14 +148,17 @@ async function runMockReferenceTest({
   assert(Array.isArray(submitPayload.Images), "SubmitTextToImageJob Images must be an array");
   assert(submitPayload.Images.length === 2, "SubmitTextToImageJob must receive exactly two reference images");
   assert(
-    submitPayload.Images[0] === catReferenceBuffer.toString("base64"),
-    "first reference image must be the cat reference sheet",
+    submitPayload.Images[0] === userReferenceBuffer.toString("base64"),
+    "first reference image must be the user reference image",
   );
   assert(
-    submitPayload.Images[1] === userReferenceBuffer.toString("base64"),
-    "second reference image must be the user reference image",
+    submitPayload.Images[1] === catReferenceBuffer.toString("base64"),
+    "second reference image must be the cat reference sheet",
   );
   assert(submitPayload.Prompt.includes("2x2"), "prompt must request a 2x2 mood sheet");
+  assert(submitPayload.Prompt.includes("第 1 张用户上传图是唯一宠物身份"), "prompt must assign identity to user image");
+  assert(submitPayload.Prompt.includes("第 2 张小猫四状态图只参考四格状态构图"), "prompt must limit cat sheet to state layout");
+  assert(submitPayload.Prompt.includes("禁止生成猫"), "prompt must forbid converting the pet to a cat");
   assert(submitPayload.Prompt.includes("左上 idle"), "prompt must include the idle frame position");
   assert(submitPayload.Prompt.includes("右上 feed"), "prompt must include the feed frame position");
   assert(submitPayload.Prompt.includes("左下 cuddle"), "prompt must include the cuddle frame position");
@@ -165,7 +172,7 @@ async function runMockReferenceTest({
     generatedSheetBytes: generatedSheet.length,
     generatedSheetSha256: sha256(generatedSheet),
     imageCount: submitPayload.Images.length,
-    imageOrder: ["cat-reference-sheet", "user-reference-image"],
+    imageOrder: ["user-reference-image", "cat-reference-sheet"],
     promptPreview: submitPayload.Prompt,
     resolution: submitPayload.Resolution,
     userReferenceBytes: userReferenceBuffer.length,
@@ -182,16 +189,17 @@ async function runLiveReferenceTest({
   speciesLabel,
   userReferenceBuffer,
 }) {
+  const traits = {
+    primaryColor: "参考第 1 张用户照片的柴犬黄白主色",
+    secondaryColor: "参考第 1 张用户照片的白色脸颊和胸口",
+    markings: "参考第 1 张用户照片的柴犬脸部、耳朵和毛色分布",
+    bodyShape: "参考第 1 张用户照片的狗体型，禁止猫脸猫耳",
+    accessories: "参考第 1 张用户照片的项圈等配饰",
+  };
   const generatedSheet = await generateReferencedMoodSheet({
     catReferenceBuffer,
     speciesLabel,
-    traits: {
-      primaryColor: "参考用户照片的主色",
-      secondaryColor: "参考用户照片的辅色",
-      markings: "参考用户照片的花纹",
-      bodyShape: "参考用户照片的体型",
-      accessories: "参考用户照片的配饰",
-    },
+    traits,
     userReferenceBuffer,
   });
   const sheetPath = path.join(outputDir, "generated-reference-sheet.png");
@@ -218,9 +226,9 @@ async function runLiveReferenceTest({
     generatedSheetBytes: generatedSheet.length,
     generatedSheetPath: sheetPath,
     generatedSheetSha256: sha256(generatedSheet),
-    imageOrder: ["cat-reference-sheet", "user-reference-image"],
+    imageOrder: ["user-reference-image", "cat-reference-sheet"],
     moodFiles,
-    promptPreview: buildMoodSheetPrompt({ speciesLabel, traits: {} }),
+    promptPreview: buildMoodSheetPrompt({ speciesLabel, traits, includeReferenceRoles: true }),
     userReferenceBytes: userReferenceBuffer.length,
     userReferenceSha256: sha256(userReferenceBuffer),
   };

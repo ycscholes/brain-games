@@ -93,6 +93,19 @@ describe("custom pet generator", () => {
     expect(prompt.length).toBeLessThanOrEqual(520);
   });
 
+  test("separates user identity from cat state reference in multi-reference prompts", () => {
+    const prompt = buildMoodSheetPrompt({
+      includeReferenceRoles: true,
+      speciesLabel: "柴犬",
+      traits: { primaryColor: "黄白" },
+    });
+
+    expect(prompt).toContain("第 1 张用户上传图是唯一宠物身份");
+    expect(prompt).toContain("第 2 张小猫四状态图只参考四格状态构图");
+    expect(prompt).toContain("禁止生成猫");
+    expect(prompt.length).toBeLessThanOrEqual(760);
+  });
+
   test("uses the generated image cloud function contract as the default source", async () => {
     const cloudFunction = jest.fn().mockResolvedValue({
       result: {
@@ -228,15 +241,16 @@ describe("custom pet generator", () => {
 
   test("uses CloudBase-safe AIArt credential environment aliases", async () => {
     const { aiart } = require("tencentcloud-sdk-nodejs-aiart");
-    const previousEnv = {
-      CUSTOM_PET_AIART_SECRET_ID: process.env.CUSTOM_PET_AIART_SECRET_ID,
-      CUSTOM_PET_AIART_SECRET_KEY: process.env.CUSTOM_PET_AIART_SECRET_KEY,
-      CUSTOM_PET_AIART_REGION: process.env.CUSTOM_PET_AIART_REGION,
-      TENCENTCLOUD_SECRET_ID: process.env.TENCENTCLOUD_SECRET_ID,
-      TENCENTCLOUD_SECRET_KEY: process.env.TENCENTCLOUD_SECRET_KEY,
-    };
-    process.env.CUSTOM_PET_AIART_SECRET_ID = "cloudbase-safe-id";
-    process.env.CUSTOM_PET_AIART_SECRET_KEY = "cloudbase-safe-key";
+    const envKeys = [
+      "CUSTOM_PET_AIART_SECRET_ID",
+      "CUSTOM_PET_AIART_SECRET_KEY",
+      "CUSTOM_PET_AIART_REGION",
+      "TENCENTCLOUD_SECRET_ID",
+      "TENCENTCLOUD_SECRET_KEY",
+    ];
+    const previousEnv = Object.fromEntries(envKeys.map((key) => [key, process.env[key]]));
+    process.env.CUSTOM_PET_AIART_SECRET_ID = "dummy-cloudbase-safe-id";
+    process.env.CUSTOM_PET_AIART_SECRET_KEY = "dummy-cloudbase-safe-key";
     process.env.CUSTOM_PET_AIART_REGION = "ap-shanghai";
     delete process.env.TENCENTCLOUD_SECRET_ID;
     delete process.env.TENCENTCLOUD_SECRET_KEY;
@@ -256,8 +270,8 @@ describe("custom pet generator", () => {
       expect(aiart.v20221229.Client).toHaveBeenCalledWith(
         expect.objectContaining({
           credential: {
-            secretId: "cloudbase-safe-id",
-            secretKey: "cloudbase-safe-key",
+            secretId: "dummy-cloudbase-safe-id",
+            secretKey: "dummy-cloudbase-safe-key",
             token: undefined,
           },
           region: "ap-shanghai",
@@ -297,11 +311,11 @@ describe("custom pet generator", () => {
     expect(SubmitTextToImageJob).toHaveBeenCalledWith(
       expect.objectContaining({
         Images: [
-          Buffer.from("cat").toString("base64"),
           Buffer.from("user").toString("base64"),
+          Buffer.from("cat").toString("base64"),
         ],
         LogoAdd: 0,
-        Prompt: expect.stringContaining("2x2"),
+        Prompt: expect.stringContaining("第 1 张用户上传图是唯一宠物身份"),
         Resolution: "1024:1024",
         Revise: 0,
       }),
