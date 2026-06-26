@@ -32,6 +32,7 @@ const {
 
 describe("custom pet generator", () => {
   const forbiddenPromptTerms = /柴犬|小狗|狗|猫|小猫|食物|人手|抚摸/;
+  const forbiddenReferencePromptTerms = /柴犬|小狗|狗|小猫|人手|抚摸/;
 
   test("normalizes the classifier to one supported template", () => {
     expect(normalizeAnalysis({
@@ -93,8 +94,8 @@ describe("custom pet generator", () => {
     expect(prompt).toContain("左下 cuddle");
     expect(prompt).toContain("右下 hungry");
     expect(prompt).toContain("#00FF00");
-    expect(prompt).not.toMatch(forbiddenPromptTerms);
-    expect(prompt.length).toBeLessThanOrEqual(520);
+    expect(prompt).not.toMatch(forbiddenReferencePromptTerms);
+    expect(prompt.length).toBeLessThanOrEqual(560);
   });
 
   test("separates user identity from state reference without species labels", () => {
@@ -107,12 +108,17 @@ describe("custom pet generator", () => {
     expect(prompt).toContain("第 1 张用户上传图是唯一宠物身份和外观来源，最高优先级");
     expect(prompt).toContain("物种、脸型、耳朵、眼睛、嘴吻、身体比例、毛色、花纹分布、尾巴和原有配饰");
     expect(prompt).toContain("第 2 张四状态参考图仅参考");
-    expect(prompt).toContain("禁止参考第 2 张的物种、脸型、耳朵、眼睛、嘴部、体型、毛色、花纹、尾巴");
+    expect(prompt).toContain("第 2 张里的猫只是姿态模板");
+    expect(prompt).toContain("禁止复制猫脸、猫耳、猫眼、猫嘴、猫身体、猫毛色、猫花纹、猫尾巴");
+    expect(prompt).toContain("禁止参考第 2 张的任何外观特征");
+    expect(prompt).toContain("不得变成猫或其它动物");
+    expect(prompt).toContain("不出现食物或食盆");
+    expect(prompt).toContain("不出现爱心、抱枕或玩具");
     expect(prompt).toContain("两张图冲突时始终以第 1 张为准");
     expect(prompt).toContain("角色身份一致性优先于姿态一致性");
     expect(prompt).toContain("只调整姿态和表情");
-    expect(prompt).not.toMatch(forbiddenPromptTerms);
-    expect(prompt.length).toBeLessThanOrEqual(760);
+    expect(prompt).not.toMatch(forbiddenReferencePromptTerms);
+    expect(prompt.length).toBeLessThanOrEqual(900);
   });
 
   test("uses the generated image cloud function contract as the default source", async () => {
@@ -329,7 +335,7 @@ describe("custom pet generator", () => {
         Revise: 0,
       }),
     );
-    expect(SubmitTextToImageJob.mock.calls[0][0].Prompt).not.toMatch(forbiddenPromptTerms);
+    expect(SubmitTextToImageJob.mock.calls[0][0].Prompt).not.toMatch(forbiddenReferencePromptTerms);
     expect(QueryTextToImageJob).toHaveBeenCalledWith({ JobId: "job-1" });
     expect(downloadImage).toHaveBeenCalledWith("https://example.com/referenced-sheet.png");
   });

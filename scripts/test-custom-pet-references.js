@@ -169,9 +169,20 @@ async function runMockReferenceTest({
     "prompt must limit state sheet to pose/composition/expression/style",
   );
   assert(
-    submitPayload.Prompt.includes("禁止参考第 2 张的物种、脸型、耳朵、眼睛、嘴部、体型、毛色、花纹、尾巴"),
-    "prompt must forbid appearance traits from the second reference",
+    submitPayload.Prompt.includes("第 2 张里的猫只是姿态模板"),
+    "prompt must treat the cat sheet as a pose template only",
   );
+  assert(
+    submitPayload.Prompt.includes("禁止复制猫脸、猫耳、猫眼、猫嘴、猫身体、猫毛色、猫花纹、猫尾巴"),
+    "prompt must forbid copying cat appearance traits",
+  );
+  assert(
+    submitPayload.Prompt.includes("禁止参考第 2 张的任何外观特征"),
+    "prompt must forbid all appearance traits from the second reference",
+  );
+  assert(submitPayload.Prompt.includes("不得变成猫或其它动物"), "prompt must forbid cat or other-animal drift");
+  assert(submitPayload.Prompt.includes("不出现食物或食盆"), "prompt must forbid food and bowls");
+  assert(submitPayload.Prompt.includes("不出现爱心、抱枕或玩具"), "prompt must forbid cuddle props");
   assert(
     submitPayload.Prompt.includes("两张图冲突时始终以第 1 张为准"),
     "prompt must resolve reference conflicts to the first image",
@@ -181,8 +192,8 @@ async function runMockReferenceTest({
     "prompt must prioritize identity consistency over pose consistency",
   );
   assert(submitPayload.Prompt.includes("只调整姿态和表情"), "prompt must only adjust pose and expression");
-  assert(!/柴犬|小狗|狗|猫|小猫/.test(submitPayload.Prompt), "prompt must not contain specific animal labels");
-  assert(!/食物|人手|抚摸/.test(submitPayload.Prompt), "prompt must avoid extra-object wording");
+  assert(!/柴犬|小狗|狗|小猫/.test(submitPayload.Prompt), "prompt must not contain user-derived animal labels");
+  assert(!/人手|抚摸/.test(submitPayload.Prompt), "prompt must avoid interaction wording");
   assert(submitPayload.Prompt.includes("左上 idle"), "prompt must include the idle frame position");
   assert(submitPayload.Prompt.includes("右上 feed"), "prompt must include the feed frame position");
   assert(submitPayload.Prompt.includes("左下 cuddle"), "prompt must include the cuddle frame position");
