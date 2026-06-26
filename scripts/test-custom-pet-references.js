@@ -156,8 +156,31 @@ async function runMockReferenceTest({
     "second reference image must be the cat reference sheet",
   );
   assert(submitPayload.Prompt.includes("2x2"), "prompt must request a 2x2 mood sheet");
-  assert(submitPayload.Prompt.includes("第 1 张用户上传图是唯一宠物身份"), "prompt must assign identity to user image");
-  assert(submitPayload.Prompt.includes("第 2 张四状态参考图只参考"), "prompt must limit state sheet to layout");
+  assert(
+    submitPayload.Prompt.includes("第 1 张用户上传图是唯一宠物身份和外观来源，最高优先级"),
+    "prompt must assign highest-priority identity to user image",
+  );
+  assert(
+    submitPayload.Prompt.includes("物种、脸型、耳朵、眼睛、嘴吻、身体比例、毛色、花纹分布、尾巴和原有配饰"),
+    "prompt must preserve all core appearance traits from the user image",
+  );
+  assert(
+    submitPayload.Prompt.includes("第 2 张四状态参考图仅参考"),
+    "prompt must limit state sheet to pose/composition/expression/style",
+  );
+  assert(
+    submitPayload.Prompt.includes("禁止参考第 2 张的物种、脸型、耳朵、眼睛、嘴部、体型、毛色、花纹、尾巴"),
+    "prompt must forbid appearance traits from the second reference",
+  );
+  assert(
+    submitPayload.Prompt.includes("两张图冲突时始终以第 1 张为准"),
+    "prompt must resolve reference conflicts to the first image",
+  );
+  assert(
+    submitPayload.Prompt.includes("角色身份一致性优先于姿态一致性"),
+    "prompt must prioritize identity consistency over pose consistency",
+  );
+  assert(submitPayload.Prompt.includes("只调整姿态和表情"), "prompt must only adjust pose and expression");
   assert(!/柴犬|小狗|狗|猫|小猫/.test(submitPayload.Prompt), "prompt must not contain specific animal labels");
   assert(!/食物|人手|抚摸/.test(submitPayload.Prompt), "prompt must avoid extra-object wording");
   assert(submitPayload.Prompt.includes("左上 idle"), "prompt must include the idle frame position");

@@ -104,8 +104,13 @@ describe("custom pet generator", () => {
       traits: { primaryColor: "狗黄白" },
     });
 
-    expect(prompt).toContain("第 1 张用户上传图是唯一宠物身份");
-    expect(prompt).toContain("第 2 张四状态参考图只参考");
+    expect(prompt).toContain("第 1 张用户上传图是唯一宠物身份和外观来源，最高优先级");
+    expect(prompt).toContain("物种、脸型、耳朵、眼睛、嘴吻、身体比例、毛色、花纹分布、尾巴和原有配饰");
+    expect(prompt).toContain("第 2 张四状态参考图仅参考");
+    expect(prompt).toContain("禁止参考第 2 张的物种、脸型、耳朵、眼睛、嘴部、体型、毛色、花纹、尾巴");
+    expect(prompt).toContain("两张图冲突时始终以第 1 张为准");
+    expect(prompt).toContain("角色身份一致性优先于姿态一致性");
+    expect(prompt).toContain("只调整姿态和表情");
     expect(prompt).not.toMatch(forbiddenPromptTerms);
     expect(prompt.length).toBeLessThanOrEqual(760);
   });
