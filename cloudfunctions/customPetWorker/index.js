@@ -28,7 +28,7 @@ const SNAPSHOT_COLLECTION = "xiaoyuyuan_user_snapshots";
 const LOCK_TTL_MS = 12 * 60 * 1000;
 // CloudBase-backed copy used by production. The same PNG is also bundled under
 // cloudfunctions/shared/assets so fresh deployments work before asset upload.
-const CAT_REFERENCE_SHEET_PATH = "assets/v1/pets/cat-reference-sheet.png";
+const POSE_REFERENCE_SHEET_PATH = "assets/v1/pets/pose-reference-sheet.png";
 
 function nowIso() {
   return new Date().toISOString();
@@ -49,7 +49,7 @@ async function download(fileID) {
   return result.fileContent;
 }
 
-function getCatReferenceSheetFileId() {
+function getPoseReferenceSheetFileId() {
   // Cloud file IDs need both env id and bucket. If either is absent, skip remote
   // download and use the bundled reference sheet instead of constructing a bad ID.
   const envId = process.env.TARO_CLOUD_ENV_ID || process.env.CLOUD_ENV_ID || process.env.TCB_ENV || "";
@@ -58,28 +58,28 @@ function getCatReferenceSheetFileId() {
     process.env.CLOUD_STORAGE_BUCKET ||
     process.env.TCB_STORAGE_BUCKET ||
     "";
-  return envId && bucket ? `cloud://${envId}.${bucket}/${CAT_REFERENCE_SHEET_PATH}` : "";
+  return envId && bucket ? `cloud://${envId}.${bucket}/${POSE_REFERENCE_SHEET_PATH}` : "";
 }
 
-function readBundledCatReferenceSheet() {
+function readBundledPoseReferenceSheet() {
   // Deployment staging may place shared assets either inside the function folder
   // or one level up, depending on whether tests or deploy scripts are loading it.
   const candidates = [
-    path.join(__dirname, "shared", "assets", "cat-reference-sheet.png"),
-    path.join(__dirname, "..", "shared", "assets", "cat-reference-sheet.png"),
+    path.join(__dirname, "shared", "assets", "pose-reference-sheet.png"),
+    path.join(__dirname, "..", "shared", "assets", "pose-reference-sheet.png"),
   ];
   for (const filePath of candidates) {
     if (fs.existsSync(filePath)) {
       return fs.readFileSync(filePath);
     }
   }
-  throw new Error("bundled cat reference sheet not found");
+  throw new Error("bundled pose reference sheet not found");
 }
 
-async function loadCatReferenceSheet() {
+async function loadPoseReferenceSheet() {
   // Prefer the remote asset because it follows the normal package-size workflow,
   // but do not make custom pet generation depend on a successful asset upload.
-  const fileID = getCatReferenceSheetFileId();
+  const fileID = getPoseReferenceSheetFileId();
   if (fileID) {
     try {
       return await download(fileID);
@@ -87,7 +87,7 @@ async function loadCatReferenceSheet() {
       // Keep generation available when the CloudBase asset was not uploaded yet or the bucket env is stale.
     }
   }
-  return readBundledCatReferenceSheet();
+  return readBundledPoseReferenceSheet();
 }
 
 async function upload(path, buffer) {
@@ -154,7 +154,7 @@ async function processIdle(task) {
     // It should produce a full 2x2 sheet, not just an idle image despite this worker status name.
     generatedSheet = await generateReferencedMoodSheet({
       userReferenceBuffer: sourceBuffer,
-      catReferenceBuffer: await loadCatReferenceSheet(),
+      poseReferenceBuffer: await loadPoseReferenceSheet(),
       traits: task.traits,
       speciesLabel: task.speciesLabel,
     });

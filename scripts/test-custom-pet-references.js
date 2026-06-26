@@ -12,9 +12,9 @@ const {
 } = require("../cloudfunctions/shared/customPetGenerator");
 
 const REPO_ROOT = path.resolve(__dirname, "..");
-const DEFAULT_CAT_REFERENCE = path.join(
+const DEFAULT_POSE_REFERENCE = path.join(
   REPO_ROOT,
-  "asset-backups/cloudbase-images/pets/cat-reference-sheet.png",
+  "asset-backups/cloudbase-images/pets/pose-reference-sheet.png",
 );
 const DEFAULT_USER_REFERENCE = path.join(
   REPO_ROOT,
@@ -25,9 +25,9 @@ const MOODS = ["idle", "feed", "cuddle", "hungry"];
 
 function parseArgs(argv) {
   const options = {
-    catSheet: DEFAULT_CAT_REFERENCE,
     live: false,
     outputDir: DEFAULT_OUTPUT_DIR,
+    poseSheet: DEFAULT_POSE_REFERENCE,
     speciesLabel: "",
     userImage: process.env.CUSTOM_PET_TEST_USER_IMAGE || DEFAULT_USER_REFERENCE,
   };
@@ -38,8 +38,8 @@ function parseArgs(argv) {
     } else if (arg === "--user-image") {
       options.userImage = argv[index + 1] || "";
       index += 1;
-    } else if (arg === "--cat-sheet") {
-      options.catSheet = argv[index + 1] || "";
+    } else if (arg === "--pose-sheet" || arg === "--cat-sheet") {
+      options.poseSheet = argv[index + 1] || "";
       index += 1;
     } else if (arg === "--output-dir") {
       options.outputDir = argv[index + 1] || "";
@@ -63,7 +63,7 @@ function printHelp() {
 
 Options:
   --user-image <path>     User reference image. Defaults to scripts/fixtures/custom-pet-user-reference-dog.jpg.
-  --cat-sheet <path>      Cat 2x2 reference sheet. Defaults to asset-backups/cloudbase-images/pets/cat-reference-sheet.png.
+  --pose-sheet <path>     Neutral 2x2 pose reference sheet. Defaults to asset-backups/cloudbase-images/pets/pose-reference-sheet.png.
   --output-dir <path>     Output directory. Defaults to tmp/custom-pet-reference-test.
   --species-label <text>  Compatibility label kept out of the generation prompt.
   --live                  Call Tencent AIArt. Without this flag the script verifies payload wiring with a mock client.
@@ -100,8 +100,8 @@ function assert(condition, message) {
 }
 
 async function runMockReferenceTest({
-  catReferenceBuffer,
   outputDir,
+  poseReferenceBuffer,
   speciesLabel,
   userReferenceBuffer,
 }) {
@@ -124,12 +124,12 @@ async function runMockReferenceTest({
   };
 
   const generatedSheet = await generateReferencedMoodSheet({
-    catReferenceBuffer,
     client,
     downloadImage: async (url) => {
       assert(url === "mock://custom-pet-reference-sheet.png", "mock download URL mismatch");
-      return catReferenceBuffer;
+      return poseReferenceBuffer;
     },
+    poseReferenceBuffer,
     sleepFn: async () => {},
     speciesLabel,
     traits: {
@@ -152,8 +152,8 @@ async function runMockReferenceTest({
     "first reference image must be the user reference image",
   );
   assert(
-    submitPayload.Images[1] === catReferenceBuffer.toString("base64"),
-    "second reference image must be the cat reference sheet",
+    submitPayload.Images[1] === poseReferenceBuffer.toString("base64"),
+    "second reference image must be the neutral pose reference sheet",
   );
   assert(submitPayload.Prompt.includes("2x2"), "prompt must request a 2x2 mood sheet");
   assert(
@@ -165,22 +165,14 @@ async function runMockReferenceTest({
     "prompt must preserve all core appearance traits from the user image",
   );
   assert(
-    submitPayload.Prompt.includes("第 2 张四状态参考图仅参考"),
-    "prompt must limit state sheet to pose/composition/expression/style",
-  );
-  assert(
-    submitPayload.Prompt.includes("第 2 张里的猫只是姿态模板"),
-    "prompt must treat the cat sheet as a pose template only",
-  );
-  assert(
-    submitPayload.Prompt.includes("禁止复制猫脸、猫耳、猫眼、猫嘴、猫身体、猫毛色、猫花纹、猫尾巴"),
-    "prompt must forbid copying cat appearance traits",
+    submitPayload.Prompt.includes("第 2 张灰色无物种姿态图仅参考"),
+    "prompt must treat the pose sheet as a pose template only",
   );
   assert(
     submitPayload.Prompt.includes("禁止参考第 2 张的任何外观特征"),
     "prompt must forbid all appearance traits from the second reference",
   );
-  assert(submitPayload.Prompt.includes("不得变成猫或其它动物"), "prompt must forbid cat or other-animal drift");
+  assert(submitPayload.Prompt.includes("不得变成其它动物"), "prompt must forbid other-animal drift");
   assert(submitPayload.Prompt.includes("不出现食物或食盆"), "prompt must forbid food and bowls");
   assert(submitPayload.Prompt.includes("不出现爱心、抱枕或玩具"), "prompt must forbid cuddle props");
   assert(
@@ -202,12 +194,12 @@ async function runMockReferenceTest({
   const report = {
     mode: "mock",
     ok: true,
-    catReferenceBytes: catReferenceBuffer.length,
-    catReferenceSha256: sha256(catReferenceBuffer),
     generatedSheetBytes: generatedSheet.length,
     generatedSheetSha256: sha256(generatedSheet),
     imageCount: submitPayload.Images.length,
-    imageOrder: ["user-reference-image", "cat-reference-sheet"],
+    imageOrder: ["user-reference-image", "neutral-pose-reference-sheet"],
+    poseReferenceBytes: poseReferenceBuffer.length,
+    poseReferenceSha256: sha256(poseReferenceBuffer),
     promptPreview: submitPayload.Prompt,
     resolution: submitPayload.Resolution,
     userReferenceBytes: userReferenceBuffer.length,
@@ -219,8 +211,8 @@ async function runMockReferenceTest({
 }
 
 async function runLiveReferenceTest({
-  catReferenceBuffer,
   outputDir,
+  poseReferenceBuffer,
   speciesLabel,
   userReferenceBuffer,
 }) {
@@ -232,7 +224,7 @@ async function runLiveReferenceTest({
     accessories: "参考第 1 张用户照片的原有配饰",
   };
   const generatedSheet = await generateReferencedMoodSheet({
-    catReferenceBuffer,
+    poseReferenceBuffer,
     speciesLabel,
     traits,
     userReferenceBuffer,
@@ -256,13 +248,13 @@ async function runLiveReferenceTest({
   const report = {
     mode: "live",
     ok: true,
-    catReferenceBytes: catReferenceBuffer.length,
-    catReferenceSha256: sha256(catReferenceBuffer),
     generatedSheetBytes: generatedSheet.length,
     generatedSheetPath: sheetPath,
     generatedSheetSha256: sha256(generatedSheet),
-    imageOrder: ["user-reference-image", "cat-reference-sheet"],
+    imageOrder: ["user-reference-image", "neutral-pose-reference-sheet"],
     moodFiles,
+    poseReferenceBytes: poseReferenceBuffer.length,
+    poseReferenceSha256: sha256(poseReferenceBuffer),
     promptPreview: buildMoodSheetPrompt({ speciesLabel, traits, includeReferenceRoles: true }),
     userReferenceBytes: userReferenceBuffer.length,
     userReferenceSha256: sha256(userReferenceBuffer),
@@ -274,19 +266,19 @@ async function runLiveReferenceTest({
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const userReference = readRequiredFile(options.userImage, "User reference image");
-  const catReference = readRequiredFile(options.catSheet, "Cat reference sheet");
+  const poseReference = readRequiredFile(options.poseSheet, "Neutral pose reference sheet");
   fs.mkdirSync(options.outputDir, { recursive: true });
 
   const report = options.live
     ? await runLiveReferenceTest({
-        catReferenceBuffer: catReference.buffer,
         outputDir: path.resolve(options.outputDir),
+        poseReferenceBuffer: poseReference.buffer,
         speciesLabel: options.speciesLabel,
         userReferenceBuffer: userReference.buffer,
       })
     : await runMockReferenceTest({
-        catReferenceBuffer: catReference.buffer,
         outputDir: path.resolve(options.outputDir),
+        poseReferenceBuffer: poseReference.buffer,
         speciesLabel: options.speciesLabel,
         userReferenceBuffer: userReference.buffer,
       });
@@ -295,7 +287,7 @@ async function main() {
     ok: true,
     mode: report.mode,
     outputDir: path.resolve(options.outputDir),
-    catReferencePath: catReference.path,
+    poseReferencePath: poseReference.path,
     userReferencePath: userReference.path,
     imageOrder: report.imageOrder,
   }, null, 2));

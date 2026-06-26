@@ -107,11 +107,9 @@ describe("custom pet generator", () => {
 
     expect(prompt).toContain("第 1 张用户上传图是唯一宠物身份和外观来源，最高优先级");
     expect(prompt).toContain("物种、脸型、耳朵、眼睛、嘴吻、身体比例、毛色、花纹分布、尾巴和原有配饰");
-    expect(prompt).toContain("第 2 张四状态参考图仅参考");
-    expect(prompt).toContain("第 2 张里的猫只是姿态模板");
-    expect(prompt).toContain("禁止复制猫脸、猫耳、猫眼、猫嘴、猫身体、猫毛色、猫花纹、猫尾巴");
+    expect(prompt).toContain("第 2 张灰色无物种姿态图仅参考");
     expect(prompt).toContain("禁止参考第 2 张的任何外观特征");
-    expect(prompt).toContain("不得变成猫或其它动物");
+    expect(prompt).toContain("不得变成其它动物");
     expect(prompt).toContain("不出现食物或食盆");
     expect(prompt).toContain("不出现爱心、抱枕或玩具");
     expect(prompt).toContain("两张图冲突时始终以第 1 张为准");
@@ -314,7 +312,7 @@ describe("custom pet generator", () => {
     await expect(
       generateReferencedMoodSheet({
         userReferenceBuffer: Buffer.from("user"),
-        catReferenceBuffer: Buffer.from("cat"),
+        poseReferenceBuffer: Buffer.from("pose"),
         speciesLabel: "小狗",
         traits: { primaryColor: "黑白" },
         client: { SubmitTextToImageJob, QueryTextToImageJob },
@@ -327,7 +325,7 @@ describe("custom pet generator", () => {
       expect.objectContaining({
         Images: [
           Buffer.from("user").toString("base64"),
-          Buffer.from("cat").toString("base64"),
+          Buffer.from("pose").toString("base64"),
         ],
         LogoAdd: 0,
         Prompt: expect.stringContaining("第 1 张用户上传图是唯一宠物身份"),

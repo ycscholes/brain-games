@@ -126,7 +126,7 @@ describe("custom pet worker", () => {
     expect(mockGenerator.generateReferencedMoodSheet).toHaveBeenCalledWith(
       expect.objectContaining({
         userReferenceBuffer: Buffer.from("download:cloud://source"),
-        catReferenceBuffer: expect.any(Buffer),
+        poseReferenceBuffer: expect.any(Buffer),
         speciesLabel: "小狗",
         traits: { primaryColor: "黑白" },
       }),
@@ -150,7 +150,7 @@ describe("custom pet worker", () => {
     });
   });
 
-  test("loads the CloudBase cat reference sheet when storage env is configured", async () => {
+  test("loads the CloudBase pose reference sheet when storage env is configured", async () => {
     process.env.TARO_CLOUD_ENV_ID = "test-env";
     process.env.TARO_CLOUD_STORAGE_BUCKET = "test-bucket";
     mockTaskStore.set("job-1", {
@@ -168,12 +168,12 @@ describe("custom pet worker", () => {
     await runJob("job-1");
 
     expect(mockCloud.downloadFile).toHaveBeenCalledWith({
-      fileID: "cloud://test-env.test-bucket/assets/v1/pets/cat-reference-sheet.png",
+      fileID: "cloud://test-env.test-bucket/assets/v1/pets/pose-reference-sheet.png",
     });
     expect(mockGenerator.generateReferencedMoodSheet).toHaveBeenCalledWith(
       expect.objectContaining({
-        catReferenceBuffer: Buffer.from(
-          "download:cloud://test-env.test-bucket/assets/v1/pets/cat-reference-sheet.png",
+        poseReferenceBuffer: Buffer.from(
+          "download:cloud://test-env.test-bucket/assets/v1/pets/pose-reference-sheet.png",
         ),
         userReferenceBuffer: Buffer.from("download:cloud://source"),
       }),

@@ -129,7 +129,7 @@ function buildMoodSheetPrompt({ includeReferenceRoles = false }) {
   // still publish the existing four mood files expected by the mini program.
   return [
     includeReferenceRoles
-      ? "参考图规则：第 1 张用户上传图是唯一宠物身份和外观来源，最高优先级；四格必须以第 1 张的物种、脸型、耳朵、眼睛、嘴吻、身体比例、毛色、花纹分布、尾巴和原有配饰为准；第 2 张四状态参考图仅参考 idle、feed、cuddle、hungry 的姿态、构图、表情和水彩画风；第 2 张里的猫只是姿态模板，禁止复制猫脸、猫耳、猫眼、猫嘴、猫身体、猫毛色、猫花纹、猫尾巴；禁止参考第 2 张的任何外观特征；不得变成猫或其它动物；两张图冲突时始终以第 1 张为准，角色身份一致性优先于姿态一致性"
+      ? "参考图规则：第 1 张用户上传图是唯一宠物身份和外观来源，最高优先级；四格必须以第 1 张的物种、脸型、耳朵、眼睛、嘴吻、身体比例、毛色、花纹分布、尾巴和原有配饰为准；第 2 张灰色无物种姿态图仅参考 idle、feed、cuddle、hungry 的姿态、构图、表情和水彩画风；禁止参考第 2 张的任何外观特征，包括头部形状、身体形状、颜色、纹理和比例；不得变成其它动物；两张图冲突时始终以第 1 张为准，角色身份一致性优先于姿态一致性"
       : "",
     "生成第 1 张参考图中的同一只宠物四状态角色设定图，2x2 四宫格",
     "左上 idle：同一只第 1 张宠物自然站立或坐着，平静看向前方",
@@ -396,7 +396,7 @@ async function pollTextToImageJob({
 
 async function generateReferencedMoodSheet({
   userReferenceBuffer,
-  catReferenceBuffer,
+  poseReferenceBuffer,
   traits,
   speciesLabel,
   client,
@@ -407,12 +407,12 @@ async function generateReferencedMoodSheet({
 }) {
   const aiClient = client || createAiArtClient();
   // SubmitTextToImageJob accepts multiple reference images, unlike ImageToImage's single InputImage.
-  // Put the user photo first because it is the identity source; the cat sheet is only a pose/style guide.
+  // Put the user photo first because it is the identity source; the second image is only a pose/style guide.
   const submitResult = unwrapTencentResponse(await aiClient.SubmitTextToImageJob({
     Prompt: buildMoodSheetPrompt({ traits, speciesLabel, includeReferenceRoles: true }),
     Images: [
       userReferenceBuffer.toString("base64"),
-      catReferenceBuffer.toString("base64"),
+      poseReferenceBuffer.toString("base64"),
     ],
     Resolution: "1024:1024",
     LogoAdd: 0,
