@@ -31,6 +31,8 @@ const {
 } = require("../../cloudfunctions/shared/customPetGenerator");
 
 describe("custom pet generator", () => {
+  const forbiddenPromptTerms = /柴犬|小狗|狗|猫|小猫|食物|人手|抚摸/;
+
   test("normalizes the classifier to one supported template", () => {
     expect(normalizeAnalysis({
       speciesLabel: "豹纹守宫",
@@ -70,10 +72,11 @@ describe("custom pet generator", () => {
       const prompt = buildMoodPrompt({
         mood,
         speciesLabel: "小狗",
-        traits: { primaryColor: "黑白" },
+        traits: { primaryColor: "柴犬黑白" },
       });
       expect(prompt).toContain("水彩绘本");
       expect(prompt).toContain("#00FF00");
+      expect(prompt).not.toMatch(forbiddenPromptTerms);
       expect(prompt.length).toBeLessThanOrEqual(250);
     });
   });
@@ -81,7 +84,7 @@ describe("custom pet generator", () => {
   test("builds a bounded 2x2 mood sheet prompt", () => {
     const prompt = buildMoodSheetPrompt({
       speciesLabel: "小狗",
-      traits: { primaryColor: "黑白" },
+      traits: { primaryColor: "柴犬黑白" },
     });
 
     expect(prompt).toContain("2x2");
@@ -90,19 +93,20 @@ describe("custom pet generator", () => {
     expect(prompt).toContain("左下 cuddle");
     expect(prompt).toContain("右下 hungry");
     expect(prompt).toContain("#00FF00");
+    expect(prompt).not.toMatch(forbiddenPromptTerms);
     expect(prompt.length).toBeLessThanOrEqual(520);
   });
 
-  test("separates user identity from cat state reference in multi-reference prompts", () => {
+  test("separates user identity from state reference without species labels", () => {
     const prompt = buildMoodSheetPrompt({
       includeReferenceRoles: true,
       speciesLabel: "柴犬",
-      traits: { primaryColor: "黄白" },
+      traits: { primaryColor: "狗黄白" },
     });
 
     expect(prompt).toContain("第 1 张用户上传图是唯一宠物身份");
-    expect(prompt).toContain("第 2 张小猫四状态图只参考四格状态构图");
-    expect(prompt).toContain("禁止生成猫");
+    expect(prompt).toContain("第 2 张四状态参考图只参考");
+    expect(prompt).not.toMatch(forbiddenPromptTerms);
     expect(prompt.length).toBeLessThanOrEqual(760);
   });
 
@@ -118,7 +122,7 @@ describe("custom pet generator", () => {
 
     await expect(
       generateCloudBaseFunctionImage({
-        prompt: "一只小狗",
+        prompt: "一张测试图片",
         cloudFunction,
         downloadImage,
       }),
@@ -126,7 +130,7 @@ describe("custom pet generator", () => {
 
     expect(cloudFunction).toHaveBeenCalledWith({
       name: "customPetImageGenerator",
-      data: { prompt: "一只小狗" },
+      data: { prompt: "一张测试图片" },
     });
     expect(downloadImage).toHaveBeenCalledWith("https://example.com/generated.png");
   });
@@ -320,6 +324,7 @@ describe("custom pet generator", () => {
         Revise: 0,
       }),
     );
+    expect(SubmitTextToImageJob.mock.calls[0][0].Prompt).not.toMatch(forbiddenPromptTerms);
     expect(QueryTextToImageJob).toHaveBeenCalledWith({ JobId: "job-1" });
     expect(downloadImage).toHaveBeenCalledWith("https://example.com/referenced-sheet.png");
   });

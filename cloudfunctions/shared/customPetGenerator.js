@@ -101,40 +101,46 @@ async function analyzeSource({ sourceBuffer, mimeType = "image/jpeg", app }) {
   }
 }
 
-function buildMoodPrompt({ mood, traits, speciesLabel }) {
+const REFERENCE_VISUAL_TRAITS_PROMPT =
+  "视觉特征：按第 1 张参考图保留主色、辅色、纹理分布、体型轮廓、脸部轮廓和原有配饰";
+const EXTRA_CONTENT_NEGATIVE_PROMPT =
+  "每格只保留宠物本体及原有配饰，禁止出现其它角色、互动肢体、餐饮元素、器皿、玩具、特效、光环、场景物件";
+
+function buildMoodPrompt({ mood }) {
   const moodText = {
     idle: "自然站立或坐着，平静看向前方",
-    feed: "开心进食，嘴边有轻微咀嚼动作，但不要出现具体食物",
-    cuddle: "亲昵地靠近并露出享受抚摸的表情",
+    feed: "保持参考状态的愉快表情和身体姿态，嘴部可有轻微动作",
+    cuddle: "亲昵地靠近并露出放松享受的表情",
     hungry: "略显饥饿和期待，姿态仍然可爱，不要悲惨",
   }[mood];
   return [
-    `单只${speciesLabel || "宠物"}全身角色，${moodText}`,
+    `单只第 1 张参考图中的宠物全身角色，${moodText}`,
     "固定水彩绘本风格，儿童友好，轮廓清楚，主体居中",
     "纯亮绿色背景 #00FF00，无场景、无地面、无投影、无边框、无文字",
-    `身份特征：${Object.values(traits || {}).join("；")}`,
-    "保留参考图的物种、主色、花纹、体型和配饰，四周保留安全边距",
+    REFERENCE_VISUAL_TRAITS_PROMPT,
+    EXTRA_CONTENT_NEGATIVE_PROMPT,
+    "保留第 1 张参考图的身份和外观，每格四周保留安全边距",
   ].join("。").slice(0, 250);
 }
 
-function buildMoodSheetPrompt({ traits, speciesLabel, includeReferenceRoles = false }) {
+function buildMoodSheetPrompt({ includeReferenceRoles = false }) {
   // This prompt is part of the runtime contract with splitMoodSheet(): it must
   // keep a deterministic 2x2 layout so the worker can crop by coordinates and
   // still publish the existing four mood files expected by the mini program.
   return [
     includeReferenceRoles
-      ? "参考图规则：第 1 张用户上传图是唯一宠物身份和外观来源，必须以它的物种、脸型、耳朵、体型、主色、花纹和配饰为准；第 2 张小猫四状态图只参考四格状态构图、水彩画风和主体居中方式，不能把宠物改成猫"
+      ? "参考图规则：第 1 张用户上传图是唯一宠物身份和外观来源，必须以它的物种、脸型、耳朵、体型、主色、纹理和配饰为准；第 2 张四状态参考图只参考 idle、feed、cuddle、hungry 的构图、水彩画风、主体姿态和居中方式，不能把宠物改成第 2 张参考图的形象"
       : "",
-    `单只${speciesLabel || "宠物"}的四状态角色设定图，2x2 四宫格`,
+    "单只第 1 张参考图中的宠物四状态角色设定图，2x2 四宫格",
     "左上 idle：自然站立或坐着，平静看向前方",
-    "右上 feed：开心进食，嘴边有轻微咀嚼动作，但不要出现具体食物",
-    "左下 cuddle：亲昵地靠近并露出享受抚摸的表情",
-    "右下 hungry：略显饥饿和期待，姿态仍然可爱，不要悲惨",
+    "右上 feed：保持第 2 张参考图右上状态的愉快表情和身体姿态，嘴部可有轻微动作",
+    "左下 cuddle：保持第 2 张参考图左下状态的亲昵放松姿态，表情享受",
+    "右下 hungry：保持第 2 张参考图右下状态的期待神情和可爱姿态，不要悲惨",
     "四格必须是同一只宠物、同一水彩绘本风格、儿童友好、轮廓清楚、每格主体居中",
-    includeReferenceRoles ? "如果第 1 张用户图是狗，四格必须都是同一只狗，禁止生成猫、猫耳或猫脸" : "",
     "纯亮绿色背景 #00FF00，无场景、无地面、无投影、无边框、无文字、无标签",
-    `身份特征：${Object.values(traits || {}).join("；")}`,
-    "保留参考图的物种、主色、花纹、体型和配饰，每格四周保留安全边距",
+    REFERENCE_VISUAL_TRAITS_PROMPT,
+    EXTRA_CONTENT_NEGATIVE_PROMPT,
+    "保留第 1 张参考图的身份和外观，每格四周保留安全边距",
   ].filter(Boolean).join("。").slice(0, includeReferenceRoles ? 760 : 520);
 }
 

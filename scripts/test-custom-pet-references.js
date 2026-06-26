@@ -28,7 +28,7 @@ function parseArgs(argv) {
     catSheet: DEFAULT_CAT_REFERENCE,
     live: false,
     outputDir: DEFAULT_OUTPUT_DIR,
-    speciesLabel: "柴犬",
+    speciesLabel: "",
     userImage: process.env.CUSTOM_PET_TEST_USER_IMAGE || DEFAULT_USER_REFERENCE,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -65,7 +65,7 @@ Options:
   --user-image <path>     User reference image. Defaults to scripts/fixtures/custom-pet-user-reference-dog.jpg.
   --cat-sheet <path>      Cat 2x2 reference sheet. Defaults to asset-backups/cloudbase-images/pets/cat-reference-sheet.png.
   --output-dir <path>     Output directory. Defaults to tmp/custom-pet-reference-test.
-  --species-label <text>  Species label used in the generation prompt.
+  --species-label <text>  Compatibility label kept out of the generation prompt.
   --live                  Call Tencent AIArt. Without this flag the script verifies payload wiring with a mock client.
 `);
 }
@@ -133,11 +133,11 @@ async function runMockReferenceTest({
     sleepFn: async () => {},
     speciesLabel,
     traits: {
-      primaryColor: "按第 1 张用户照片保留柴犬黄白主色",
-      secondaryColor: "按第 1 张用户照片保留白色脸颊和胸口",
-      markings: "按第 1 张用户照片保留柴犬脸部和耳朵特征",
-      bodyShape: "按第 1 张用户照片保留狗的体型，禁止猫脸猫耳",
-      accessories: "按第 1 张用户照片保留项圈等配饰",
+      primaryColor: "按第 1 张用户照片保留主色",
+      secondaryColor: "按第 1 张用户照片保留辅色",
+      markings: "按第 1 张用户照片保留纹理分布",
+      bodyShape: "按第 1 张用户照片保留体型轮廓",
+      accessories: "按第 1 张用户照片保留原有配饰",
     },
     userReferenceBuffer,
   });
@@ -157,8 +157,9 @@ async function runMockReferenceTest({
   );
   assert(submitPayload.Prompt.includes("2x2"), "prompt must request a 2x2 mood sheet");
   assert(submitPayload.Prompt.includes("第 1 张用户上传图是唯一宠物身份"), "prompt must assign identity to user image");
-  assert(submitPayload.Prompt.includes("第 2 张小猫四状态图只参考四格状态构图"), "prompt must limit cat sheet to state layout");
-  assert(submitPayload.Prompt.includes("禁止生成猫"), "prompt must forbid converting the pet to a cat");
+  assert(submitPayload.Prompt.includes("第 2 张四状态参考图只参考"), "prompt must limit state sheet to layout");
+  assert(!/柴犬|小狗|狗|猫|小猫/.test(submitPayload.Prompt), "prompt must not contain specific animal labels");
+  assert(!/食物|人手|抚摸/.test(submitPayload.Prompt), "prompt must avoid extra-object wording");
   assert(submitPayload.Prompt.includes("左上 idle"), "prompt must include the idle frame position");
   assert(submitPayload.Prompt.includes("右上 feed"), "prompt must include the feed frame position");
   assert(submitPayload.Prompt.includes("左下 cuddle"), "prompt must include the cuddle frame position");
@@ -190,11 +191,11 @@ async function runLiveReferenceTest({
   userReferenceBuffer,
 }) {
   const traits = {
-    primaryColor: "参考第 1 张用户照片的柴犬黄白主色",
-    secondaryColor: "参考第 1 张用户照片的白色脸颊和胸口",
-    markings: "参考第 1 张用户照片的柴犬脸部、耳朵和毛色分布",
-    bodyShape: "参考第 1 张用户照片的狗体型，禁止猫脸猫耳",
-    accessories: "参考第 1 张用户照片的项圈等配饰",
+    primaryColor: "参考第 1 张用户照片的主色",
+    secondaryColor: "参考第 1 张用户照片的辅色",
+    markings: "参考第 1 张用户照片的纹理分布",
+    bodyShape: "参考第 1 张用户照片的体型轮廓",
+    accessories: "参考第 1 张用户照片的原有配饰",
   };
   const generatedSheet = await generateReferencedMoodSheet({
     catReferenceBuffer,
