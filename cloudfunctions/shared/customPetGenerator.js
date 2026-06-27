@@ -64,26 +64,50 @@ function normalizeAnalysis(value) {
   };
 }
 
+function logTextPrompt({ provider, operation, messages }) {
+  console.info(
+    "[custom-pet-generator] text prompt",
+    JSON.stringify({
+      event: "custom_pet_text_prompt",
+      provider,
+      operation,
+      messages,
+    }),
+  );
+}
+
 async function analyzeSource({ sourceBuffer, mimeType = "image/jpeg", app }) {
   try {
     const tcb = getCloudBaseSdk();
     const cloudApp = app || tcb.init({ env: tcb.SYMBOL_CURRENT_ENV });
     const model = cloudApp.ai().createModel("hunyuan-exp");
+    const textPromptMessages = [
+      {
+        role: "system",
+        content:
+          "你是宠物参考图分析器。只输出 JSON，不要解释。speciesLabel 必须来自用户上传图的真实可见外观；mappedSkin 只是前端兼容分类，只能是 cat,dog,rabbit,bear,panda,gecko,turtle，不得作为生成物种或外观依据。",
+      },
+      {
+        role: "user",
+        content:
+          "根据用户上传的单只宠物参考图输出 speciesLabel、mappedSkin、traits。traits 包含 primaryColor、secondaryColor、markings、bodyShape、accessories，必须直接描述参考图可见特征，不要套用 mappedSkin 的默认外观。",
+      },
+    ];
+    logTextPrompt({
+      provider: "cloudbase-text",
+      operation: "analyzeSource",
+      messages: textPromptMessages,
+    });
     const result = await model.generateText({
       model: "hunyuan-2.0-instruct-20251111",
       messages: [
-        {
-          role: "system",
-          content:
-            "你是宠物图像分析器。只输出 JSON，不要解释。mappedSkin 只能是 cat,dog,rabbit,bear,panda,gecko,turtle。",
-        },
+        textPromptMessages[0],
         {
           role: "user",
           content: [
             {
               type: "text",
-              text:
-                "识别单只宠物，输出 speciesLabel、mappedSkin、traits。traits 包含 primaryColor、secondaryColor、markings、bodyShape、accessories。",
+              text: textPromptMessages[1].content,
             },
             {
               type: "image_url",
@@ -105,6 +129,21 @@ const REFERENCE_VISUAL_TRAITS_PROMPT =
   "视觉特征：按第 1 张参考图保留主色、辅色、纹理分布、体型轮廓、脸部轮廓和原有配饰";
 const EXTRA_CONTENT_NEGATIVE_PROMPT =
   "每格只保留宠物本体及原有配饰，禁止出现其它角色、互动肢体、餐饮元素、器皿、玩具、特效、光环、场景物件";
+const IMAGE_NEGATIVE_PROMPT =
+  "多人，多只动物，场景，地面，阴影，文字，边框，水印，裁切，模糊，畸形";
+
+function logImagePrompt({ provider, operation, prompt, negativePrompt = null }) {
+  const payload = {
+    event: "custom_pet_image_prompt",
+    provider,
+    operation,
+    prompt,
+  };
+  if (negativePrompt) {
+    payload.negativePrompt = negativePrompt;
+  }
+  console.info("[custom-pet-generator] image prompt", JSON.stringify(payload));
+}
 
 function buildMoodPrompt({ mood }) {
   const moodText = {
@@ -279,6 +318,12 @@ async function generateCloudBaseFunctionImage({ prompt, cloudFunction, downloadI
     });
   const functionName =
     process.env.CUSTOM_PET_IMAGE_FUNCTION_NAME || DEFAULT_IMAGE_GENERATION_FUNCTION_NAME;
+  logImagePrompt({
+    provider: "cloudbase-function",
+    operation: functionName,
+    prompt,
+    negativePrompt: IMAGE_NEGATIVE_PROMPT,
+  });
   const response = await caller({
     name: functionName,
     data: { prompt },
@@ -289,10 +334,16 @@ async function generateCloudBaseFunctionImage({ prompt, cloudFunction, downloadI
 
 async function generateCloudBaseSdkImage({ prompt, imageModel, downloadImage }) {
   const model = imageModel || createCloudBaseImageModel();
+  logImagePrompt({
+    provider: "cloudbase-sdk",
+    operation: "generateImage",
+    prompt,
+    negativePrompt: IMAGE_NEGATIVE_PROMPT,
+  });
   const response = await model.generateImage({
     model: "hunyuan-image",
     prompt,
-    negative_prompt: "多人，多只动物，场景，地面，阴影，文字，边框，水印，裁切，模糊，畸形",
+    negative_prompt: IMAGE_NEGATIVE_PROMPT,
     size: "1024x1024",
     version: "v1.9",
     revise: false,
@@ -307,12 +358,19 @@ async function generateCloudBaseSdkImage({ prompt, imageModel, downloadImage }) 
 
 async function generateAiArtImage({ referenceBuffer, mood, traits, speciesLabel, client }) {
   const aiClient = client || createAiArtClient();
+  const prompt = buildMoodPrompt({ mood, traits, speciesLabel });
+  logImagePrompt({
+    provider: "aiart",
+    operation: "ImageToImage",
+    prompt,
+    negativePrompt: IMAGE_NEGATIVE_PROMPT,
+  });
   // Legacy fallback path: ImageToImage has stronger single-reference behavior
   // but can only generate one target image at a time.
   const response = await aiClient.ImageToImage({
     InputImage: referenceBuffer.toString("base64"),
-    Prompt: buildMoodPrompt({ mood, traits, speciesLabel }),
-    NegativePrompt: "多人，多只动物，场景，地面，阴影，文字，边框，水印，裁切，模糊，畸形",
+    Prompt: prompt,
+    NegativePrompt: IMAGE_NEGATIVE_PROMPT,
     Styles: ["104"],
     ResultConfig: {
       Resolution: "768:768",
@@ -330,12 +388,19 @@ async function generateAiArtImage({ referenceBuffer, mood, traits, speciesLabel,
 
 async function generateAiArtSheetImage({ referenceBuffer, traits, speciesLabel, client }) {
   const aiClient = client || createAiArtClient();
+  const prompt = buildMoodSheetPrompt({ traits, speciesLabel });
+  logImagePrompt({
+    provider: "aiart",
+    operation: "ImageToImageSheet",
+    prompt,
+    negativePrompt: IMAGE_NEGATIVE_PROMPT,
+  });
   // Single-reference sheet fallback used when multi-reference text-to-image is
   // unavailable. It still reduces the four mood calls to one generated sheet.
   const response = await aiClient.ImageToImage({
     InputImage: referenceBuffer.toString("base64"),
-    Prompt: buildMoodSheetPrompt({ traits, speciesLabel }),
-    NegativePrompt: "多人，多只动物，场景，地面，阴影，文字，边框，水印，裁切，模糊，畸形",
+    Prompt: prompt,
+    NegativePrompt: IMAGE_NEGATIVE_PROMPT,
     Styles: ["104"],
     ResultConfig: {
       Resolution: "1024:1024",
@@ -406,10 +471,16 @@ async function generateReferencedMoodSheet({
   intervalMs,
 }) {
   const aiClient = client || createAiArtClient();
+  const prompt = buildMoodSheetPrompt({ traits, speciesLabel, includeReferenceRoles: true });
+  logImagePrompt({
+    provider: "aiart",
+    operation: "SubmitTextToImageJob",
+    prompt,
+  });
   // SubmitTextToImageJob accepts multiple reference images, unlike ImageToImage's single InputImage.
   // Put the user photo first because it is the identity source; the second image is only a pose/style guide.
   const submitResult = unwrapTencentResponse(await aiClient.SubmitTextToImageJob({
-    Prompt: buildMoodSheetPrompt({ traits, speciesLabel, includeReferenceRoles: true }),
+    Prompt: prompt,
     Images: [
       userReferenceBuffer.toString("base64"),
       poseReferenceBuffer.toString("base64"),
@@ -580,6 +651,7 @@ module.exports = {
   analyzeSource,
   buildMoodPrompt,
   buildMoodSheetPrompt,
+  IMAGE_NEGATIVE_PROMPT,
   generateMood,
   generateMoodSheet,
   generateCloudBaseImage,

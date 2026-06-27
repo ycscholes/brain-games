@@ -23,6 +23,7 @@ const {
   generateCloudBaseSheetImage,
   buildMoodPrompt,
   buildMoodSheetPrompt,
+  IMAGE_NEGATIVE_PROMPT,
   generateReferencedMoodSheet,
   normalizeAnalysis,
   parseImageGenerationFunctionResult,
@@ -33,6 +34,15 @@ const {
 describe("custom pet generator", () => {
   const forbiddenPromptTerms = /柴犬|小狗|狗|猫|小猫|食物|人手|抚摸/;
   const forbiddenReferencePromptTerms = /柴犬|小狗|狗|小猫|人手|抚摸/;
+  let consoleInfoSpy;
+
+  beforeEach(() => {
+    consoleInfoSpy = jest.spyOn(console, "info").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleInfoSpy.mockRestore();
+  });
 
   test("normalizes the classifier to one supported template", () => {
     expect(normalizeAnalysis({
@@ -66,6 +76,45 @@ describe("custom pet generator", () => {
       speciesLabel: "自定义宠物",
       mappedSkin: "cat",
     });
+  });
+
+  test("logs the analysis text prompt without treating mappedSkin as the generation source", async () => {
+    const generateText = jest.fn().mockResolvedValue({
+      text: JSON.stringify({
+        speciesLabel: "长毛白色宠物",
+        mappedSkin: "cat",
+        traits: { primaryColor: "白色" },
+      }),
+    });
+
+    await expect(
+      analyzeSource({
+        sourceBuffer: Buffer.from("source"),
+        app: {
+          ai: () => ({
+            createModel: () => ({ generateText }),
+          }),
+        },
+      }),
+    ).resolves.toMatchObject({
+      speciesLabel: "长毛白色宠物",
+      mappedSkin: "cat",
+      traits: {
+        primaryColor: "白色",
+      },
+    });
+
+    expect(generateText.mock.calls[0][0].messages[0].content).toContain(
+      "不得作为生成物种或外观依据",
+    );
+    expect(generateText.mock.calls[0][0].messages[1].content[0].text).toContain(
+      "必须直接描述参考图可见特征",
+    );
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      "[custom-pet-generator] text prompt",
+      expect.stringContaining("\"operation\":\"analyzeSource\""),
+    );
+    expect(consoleInfoSpy.mock.calls[0][1]).not.toContain("base64");
   });
 
   test("builds a bounded watercolor chroma-key prompt for every mood", () => {
@@ -141,6 +190,11 @@ describe("custom pet generator", () => {
       name: "customPetImageGenerator",
       data: { prompt: "一张测试图片" },
     });
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      "[custom-pet-generator] image prompt",
+      expect.stringContaining("\"provider\":\"cloudbase-function\""),
+    );
+    expect(consoleInfoSpy.mock.calls[0][1]).toContain("\"negativePrompt\"");
     expect(downloadImage).toHaveBeenCalledWith("https://example.com/generated.png");
   });
 
@@ -163,10 +217,17 @@ describe("custom pet generator", () => {
     expect(generateImage).toHaveBeenCalledWith(
       expect.objectContaining({
         model: "hunyuan-image",
+        negative_prompt: IMAGE_NEGATIVE_PROMPT,
         size: "1024x1024",
         version: "v1.9",
       }),
     );
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      "[custom-pet-generator] image prompt",
+      expect.stringContaining("\"provider\":\"cloudbase-sdk\""),
+    );
+    expect(consoleInfoSpy.mock.calls[0][1]).toContain("\"negativePrompt\"");
+    expect(consoleInfoSpy.mock.calls[0][1]).not.toMatch(forbiddenPromptTerms);
     expect(downloadImage).toHaveBeenCalledWith("https://example.com/generated.png");
   });
 
@@ -189,9 +250,15 @@ describe("custom pet generator", () => {
     expect(generateImage).toHaveBeenCalledWith(
       expect.objectContaining({
         prompt: expect.stringContaining("2x2"),
+        negative_prompt: IMAGE_NEGATIVE_PROMPT,
         size: "1024x1024",
       }),
     );
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      "[custom-pet-generator] image prompt",
+      expect.stringContaining("\"provider\":\"cloudbase-sdk\""),
+    );
+    expect(consoleInfoSpy.mock.calls[0][1]).not.toMatch(forbiddenReferencePromptTerms);
   });
 
   test("parses image generation cloud function failures", () => {
@@ -223,10 +290,16 @@ describe("custom pet generator", () => {
 
     expect(ImageToImage).toHaveBeenCalledWith(
       expect.objectContaining({
+        NegativePrompt: IMAGE_NEGATIVE_PROMPT,
         RspImgType: "base64",
         ResultConfig: { Resolution: "768:768" },
       }),
     );
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      "[custom-pet-generator] image prompt",
+      expect.stringContaining("\"operation\":\"ImageToImage\""),
+    );
+    expect(consoleInfoSpy.mock.calls[0][1]).not.toMatch(forbiddenPromptTerms);
   });
 
   test("keeps Tencent AIArt sheet generation as one image-to-image request", async () => {
@@ -246,10 +319,16 @@ describe("custom pet generator", () => {
     expect(ImageToImage).toHaveBeenCalledTimes(1);
     expect(ImageToImage).toHaveBeenCalledWith(
       expect.objectContaining({
+        NegativePrompt: IMAGE_NEGATIVE_PROMPT,
         Prompt: expect.stringContaining("2x2"),
         ResultConfig: { Resolution: "1024:1024" },
       }),
     );
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      "[custom-pet-generator] image prompt",
+      expect.stringContaining("\"operation\":\"ImageToImageSheet\""),
+    );
+    expect(consoleInfoSpy.mock.calls[0][1]).not.toMatch(forbiddenReferencePromptTerms);
   });
 
   test("uses CloudBase-safe AIArt credential environment aliases", async () => {
@@ -334,6 +413,11 @@ describe("custom pet generator", () => {
       }),
     );
     expect(SubmitTextToImageJob.mock.calls[0][0].Prompt).not.toMatch(forbiddenReferencePromptTerms);
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      "[custom-pet-generator] image prompt",
+      expect.stringContaining("\"operation\":\"SubmitTextToImageJob\""),
+    );
+    expect(consoleInfoSpy.mock.calls[0][1]).not.toMatch(forbiddenReferencePromptTerms);
     expect(QueryTextToImageJob).toHaveBeenCalledWith({ JobId: "job-1" });
     expect(downloadImage).toHaveBeenCalledWith("https://example.com/referenced-sheet.png");
   });
