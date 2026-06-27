@@ -269,6 +269,10 @@ async function processValidation(task) {
       .get()
       .catch(() => null);
     const entitlement = stripDatabaseIds(entitlementResult && entitlementResult.data ? entitlementResult.data : {});
+    const currentCount = Number(
+      entitlement.customPetGenerationCount || (entitlement.customPetGenerationUsed ? 1 : 0),
+    );
+    const nextCount = entitlement.customPetGenerationUsed ? currentCount : currentCount + 1;
     await transaction.collection(ENTITLEMENT_COLLECTION).doc(task.ownerId).set({
       data: {
         ...entitlement,
@@ -276,6 +280,7 @@ async function processValidation(task) {
         jobId: task.jobId,
         activeJobId: task.jobId,
         customPetGenerationUsed: true,
+        customPetGenerationCount: nextCount,
         usedAt: entitlement.usedAt || updatedAt,
         updatedAt,
       },
@@ -406,8 +411,15 @@ async function releaseAfterFailure(task, error) {
         },
       });
     }
+    const entitlementResult = await transaction
+      .collection(ENTITLEMENT_COLLECTION)
+      .doc(task.ownerId)
+      .get()
+      .catch(() => null);
+    const entitlement = stripDatabaseIds(entitlementResult && entitlementResult.data ? entitlementResult.data : {});
     await transaction.collection(ENTITLEMENT_COLLECTION).doc(task.ownerId).set({
       data: {
+        ...entitlement,
         ownerId: task.ownerId,
         activeJobId: null,
         customPetGenerationUsed: false,

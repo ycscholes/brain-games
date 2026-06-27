@@ -173,10 +173,14 @@ async function prepareUploadImage(filePath: string, maxBytes: number): Promise<s
 export async function getCustomPetStatus(): Promise<{
   task: CustomPetTask | null;
   generationUsed: boolean;
+  generationCount: number;
+  maxGenerations: number;
 }> {
   return callCustomPetApi<{
     task: CustomPetTask | null;
     generationUsed: boolean;
+    generationCount: number;
+    maxGenerations: number;
   }>({
     action: "getStatus",
   });

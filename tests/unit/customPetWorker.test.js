@@ -148,6 +148,10 @@ describe("custom pet worker", () => {
       cuddle: "cloud://test-env/users/user-1/custom-pets/job-1/candidates/1/cuddle.png",
       hungry: "cloud://test-env/users/user-1/custom-pets/job-1/candidates/1/hungry.png",
     });
+    expect(mockEntitlementStore.get("user-1")).toMatchObject({
+      customPetGenerationUsed: true,
+      customPetGenerationCount: 1,
+    });
   });
 
   test("loads the CloudBase pose reference sheet when storage env is configured", async () => {

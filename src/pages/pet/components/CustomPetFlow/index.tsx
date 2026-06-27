@@ -17,6 +17,7 @@ import type { PetSpriteMood } from "../PetSprite/types";
 import "./index.scss";
 
 const POLL_MS = 4000;
+const REFUND_NOTICE_SEEN_KEY = "custom_pet_refund_notice_seen_v1";
 const MOODS: Array<{ id: PetSpriteMood; label: string }> = [
   { id: "idle", label: "日常" },
   { id: "feed", label: "进食" },
@@ -44,13 +45,35 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
   const [urls, setUrls] = useState<CustomPetMoodUrls>({});
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [generationCount, setGenerationCount] = useState(0);
+  const [maxGenerations, setMaxGenerations] = useState(10);
+  const [showRefundNotice, setShowRefundNotice] = useState(false);
   const isPreview = task?.status === "preview_ready";
   const isQuotaWaiting = task?.errorCategory === "quota" && task.status !== "failed";
+
+  const readSeenRefundNotices = useCallback((): Record<string, boolean> => {
+    try {
+      const raw = Taro.getStorageSync(REFUND_NOTICE_SEEN_KEY);
+      return raw ? JSON.parse(raw) as Record<string, boolean> : {};
+    } catch {
+      return {};
+    }
+  }, []);
+
+  const writeSeenRefundNotices = useCallback((value: Record<string, boolean>) => {
+    try {
+      Taro.setStorageSync(REFUND_NOTICE_SEEN_KEY, JSON.stringify(value));
+    } catch {
+      // A storage failure should not block retrying custom pet generation.
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     try {
       const status = await getCustomPetStatus();
       setTask(status.task);
+      setGenerationCount(Number(status.generationCount || 0));
+      setMaxGenerations(Number(status.maxGenerations || 10));
       if (status.task?.status === "preview_ready") {
         setUrls(await resolveCustomPetSpriteUrls(status.task.jobId));
       }
@@ -72,6 +95,23 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
     }, POLL_MS);
     return () => clearInterval(timer);
   }, [refresh, task]);
+
+  useEffect(() => {
+    if (!task || (task.status !== "failed" && task.status !== "cancelled")) {
+      setShowRefundNotice(false);
+      return;
+    }
+    const seen = readSeenRefundNotices();
+    if (seen[task.jobId]) {
+      setShowRefundNotice(false);
+      return;
+    }
+    setShowRefundNotice(true);
+    writeSeenRefundNotices({
+      ...seen,
+      [task.jobId]: true,
+    });
+  }, [readSeenRefundNotices, task, writeSeenRefundNotices]);
 
   const progress = useMemo(() => {
     const steps = ["uploaded", "analyzing", "generating_idle", "generating_variants", "validating"];
@@ -179,7 +219,7 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
         {!task ? (
           <View className="custom-pet-intro">
             <Text className="custom-pet-copy">
-              测试阶段暂不限制生成和重做次数。原图与结果仅本人可在应用内访问。
+              最多可成功生成 {maxGenerations} 次，已用 {generationCount} 次。原图与结果仅本人可在应用内访问。
             </Text>
             <View className={`stage-button confirm-button ${busy ? "button-disabled" : ""}`} onClick={handleSubmit}>
               <Text className="stage-button-text">{busy ? "正在上传" : "选择图片并生成"}</Text>
@@ -234,7 +274,7 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
           </View>
         ) : task.status === "failed" || task.status === "cancelled" ? (
           <View className="custom-pet-progress">
-            <Text className="custom-pet-status">{STATUS_TEXT.failed}</Text>
+            {showRefundNotice ? <Text className="custom-pet-status">{STATUS_TEXT.failed}</Text> : null}
             <View
               className="stage-button custom-pet-secondary"
               onClick={handleSubmit}

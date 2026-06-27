@@ -101,6 +101,7 @@ describe("custom pet api generation eligibility", () => {
       ownerId: "user-1",
       activeJobId: null,
       customPetGenerationUsed: true,
+      customPetGenerationCount: 1,
       usedAt: "2026-06-21T00:00:00.000Z",
     });
 
@@ -120,6 +121,7 @@ describe("custom pet api generation eligibility", () => {
       ownerId: "user-1",
       activeJobId: null,
       customPetGenerationUsed: true,
+      customPetGenerationCount: 1,
       usedAt: "2026-06-21T00:00:00.000Z",
     });
     const jobId = "custom_pet_job_test";
@@ -137,12 +139,31 @@ describe("custom pet api generation eligibility", () => {
     expect(stores.custom_pet_entitlements.get("user-1")).toMatchObject({
       activeJobId: jobId,
       customPetGenerationUsed: false,
+      customPetGenerationCount: 1,
     });
 
     const blocked = await main({ action: "createUploadIntent" });
     expect(blocked).toEqual({
       ok: false,
       error: "custom pet task already active",
+    });
+  });
+
+  test("blocks new custom pet generation after ten successful previews", async () => {
+    stores.custom_pet_entitlements.set("user-1", {
+      ownerId: "user-1",
+      activeJobId: null,
+      customPetGenerationUsed: false,
+      customPetGenerationCount: 10,
+      usedAt: "2026-06-21T00:00:00.000Z",
+    });
+
+    const { main } = require("../../cloudfunctions/customPetApi/index");
+    const response = await main({ action: "createUploadIntent" });
+
+    expect(response).toEqual({
+      ok: false,
+      error: "自定义宠物生成次数已用完",
     });
   });
 
@@ -210,6 +231,7 @@ describe("custom pet api generation eligibility", () => {
       ownerId: "user-1",
       activeJobId: jobId,
       customPetGenerationUsed: true,
+      customPetGenerationCount: 4,
       usedAt: "2026-06-22T00:00:00.000Z",
     });
 
@@ -220,7 +242,8 @@ describe("custom pet api generation eligibility", () => {
     expect(stores.custom_pet_entitlements.get("user-1")).toMatchObject({
       activeJobId: null,
       customPetGenerationUsed: false,
-      usedAt: null,
+      customPetGenerationCount: 4,
+      usedAt: "2026-06-22T00:00:00.000Z",
     });
     expect(stores.xiaoyuyuan_user_snapshots.get("user-1").snapshot.petData).toMatchObject({
       balance: 1000,

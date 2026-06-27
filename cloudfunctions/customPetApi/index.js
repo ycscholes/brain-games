@@ -3,6 +3,7 @@ const {
   CUSTOM_PET_MOODS,
   CUSTOM_PET_PRICE,
   DEFAULT_CUSTOM_PET_TRAITS,
+  MAX_CUSTOM_PET_GENERATIONS,
   getOwnerRoot,
   isActiveStatus,
   sanitizeTask,
@@ -61,6 +62,23 @@ function getPetData(snapshot) {
   return stripDatabaseIds(petData);
 }
 
+function getGenerationCount(entitlement) {
+  if (!entitlement || typeof entitlement !== "object") {
+    return 0;
+  }
+  const explicitCount = Number(entitlement.customPetGenerationCount || 0);
+  if (explicitCount > 0) {
+    return explicitCount;
+  }
+  return entitlement.customPetGenerationUsed ? 1 : 0;
+}
+
+function assertGenerationAvailable(entitlement) {
+  if (getGenerationCount(entitlement) >= MAX_CUSTOM_PET_GENERATIONS) {
+    throw new Error("自定义宠物生成次数已用完");
+  }
+}
+
 async function writeSnapshot(transaction, ownerId, snapshot, petData) {
   const updatedAt = nowIso();
   const cleanSnapshot = stripDatabaseIds(snapshot || {});
@@ -105,10 +123,16 @@ async function findCurrentTask(ownerId) {
 }
 
 async function getStatus(ownerId) {
-  const task = await findCurrentTask(ownerId);
+  const [task, entitlementResult] = await Promise.all([
+    findCurrentTask(ownerId),
+    db.collection(ENTITLEMENT_COLLECTION).doc(ownerId).get().catch(() => null),
+  ]);
+  const entitlement = entitlementResult && entitlementResult.data ? entitlementResult.data : null;
   return {
     task: sanitizeTask(task),
-    generationUsed: false,
+    generationUsed: Boolean(entitlement?.customPetGenerationUsed),
+    generationCount: getGenerationCount(entitlement),
+    maxGenerations: MAX_CUSTOM_PET_GENERATIONS,
   };
 }
 
@@ -122,6 +146,7 @@ async function createUploadIntent(ownerId) {
       .get(),
     db.collection(SNAPSHOT_COLLECTION).doc(ownerId).get().catch(() => null),
   ]);
+  assertGenerationAvailable(entitlementResult && entitlementResult.data);
   if (activeResult.data.some((task) => isActiveStatus(task.status))) {
     throw new Error("custom pet task already active");
   }
@@ -165,6 +190,7 @@ async function submit(ownerId, event) {
         snapshot,
       };
     }
+    assertGenerationAvailable(entitlementResult && entitlementResult.data);
 
     const petData = getPetData(snapshot);
     const reservedBalance = Number(petData.reservedBalance || 0);
@@ -200,6 +226,7 @@ async function submit(ownerId, event) {
         ownerId,
         activeJobId: jobId,
         customPetGenerationUsed: false,
+        customPetGenerationCount: getGenerationCount(entitlementResult && entitlementResult.data),
         updatedAt: createdAt,
       },
     });
@@ -351,9 +378,10 @@ async function adopt(ownerId, event) {
 async function cancel(ownerId, event) {
   const jobId = String(event.jobId || "");
   return db.runTransaction(async (transaction) => {
-    const [taskResult, snapshot] = await Promise.all([
+    const [taskResult, snapshot, entitlementResult] = await Promise.all([
       transaction.collection(JOB_COLLECTION).doc(jobId).get(),
       getSnapshot(transaction, ownerId),
+      transaction.collection(ENTITLEMENT_COLLECTION).doc(ownerId).get().catch(() => null),
     ]);
     const task = taskResult.data;
     if (!task || task.ownerId !== ownerId) {
@@ -375,6 +403,7 @@ async function cancel(ownerId, event) {
         })
       : snapshot;
     const updatedAt = nowIso();
+    const entitlement = stripDatabaseIds(entitlementResult && entitlementResult.data ? entitlementResult.data : {});
     await transaction.collection(JOB_COLLECTION).doc(jobId).update({
       data: {
         status: "cancelled",
@@ -385,10 +414,10 @@ async function cancel(ownerId, event) {
     });
     await transaction.collection(ENTITLEMENT_COLLECTION).doc(ownerId).set({
       data: {
+        ...entitlement,
         ownerId,
         activeJobId: null,
         customPetGenerationUsed: false,
-        usedAt: null,
         updatedAt,
       },
     });
