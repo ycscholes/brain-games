@@ -386,17 +386,21 @@ async function releaseAfterFailure(task, error) {
       .doc(task.ownerId)
       .get()
       .catch(() => null);
-    const snapshot = snapshotResult && snapshotResult.data ? snapshotResult.data.snapshot : null;
+    const snapshotData = snapshotResult && snapshotResult.data ? stripDatabaseIds(snapshotResult.data) : null;
+    const snapshot = snapshotData ? snapshotData.snapshot : null;
     if (snapshot && snapshot.petData) {
       const cleanSnapshot = stripDatabaseIds(snapshot);
       const petData = stripDatabaseIds(snapshot.petData);
       const updatedAt = nowIso();
+      const createdAt = snapshotData.createdAt || cleanSnapshot.createdAt || updatedAt;
       await transaction.collection(SNAPSHOT_COLLECTION).doc(task.ownerId).set({
         data: {
           openid: task.ownerId,
+          createdAt,
           snapshot: {
             ...cleanSnapshot,
             source: "cloud",
+            createdAt,
             updatedAt,
             petData: {
               ...petData,

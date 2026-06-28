@@ -35,10 +35,18 @@ export const userDataLocalRepository = {
   },
 
   buildSnapshot(openid: string): UserCloudSnapshot {
+    const now = new Date().toISOString();
+    const meta = readCloudSyncMeta();
+    const createdAt = meta.userCreatedAt || now;
+    if (!meta.userCreatedAt) {
+      saveCloudSyncMeta({ userCreatedAt: createdAt });
+    }
+
     return {
       schemaVersion: CLOUD_SCHEMA_VERSION,
       openid,
-      updatedAt: new Date().toISOString(),
+      createdAt,
+      updatedAt: now,
       source: "local",
       trainingRecords: readTrainingRecords(),
       petData: readPetData(),
@@ -50,11 +58,13 @@ export const userDataLocalRepository = {
     saveTrainingRecords(snapshot.trainingRecords, { markChanged: false });
     savePetData(snapshot.petData, { markChanged: false });
     saveAppSettings(snapshot.appSettings, { markChanged: false, replace: true });
+    saveCloudSyncMeta({ userCreatedAt: snapshot.createdAt || null });
   },
 
   createSnapshotHashFromCloudSnapshot(snapshot: UserCloudSnapshot) {
     return createSnapshotHash({
       schemaVersion: snapshot.schemaVersion,
+      createdAt: snapshot.createdAt,
       trainingRecords: snapshot.trainingRecords,
       petData: snapshot.petData,
       appSettings: snapshot.appSettings,

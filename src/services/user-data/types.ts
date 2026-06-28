@@ -4,6 +4,7 @@ import type { AppSettings, TrainingRecord } from "../../utils/trainingStorage";
 export interface UserCloudSnapshot {
   schemaVersion: number;
   openid: string;
+  createdAt: string;
   updatedAt: string;
   source: "local" | "cloud";
   trainingRecords: TrainingRecord[];
@@ -15,6 +16,7 @@ export type UserSnapshotComparable = Omit<UserCloudSnapshot, "updatedAt" | "open
 
 export interface CloudSyncMeta {
   openid: string | null;
+  userCreatedAt: string | null;
   lastCloudSyncAt: string | null;
   lastCloudSyncAttemptAt: string | null;
   lastLocalChangeAt: string | null;

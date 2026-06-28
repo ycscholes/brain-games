@@ -82,11 +82,13 @@ function assertGenerationAvailable(entitlement) {
 async function writeSnapshot(transaction, ownerId, snapshot, petData) {
   const updatedAt = nowIso();
   const cleanSnapshot = stripDatabaseIds(snapshot || {});
+  const createdAt = cleanSnapshot.createdAt || updatedAt;
   const nextSnapshot = stripDatabaseIds({
     ...cleanSnapshot,
     schemaVersion: cleanSnapshot.schemaVersion || 1,
     openid: ownerId,
     source: "cloud",
+    createdAt,
     updatedAt,
     trainingRecords: Array.isArray(cleanSnapshot.trainingRecords) ? cleanSnapshot.trainingRecords : [],
     appSettings: cleanSnapshot.appSettings || {},
@@ -95,6 +97,7 @@ async function writeSnapshot(transaction, ownerId, snapshot, petData) {
   await transaction.collection(SNAPSHOT_COLLECTION).doc(ownerId).set({
     data: {
       openid: ownerId,
+      createdAt,
       snapshot: nextSnapshot,
       updatedAt,
     },

@@ -6,6 +6,7 @@ const CLOUD_SYNC_META_KEY = "cloud_sync_meta_v1";
 function createDefaultCloudSyncMeta(): CloudSyncMeta {
   return {
     openid: null,
+    userCreatedAt: null,
     lastCloudSyncAt: null,
     lastCloudSyncAttemptAt: null,
     lastLocalChangeAt: null,
