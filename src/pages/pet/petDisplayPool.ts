@@ -107,3 +107,10 @@ export function getPetDisplayItemsForSkin(
     ? [...matchingItems, standardItem]
     : [standardItem];
 }
+
+export function getPetDisplayNameForSkin(
+  pool: readonly PetDisplayItem[],
+  skin: PetSkin,
+): string {
+  return getPetDisplayItemsForSkin(pool, skin)[0]?.name ?? PET_SKIN_NAME[skin];
+}

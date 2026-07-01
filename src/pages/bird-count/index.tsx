@@ -13,10 +13,11 @@ import {
 import { usePageShare } from "../../utils/share";
 import PetSprite from "../pet/components/PetSprite";
 import type { PetSpriteMood, PetSpriteSize } from "../pet/components/PetSprite/types";
-import { PET_SKIN_NAME, type PetSkin } from "../pet/types";
+import type { PetSkin } from "../pet/types";
 import { getPetAssetKey, type PetAssetRef } from "../pet/petAssets";
 import {
   buildPetDisplayPool,
+  getPetDisplayNameForSkin,
   getPetDisplayItemsForSkin,
   type PetDisplayItem,
 } from "../pet/petDisplayPool";
@@ -619,6 +620,9 @@ export default function FarmCount() {
   const currentOptions = mode === "yard" ? yardQuestion?.options ?? [] : speedQuestion?.options ?? [];
   const currentAnswer = mode === "yard" ? yardQuestion?.answer : speedQuestion?.answer;
   const lastResult = mode === "yard" ? lastYardResult : lastSpeedResult;
+  const speedTargetPetName = speedQuestion
+    ? getPetDisplayNameForSkin(petDisplayPool, speedQuestion.targetSkin)
+    : "宠物";
 
   return (
     <View className="farm-count-page">
@@ -823,11 +827,11 @@ export default function FarmCount() {
                       : phase === "ready"
                       ? "准备观察目标"
                       : phase === "watching"
-                        ? `只数${PET_SKIN_NAME[speedQuestion.targetSkin]}`
+                        ? `只数${speedTargetPetName}`
                         : phase === "replay"
                           ? "正确顺序"
                         : phase === "answering"
-                          ? `${PET_SKIN_NAME[speedQuestion.targetSkin]}有几只`
+                          ? `${speedTargetPetName}有几只`
                           : lastSpeedResult?.correct
                             ? "回答正确"
                             : "正确数量"}
@@ -835,7 +839,7 @@ export default function FarmCount() {
                   <Text className="target-meta">
                     {phase === "loading"
                       ? `资源检查 ${loadProgress.loaded}/${loadProgress.total || "..."}`
-                      : `目标：${PET_SKIN_NAME[speedQuestion.targetSkin]}`}
+                      : `目标：${speedTargetPetName}`}
                   </Text>
                 </View>
               </View>
@@ -937,7 +941,7 @@ export default function FarmCount() {
               <Text className="feedback-copy">
                 {mode === "yard"
                   ? `围栏里 ${yardQuestion?.answer ?? 0} 只 · 本题 +${lastYardResult?.score ?? 0}`
-                  : `${speedQuestion ? PET_SKIN_NAME[speedQuestion.targetSkin] : "宠物"} ${speedQuestion?.answer ?? 0} 只 · 本题 +${lastSpeedResult?.score ?? 0}`}
+                  : `${speedTargetPetName} ${speedQuestion?.answer ?? 0} 只 · 本题 +${lastSpeedResult?.score ?? 0}`}
               </Text>
             </View>
           ) : null}

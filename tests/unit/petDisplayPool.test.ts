@@ -1,6 +1,7 @@
 import {
   buildPetDisplayPool,
   getPetDisplayItemsForSkin,
+  getPetDisplayNameForSkin,
   STANDARD_PET_DISPLAY_SKINS,
 } from "../../src/pages/pet/petDisplayPool";
 import { createCustomPetAssetRef } from "../../src/pages/pet/petAssets";
@@ -166,5 +167,22 @@ describe("pet display pool", () => {
 
     expect(catItems).toHaveLength(2);
     expect(catItems.map((item) => item.assetRef.kind)).toEqual(["custom", "standard"]);
+  });
+
+  test("uses the owned pet name before the standard skin name", () => {
+    const pool = buildPetDisplayPool(createPetStorage({
+      pets: [
+        createPet({
+          id: "custom-cat",
+          name: "豆豆",
+          skin: "cat",
+          assetRef: createCustomPetAssetRef("cat", "asset-1"),
+        }),
+      ],
+      activePetId: "custom-cat",
+    }));
+
+    expect(getPetDisplayNameForSkin(pool, "cat")).toBe("豆豆");
+    expect(getPetDisplayNameForSkin(pool, "dog")).toBe("小狗");
   });
 });
