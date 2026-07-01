@@ -129,6 +129,9 @@ describe("custom pet generator", () => {
     });
 
     expect(prompt).toContain("2x2");
+    expect(prompt).toContain("不是单张宠物画像");
+    expect(prompt).toContain("宠物不能跨越格子");
+    expect(prompt).toContain("按四宫格坐标裁切");
     expect(prompt).toContain("左上 idle");
     expect(prompt).toContain("右上 feed");
     expect(prompt).toContain("左下 cuddle");
@@ -137,7 +140,7 @@ describe("custom pet generator", () => {
     expect(prompt).toContain("物种外观");
     expect(prompt).toContain("柴犬黑白");
     expect(prompt).not.toMatch(forbiddenPromptTerms);
-    expect(prompt.length).toBeLessThanOrEqual(700);
+    expect(prompt.length).toBeLessThanOrEqual(900);
   });
 
   test("keeps the custom-pet identity in the CloudBase text-to-image prompt", () => {
@@ -152,8 +155,9 @@ describe("custom pet generator", () => {
     expect(prompt).toContain("不出现食物或食盆");
     expect(prompt).toContain("不出现爱心、抱枕或玩具");
     expect(prompt).toContain("只调整姿态和表情");
+    expect(prompt).toContain("最终结果必须明显是 2x2 四宫格");
     expect(prompt).not.toMatch(/人手|抚摸/);
-    expect(prompt.length).toBeLessThanOrEqual(700);
+    expect(prompt.length).toBeLessThanOrEqual(900);
   });
 
   test("uses the generated image cloud function contract as the default source", async () => {
@@ -220,6 +224,7 @@ describe("custom pet generator", () => {
       expect.objectContaining({
         model: CLOUD_BASE_IMAGE_MODEL_NAME,
         size: "1024x1024",
+        footnote: "",
         revise: { value: false },
         enable_thinking: { value: false },
         image_url: "https://example.com/source.jpg",

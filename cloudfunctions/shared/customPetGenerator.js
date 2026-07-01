@@ -173,7 +173,9 @@ function buildMoodSheetPrompt({ speciesLabel, traits }) {
   // still publish the existing four mood files expected by the mini program.
   const identity = describeCustomPet({ speciesLabel, traits });
   return [
-    "生成用户上传图分析得到的同一只宠物四状态角色设定图，2x2 四宫格",
+    "必须生成一张用户上传图分析得到的同一只宠物 2x2 四宫格角色设定图，不是单张宠物画像",
+    "画布平均分成四个等大格子，每格只放同一只宠物的一个完整状态，宠物不能跨越格子",
+    "最终结果必须明显是 2x2 四宫格，后续会按四宫格坐标裁切",
     identity,
     "左上 idle：同一只宠物自然站立或坐着，平静看向前方",
     "右上 feed：同一只宠物开心表情，仅允许嘴部轻微动作，不出现食物或食盆",
@@ -184,7 +186,7 @@ function buildMoodSheetPrompt({ speciesLabel, traits }) {
     REFERENCE_VISUAL_TRAITS_PROMPT,
     `${EXTRA_CONTENT_NEGATIVE_PROMPT}，尤其禁止食物、食盆、爱心、抱枕、玩具和特效`,
     "儿童绘本水彩风格，主体居中，只调整姿态和表情",
-  ].filter(Boolean).join("。").slice(0, 700);
+  ].filter(Boolean).join("。").slice(0, 900);
 }
 
 function configureCloudBaseImageModel(model) {
@@ -375,6 +377,7 @@ async function generateCloudBaseSdkImage({
     model: CLOUD_BASE_IMAGE_MODEL_NAME,
     prompt,
     size: "1024x1024",
+    footnote: "",
     revise: { value: false },
     enable_thinking: { value: false },
   };

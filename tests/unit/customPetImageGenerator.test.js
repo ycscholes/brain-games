@@ -51,6 +51,7 @@ describe("custom pet image generator function", () => {
       expect.objectContaining({
         model: "HY-Image-3.0-Plus-4090-Tob-v1.0",
         prompt: "一只小狗",
+        footnote: "",
         revise: { value: false },
         enable_thinking: { value: false },
         image_url: "https://example.com/source.jpg",

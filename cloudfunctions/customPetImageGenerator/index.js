@@ -67,6 +67,7 @@ async function generateImage(prompt, options = {}) {
     model: IMAGE_MODEL_NAME,
     prompt,
     size: "1024x1024",
+    footnote: "",
     revise: { value: false },
     enable_thinking: { value: false },
   };
