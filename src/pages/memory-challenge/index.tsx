@@ -11,8 +11,7 @@ import {
   type TrainingRewardPolicy,
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
-import { PET_SKIN_NAME, type PetSkin } from "../pet/types";
-import { createStandardPetAssetRef, getPetAssetRef } from "../pet/petAssets";
+import { buildPetDisplayPool } from "../pet/petDisplayPool";
 import {
   addMemoryChallengeRoundScore,
   createCalculationItem,
@@ -53,7 +52,6 @@ interface HighScoreRecord {
 const ANSWER_TIME_SECONDS = 6;
 const MEMORIZE_ITEM_MS = 1500;
 const FEEDBACK_MS = 500;
-const PET_SKINS: PetSkin[] = ["cat", "dog", "rabbit", "bear", "panda", "gecko", "turtle"];
 
 const SHAPE_ITEMS: MemoryChallengeItem[] = [
   shape01,
@@ -138,20 +136,7 @@ function preloadImage(url: string) {
 
 async function resolvePetItems(): Promise<MemoryChallengeItem[]> {
   const petData = syncPetData({ markChanged: false });
-  const ownedPets = petData.pets
-    .filter((pet) => pet.status !== "dead")
-    .map((pet) => ({
-      name: pet.name,
-      skin: pet.skin,
-      assetRef: getPetAssetRef(pet),
-    }));
-  const pets = ownedPets.length > 0
-    ? ownedPets
-    : PET_SKINS.map((skin) => ({
-        name: PET_SKIN_NAME[skin],
-        skin,
-        assetRef: createStandardPetAssetRef(skin),
-      }));
+  const pets = buildPetDisplayPool(petData);
   return loadPetMemoryItemsFromAssets(
     pets,
     PET_MOOD_UNLOCK_ORDER,

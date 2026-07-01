@@ -14,11 +14,15 @@ import { usePageShare } from "../../utils/share";
 import PetSprite from "../pet/components/PetSprite";
 import type { PetSpriteMood, PetSpriteSize } from "../pet/components/PetSprite/types";
 import { PET_SKIN_NAME, type PetSkin } from "../pet/types";
-import { getPetAssetRef, type PetAssetRef } from "../pet/petAssets";
+import { getPetAssetKey, type PetAssetRef } from "../pet/petAssets";
+import {
+  buildPetDisplayPool,
+  getPetDisplayItemsForSkin,
+  type PetDisplayItem,
+} from "../pet/petDisplayPool";
 import {
   BIRD_COUNT_TOTAL_QUESTIONS,
   createBirdCountSession,
-  PET_COUNT_SKINS,
   scoreBirdCountQuestion,
   type BirdCountQuestion,
   type BirdCountQuestionResult,
@@ -81,29 +85,27 @@ function readYardBestScore(difficulty: HeadCountDifficulty, speedDifficulty: Hea
   return Number.isFinite(value) ? value : 0;
 }
 
-function getPrioritizedPetAssets() {
-  const petData = syncPetData({ markChanged: false });
-  const alivePets = petData.pets.filter((pet) => pet.status !== "dead");
-  const activePet = alivePets.find((pet) => pet.id === petData.activePetId) ?? null;
-  const orderedPets = [
-    ...(activePet ? [activePet] : []),
-    ...alivePets.filter((pet) => pet.id !== activePet?.id),
-  ];
-  const assetsBySkin = orderedPets.reduce<Partial<Record<PetSkin, PetAssetRef>>>((acc, pet) => {
-    if (!acc[pet.skin] || pet.assetRef?.kind === "custom") {
-      acc[pet.skin] = getPetAssetRef(pet);
-    }
-    return acc;
-  }, {});
-  const skins = Array.from(new Set(orderedPets.map((pet) => pet.skin)));
-  return {
-    assetsBySkin,
-    skins: skins.length > 0 ? skins : PET_COUNT_SKINS,
-  };
+function getPrioritizedPetDisplayPool() {
+  return buildPetDisplayPool(syncPetData({ markChanged: false }));
 }
 
-function getPetSkinForIndex(petSkinPool: PetSkin[], index: number) {
-  return petSkinPool[index % petSkinPool.length] ?? PET_COUNT_SKINS[index % PET_COUNT_SKINS.length];
+function getPetDisplayItemForIndex(petDisplayPool: PetDisplayItem[], index: number) {
+  return petDisplayPool[index % petDisplayPool.length];
+}
+
+function getPetDisplayItemForSkinOccurrence(
+  petDisplayPool: PetDisplayItem[],
+  skin: PetSkin,
+  occurrenceIndex: number,
+) {
+  const matchingItems = getPetDisplayItemsForSkin(petDisplayPool, skin);
+  return matchingItems[occurrenceIndex % matchingItems.length];
+}
+
+async function resolveDisplayPetSpriteUrl(item: PetDisplayItem, mood: PetSpriteMood) {
+  return item.assetRef.kind === "custom"
+    ? resolveCustomPetSpriteUrl(item.assetRef.customAssetId, mood)
+    : resolvePetSpriteUrl(item.skin, mood);
 }
 
 function formatYardEvent(event: HeadCountEvent | null) {
@@ -164,15 +166,19 @@ function waitForMs(ms: number) {
 
 async function preloadSpeedQuestionImages(
   questions: BirdCountQuestion[],
-  assetsBySkin: Partial<Record<PetSkin, PetAssetRef>>,
+  petDisplayPool: PetDisplayItem[],
   onProgress: (loaded: number, total: number) => void,
 ) {
-  const imageKeys = new Map<string, { skin: PetSkin; mood: PetSpriteMood }>();
+  const imageKeys = new Map<string, { item: PetDisplayItem; mood: PetSpriteMood }>();
 
   questions.forEach((question) => {
-    imageKeys.set(`${question.targetSkin}:idle`, { skin: question.targetSkin, mood: "idle" });
+    getPetDisplayItemsForSkin(petDisplayPool, question.targetSkin).forEach((item) => {
+      imageKeys.set(`${getPetAssetKey(item.assetRef)}:idle`, { item, mood: "idle" });
+    });
     question.pets.forEach((pet) => {
-      imageKeys.set(`${pet.skin}:${pet.mood}`, { skin: pet.skin, mood: pet.mood });
+      getPetDisplayItemsForSkin(petDisplayPool, pet.skin).forEach((item) => {
+        imageKeys.set(`${getPetAssetKey(item.assetRef)}:${pet.mood}`, { item, mood: pet.mood });
+      });
     });
   });
 
@@ -181,12 +187,9 @@ async function preloadSpeedQuestionImages(
   onProgress(loaded, images.length);
 
   await Promise.all(
-    images.map(async ({ skin, mood }) => {
+    images.map(async ({ item, mood }) => {
       try {
-        const assetRef = assetsBySkin[skin];
-        const url = assetRef?.kind === "custom"
-          ? await resolveCustomPetSpriteUrl(assetRef.customAssetId, mood)
-          : await resolvePetSpriteUrl(skin, mood);
+        const url = await resolveDisplayPetSpriteUrl(item, mood);
         await preloadImage(url);
       } finally {
         loaded += 1;
@@ -205,8 +208,15 @@ export default function FarmCount() {
   const [yardDifficulty, setYardDifficulty] = useState<HeadCountDifficulty>("normal");
   const [speedDifficulty, setSpeedDifficulty] = useState<HeadCountSpeedDifficulty>("slow");
   const [best, setBest] = useState(0);
-  const [petSkinPool, setPetSkinPool] = useState<PetSkin[]>(PET_COUNT_SKINS);
-  const [petAssetBySkin, setPetAssetBySkin] = useState<Partial<Record<PetSkin, PetAssetRef>>>({});
+  const [petDisplayPool, setPetDisplayPool] = useState<PetDisplayItem[]>(() =>
+    buildPetDisplayPool({
+      pets: [],
+      activePetId: null,
+      balance: 0,
+      adoptedCount: 0,
+      lastCheckTime: new Date().toISOString(),
+    }),
+  );
   const [speedQuestions, setSpeedQuestions] = useState<BirdCountQuestion[]>([]);
   const [yardQuestions, setYardQuestions] = useState<HeadCountQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -252,9 +262,9 @@ export default function FarmCount() {
   }, []);
 
   const refreshPetSkinPool = useCallback(() => {
-    const next = getPrioritizedPetAssets();
-    setPetSkinPool(next.skins);
-    setPetAssetBySkin(next.assetsBySkin);
+    const next = getPrioritizedPetDisplayPool();
+    setPetDisplayPool(next);
+    return next;
   }, []);
 
   const refreshBest = useCallback(() => {
@@ -436,11 +446,12 @@ export default function FarmCount() {
     }, READY_MS);
   }, [clearTimers, schedule, yardQuestions]);
 
-  const startSpeedGame = async () => {
+  const startSpeedGame = async (currentPetDisplayPool = petDisplayPool) => {
     clearTimers();
     const preloadRunId = preloadRunIdRef.current + 1;
     preloadRunIdRef.current = preloadRunId;
-    const nextQuestions = createBirdCountSession(difficulty, petSkinPool);
+    const currentPetSkinPool = currentPetDisplayPool.map((item) => item.skin);
+    const nextQuestions = createBirdCountSession(difficulty, currentPetSkinPool);
     resetRoundState();
     finishedRef.current = false;
     setSpeedQuestions(nextQuestions);
@@ -449,7 +460,7 @@ export default function FarmCount() {
     setCurrentIndex(0);
 
     await Promise.all([
-      preloadSpeedQuestionImages(nextQuestions, petAssetBySkin, (loaded, total) => {
+      preloadSpeedQuestionImages(nextQuestions, currentPetDisplayPool, (loaded, total) => {
         if (preloadRunIdRef.current === preloadRunId) {
           setLoadProgress({ loaded, total });
         }
@@ -478,12 +489,12 @@ export default function FarmCount() {
   };
 
   const startGame = () => {
-    refreshPetSkinPool();
+    const currentPetDisplayPool = refreshPetSkinPool();
     if (mode === "yard") {
       startYardGame();
       return;
     }
-    void startSpeedGame();
+    void startSpeedGame(currentPetDisplayPool);
   };
 
   const advanceAfterSpeedQuestion = useCallback((nextScore: number, nextCorrectQuestions: number) => {
@@ -744,36 +755,42 @@ export default function FarmCount() {
                     {getYardCountText(phase, displayCount, yardQuestion.answer)}
                   </Text>
                   <View className="yard-pet-row">
-                    {Array.from({ length: Math.min(staticPetCount, 10) }, (_, index) => (
-                      <View key={`yard-pet-${index}`} className="yard-pet-token">
-                        <CountPetSprite
-                          skin={getPetSkinForIndex(petSkinPool, index)}
-                          assetRef={petAssetBySkin[getPetSkinForIndex(petSkinPool, index)]}
-                          size="xxs"
-                          className="yard-pet-sprite"
-                        />
-                      </View>
-                    ))}
+                    {Array.from({ length: Math.min(staticPetCount, 10) }, (_, index) => {
+                      const petItem = getPetDisplayItemForIndex(petDisplayPool, index);
+                      return (
+                        <View key={`yard-pet-${index}`} className="yard-pet-token">
+                          <CountPetSprite
+                            skin={petItem.skin}
+                            assetRef={petItem.assetRef}
+                            size="xxs"
+                            className="yard-pet-sprite"
+                          />
+                        </View>
+                      );
+                    })}
                   </View>
                   {phase === "playing-event" && yardEvent ? (
                     <View className={`moving-yard-layer moving-yard-layer-${yardEvent.direction}`}>
-                      {movingPets.map((petIndex) => (
-                        <View
-                          key={`event-${eventIndex}-${petIndex}`}
-                          className={`moving-yard-pet moving-yard-pet-${yardEvent.direction} moving-yard-pet-speed-${speedDifficulty}`}
-                          style={{
-                            top: `${30 + petIndex * 17}%`,
-                            animationDelay: `${petIndex * 70}ms`,
-                          }}
-                        >
-                          <CountPetSprite
-                            skin={getPetSkinForIndex(petSkinPool, eventIndex + petIndex)}
-                            assetRef={petAssetBySkin[getPetSkinForIndex(petSkinPool, eventIndex + petIndex)]}
-                            size="xs"
-                            className="moving-yard-pet-sprite"
-                          />
-                        </View>
-                      ))}
+                      {movingPets.map((petIndex) => {
+                        const petItem = getPetDisplayItemForIndex(petDisplayPool, eventIndex + petIndex);
+                        return (
+                          <View
+                            key={`event-${eventIndex}-${petIndex}`}
+                            className={`moving-yard-pet moving-yard-pet-${yardEvent.direction} moving-yard-pet-speed-${speedDifficulty}`}
+                            style={{
+                              top: `${30 + petIndex * 17}%`,
+                              animationDelay: `${petIndex * 70}ms`,
+                            }}
+                          >
+                            <CountPetSprite
+                              skin={petItem.skin}
+                              assetRef={petItem.assetRef}
+                              size="xs"
+                              className="moving-yard-pet-sprite"
+                            />
+                          </View>
+                        );
+                      })}
                     </View>
                   ) : null}
                 </View>
@@ -790,7 +807,11 @@ export default function FarmCount() {
                 <View className="target-pet">
                   <CountPetSprite
                     skin={speedQuestion.targetSkin}
-                    assetRef={petAssetBySkin[speedQuestion.targetSkin]}
+                    assetRef={getPetDisplayItemForSkinOccurrence(
+                      petDisplayPool,
+                      speedQuestion.targetSkin,
+                      0,
+                    ).assetRef}
                     size="sm"
                     className="target-pet-sprite"
                   />
@@ -833,29 +854,40 @@ export default function FarmCount() {
                     style={{ animationDuration: `${speedQuestion.scrollMs}ms` }}
                   >
                     <View className="scroll-pet-layer">
-                      {speedQuestion.pets.map((pet) => (
-                        <View
-                          key={pet.id}
-                          className={`pet-count-token pet-count-${pet.size} ${pet.mirror ? "pet-count-mirror" : ""} ${pet.skin === speedQuestion.targetSkin ? "pet-count-target" : ""}`}
-                          style={{
-                            left: `${pet.x}%`,
-                            top: `${pet.y}%`,
-                            animationDelay: `${pet.delayMs}ms`,
-                            "--pet-count-scale": pet.scale,
-                          } as CSSProperties}
-                        >
-                          <CountPetSprite
-                            skin={pet.skin}
-                            assetRef={petAssetBySkin[pet.skin]}
-                            mood={pet.mood}
-                            size="xs"
-                            className="pet-count-sprite"
-                          />
-                          {phase === "replay" && pet.targetOrder ? (
-                            <Text className="pet-count-order">{pet.targetOrder}</Text>
-                          ) : null}
-                        </View>
-                      ))}
+                      {speedQuestion.pets.map((pet, index) => {
+                        const occurrenceIndex = speedQuestion.pets
+                          .slice(0, index)
+                          .filter((previousPet) => previousPet.skin === pet.skin)
+                          .length;
+                        const petItem = getPetDisplayItemForSkinOccurrence(
+                          petDisplayPool,
+                          pet.skin,
+                          occurrenceIndex,
+                        );
+                        return (
+                          <View
+                            key={pet.id}
+                            className={`pet-count-token pet-count-${pet.size} ${pet.mirror ? "pet-count-mirror" : ""} ${pet.skin === speedQuestion.targetSkin ? "pet-count-target" : ""}`}
+                            style={{
+                              left: `${pet.x}%`,
+                              top: `${pet.y}%`,
+                              animationDelay: `${pet.delayMs}ms`,
+                              "--pet-count-scale": pet.scale,
+                            } as CSSProperties}
+                          >
+                            <CountPetSprite
+                              skin={pet.skin}
+                              assetRef={petItem.assetRef}
+                              mood={pet.mood}
+                              size="xs"
+                              className="pet-count-sprite"
+                            />
+                            {phase === "replay" && pet.targetOrder ? (
+                              <Text className="pet-count-order">{pet.targetOrder}</Text>
+                            ) : null}
+                          </View>
+                        );
+                      })}
                     </View>
                   </View>
                 </View>
@@ -866,7 +898,11 @@ export default function FarmCount() {
                   ) : (
                     <CountPetSprite
                       skin={speedQuestion.targetSkin}
-                      assetRef={petAssetBySkin[speedQuestion.targetSkin]}
+                      assetRef={getPetDisplayItemForSkinOccurrence(
+                        petDisplayPool,
+                        speedQuestion.targetSkin,
+                        0,
+                      ).assetRef}
                       size="lg"
                       className="hidden-count-pet"
                     />
