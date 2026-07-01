@@ -4,9 +4,15 @@ import type { TrainingDifficulty } from "../../utils/trainingStorage";
 
 export type BirdCountDifficulty = TrainingDifficulty;
 export type PetCountSize = "small" | "medium" | "large";
+export interface PetCountIdentity {
+  id: string;
+  skin: PetSkin;
+}
+export type PetCountIdentityInput = PetSkin | PetCountIdentity;
 
 export interface BirdCountItem {
   id: string;
+  petKey: string;
   skin: PetSkin;
   x: number;
   y: number;
@@ -22,6 +28,7 @@ export interface BirdCountItem {
 export interface BirdCountQuestion {
   id: string;
   pets: BirdCountItem[];
+  targetPetKey: string;
   targetSkin: PetSkin;
   answer: number;
   totalPets: number;
@@ -82,35 +89,55 @@ function shuffle<T>(items: T[]) {
   return next;
 }
 
-function normalizePetSkinPool(petSkinPool?: PetSkin[]) {
-  const uniqueSkins = Array.from(new Set(petSkinPool ?? PET_COUNT_SKINS))
-    .filter((skin): skin is PetSkin => PET_COUNT_SKINS.includes(skin));
-
-  return uniqueSkins.length > 0 ? uniqueSkins : PET_COUNT_SKINS;
+function createStandardIdentity(skin: PetSkin): PetCountIdentity {
+  return {
+    id: `standard:${skin}`,
+    skin,
+  };
 }
 
-function pickTargetSkin(questionIndex: number, petSkinPool?: PetSkin[]) {
-  const skins = normalizePetSkinPool(petSkinPool);
-  return skins[questionIndex % skins.length];
+function normalizePetIdentityPool(petPool?: PetCountIdentityInput[]) {
+  const rawPool = petPool && petPool.length > 0
+    ? petPool
+    : PET_COUNT_SKINS;
+  const uniqueIdentities = new Map<string, PetCountIdentity>();
+
+  rawPool.forEach((item) => {
+    const identity = typeof item === "string"
+      ? createStandardIdentity(item)
+      : item;
+    if (PET_COUNT_SKINS.includes(identity.skin) && !uniqueIdentities.has(identity.id)) {
+      uniqueIdentities.set(identity.id, identity);
+    }
+  });
+
+  return uniqueIdentities.size > 0
+    ? [...uniqueIdentities.values()]
+    : PET_COUNT_SKINS.map(createStandardIdentity);
 }
 
-function createPetSkinPool(
-  targetSkin: PetSkin,
+function pickTargetPet(questionIndex: number, petPool?: PetCountIdentityInput[]) {
+  const pets = normalizePetIdentityPool(petPool);
+  return pets[questionIndex % pets.length];
+}
+
+function createPetIdentityPool(
+  targetPet: PetCountIdentity,
   targetCount: number,
   totalPets: number,
-  petSkinPool?: PetSkin[],
+  petPool?: PetCountIdentityInput[],
 ) {
-  const skins: PetSkin[] = Array.from({ length: targetCount }, () => targetSkin);
-  const availableSkins = normalizePetSkinPool(petSkinPool);
-  const decoys = availableSkins.filter((skin) => skin !== targetSkin);
-  const fallbackDecoys = decoys.length > 0 ? decoys : availableSkins;
+  const pets: PetCountIdentity[] = Array.from({ length: targetCount }, () => targetPet);
+  const availablePets = normalizePetIdentityPool(petPool);
+  const decoys = availablePets.filter((pet) => pet.id !== targetPet.id);
+  const fallbackDecoys = decoys.length > 0 ? decoys : availablePets;
 
-  while (skins.length < totalPets) {
-    const decoyIndex = (skins.length + Math.floor(Math.random() * fallbackDecoys.length)) % fallbackDecoys.length;
-    skins.push(fallbackDecoys[decoyIndex]);
+  while (pets.length < totalPets) {
+    const decoyIndex = (pets.length + Math.floor(Math.random() * fallbackDecoys.length)) % fallbackDecoys.length;
+    pets.push(fallbackDecoys[decoyIndex]);
   }
 
-  return shuffle(skins);
+  return shuffle(pets);
 }
 
 export function getBirdCountTarget(difficulty: BirdCountDifficulty, questionIndex: number) {
@@ -154,17 +181,17 @@ export function createBirdCountOptions(answer: number) {
 export function createBirdCountQuestion(
   difficulty: BirdCountDifficulty,
   questionIndex: number,
-  petSkinPool?: PetSkin[],
+  petPool?: PetCountIdentityInput[],
 ): BirdCountQuestion {
   const safeQuestionIndex = clampQuestionIndex(questionIndex);
-  const targetSkin = pickTargetSkin(safeQuestionIndex, petSkinPool);
+  const targetPet = pickTargetPet(safeQuestionIndex, petPool);
   const answer = getBirdCountTarget(difficulty, safeQuestionIndex);
   const totalPets = getPetCountTotal(difficulty, safeQuestionIndex);
-  const skinPool = createPetSkinPool(targetSkin, answer, totalPets, petSkinPool);
+  const petPoolForQuestion = createPetIdentityPool(targetPet, answer, totalPets, petPool);
   const laneCount = difficulty === "hard" ? 4 : 3;
   const usableWidth = STRIP_X_MAX - STRIP_X_MIN;
   const segmentWidth = usableWidth / totalPets;
-  const petsWithoutTargetOrder = skinPool.map((skin, index) => {
+  const petsWithoutTargetOrder = petPoolForQuestion.map((pet, index) => {
     const lane = (index * 2 + safeQuestionIndex) % laneCount;
     const segmentCenter = STRIP_X_MIN + segmentWidth * (index + 0.5);
     const xJitter = (Math.random() - 0.5) * Math.min(5.5, segmentWidth * 0.72);
@@ -178,7 +205,8 @@ export function createBirdCountQuestion(
 
     return {
       id: `pet-count-${difficulty}-${safeQuestionIndex + 1}-pet-${index + 1}`,
-      skin,
+      petKey: pet.id,
+      skin: pet.skin,
       x: Math.max(STRIP_X_MIN, Math.min(STRIP_X_MAX, segmentCenter + xJitter)),
       y: GROUND_LANE_Y[lane] + yJitter,
       lane,
@@ -193,7 +221,7 @@ export function createBirdCountQuestion(
   });
   const targetOrderById = new Map(
     petsWithoutTargetOrder
-      .filter((pet) => pet.skin === targetSkin)
+      .filter((pet) => pet.petKey === targetPet.id)
       .sort((left, right) => left.x - right.x)
       .map((pet, index) => [pet.id, index + 1]),
   );
@@ -205,7 +233,8 @@ export function createBirdCountQuestion(
   return {
     id: `pet-count-${difficulty}-${safeQuestionIndex + 1}`,
     pets,
-    targetSkin,
+    targetPetKey: targetPet.id,
+    targetSkin: targetPet.skin,
     answer,
     totalPets,
     options: createBirdCountOptions(answer),
@@ -215,9 +244,9 @@ export function createBirdCountQuestion(
   };
 }
 
-export function createBirdCountSession(difficulty: BirdCountDifficulty, petSkinPool?: PetSkin[]) {
+export function createBirdCountSession(difficulty: BirdCountDifficulty, petPool?: PetCountIdentityInput[]) {
   return Array.from({ length: BIRD_COUNT_TOTAL_QUESTIONS }, (_, index) =>
-    createBirdCountQuestion(difficulty, index, petSkinPool),
+    createBirdCountQuestion(difficulty, index, petPool),
   );
 }
 

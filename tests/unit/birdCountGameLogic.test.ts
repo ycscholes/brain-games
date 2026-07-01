@@ -31,6 +31,23 @@ describe("bird-count game logic", () => {
     });
   });
 
+  test("distinguishes adopted pets that share the same skin", () => {
+    const question = createBirdCountQuestion("normal", 0, [
+      { id: "pet-custom-cat-1", skin: "cat" },
+      { id: "pet-custom-cat-2", skin: "cat" },
+    ]);
+
+    expect(question.targetPetKey).toBe("pet-custom-cat-1");
+    expect(question.targetSkin).toBe("cat");
+    expect(question.pets.filter((pet) => pet.petKey === question.targetPetKey)).toHaveLength(question.answer);
+    expect(question.pets.filter((pet) => pet.skin === question.targetSkin).length).toBeGreaterThan(question.answer);
+    question.pets
+      .filter((pet) => pet.petKey !== question.targetPetKey)
+      .forEach((pet) => {
+        expect(pet.targetOrder).toBeUndefined();
+      });
+  });
+
   test("falls back to the full pet pool when a provided pool is empty", () => {
     const question = createBirdCountQuestion("normal", 0, []);
 

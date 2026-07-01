@@ -175,4 +175,35 @@ describe("memory challenge game logic", () => {
     ]);
     expect(items[0].answerLabel).toBe("豆豆·待机");
   });
+
+  test("uses display identity to distinguish same-skin adopted pets", async () => {
+    const items = await loadPetMemoryItemsFromAssets(
+      [
+        {
+          displayId: "pet-cat-1",
+          name: "豆豆",
+          skin: "cat",
+          assetRef: { kind: "standard", skin: "cat" },
+        },
+        {
+          displayId: "pet-cat-2",
+          name: "花花",
+          skin: "cat",
+          assetRef: { kind: "standard", skin: "cat" },
+        },
+      ],
+      ["idle"],
+      async (_assetRef, _skin, mood) => `${mood}.png`,
+      async () => true,
+    );
+
+    expect(items.map((item) => item.answerId)).toEqual([
+      "pet-pet-cat-1-idle",
+      "pet-pet-cat-2-idle",
+    ]);
+    expect(items.map((item) => item.answerLabel)).toEqual([
+      "豆豆·待机",
+      "花花·待机",
+    ]);
+  });
 });

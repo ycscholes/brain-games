@@ -97,6 +97,7 @@ export async function loadPetMemoryItems(
 
 export async function loadPetMemoryItemsFromAssets(
   pets: ReadonlyArray<{
+    displayId?: string;
     name: string;
     skin: PetSkin;
     assetRef: PetAssetRef;
@@ -109,10 +110,11 @@ export async function loadPetMemoryItemsFromAssets(
     pets.flatMap((pet) =>
       moods.map(async (mood) => {
         const imageSrc = await resolveImage(pet.assetRef, pet.skin, mood);
+        const petKey = pet.displayId ?? getPetAssetKey(pet.assetRef);
         if (!imageSrc || !(await preloadImage(imageSrc))) {
-          throw new Error(`Unable to load ${getPetAssetKey(pet.assetRef)}-${mood}`);
+          throw new Error(`Unable to load ${petKey}-${mood}`);
         }
-        const id = `pet-${getPetAssetKey(pet.assetRef)}-${mood}`;
+        const id = `pet-${petKey}-${mood}`;
         const label = `${pet.name}·${PET_MOOD_NAME[mood]}`;
         return {
           id,

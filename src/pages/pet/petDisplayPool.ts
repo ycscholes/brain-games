@@ -16,6 +16,7 @@ export const STANDARD_PET_DISPLAY_SKINS: PetSkin[] = [
 ];
 
 export interface PetDisplayItem {
+  displayId: string;
   name: string;
   skin: PetSkin;
   assetRef: PetAssetRef;
@@ -52,6 +53,7 @@ export function buildPetDisplayPool(
 
   if (orderedPets.length === 0) {
     return standardSkins.map((skin) => ({
+      displayId: `standard:${skin}`,
       name: PET_SKIN_NAME[skin],
       skin,
       assetRef: createStandardPetAssetRef(skin),
@@ -60,6 +62,7 @@ export function buildPetDisplayPool(
   }
 
   const ownedItems: PetDisplayItem[] = orderedPets.map((pet) => ({
+    displayId: pet.id,
     name: pet.name,
     skin: pet.skin,
     assetRef: getPetAssetRef(pet),
@@ -71,6 +74,7 @@ export function buildPetDisplayPool(
     standardSkins
       .filter((skin) => !ownedSkins.has(skin))
       .map((skin) => ({
+        displayId: `standard:${skin}`,
         name: PET_SKIN_NAME[skin],
         skin,
         assetRef: createStandardPetAssetRef(skin),
@@ -97,6 +101,7 @@ export function getPetDisplayItemsForSkin(
   }
 
   const standardItem: PetDisplayItem = {
+    displayId: `standard:${skin}`,
     name: PET_SKIN_NAME[skin],
     skin,
     assetRef: createStandardPetAssetRef(skin),
