@@ -18,6 +18,8 @@ const {
   CLOUD_BASE_IMAGE_MODEL_NAME,
   normalizeAnalysis,
   parseImageGenerationFunctionResult,
+  removeGeneratedSheetFootnote,
+  removeNormalizedFootnote,
   splitMoodSheet,
 } = require("../../cloudfunctions/shared/customPetGenerator");
 
@@ -322,5 +324,59 @@ describe("custom pet generator", () => {
       { x: 0, y: 512, w: 512, h: 512 },
       { x: 512, y: 512, w: 512, h: 512 },
     ]);
+  });
+
+  test("removes the generated provider footnote without erasing saturated pet pixels", () => {
+    const width = 100;
+    const height = 100;
+    const data = Buffer.alloc(width * height * 4, 0);
+    const setPixel = (x, y, red, green, blue, alpha = 255) => {
+      const offset = (width * y + x) * 4;
+      data[offset] = red;
+      data[offset + 1] = green;
+      data[offset + 2] = blue;
+      data[offset + 3] = alpha;
+    };
+    setPixel(92, 92, 104, 104, 104);
+    setPixel(71, 88, 214, 126, 42);
+    setPixel(10, 10, 104, 104, 104);
+
+    removeGeneratedSheetFootnote({ bitmap: { width, height, data } });
+
+    const footnoteOffset = (width * 92 + 92) * 4;
+    expect([...data.subarray(footnoteOffset, footnoteOffset + 4)]).toEqual([0, 255, 0, 255]);
+
+    const petOffset = (width * 88 + 71) * 4;
+    expect([...data.subarray(petOffset, petOffset + 4)]).toEqual([214, 126, 42, 255]);
+
+    const outsideOffset = (width * 10 + 10) * 4;
+    expect([...data.subarray(outsideOffset, outsideOffset + 4)]).toEqual([104, 104, 104, 255]);
+  });
+
+  test("clears residual footnote pixels from the normalized sprite corner", () => {
+    const width = 100;
+    const height = 100;
+    const data = Buffer.alloc(width * height * 4, 0);
+    const setPixel = (x, y, red, green, blue, alpha = 255) => {
+      const offset = (width * y + x) * 4;
+      data[offset] = red;
+      data[offset + 1] = green;
+      data[offset + 2] = blue;
+      data[offset + 3] = alpha;
+    };
+    setPixel(92, 92, 166, 166, 148);
+    setPixel(71, 88, 214, 126, 42);
+    setPixel(10, 10, 166, 166, 148);
+
+    removeNormalizedFootnote({ bitmap: { width, height, data } });
+
+    const footnoteOffset = (width * 92 + 92) * 4;
+    expect(data[footnoteOffset + 3]).toBe(0);
+
+    const petOffset = (width * 88 + 71) * 4;
+    expect([...data.subarray(petOffset, petOffset + 4)]).toEqual([214, 126, 42, 255]);
+
+    const outsideOffset = (width * 10 + 10) * 4;
+    expect([...data.subarray(outsideOffset, outsideOffset + 4)]).toEqual([166, 166, 148, 255]);
   });
 });

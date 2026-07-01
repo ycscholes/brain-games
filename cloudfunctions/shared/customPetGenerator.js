@@ -120,6 +120,10 @@ const EXTRA_CONTENT_NEGATIVE_PROMPT =
   "每格只保留宠物本体及原有配饰，禁止出现其它角色、互动肢体、餐饮元素、器皿、玩具、特效、光环、场景物件";
 const IMAGE_NEGATIVE_PROMPT =
   "多人，多只动物，场景，地面，阴影，文字，边框，水印，裁切，模糊，畸形";
+const FOOTNOTE_REGION_WIDTH_RATIO = 0.28;
+const FOOTNOTE_REGION_HEIGHT_RATIO = 0.16;
+const NORMALIZED_FOOTNOTE_REGION_WIDTH_RATIO = 0.3;
+const NORMALIZED_FOOTNOTE_REGION_HEIGHT_RATIO = 0.13;
 
 function logImagePrompt({ provider, operation, prompt, negativePrompt = null, references = null }) {
   const payload = {
@@ -432,6 +436,7 @@ async function generateMoodSheet({
 async function splitMoodSheet({ inputBuffer }) {
   const { Jimp, JimpMime } = getJimp();
   const image = await Jimp.read(inputBuffer);
+  removeGeneratedSheetFootnote(image);
   const cellWidth = Math.floor(image.bitmap.width / 2);
   const cellHeight = Math.floor(image.bitmap.height / 2);
   if (cellWidth <= 0 || cellHeight <= 0) {
@@ -457,6 +462,112 @@ async function splitMoodSheet({ inputBuffer }) {
     output[mood] = await cell.getBuffer(JimpMime.png);
   }
   return output;
+}
+
+function removeGeneratedSheetFootnote(image) {
+  const bitmap = image && image.bitmap;
+  if (!bitmap || !bitmap.data || !bitmap.width || !bitmap.height) {
+    return image;
+  }
+  const startX = Math.floor(bitmap.width * (1 - FOOTNOTE_REGION_WIDTH_RATIO));
+  const startY = Math.floor(bitmap.height * (1 - FOOTNOTE_REGION_HEIGHT_RATIO));
+  for (let y = startY; y < bitmap.height; y += 1) {
+    for (let x = startX; x < bitmap.width; x += 1) {
+      const offset = (bitmap.width * y + x) * 4;
+      const red = bitmap.data[offset];
+      const green = bitmap.data[offset + 1];
+      const blue = bitmap.data[offset + 2];
+      const alpha = bitmap.data[offset + 3];
+      const max = Math.max(red, green, blue);
+      const min = Math.min(red, green, blue);
+      const saturation = max - min;
+      if (alpha > 0 && max < 210 && min > 25 && saturation < 70) {
+        bitmap.data[offset] = 0;
+        bitmap.data[offset + 1] = 255;
+        bitmap.data[offset + 2] = 0;
+        bitmap.data[offset + 3] = 255;
+      }
+    }
+  }
+  return image;
+}
+
+function removeNormalizedFootnote(image) {
+  const bitmap = image && image.bitmap;
+  if (!bitmap || !bitmap.data || !bitmap.width || !bitmap.height) {
+    return image;
+  }
+  const startX = Math.floor(bitmap.width * (1 - NORMALIZED_FOOTNOTE_REGION_WIDTH_RATIO));
+  const startY = Math.floor(bitmap.height * (1 - NORMALIZED_FOOTNOTE_REGION_HEIGHT_RATIO));
+  const hardClearX = Math.floor(bitmap.width * 0.72);
+  const hardClearY = Math.floor(bitmap.height * 0.88);
+  const textRegionX = Math.floor(bitmap.width * 0.5);
+  const textRegionY = Math.floor(bitmap.height * 0.78);
+  const repairMask = new Set();
+  for (let y = Math.min(startY, textRegionY); y < bitmap.height; y += 1) {
+    for (let x = Math.min(startX, textRegionX); x < bitmap.width; x += 1) {
+      const offset = (bitmap.width * y + x) * 4;
+      if (x >= hardClearX && y >= hardClearY) {
+        bitmap.data[offset + 3] = 0;
+        continue;
+      }
+      const red = bitmap.data[offset];
+      const green = bitmap.data[offset + 1];
+      const blue = bitmap.data[offset + 2];
+      const alpha = bitmap.data[offset + 3];
+      const max = Math.max(red, green, blue);
+      const min = Math.min(red, green, blue);
+      const saturation = max - min;
+      if (
+        alpha > 0 &&
+        ((x >= hardClearX && y >= hardClearY) ||
+          (x >= textRegionX && y >= textRegionY && max < 210 && saturation < 150))
+      ) {
+        repairMask.add(`${x},${y}`);
+      }
+    }
+  }
+  for (const key of repairMask) {
+    const [x, y] = key.split(",").map(Number);
+    const offset = (bitmap.width * y + x) * 4;
+    let redSum = 0;
+    let greenSum = 0;
+    let blueSum = 0;
+    let alphaSum = 0;
+    let count = 0;
+    const radius = 10;
+    for (let dy = -radius; dy <= radius; dy += 1) {
+      const sampleY = y + dy;
+      if (sampleY < 0 || sampleY >= bitmap.height) {
+        continue;
+      }
+      for (let dx = -radius; dx <= radius; dx += 1) {
+        const sampleX = x + dx;
+        if (sampleX < 0 || sampleX >= bitmap.width || repairMask.has(`${sampleX},${sampleY}`)) {
+          continue;
+        }
+        const sampleOffset = (bitmap.width * sampleY + sampleX) * 4;
+        const sampleAlpha = bitmap.data[sampleOffset + 3];
+        if (sampleAlpha === 0) {
+          continue;
+        }
+        redSum += bitmap.data[sampleOffset];
+        greenSum += bitmap.data[sampleOffset + 1];
+        blueSum += bitmap.data[sampleOffset + 2];
+        alphaSum += sampleAlpha;
+        count += 1;
+      }
+    }
+    if (count > 0) {
+      bitmap.data[offset] = Math.round(redSum / count);
+      bitmap.data[offset + 1] = Math.round(greenSum / count);
+      bitmap.data[offset + 2] = Math.round(blueSum / count);
+      bitmap.data[offset + 3] = Math.round(alphaSum / count);
+    } else {
+      bitmap.data[offset + 3] = 0;
+    }
+  }
+  return image;
 }
 
 async function normalizeSprite({ inputBuffer }) {
@@ -512,6 +623,7 @@ async function normalizeSprite({ inputBuffer }) {
     Math.round((768 - image.bitmap.width) / 2),
     Math.round((768 - image.bitmap.height) / 2),
   );
+  removeNormalizedFootnote(canvas);
   const png = await canvas.getBuffer(JimpMime.png);
   return addPngTextChunk(png, "AI-Generated", "Cici Custom Pet");
 }
@@ -566,6 +678,8 @@ module.exports = {
   normalizeAnalysis,
   normalizeSprite,
   parseImageGenerationFunctionResult,
+  removeGeneratedSheetFootnote,
+  removeNormalizedFootnote,
   splitMoodSheet,
   validateRuntimeDependencies,
 };
