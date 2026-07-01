@@ -1,6 +1,4 @@
 const cloud = require("wx-server-sdk");
-const fs = require("fs");
-const path = require("path");
 const {
   CUSTOM_PET_MOODS,
   MAX_STEP_ATTEMPTS,
@@ -11,7 +9,6 @@ const {
 } = require("./shared/customPetDomain");
 const {
   analyzeSource,
-  generateReferencedMoodSheet,
   generateMood,
   generateMoodSheet,
   normalizeSprite,
@@ -26,9 +23,6 @@ const JOB_COLLECTION = "custom_pet_jobs";
 const ENTITLEMENT_COLLECTION = "custom_pet_entitlements";
 const SNAPSHOT_COLLECTION = "xiaoyuyuan_user_snapshots";
 const LOCK_TTL_MS = 12 * 60 * 1000;
-// CloudBase-backed copy used by production. The same PNG is also bundled under
-// cloudfunctions/shared/assets so fresh deployments work before asset upload.
-const POSE_REFERENCE_SHEET_PATH = "assets/v1/pets/pose-reference-sheet.png";
 
 function nowIso() {
   return new Date().toISOString();
@@ -47,47 +41,6 @@ async function getTask(jobId) {
 async function download(fileID) {
   const result = await cloud.downloadFile({ fileID });
   return result.fileContent;
-}
-
-function getPoseReferenceSheetFileId() {
-  // Cloud file IDs need both env id and bucket. If either is absent, skip remote
-  // download and use the bundled reference sheet instead of constructing a bad ID.
-  const envId = process.env.TARO_CLOUD_ENV_ID || process.env.CLOUD_ENV_ID || process.env.TCB_ENV || "";
-  const bucket =
-    process.env.TARO_CLOUD_STORAGE_BUCKET ||
-    process.env.CLOUD_STORAGE_BUCKET ||
-    process.env.TCB_STORAGE_BUCKET ||
-    "";
-  return envId && bucket ? `cloud://${envId}.${bucket}/${POSE_REFERENCE_SHEET_PATH}` : "";
-}
-
-function readBundledPoseReferenceSheet() {
-  // Deployment staging may place shared assets either inside the function folder
-  // or one level up, depending on whether tests or deploy scripts are loading it.
-  const candidates = [
-    path.join(__dirname, "shared", "assets", "pose-reference-sheet.png"),
-    path.join(__dirname, "..", "shared", "assets", "pose-reference-sheet.png"),
-  ];
-  for (const filePath of candidates) {
-    if (fs.existsSync(filePath)) {
-      return fs.readFileSync(filePath);
-    }
-  }
-  throw new Error("bundled pose reference sheet not found");
-}
-
-async function loadPoseReferenceSheet() {
-  // Prefer the remote asset because it follows the normal package-size workflow,
-  // but do not make custom pet generation depend on a successful asset upload.
-  const fileID = getPoseReferenceSheetFileId();
-  if (fileID) {
-    try {
-      return await download(fileID);
-    } catch {
-      // Keep generation available when the CloudBase asset was not uploaded yet or the bucket env is stale.
-    }
-  }
-  return readBundledPoseReferenceSheet();
 }
 
 async function upload(path, buffer) {
@@ -148,28 +101,10 @@ async function processAnalyzing(task) {
 
 async function processIdle(task) {
   const sourceBuffer = await download(task.sourceFileId);
-  let generatedSheet = null;
-  try {
-    // Preferred path: one Tencent AIArt job receives the app style sheet plus the user's image.
-    // It should produce a full 2x2 sheet, not just an idle image despite this worker status name.
-    generatedSheet = await generateReferencedMoodSheet({
-      userReferenceBuffer: sourceBuffer,
-      poseReferenceBuffer: await loadPoseReferenceSheet(),
-      traits: task.traits,
-      speciesLabel: task.speciesLabel,
-    });
-  } catch (error) {
-    console.warn("[customPetWorker] referenced mood sheet generation failed; falling back to single-reference sheet", {
-      jobId: task.jobId,
-      message: getErrorSummary(error),
-    });
-    // Availability fallback: keep one-sheet generation even if multi-reference AIArt is rejected or times out.
-    generatedSheet = await generateMoodSheet({
-      referenceBuffer: sourceBuffer,
-      traits: task.traits,
-      speciesLabel: task.speciesLabel,
-    });
-  }
+  const generatedSheet = await generateMoodSheet({
+    traits: task.traits,
+    speciesLabel: task.speciesLabel,
+  });
   let normalizedSprites = null;
   try {
     // Keep the database/client contract as four mood file IDs even though the

@@ -5,6 +5,7 @@ jest.mock("@cloudbase/node-sdk", () => ({
 
 const tcb = require("@cloudbase/node-sdk");
 const {
+  configureImageModel,
   generateImage,
   getImageUrl,
 } = require("../../cloudfunctions/customPetImageGenerator/index");
@@ -30,6 +31,9 @@ describe("custom pet image generator function", () => {
       ai: () => ({
         createImageModel: () => ({
           generateImage: generateImageMock,
+          generateImageSubUrlConfig: {
+            "hunyuan-image": {},
+          },
         }),
       }),
     });
@@ -42,10 +46,21 @@ describe("custom pet image generator function", () => {
     });
     expect(generateImageMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: "hunyuan-image",
+        model: "HY-Image-3.0-Plus-4090-Tob-v1.0",
         prompt: "一只小狗",
-        revise: true,
+        revise: { value: false },
+        enable_thinking: { value: false },
       }),
     );
+  });
+
+  test("configures the CloudBase image generation sub-url for the upgraded model", () => {
+    const model = configureImageModel({});
+
+    expect(model.generateImageSubUrlConfig).toEqual({
+      "hunyuan-image": {
+        "HY-Image-3.0-Plus-4090-Tob-v1.0": "images/ar/generations",
+      },
+    });
   });
 });

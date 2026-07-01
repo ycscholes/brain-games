@@ -6,7 +6,7 @@
 
 **Architecture:** Extend the local pet model with a stable `PetAssetRef`, while keeping custom-pet generation state and point reservations authoritative in CloudBase. A step-based worker analyzes the source image, creates an idle identity anchor, derives the other moods, validates and stores private files, then exposes short-lived URLs only to the owner. Standard pets continue using the current public asset manifest.
 
-**Tech Stack:** Taro 4, React 18, TypeScript, Jest, WeChat Cloud Development, CloudBase document database/storage/functions, `@cloudbase/node-sdk`, Tencent AIArt image-to-image API, Jimp.
+**Tech Stack:** Taro 4, React 18, TypeScript, Jest, WeChat Cloud Development, CloudBase document database/storage/functions, `@cloudbase/node-sdk`, CloudBase `HY-Image-3.0-Plus-4090-Tob-v1.0` image generation, Jimp.
 
 ---
 
@@ -23,7 +23,7 @@ New focused modules:
 - `cloudfunctions/customPetWorker/index.js`: idempotent generation step runner.
 - `cloudfunctions/customPetRecovery/index.js`: timer-triggered recovery and orphan cleanup.
 - `cloudfunctions/shared/customPetDomain.js`: state machine, constants, storage paths and error mapping.
-- `cloudfunctions/shared/customPetGenerator.js`: Tencent AI analysis/image adapter and PNG post-processing.
+- `cloudfunctions/shared/customPetGenerator.js`: CloudBase AI analysis/image adapter and PNG post-processing.
 - `tests/unit/petAssets.test.ts`: asset reference behavior.
 - `tests/unit/customPetService.test.ts`: client service and URL caching.
 - `tests/unit/customPetDomain.test.js`: cloud task state, eligibility and settlement behavior.
@@ -267,7 +267,7 @@ Expected: FAIL for missing generator/worker exports.
 
 - [ ] **Step 3: Implement analysis and image adapters**
 
-Use `@cloudbase/node-sdk` multimodal analysis for structured traits and Tencent AIArt `ImageToImage` for generation. Hide provider details behind:
+Use `@cloudbase/node-sdk` multimodal analysis for structured traits and CloudBase `HY-Image-3.0-Plus-4090-Tob-v1.0` for generation. Hide provider details behind:
 
 ```js
 async function analyzeSource({ sourceBuffer, mimeType }) {}

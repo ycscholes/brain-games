@@ -12,24 +12,13 @@ function getCloudBaseSdk() {
   return require("@cloudbase/node-sdk");
 }
 
-function getAiArtSdk() {
-  return require("tencentcloud-sdk-nodejs-aiart").aiart;
-}
-
 function getWxServerSdk() {
   return require("wx-server-sdk");
 }
 
-function readFirstEnv(keys) {
-  return keys.map((key) => process.env[key]).find((value) => value);
-}
-
+const CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME = "hunyuan-image";
+const CLOUD_BASE_IMAGE_MODEL_NAME = "HY-Image-3.0-Plus-4090-Tob-v1.0";
 const DEFAULT_IMAGE_GENERATION_FUNCTION_NAME = "customPetImageGenerator";
-// Multi-reference generation uses Tencent AIArt async jobs. The 90 x 5s window
-// matches the worker lock TTL and gives the provider enough time for image jobs
-// without blocking a locked task indefinitely.
-const REFERENCED_SHEET_POLL_ATTEMPTS = 90;
-const REFERENCED_SHEET_POLL_INTERVAL_MS = 5000;
 
 const DEFAULT_ANALYSIS = {
   speciesLabel: "自定义宠物",
@@ -126,7 +115,7 @@ async function analyzeSource({ sourceBuffer, mimeType = "image/jpeg", app }) {
 }
 
 const REFERENCE_VISUAL_TRAITS_PROMPT =
-  "视觉特征：按第 1 张参考图保留主色、辅色、纹理分布、体型轮廓、脸部轮廓和原有配饰";
+  "视觉特征：严格使用上传图分析得到的主色、辅色、纹理分布、体型轮廓、脸部轮廓和原有配饰";
 const EXTRA_CONTENT_NEGATIVE_PROMPT =
   "每格只保留宠物本体及原有配饰，禁止出现其它角色、互动肢体、餐饮元素、器皿、玩具、特效、光环、场景物件";
 const IMAGE_NEGATIVE_PROMPT =
@@ -145,97 +134,75 @@ function logImagePrompt({ provider, operation, prompt, negativePrompt = null }) 
   console.info("[custom-pet-generator] image prompt", JSON.stringify(payload));
 }
 
-function buildMoodPrompt({ mood }) {
+function describeCustomPet({ speciesLabel, traits = {} }) {
+  return [
+    speciesLabel ? `物种外观：${String(speciesLabel).slice(0, 30)}` : "",
+    traits.primaryColor ? `主色：${String(traits.primaryColor).slice(0, 40)}` : "",
+    traits.secondaryColor ? `辅色：${String(traits.secondaryColor).slice(0, 40)}` : "",
+    traits.markings ? `花纹：${String(traits.markings).slice(0, 60)}` : "",
+    traits.bodyShape ? `体型：${String(traits.bodyShape).slice(0, 60)}` : "",
+    traits.accessories ? `配饰：${String(traits.accessories).slice(0, 60)}` : "",
+  ].filter(Boolean).join("；");
+}
+
+function buildMoodPrompt({ mood, speciesLabel, traits }) {
   const moodText = {
     idle: "自然站立或坐着，平静看向前方",
     feed: "保持参考状态的愉快表情和身体姿态，嘴部可有轻微动作",
     cuddle: "亲昵地靠近并露出放松享受的表情",
     hungry: "略显饥饿和期待，姿态仍然可爱，不要悲惨",
   }[mood];
+  const identity = describeCustomPet({ speciesLabel, traits });
   return [
-    `单只第 1 张参考图中的宠物全身角色，${moodText}`,
+    `单只用户上传图分析得到的宠物全身角色，${moodText}`,
+    identity,
     "固定水彩绘本风格，儿童友好，轮廓清楚，主体居中",
     "纯亮绿色背景 #00FF00，无场景、无地面、无投影、无边框、无文字",
     REFERENCE_VISUAL_TRAITS_PROMPT,
     EXTRA_CONTENT_NEGATIVE_PROMPT,
-    "保留第 1 张参考图的身份和外观，每格四周保留安全边距",
+    "保留上传图分析得到的身份和外观",
   ].join("。").slice(0, 250);
 }
 
-function buildMoodSheetPrompt({ includeReferenceRoles = false }) {
+function buildMoodSheetPrompt({ speciesLabel, traits }) {
   // This prompt is part of the runtime contract with splitMoodSheet(): it must
   // keep a deterministic 2x2 layout so the worker can crop by coordinates and
   // still publish the existing four mood files expected by the mini program.
+  const identity = describeCustomPet({ speciesLabel, traits });
   return [
-    includeReferenceRoles
-      ? "参考图规则：第 1 张用户上传图是唯一宠物身份和外观来源，最高优先级；四格必须以第 1 张的物种、脸型、耳朵、眼睛、嘴吻、身体比例、毛色、花纹分布、尾巴和原有配饰为准；第 2 张灰色无物种姿态图仅参考 idle、feed、cuddle、hungry 的姿态、构图、表情和水彩画风；禁止参考第 2 张的任何外观特征，包括头部形状、身体形状、颜色、纹理和比例；不得变成其它动物；两张图冲突时始终以第 1 张为准，角色身份一致性优先于姿态一致性"
-      : "",
-    "生成第 1 张参考图中的同一只宠物四状态角色设定图，2x2 四宫格",
-    "左上 idle：同一只第 1 张宠物自然站立或坐着，平静看向前方",
-    "右上 feed：同一只第 1 张宠物参考第 2 张右上姿态和开心表情，仅允许嘴部轻微动作，不出现食物或食盆",
-    "左下 cuddle：同一只第 1 张宠物参考第 2 张左下姿态和放松表情，不出现爱心、抱枕或玩具",
-    "右下 hungry：同一只第 1 张宠物参考第 2 张右下期待姿态和可爱表情，不要悲伤",
-    "四格必须一眼认出是第 1 张参考图中的同一只宠物，物种、脸型、耳朵、眼睛、嘴吻、身体比例、毛色、花纹、尾巴和原有配饰完全一致",
+    "生成用户上传图分析得到的同一只宠物四状态角色设定图，2x2 四宫格",
+    identity,
+    "左上 idle：同一只宠物自然站立或坐着，平静看向前方",
+    "右上 feed：同一只宠物开心表情，仅允许嘴部轻微动作，不出现食物或食盆",
+    "左下 cuddle：同一只宠物亲昵放松表情，不出现爱心、抱枕或玩具",
+    "右下 hungry：同一只宠物期待姿态和可爱表情，不要悲伤",
+    "四格必须一眼认出是同一只宠物，物种、脸型、耳朵、眼睛、嘴吻、身体比例、毛色、花纹、尾巴和原有配饰完全一致",
     "纯亮绿色背景 #00FF00，无场景、无地面、无投影、无边框、无文字、无标签",
     REFERENCE_VISUAL_TRAITS_PROMPT,
     `${EXTRA_CONTENT_NEGATIVE_PROMPT}，尤其禁止食物、食盆、爱心、抱枕、玩具和特效`,
     "儿童绘本水彩风格，主体居中，只调整姿态和表情",
-  ].filter(Boolean).join("。").slice(0, includeReferenceRoles ? 900 : 560);
+  ].filter(Boolean).join("。").slice(0, 700);
 }
 
-function createAiArtClient() {
-  const aiart = getAiArtSdk();
-  const Client = aiart.v20221229.Client;
-  // CloudBase/SCF rejects custom environment variable names prefixed with
-  // TENCENTCLOUD_, so production functions use CUSTOM_PET_AIART_* aliases.
-  // Keep the official Tencent Cloud names as local/CI fallbacks because the
-  // SDK and many developer shells already use them.
-  const secretId = readFirstEnv([
-    "CUSTOM_PET_AIART_SECRET_ID",
-    "AIART_SECRET_ID",
-    "TENCENTCLOUD_SECRET_ID",
-    "TENCENTCLOUD_SECRETID",
-  ]);
-  const secretKey = readFirstEnv([
-    "CUSTOM_PET_AIART_SECRET_KEY",
-    "AIART_SECRET_KEY",
-    "TENCENTCLOUD_SECRET_KEY",
-    "TENCENTCLOUD_SECRETKEY",
-  ]);
-  const token = readFirstEnv([
-    "CUSTOM_PET_AIART_SESSION_TOKEN",
-    "AIART_SESSION_TOKEN",
-    "TENCENTCLOUD_SESSION_TOKEN",
-    "TENCENTCLOUD_SESSIONTOKEN",
-  ]);
-  const region = readFirstEnv([
-    "CUSTOM_PET_AIART_REGION",
-    "AIART_REGION",
-    "TENCENTCLOUD_AI_REGION",
-  ]);
-  return new Client({
-    ...(secretId && secretKey
-      ? {
-          credential: {
-            secretId,
-            secretKey,
-            token,
-          },
-        }
-      : {}),
-    region: region || "ap-guangzhou",
-    profile: {
-      httpProfile: {
-        reqTimeout: 240,
-      },
-    },
-  });
+function configureCloudBaseImageModel(model) {
+  if (!model) {
+    return model;
+  }
+  if (!model.generateImageSubUrlConfig) {
+    model.generateImageSubUrlConfig = {};
+  }
+  if (!model.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME]) {
+    model.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME] = {};
+  }
+  model.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME][CLOUD_BASE_IMAGE_MODEL_NAME] =
+    "images/ar/generations";
+  return model;
 }
 
 function createCloudBaseImageModel(app) {
   const tcb = getCloudBaseSdk();
   const cloudApp = app || tcb.init({ env: tcb.SYMBOL_CURRENT_ENV });
-  return cloudApp.ai().createImageModel("hunyuan-image");
+  return configureCloudBaseImageModel(cloudApp.ai().createImageModel(CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME));
 }
 
 function downloadRemoteImage(url) {
@@ -333,7 +300,7 @@ async function generateCloudBaseFunctionImage({ prompt, cloudFunction, downloadI
 }
 
 async function generateCloudBaseSdkImage({ prompt, imageModel, downloadImage }) {
-  const model = imageModel || createCloudBaseImageModel();
+  const model = configureCloudBaseImageModel(imageModel || createCloudBaseImageModel());
   logImagePrompt({
     provider: "cloudbase-sdk",
     operation: "generateImage",
@@ -341,13 +308,11 @@ async function generateCloudBaseSdkImage({ prompt, imageModel, downloadImage }) 
     negativePrompt: IMAGE_NEGATIVE_PROMPT,
   });
   const response = await model.generateImage({
-    model: "hunyuan-image",
+    model: CLOUD_BASE_IMAGE_MODEL_NAME,
     prompt,
-    negative_prompt: IMAGE_NEGATIVE_PROMPT,
     size: "1024x1024",
-    version: "v1.9",
-    revise: false,
-    n: 1,
+    revise: { value: false },
+    enable_thinking: { value: false },
   });
   const url = response && response.data && response.data[0] && response.data[0].url;
   if (!url) {
@@ -356,171 +321,11 @@ async function generateCloudBaseSdkImage({ prompt, imageModel, downloadImage }) 
   return (downloadImage || downloadRemoteImage)(url);
 }
 
-async function generateAiArtImage({ referenceBuffer, mood, traits, speciesLabel, client }) {
-  const aiClient = client || createAiArtClient();
-  const prompt = buildMoodPrompt({ mood, traits, speciesLabel });
-  logImagePrompt({
-    provider: "aiart",
-    operation: "ImageToImage",
-    prompt,
-    negativePrompt: IMAGE_NEGATIVE_PROMPT,
-  });
-  // Legacy fallback path: ImageToImage has stronger single-reference behavior
-  // but can only generate one target image at a time.
-  const response = await aiClient.ImageToImage({
-    InputImage: referenceBuffer.toString("base64"),
-    Prompt: prompt,
-    NegativePrompt: IMAGE_NEGATIVE_PROMPT,
-    Styles: ["104"],
-    ResultConfig: {
-      Resolution: "768:768",
-    },
-    LogoAdd: 0,
-    Strength: mood === "idle" ? 0.62 : 0.48,
-    RspImgType: "base64",
-    EnhanceImage: 1,
-  });
-  if (!response.ResultImage) {
-    throw new Error("AI image response is empty");
-  }
-  return Buffer.from(response.ResultImage, "base64");
-}
-
-async function generateAiArtSheetImage({ referenceBuffer, traits, speciesLabel, client }) {
-  const aiClient = client || createAiArtClient();
-  const prompt = buildMoodSheetPrompt({ traits, speciesLabel });
-  logImagePrompt({
-    provider: "aiart",
-    operation: "ImageToImageSheet",
-    prompt,
-    negativePrompt: IMAGE_NEGATIVE_PROMPT,
-  });
-  // Single-reference sheet fallback used when multi-reference text-to-image is
-  // unavailable. It still reduces the four mood calls to one generated sheet.
-  const response = await aiClient.ImageToImage({
-    InputImage: referenceBuffer.toString("base64"),
-    Prompt: prompt,
-    NegativePrompt: IMAGE_NEGATIVE_PROMPT,
-    Styles: ["104"],
-    ResultConfig: {
-      Resolution: "1024:1024",
-    },
-    LogoAdd: 0,
-    Strength: 0.56,
-    RspImgType: "base64",
-    EnhanceImage: 1,
-  });
-  if (!response.ResultImage) {
-    throw new Error("AI image response is empty");
-  }
-  return Buffer.from(response.ResultImage, "base64");
-}
-
-function unwrapTencentResponse(response) {
-  // Unit tests use plain mock payloads, while the Tencent SDK wraps live results
-  // under Response. Normalize both forms before reading JobId/status fields.
-  return response && response.Response ? response.Response : response;
-}
-
-async function pollTextToImageJob({
-  jobId,
-  client,
-  sleepFn = sleep,
-  maxAttempts = REFERENCED_SHEET_POLL_ATTEMPTS,
-  intervalMs = REFERENCED_SHEET_POLL_INTERVAL_MS,
-}) {
-  // Tencent AIArt text-to-image is asynchronous; only status 5 exposes usable ResultImage URLs.
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const result = unwrapTencentResponse(await client.QueryTextToImageJob({ JobId: jobId }));
-    const statusCode = String(result?.JobStatusCode || "");
-    if (statusCode === "5") {
-      const imageUrl = result.ResultImage?.[0];
-      if (!imageUrl) {
-        throw new Error("Tencent AIArt text-to-image result is empty");
-      }
-      return {
-        imageUrl,
-        revisedPrompt: result.RevisedPrompt?.[0] || null,
-      };
-    }
-    if (statusCode === "4") {
-      // Provider-declared failure should surface immediately so the worker can
-      // switch to the single-reference path instead of waiting for timeout.
-      const error = new Error(result?.JobErrorMsg || "Tencent AIArt text-to-image job failed");
-      error.code = result?.JobErrorCode || "TextToImageJobFailed";
-      throw error;
-    }
-    if (attempt < maxAttempts - 1) {
-      await sleepFn(intervalMs);
-    }
-  }
-  const error = new Error("Tencent AIArt text-to-image job timed out");
-  error.code = "TextToImageJobTimeout";
-  throw error;
-}
-
-async function generateReferencedMoodSheet({
-  userReferenceBuffer,
-  poseReferenceBuffer,
-  traits,
-  speciesLabel,
-  client,
-  downloadImage,
-  sleepFn,
-  maxAttempts,
-  intervalMs,
-}) {
-  const aiClient = client || createAiArtClient();
-  const prompt = buildMoodSheetPrompt({ traits, speciesLabel, includeReferenceRoles: true });
-  logImagePrompt({
-    provider: "aiart",
-    operation: "SubmitTextToImageJob",
-    prompt,
-  });
-  // SubmitTextToImageJob accepts multiple reference images, unlike ImageToImage's single InputImage.
-  // Put the user photo first because it is the identity source; the second image is only a pose/style guide.
-  const submitResult = unwrapTencentResponse(await aiClient.SubmitTextToImageJob({
-    Prompt: prompt,
-    Images: [
-      userReferenceBuffer.toString("base64"),
-      poseReferenceBuffer.toString("base64"),
-    ],
-    Resolution: "1024:1024",
-    LogoAdd: 0,
-    Revise: 0,
-  }));
-  const jobId = submitResult?.JobId;
-  if (!jobId) {
-    throw new Error("Tencent AIArt text-to-image job id is empty");
-  }
-  // The job returns a temporary image URL instead of bytes, so keep downloading
-  // inside this helper and expose the same Buffer contract as the other generators.
-  const { imageUrl } = await pollTextToImageJob({
-    jobId,
-    client: aiClient,
-    sleepFn,
-    maxAttempts,
-    intervalMs,
-  });
-  return (downloadImage || downloadRemoteImage)(imageUrl);
-}
-
-async function generateMood({ referenceBuffer, mood, traits, speciesLabel, client }) {
-  const provider = process.env.CUSTOM_PET_IMAGE_PROVIDER || "cloudbase";
-  if (provider === "aiart") {
-    // aiart mode is kept for environments that have Tencent AIArt credentials
-    // and want image-to-image reference control for the legacy per-mood fallback.
-    return generateAiArtImage({ referenceBuffer, mood, traits, speciesLabel, client });
-  }
+async function generateMood({ mood, traits, speciesLabel, client }) {
   return generateCloudBaseImage({ mood, traits, speciesLabel, imageModel: client });
 }
 
-async function generateMoodSheet({ referenceBuffer, traits, speciesLabel, client }) {
-  const provider = process.env.CUSTOM_PET_IMAGE_PROVIDER || "cloudbase";
-  if (provider === "aiart") {
-    // This is the one-reference sheet fallback after generateReferencedMoodSheet fails.
-    return generateAiArtSheetImage({ referenceBuffer, traits, speciesLabel, client });
-  }
+async function generateMoodSheet({ traits, speciesLabel, client }) {
   return generateCloudBaseSheetImage({ traits, speciesLabel, imageModel: client });
 }
 
@@ -636,7 +441,6 @@ function addPngTextChunk(png, keyword, text) {
 function validateRuntimeDependencies() {
   const { Jimp } = getJimp();
   getCloudBaseSdk();
-  getAiArtSdk();
   require("ws");
   return {
     node: process.version,
@@ -651,19 +455,17 @@ module.exports = {
   analyzeSource,
   buildMoodPrompt,
   buildMoodSheetPrompt,
+  CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME,
+  CLOUD_BASE_IMAGE_MODEL_NAME,
   IMAGE_NEGATIVE_PROMPT,
   generateMood,
   generateMoodSheet,
   generateCloudBaseImage,
   generateCloudBaseSheetImage,
   generateCloudBaseFunctionImage,
-  generateAiArtImage,
-  generateAiArtSheetImage,
-  generateReferencedMoodSheet,
   normalizeAnalysis,
   normalizeSprite,
   parseImageGenerationFunctionResult,
-  pollTextToImageJob,
   splitMoodSheet,
   validateRuntimeDependencies,
 };

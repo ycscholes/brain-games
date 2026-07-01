@@ -1,6 +1,19 @@
 const tcb = require("@cloudbase/node-sdk");
 
-const IMAGE_MODEL_NAME = "hunyuan-image";
+const IMAGE_MODEL_CLIENT_NAME = "hunyuan-image";
+const IMAGE_MODEL_NAME = "HY-Image-3.0-Plus-4090-Tob-v1.0";
+
+function configureImageModel(model) {
+  if (!model.generateImageSubUrlConfig) {
+    model.generateImageSubUrlConfig = {};
+  }
+  if (!model.generateImageSubUrlConfig[IMAGE_MODEL_CLIENT_NAME]) {
+    model.generateImageSubUrlConfig[IMAGE_MODEL_CLIENT_NAME] = {};
+  }
+  model.generateImageSubUrlConfig[IMAGE_MODEL_CLIENT_NAME][IMAGE_MODEL_NAME] =
+    "images/ar/generations";
+  return model;
+}
 
 function getImageUrl(response) {
   if (response && typeof response.imageUrl === "string") {
@@ -49,15 +62,13 @@ function getErrorMessage(error) {
 
 async function generateImage(prompt, options = {}) {
   const app = options.app || tcb.init({ env: tcb.SYMBOL_CURRENT_ENV });
-  const model = options.model || app.ai().createImageModel(IMAGE_MODEL_NAME);
+  const model = configureImageModel(options.model || app.ai().createImageModel(IMAGE_MODEL_CLIENT_NAME));
   const response = await model.generateImage({
     model: IMAGE_MODEL_NAME,
     prompt,
-    negative_prompt: "多人，多只动物，场景，地面，阴影，文字，边框，水印，裁切，模糊，畸形",
     size: "1024x1024",
-    version: "v1.9",
-    revise: true,
-    n: 1,
+    revise: { value: false },
+    enable_thinking: { value: false },
   });
   const imageUrl = getImageUrl(response);
   if (!imageUrl) {
@@ -92,4 +103,5 @@ exports.main = async (event = {}) => {
 };
 
 exports.generateImage = generateImage;
+exports.configureImageModel = configureImageModel;
 exports.getImageUrl = getImageUrl;
