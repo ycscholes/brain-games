@@ -63,13 +63,20 @@ function getErrorMessage(error) {
 async function generateImage(prompt, options = {}) {
   const app = options.app || tcb.init({ env: tcb.SYMBOL_CURRENT_ENV });
   const model = configureImageModel(options.model || app.ai().createImageModel(IMAGE_MODEL_CLIENT_NAME));
-  const response = await model.generateImage({
+  const request = {
     model: IMAGE_MODEL_NAME,
     prompt,
     size: "1024x1024",
     revise: { value: false },
     enable_thinking: { value: false },
-  });
+  };
+  if (options.referenceImageUrl) {
+    request.image_url = options.referenceImageUrl;
+  }
+  if (options.poseImageUrl) {
+    request.pose_image_url = options.poseImageUrl;
+  }
+  const response = await model.generateImage(request);
   const imageUrl = getImageUrl(response);
   if (!imageUrl) {
     throw new Error("CloudBase image response is empty");
@@ -92,7 +99,10 @@ exports.main = async (event = {}) => {
     };
   }
   try {
-    return await generateImage(prompt);
+    return await generateImage(prompt, {
+      referenceImageUrl: event.referenceImageUrl,
+      poseImageUrl: event.poseImageUrl,
+    });
   } catch (error) {
     return {
       success: false,

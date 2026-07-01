@@ -1,4 +1,6 @@
 const cloud = require("wx-server-sdk");
+const fs = require("fs");
+const path = require("path");
 const {
   CUSTOM_PET_MOODS,
   MAX_STEP_ATTEMPTS,
@@ -23,6 +25,9 @@ const JOB_COLLECTION = "custom_pet_jobs";
 const ENTITLEMENT_COLLECTION = "custom_pet_entitlements";
 const SNAPSHOT_COLLECTION = "xiaoyuyuan_user_snapshots";
 const LOCK_TTL_MS = 12 * 60 * 1000;
+// The pose sheet is uploaded per job so the CloudBase image model receives it
+// as a reachable reference URL without bundling public asset assumptions into AI calls.
+const POSE_REFERENCE_SHEET_STORAGE_NAME = "pose-reference-sheet.png";
 
 function nowIso() {
   return new Date().toISOString();
@@ -43,12 +48,48 @@ async function download(fileID) {
   return result.fileContent;
 }
 
+async function getTempFileUrl(fileID) {
+  const result = await cloud.getTempFileURL({ fileList: [fileID] });
+  const item = result && result.fileList && result.fileList[0];
+  if (!item || !item.tempFileURL) {
+    throw new Error("custom pet reference URL unavailable");
+  }
+  return item.tempFileURL;
+}
+
+function readBundledPoseReferenceSheet() {
+  const candidates = [
+    path.join(__dirname, "shared", "assets", POSE_REFERENCE_SHEET_STORAGE_NAME),
+    path.join(__dirname, "..", "shared", "assets", POSE_REFERENCE_SHEET_STORAGE_NAME),
+  ];
+  for (const filePath of candidates) {
+    if (fs.existsSync(filePath)) {
+      return fs.readFileSync(filePath);
+    }
+  }
+  throw new Error("bundled pose reference sheet not found");
+}
+
 async function upload(path, buffer) {
   const result = await cloud.uploadFile({
     cloudPath: path,
     fileContent: buffer,
   });
   return result.fileID;
+}
+
+async function uploadPoseReferenceSheet(task) {
+  return upload(
+    [
+      "users",
+      task.ownerId,
+      "custom-pets",
+      task.jobId,
+      "references",
+      POSE_REFERENCE_SHEET_STORAGE_NAME,
+    ].join("/"),
+    readBundledPoseReferenceSheet(),
+  );
 }
 
 async function claimTask(jobId) {
@@ -101,9 +142,16 @@ async function processAnalyzing(task) {
 
 async function processIdle(task) {
   const sourceBuffer = await download(task.sourceFileId);
+  const poseReferenceFileId = await uploadPoseReferenceSheet(task);
+  const [referenceImageUrl, poseImageUrl] = await Promise.all([
+    getTempFileUrl(task.sourceFileId),
+    getTempFileUrl(poseReferenceFileId),
+  ]);
   const generatedSheet = await generateMoodSheet({
     traits: task.traits,
     speciesLabel: task.speciesLabel,
+    referenceImageUrl,
+    poseImageUrl,
   });
   let normalizedSprites = null;
   try {
@@ -120,7 +168,7 @@ async function processIdle(task) {
       message: getErrorSummary(error),
     });
     // Compatibility fallback: resume the pre-sheet per-mood pipeline if the model returns an unusable layout.
-    await processIdleWithSeparateGeneration(task, sourceBuffer);
+    await processIdleWithSeparateGeneration(task, sourceBuffer, referenceImageUrl, poseImageUrl);
     return;
   }
 
@@ -141,7 +189,7 @@ async function processIdle(task) {
   });
 }
 
-async function processIdleWithSeparateGeneration(task, sourceBuffer) {
+async function processIdleWithSeparateGeneration(task, sourceBuffer, referenceImageUrl, poseImageUrl) {
   // This fallback intentionally writes only idle and moves to generating_variants;
   // the next worker step reuses the old variant pipeline for feed/cuddle/hungry.
   const generated = await generateMood({
@@ -149,6 +197,8 @@ async function processIdleWithSeparateGeneration(task, sourceBuffer) {
     mood: "idle",
     traits: task.traits,
     speciesLabel: task.speciesLabel,
+    referenceImageUrl,
+    poseImageUrl,
   });
   const normalized = await normalizeSprite({ inputBuffer: generated });
   const fileID = await upload(
@@ -167,6 +217,7 @@ async function processIdleWithSeparateGeneration(task, sourceBuffer) {
 async function processVariants(task) {
   const fileIds = { ...(task.candidateSpriteFileIds || {}) };
   const idleBuffer = await download(fileIds.idle);
+  const idleReferenceImageUrl = await getTempFileUrl(fileIds.idle);
   for (const mood of CUSTOM_PET_MOODS.filter((item) => item !== "idle")) {
     if (fileIds[mood]) {
       continue;
@@ -176,6 +227,7 @@ async function processVariants(task) {
       mood,
       traits: task.traits,
       speciesLabel: task.speciesLabel,
+      referenceImageUrl: idleReferenceImageUrl,
     });
     const normalized = await normalizeSprite({ inputBuffer: generated });
     fileIds[mood] = await upload(

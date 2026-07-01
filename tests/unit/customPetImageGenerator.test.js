@@ -38,7 +38,10 @@ describe("custom pet image generator function", () => {
       }),
     });
 
-    await expect(generateImage("一只小狗")).resolves.toEqual({
+    await expect(generateImage("一只小狗", {
+      referenceImageUrl: "https://example.com/source.jpg",
+      poseImageUrl: "https://example.com/pose.png",
+    })).resolves.toEqual({
       success: true,
       imageUrl: "https://example.com/generated.png",
       revised_prompt: "optimized prompt",
@@ -50,6 +53,8 @@ describe("custom pet image generator function", () => {
         prompt: "一只小狗",
         revise: { value: false },
         enable_thinking: { value: false },
+        image_url: "https://example.com/source.jpg",
+        pose_image_url: "https://example.com/pose.png",
       }),
     );
   });

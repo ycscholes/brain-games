@@ -73,8 +73,8 @@ npm run assets:upload
 - `components/CustomPetFlow/`：上传、生成进度、预览、重做、领养和取消。
 - `src/services/custom-pet/`：云函数调用、私有图片 URL 与缓存。
 - `cloudfunctions/customPetApi`：资格、积分和领养事务。
-- `cloudfunctions/customPetImageGenerator`：按微信云开发生图云函数契约接收 `prompt`，返回 24 小时 `imageUrl` 与 `revised_prompt`。
-- `cloudfunctions/customPetWorker`：调用生图云函数、下载 24 小时图片 URL、透明 PNG 处理、上传私有云存储和可恢复任务。
+- `cloudfunctions/customPetImageGenerator`：按 CloudBase 生图云函数契约接收 `prompt`、`referenceImageUrl` 和 `poseImageUrl`，返回 24 小时 `imageUrl` 与 `revised_prompt`。
+- `cloudfunctions/customPetWorker`：上传姿态参考图、签出用户参考图和姿态图临时 URL、调用生图云函数、下载 24 小时图片 URL、透明 PNG 处理、上传私有云存储和可恢复任务。
 - `cloudfunctions/customPetRecovery`：每五分钟恢复停滞任务与执行删除。
 - `src/utils/petStorage.ts`：领养、喂食、状态更新和积分余额。
 - `tests/unit/petStorage.test.ts`：宠物状态与消费。
@@ -92,6 +92,8 @@ wx.cloud.callFunction({
   name: "customPetImageGenerator",
   data: {
     prompt: "一只可爱的猫咪在阳光下玩耍",
+    referenceImageUrl: "https://example.com/source.jpg",
+    poseImageUrl: "https://example.com/pose-sheet.png",
   },
   success: (res) => {
     const result = res.result;

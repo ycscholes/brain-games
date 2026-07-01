@@ -121,7 +121,7 @@ const EXTRA_CONTENT_NEGATIVE_PROMPT =
 const IMAGE_NEGATIVE_PROMPT =
   "多人，多只动物，场景，地面，阴影，文字，边框，水印，裁切，模糊，畸形";
 
-function logImagePrompt({ provider, operation, prompt, negativePrompt = null }) {
+function logImagePrompt({ provider, operation, prompt, negativePrompt = null, references = null }) {
   const payload = {
     event: "custom_pet_image_prompt",
     provider,
@@ -130,6 +130,9 @@ function logImagePrompt({ provider, operation, prompt, negativePrompt = null }) 
   };
   if (negativePrompt) {
     payload.negativePrompt = negativePrompt;
+  }
+  if (references) {
+    payload.references = references;
   }
   console.info("[custom-pet-generator] image prompt", JSON.stringify(payload));
 }
@@ -228,24 +231,61 @@ function sleep(ms) {
   });
 }
 
-async function generateCloudBaseImage({ mood, traits, speciesLabel, imageModel, downloadImage }) {
+async function generateCloudBaseImage({
+  mood,
+  traits,
+  speciesLabel,
+  imageModel,
+  downloadImage,
+  referenceImageUrl,
+  poseImageUrl,
+}) {
   const prompt = buildMoodPrompt({ mood, traits, speciesLabel });
   if (!imageModel) {
     // In wx-server-sdk cloud functions the shared generator cannot always init
     // CloudBase AI directly, so production can route through the image helper function.
-    return generateCloudBaseFunctionImage({ prompt, downloadImage });
+    return generateCloudBaseFunctionImage({
+      prompt,
+      downloadImage,
+      referenceImageUrl,
+      poseImageUrl,
+    });
   }
-  return generateCloudBaseSdkImage({ prompt, imageModel, downloadImage });
+  return generateCloudBaseSdkImage({
+    prompt,
+    imageModel,
+    downloadImage,
+    referenceImageUrl,
+    poseImageUrl,
+  });
 }
 
-async function generateCloudBaseSheetImage({ traits, speciesLabel, imageModel, downloadImage }) {
+async function generateCloudBaseSheetImage({
+  traits,
+  speciesLabel,
+  imageModel,
+  downloadImage,
+  referenceImageUrl,
+  poseImageUrl,
+}) {
   const prompt = buildMoodSheetPrompt({ traits, speciesLabel });
   if (!imageModel) {
     // Same transport as single-mood CloudBase generation, but the prompt asks for
     // all states in one sheet so the worker can split locally.
-    return generateCloudBaseFunctionImage({ prompt, downloadImage });
+    return generateCloudBaseFunctionImage({
+      prompt,
+      downloadImage,
+      referenceImageUrl,
+      poseImageUrl,
+    });
   }
-  return generateCloudBaseSdkImage({ prompt, imageModel, downloadImage });
+  return generateCloudBaseSdkImage({
+    prompt,
+    imageModel,
+    downloadImage,
+    referenceImageUrl,
+    poseImageUrl,
+  });
 }
 
 function parseImageGenerationFunctionResult(response) {
@@ -276,7 +316,13 @@ function parseImageGenerationFunctionResult(response) {
   throw new Error("CloudBase image response is empty");
 }
 
-async function generateCloudBaseFunctionImage({ prompt, cloudFunction, downloadImage }) {
+async function generateCloudBaseFunctionImage({
+  prompt,
+  cloudFunction,
+  downloadImage,
+  referenceImageUrl,
+  poseImageUrl,
+}) {
   const caller =
     cloudFunction ||
     ((params) => {
@@ -290,30 +336,55 @@ async function generateCloudBaseFunctionImage({ prompt, cloudFunction, downloadI
     operation: functionName,
     prompt,
     negativePrompt: IMAGE_NEGATIVE_PROMPT,
+    references: {
+      referenceImage: Boolean(referenceImageUrl),
+      poseImage: Boolean(poseImageUrl),
+    },
   });
   const response = await caller({
     name: functionName,
-    data: { prompt },
+    data: {
+      prompt,
+      referenceImageUrl,
+      poseImageUrl,
+    },
   });
   const { imageUrl } = parseImageGenerationFunctionResult(response);
   return (downloadImage || downloadRemoteImage)(imageUrl);
 }
 
-async function generateCloudBaseSdkImage({ prompt, imageModel, downloadImage }) {
+async function generateCloudBaseSdkImage({
+  prompt,
+  imageModel,
+  downloadImage,
+  referenceImageUrl,
+  poseImageUrl,
+}) {
   const model = configureCloudBaseImageModel(imageModel || createCloudBaseImageModel());
   logImagePrompt({
     provider: "cloudbase-sdk",
     operation: "generateImage",
     prompt,
     negativePrompt: IMAGE_NEGATIVE_PROMPT,
+    references: {
+      referenceImage: Boolean(referenceImageUrl),
+      poseImage: Boolean(poseImageUrl),
+    },
   });
-  const response = await model.generateImage({
+  const request = {
     model: CLOUD_BASE_IMAGE_MODEL_NAME,
     prompt,
     size: "1024x1024",
     revise: { value: false },
     enable_thinking: { value: false },
-  });
+  };
+  if (referenceImageUrl) {
+    request.image_url = referenceImageUrl;
+  }
+  if (poseImageUrl) {
+    request.pose_image_url = poseImageUrl;
+  }
+  const response = await model.generateImage(request);
   const url = response && response.data && response.data[0] && response.data[0].url;
   if (!url) {
     throw new Error("CloudBase image response is empty");
@@ -321,12 +392,38 @@ async function generateCloudBaseSdkImage({ prompt, imageModel, downloadImage }) 
   return (downloadImage || downloadRemoteImage)(url);
 }
 
-async function generateMood({ mood, traits, speciesLabel, client }) {
-  return generateCloudBaseImage({ mood, traits, speciesLabel, imageModel: client });
+async function generateMood({
+  mood,
+  traits,
+  speciesLabel,
+  client,
+  referenceImageUrl,
+  poseImageUrl,
+}) {
+  return generateCloudBaseImage({
+    mood,
+    traits,
+    speciesLabel,
+    imageModel: client,
+    referenceImageUrl,
+    poseImageUrl,
+  });
 }
 
-async function generateMoodSheet({ traits, speciesLabel, client }) {
-  return generateCloudBaseSheetImage({ traits, speciesLabel, imageModel: client });
+async function generateMoodSheet({
+  traits,
+  speciesLabel,
+  client,
+  referenceImageUrl,
+  poseImageUrl,
+}) {
+  return generateCloudBaseSheetImage({
+    traits,
+    speciesLabel,
+    imageModel: client,
+    referenceImageUrl,
+    poseImageUrl,
+  });
 }
 
 async function splitMoodSheet({ inputBuffer }) {

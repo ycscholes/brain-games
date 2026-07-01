@@ -171,12 +171,18 @@ describe("custom pet generator", () => {
         prompt: "一张测试图片",
         cloudFunction,
         downloadImage,
+        referenceImageUrl: "https://example.com/source.jpg",
+        poseImageUrl: "https://example.com/pose.png",
       }),
     ).resolves.toEqual(Buffer.from("png"));
 
     expect(cloudFunction).toHaveBeenCalledWith({
       name: "customPetImageGenerator",
-      data: { prompt: "一张测试图片" },
+      data: {
+        prompt: "一张测试图片",
+        referenceImageUrl: "https://example.com/source.jpg",
+        poseImageUrl: "https://example.com/pose.png",
+      },
     });
     expect(consoleInfoSpy).toHaveBeenCalledWith(
       "[custom-pet-generator] image prompt",
@@ -205,6 +211,8 @@ describe("custom pet generator", () => {
         traits: { primaryColor: "黑白" },
         imageModel,
         downloadImage,
+        referenceImageUrl: "https://example.com/source.jpg",
+        poseImageUrl: "https://example.com/pose.png",
       }),
     ).resolves.toEqual(Buffer.from("png"));
 
@@ -214,6 +222,8 @@ describe("custom pet generator", () => {
         size: "1024x1024",
         revise: { value: false },
         enable_thinking: { value: false },
+        image_url: "https://example.com/source.jpg",
+        pose_image_url: "https://example.com/pose.png",
       }),
     );
     expect(imageModel.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME][CLOUD_BASE_IMAGE_MODEL_NAME])
@@ -245,6 +255,8 @@ describe("custom pet generator", () => {
         traits: { primaryColor: "黑白" },
         imageModel,
         downloadImage,
+        referenceImageUrl: "https://example.com/source.jpg",
+        poseImageUrl: "https://example.com/pose.png",
       }),
     ).resolves.toEqual(Buffer.from("sheet"));
 
@@ -254,6 +266,8 @@ describe("custom pet generator", () => {
         prompt: expect.stringContaining("2x2"),
         model: CLOUD_BASE_IMAGE_MODEL_NAME,
         size: "1024x1024",
+        image_url: "https://example.com/source.jpg",
+        pose_image_url: "https://example.com/pose.png",
       }),
     );
     expect(consoleInfoSpy).toHaveBeenCalledWith(

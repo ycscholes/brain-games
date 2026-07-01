@@ -20,6 +20,12 @@ const mockCloud = {
     mockUploadedFiles.push({ cloudPath, fileContent, fileID });
     return { fileID };
   }),
+  getTempFileURL: jest.fn(async ({ fileList }) => ({
+    fileList: fileList.map((fileID) => ({
+      fileID,
+      tempFileURL: `https://temp.example/${encodeURIComponent(fileID)}`,
+    })),
+  })),
   deleteFile: jest.fn(),
 };
 
@@ -98,6 +104,7 @@ describe("custom pet worker", () => {
     });
     mockCloud.downloadFile.mockClear();
     mockCloud.uploadFile.mockClear();
+    mockCloud.getTempFileURL.mockClear();
     delete process.env.TARO_CLOUD_ENV_ID;
     delete process.env.CLOUD_ENV_ID;
     delete process.env.TCB_ENV;
@@ -125,11 +132,15 @@ describe("custom pet worker", () => {
     expect(mockGenerator.generateMoodSheet).toHaveBeenCalledWith({
       speciesLabel: "小狗",
       traits: { primaryColor: "黑白" },
+      referenceImageUrl: "https://temp.example/cloud%3A%2F%2Fsource",
+      poseImageUrl:
+        "https://temp.example/cloud%3A%2F%2Ftest-env%2Fusers%2Fuser-1%2Fcustom-pets%2Fjob-1%2Freferences%2Fpose-reference-sheet.png",
     });
     expect(mockGenerator.generateMood).not.toHaveBeenCalled();
     expect(mockGenerator.splitMoodSheet).toHaveBeenCalledWith({ inputBuffer: Buffer.from("sheet") });
     expect(mockGenerator.normalizeSprite).toHaveBeenCalledTimes(4);
     expect(mockUploadedFiles.map((file) => file.cloudPath)).toEqual([
+      "users/user-1/custom-pets/job-1/references/pose-reference-sheet.png",
       "users/user-1/custom-pets/job-1/candidates/1/idle.png",
       "users/user-1/custom-pets/job-1/candidates/1/feed.png",
       "users/user-1/custom-pets/job-1/candidates/1/cuddle.png",
@@ -167,12 +178,15 @@ describe("custom pet worker", () => {
       const task = await runJob("job-1");
 
       expect(mockGenerator.generateMoodSheet).toHaveBeenCalledTimes(1);
-      expect(mockGenerator.generateMood).toHaveBeenCalledWith({
-        referenceBuffer: Buffer.from("download:cloud://source"),
-        mood: "idle",
-        speciesLabel: "小狗",
-        traits: { primaryColor: "黑白" },
-      });
+    expect(mockGenerator.generateMood).toHaveBeenCalledWith({
+      referenceBuffer: Buffer.from("download:cloud://source"),
+      mood: "idle",
+      speciesLabel: "小狗",
+      traits: { primaryColor: "黑白" },
+      referenceImageUrl: "https://temp.example/cloud%3A%2F%2Fsource",
+      poseImageUrl:
+        "https://temp.example/cloud%3A%2F%2Ftest-env%2Fusers%2Fuser-1%2Fcustom-pets%2Fjob-1%2Freferences%2Fpose-reference-sheet.png",
+    });
       expect(task.status).toBe("preview_ready");
     } finally {
       warnSpy.mockRestore();
