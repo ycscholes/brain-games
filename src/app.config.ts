@@ -13,6 +13,7 @@ export default defineAppConfig({
     'pages/head-count/index',
     'pages/word-scramble/index',
     'pages/bird-count/index',
+    'pages/color-trap/index',
     'pages/pet/index',
     'pages/settings/index',
     'pages/training-records/index'

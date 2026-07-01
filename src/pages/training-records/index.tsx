@@ -28,6 +28,7 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   "head-count": "小剧场清点",
   "word-scramble": "词语拼盘",
   "bird-count": "宠物速数",
+  "color-trap": "颜色陷阱",
 };
 
 function formatPlayedAt(value: string) {

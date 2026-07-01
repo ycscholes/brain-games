@@ -20,6 +20,7 @@ export const SHARE_PAGE_PATHS = [
   "pages/head-count/index",
   "pages/word-scramble/index",
   "pages/bird-count/index",
+  "pages/color-trap/index",
   "pages/pet/index",
   "pages/settings/index",
   "pages/training-records/index",
@@ -90,6 +91,10 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/bird-count/index": {
     title: "来玩宠物速数，练快速观察",
     timelineTitle: "宠物速数观察训练",
+  },
+  "pages/color-trap/index": {
+    title: "来玩颜色陷阱，练选择注意",
+    timelineTitle: "颜色陷阱注意力训练",
   },
   "pages/pet/index": {
     title: "来看看我在Cici的脑部锻炼里养的宠物",

@@ -110,6 +110,17 @@ const BASE_GAMES = [
     level: "标准",
   },
   {
+    id: "color-trap",
+    title: "颜色陷阱",
+    badge: "注意",
+    cardClass: "card-color-trap",
+    url: "/pages/color-trap/index",
+    category: "memory",
+    duration: "约 1 分钟",
+    skill: "选择注意",
+    level: "标准",
+  },
+  {
     id: "number-order",
     title: "星链回响",
     badge: "记忆",
@@ -172,6 +183,7 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   "head-count": "农场进出",
   "word-scramble": "词语拼盘",
   "bird-count": "农场清点",
+  "color-trap": "颜色陷阱",
 };
 
 const HOME_ASSET_LOADING_TIMEOUT_MS = 3500;

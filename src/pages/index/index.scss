@@ -578,6 +578,13 @@
     var(--surface-card);
 }
 
+.card-color-trap {
+  background:
+    radial-gradient(circle at 40% 24%, rgba(225, 77, 67, 0.16), transparent 30%),
+    radial-gradient(circle at 76% 18%, rgba(47, 155, 106, 0.14), transparent 28%),
+    var(--surface-card);
+}
+
 .card-pet {
   background:
     radial-gradient(circle at 45% 28%, rgba(139, 92, 246, 0.18), transparent 34%),
@@ -749,6 +756,11 @@
   color: #0369a1;
 }
 
+.card-color-trap .game-badge {
+  background: rgba(47, 155, 106, 0.16);
+  color: #167249;
+}
+
 .card-pet .game-badge {
   background: rgba(139, 92, 246, 0.18);
   color: #8b5cf6;
@@ -830,6 +842,10 @@
 
 .card-bird-count .enter-button {
   background: linear-gradient(90deg, #0369a1 0%, #22c55e 100%);
+}
+
+.card-color-trap .enter-button {
+  background: linear-gradient(90deg, #e14d43 0%, #2f9b6a 100%);
 }
 
 .enter-button-text {

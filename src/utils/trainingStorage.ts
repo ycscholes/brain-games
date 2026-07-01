@@ -15,6 +15,7 @@ export type TrainingGameId =
   | "head-count"
   | "word-scramble"
   | "bird-count"
+  | "color-trap"
   | "memory"
   | "rps"
   | "mot"
@@ -301,6 +302,7 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "head-count": 1,
   "word-scramble": 1,
   "bird-count": 1,
+  "color-trap": 1,
   memory: 1,
   rps: 1,
   mot: 3,
@@ -575,6 +577,7 @@ export function clearProductData() {
     gameSpecificKeys.push(`head_count_best_${difficulty}`);
     gameSpecificKeys.push(`word_scramble_best_${difficulty}`);
     gameSpecificKeys.push(`bird_count_best_${difficulty}`);
+    gameSpecificKeys.push(`color_trap_best_${difficulty}`);
 
     ["slow", "standard", "fast"].forEach((speedDifficulty) => {
       gameSpecificKeys.push(`head_count_best_${difficulty}_${speedDifficulty}`);
