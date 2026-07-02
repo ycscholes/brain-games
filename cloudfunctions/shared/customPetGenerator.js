@@ -170,9 +170,9 @@ async function analyzeSource({ sourceBuffer, mimeType = "image/jpeg", app }) {
 const REFERENCE_VISUAL_TRAITS_PROMPT =
   "视觉特征：严格使用上传图分析得到的主色、辅色、纹理分布、体型轮廓、脸部轮廓和原有配饰";
 const REFERENCE_IDENTITY_PRIORITY_PROMPT =
-  "身份优先级：image_url 用户上传参考图是物种、脸型、耳朵、眼睛、嘴吻、尾巴、毛色和花纹的最高依据";
+  "身份优先级：用户上传参考图是物种、脸型、耳朵、眼睛、嘴吻、尾巴、毛色和花纹的最高依据";
 const POSE_REFERENCE_LIMIT_PROMPT =
-  "pose_image_url 只用于四宫格布局和姿态参考，不得覆盖用户上传图中的物种和外观";
+  "姿态参考图只用于四宫格布局和姿态参考，不得覆盖用户上传图中的物种和外观";
 const NO_CAT_DOG_SUBSTITUTION_PROMPT =
   "除非用户上传图清楚可见为猫或狗，否则禁止把宠物改画成猫、狗、猫咪、小狗或犬类";
 const EXTRA_CONTENT_NEGATIVE_PROMPT =
@@ -183,6 +183,7 @@ const FOOTNOTE_REGION_WIDTH_RATIO = 0.28;
 const FOOTNOTE_REGION_HEIGHT_RATIO = 0.16;
 const NORMALIZED_FOOTNOTE_REGION_WIDTH_RATIO = 0.3;
 const NORMALIZED_FOOTNOTE_REGION_HEIGHT_RATIO = 0.13;
+const CLOUD_BASE_IMAGE_GENERATION_SUB_URL = "images/ar/generations";
 
 function logImagePrompt({ provider, operation, prompt, negativePrompt = null, references = null }) {
   const payload = {
@@ -265,12 +266,15 @@ function configureCloudBaseImageModel(model) {
   if (!model.generateImageSubUrlConfig) {
     model.generateImageSubUrlConfig = {};
   }
-  if (!model.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME]) {
-    model.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME] = {};
-  }
-  model.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME][CLOUD_BASE_IMAGE_MODEL_NAME] =
-    "images/ar/generations";
+  model.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME] = [
+    [new RegExp(`^${CLOUD_BASE_IMAGE_MODEL_NAME}$`), CLOUD_BASE_IMAGE_GENERATION_SUB_URL],
+  ];
+  model.generateImageSubUrl = CLOUD_BASE_IMAGE_GENERATION_SUB_URL;
   return model;
+}
+
+function getReferenceImageUrls({ referenceImageUrl, poseImageUrl } = {}) {
+  return [referenceImageUrl, poseImageUrl].filter(Boolean);
 }
 
 function createCloudBaseImageModel(app) {
@@ -450,11 +454,9 @@ async function generateCloudBaseSdkImage({
     revise: { value: false },
     enable_thinking: { value: false },
   };
-  if (referenceImageUrl) {
-    request.image_url = referenceImageUrl;
-  }
-  if (poseImageUrl) {
-    request.pose_image_url = poseImageUrl;
+  const imageUrls = getReferenceImageUrls({ referenceImageUrl, poseImageUrl });
+  if (imageUrls.length > 0) {
+    request.image_urls = imageUrls;
   }
   const response = await model.generateImage(request);
   const url = response && response.data && response.data[0] && response.data[0].url;

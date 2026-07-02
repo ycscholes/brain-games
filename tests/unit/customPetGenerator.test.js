@@ -165,8 +165,8 @@ describe("custom pet generator", () => {
       expect(prompt).toContain("#00FF00");
       expect(prompt).toContain("物种外观");
       expect(prompt).toContain("柴犬黑白");
-      expect(prompt).toContain("image_url 用户上传参考图");
-      expect(prompt).toContain("pose_image_url 只用于四宫格布局和姿态参考");
+      expect(prompt).toContain("用户上传参考图");
+      expect(prompt).toContain("姿态参考图只用于四宫格布局和姿态参考");
       expect(prompt).toContain("禁止把宠物改画成猫、狗");
       expect(prompt).not.toMatch(forbiddenPromptTerms);
       expect(prompt.length).toBeLessThanOrEqual(520);
@@ -190,8 +190,8 @@ describe("custom pet generator", () => {
     expect(prompt).toContain("#00FF00");
     expect(prompt).toContain("物种外观");
     expect(prompt).toContain("柴犬黑白");
-    expect(prompt).toContain("image_url 用户上传参考图");
-    expect(prompt).toContain("pose_image_url 只用于四宫格布局和姿态参考");
+    expect(prompt).toContain("用户上传参考图");
+    expect(prompt).toContain("姿态参考图只用于四宫格布局和姿态参考");
     expect(prompt).toContain("禁止把宠物改画成猫、狗");
     expect(prompt).not.toMatch(forbiddenPromptTerms);
     expect(prompt.length).toBeLessThanOrEqual(1200);
@@ -210,7 +210,7 @@ describe("custom pet generator", () => {
     expect(prompt).toContain("不出现爱心、抱枕或玩具");
     expect(prompt).toContain("只调整姿态和表情");
     expect(prompt).toContain("最终结果必须明显是 2x2 四宫格");
-    expect(prompt).toContain("image_url 用户上传参考图是物种");
+    expect(prompt).toContain("用户上传参考图是物种");
     expect(prompt).toContain("不得覆盖用户上传图中的物种和外观");
     expect(prompt).not.toMatch(/人手|抚摸/);
     expect(prompt.length).toBeLessThanOrEqual(1200);
@@ -283,12 +283,18 @@ describe("custom pet generator", () => {
         footnote: "",
         revise: { value: false },
         enable_thinking: { value: false },
-        image_url: "https://example.com/source.jpg",
-        pose_image_url: "https://example.com/pose.png",
+        image_urls: [
+          "https://example.com/source.jpg",
+          "https://example.com/pose.png",
+        ],
       }),
     );
-    expect(imageModel.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME][CLOUD_BASE_IMAGE_MODEL_NAME])
-      .toBe("images/ar/generations");
+    expect(imageModel.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME]).toEqual([
+      [new RegExp(`^${CLOUD_BASE_IMAGE_MODEL_NAME}$`), "images/ar/generations"],
+    ]);
+    expect(imageModel.generateImageSubUrl).toBe("images/ar/generations");
+    expect(generateImage.mock.calls[0][0]).not.toHaveProperty("image_url");
+    expect(generateImage.mock.calls[0][0]).not.toHaveProperty("pose_image_url");
     expect(consoleInfoSpy).toHaveBeenCalledWith(
       "[custom-pet-generator] image prompt",
       expect.stringContaining("\"provider\":\"cloudbase-sdk\""),
@@ -327,10 +333,14 @@ describe("custom pet generator", () => {
         prompt: expect.stringContaining("2x2"),
         model: CLOUD_BASE_IMAGE_MODEL_NAME,
         size: "1024x1024",
-        image_url: "https://example.com/source.jpg",
-        pose_image_url: "https://example.com/pose.png",
+        image_urls: [
+          "https://example.com/source.jpg",
+          "https://example.com/pose.png",
+        ],
       }),
     );
+    expect(generateImage.mock.calls[0][0]).not.toHaveProperty("image_url");
+    expect(generateImage.mock.calls[0][0]).not.toHaveProperty("pose_image_url");
     expect(consoleInfoSpy).toHaveBeenCalledWith(
       "[custom-pet-generator] image prompt",
       expect.stringContaining("\"provider\":\"cloudbase-sdk\""),
