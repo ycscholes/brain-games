@@ -106,12 +106,12 @@ async function analyzeSource({ sourceBuffer, mimeType = "image/jpeg", app }) {
       {
         role: "system",
         content:
-          "你是宠物参考图分析器。只输出 JSON，不要解释。speciesLabel 必须来自用户上传图的真实可见外观；mappedSkin 只是前端兼容分类，只能是 cat,dog,rabbit,bear,panda,gecko,turtle，不得作为生成物种或外观依据。猫狗判别必须优先看鼻头、嘴吻、舌头、犬齿口型、耳根和整体体型；看到黑色犬鼻、突出口吻、张嘴吐舌、柴犬或犬类竖耳时必须标为犬类，不要因竖耳、脸颊白毛或胡须误判为猫。",
+          "你是宠物参考图分析器。只输出 JSON，不要解释。speciesLabel 必须来自用户上传图的真实可见外观，可以是任意真实物种。先判断开放物种类别，不要默认归入猫狗兔；看到喙、羽毛、翅膀、爪趾、站在树枝上的小型动物时必须标为鸟类或具体鸟名，不能标为犬类、猫或兔。mappedSkin 只是前端兼容分类，只能是 cat,dog,rabbit,bear,panda,gecko,turtle，不得作为生成物种或外观依据。只有参考图确实像猫或狗时才做猫狗细分；看到黑色犬鼻、突出口吻、张嘴吐舌、柴犬或犬类竖耳时标为犬类，不要因竖耳、脸颊白毛或胡须误判为猫。",
       },
       {
         role: "user",
         content:
-          "根据用户上传的单只宠物参考图输出 speciesLabel、mappedSkin、traits。traits 包含 primaryColor、secondaryColor、markings、bodyShape、accessories，必须直接描述参考图可见特征，不要套用 mappedSkin 的默认外观。",
+          "根据用户上传的单只宠物参考图输出 speciesLabel、mappedSkin、traits。traits 包含 primaryColor、secondaryColor、markings、bodyShape、accessories，必须直接描述参考图可见特征，不要套用 mappedSkin 的默认外观。若图中是鸟，speciesLabel 输出鸟类或具体鸟名，traits 必须描述喙、羽毛、翅膀、胸腹颜色、爪趾和站姿。",
       },
     ];
     logTextPrompt({
@@ -171,6 +171,8 @@ const REFERENCE_VISUAL_TRAITS_PROMPT =
   "视觉特征：严格使用上传图分析得到的主色、辅色、纹理分布、体型轮廓、脸部轮廓和原有配饰";
 const REFERENCE_IDENTITY_PRIORITY_PROMPT =
   "身份优先级：用户上传参考图是物种、脸型、耳朵、眼睛、嘴吻、尾巴、毛色和花纹的最高依据";
+const REFERENCE_MORPHOLOGY_PROMPT =
+  "必须保留参考图的真实动物结构；如果参考图有喙、羽毛、翅膀、爪趾或站在树枝上，必须生成鸟类，禁止改成狗、猫、兔或其它四足哺乳动物";
 const ANALYSIS_CONFLICT_PROMPT =
   "辅助分析只用于补充颜色和花纹；如果辅助分析的物种、体型或器官描述与用户上传参考图冲突，必须忽略辅助分析";
 const POSE_REFERENCE_LIMIT_PROMPT =
@@ -231,6 +233,7 @@ function buildMoodPrompt({ mood, speciesLabel, traits }) {
     "固定水彩绘本风格，儿童友好，轮廓清楚，主体居中",
     "纯亮绿色背景 #00FF00，无场景、无地面、无投影、无边框、无文字",
     REFERENCE_IDENTITY_PRIORITY_PROMPT,
+    REFERENCE_MORPHOLOGY_PROMPT,
     ANALYSIS_CONFLICT_PROMPT,
     POSE_REFERENCE_LIMIT_PROMPT,
     REFERENCE_VISUAL_TRAITS_PROMPT,
@@ -257,6 +260,7 @@ function buildMoodSheetPrompt({ speciesLabel, traits }) {
     "四格必须一眼认出是同一只宠物，物种、脸型、耳朵、眼睛、嘴吻、身体比例、毛色、花纹、尾巴和原有配饰完全一致",
     "纯亮绿色背景 #00FF00，无场景、无地面、无投影、无边框、无文字、无标签",
     REFERENCE_IDENTITY_PRIORITY_PROMPT,
+    REFERENCE_MORPHOLOGY_PROMPT,
     ANALYSIS_CONFLICT_PROMPT,
     POSE_REFERENCE_LIMIT_PROMPT,
     REFERENCE_VISUAL_TRAITS_PROMPT,

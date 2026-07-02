@@ -54,6 +54,17 @@ describe("custom pet generator", () => {
       speciesLabel: "上传图中的宠物",
       mappedSkin: "rabbit",
     });
+    expect(normalizeAnalysis({
+      speciesLabel: "欧亚鸲",
+      mappedSkin: "bird",
+      traits: { bodyShape: "有喙、羽毛、翅膀，爪趾站在树枝上" },
+    })).toMatchObject({
+      speciesLabel: "欧亚鸲",
+      mappedSkin: "rabbit",
+      traits: {
+        bodyShape: "有喙、羽毛、翅膀，爪趾站在树枝上",
+      },
+    });
   });
 
   test("normalizes null traits into a writable object", () => {
@@ -112,7 +123,13 @@ describe("custom pet generator", () => {
       "必须直接描述参考图可见特征",
     );
     expect(generateText.mock.calls[0][0].messages[0].content).toContain(
-      "猫狗判别必须优先看鼻头",
+      "先判断开放物种类别",
+    );
+    expect(generateText.mock.calls[0][0].messages[0].content).toContain(
+      "看到喙、羽毛、翅膀",
+    );
+    expect(generateText.mock.calls[0][0].messages[1].content[0].text).toContain(
+      "若图中是鸟",
     );
     expect(consoleInfoSpy).toHaveBeenCalledWith(
       "[custom-pet-generator] text prompt",
@@ -234,6 +251,24 @@ describe("custom pet generator", () => {
     expect(prompt).toContain("身份优先级：用户上传参考图是物种");
     expect(prompt).toContain("辅助分析（若与参考图冲突必须忽略）：物种线索：猫");
     expect(prompt).toContain("如果辅助分析的物种、体型或器官描述与用户上传参考图冲突，必须忽略辅助分析");
+  });
+
+  test("preserves bird morphology in the image prompt", () => {
+    const prompt = buildMoodSheetPrompt({
+      speciesLabel: "欧亚鸲",
+      traits: {
+        primaryColor: "橙黄色胸腹、灰褐色背羽、白色腹部",
+        markings: "圆眼、细尖喙、翅膀深褐色",
+        bodyShape: "小型鸟类，双爪站在树枝上",
+      },
+    });
+
+    expect(prompt).toContain("物种线索：欧亚鸲");
+    expect(prompt).toContain("细尖喙");
+    expect(prompt).toContain("翅膀深褐色");
+    expect(prompt).toContain("必须保留参考图的真实动物结构");
+    expect(prompt).toContain("必须生成鸟类");
+    expect(prompt).toContain("禁止改成狗、猫、兔");
   });
 
   test("uses the generated image cloud function contract as the default source", async () => {
