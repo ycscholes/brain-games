@@ -111,6 +111,9 @@ describe("custom pet generator", () => {
     expect(generateText.mock.calls[0][0].messages[1].content[0].text).toContain(
       "必须直接描述参考图可见特征",
     );
+    expect(generateText.mock.calls[0][0].messages[0].content).toContain(
+      "猫狗判别必须优先看鼻头",
+    );
     expect(consoleInfoSpy).toHaveBeenCalledWith(
       "[custom-pet-generator] text prompt",
       expect.stringContaining("\"operation\":\"analyzeSource\""),
@@ -163,9 +166,10 @@ describe("custom pet generator", () => {
       });
       expect(prompt).toContain("水彩绘本");
       expect(prompt).toContain("#00FF00");
-      expect(prompt).toContain("物种外观");
+      expect(prompt).toContain("辅助分析");
       expect(prompt).toContain("柴犬黑白");
       expect(prompt).toContain("用户上传参考图");
+      expect(prompt).toContain("如果辅助分析的物种");
       expect(prompt).toContain("姿态参考图只用于四宫格布局和姿态参考");
       expect(prompt).toContain("禁止把宠物改画成猫、狗");
       expect(prompt).not.toMatch(forbiddenPromptTerms);
@@ -188,9 +192,10 @@ describe("custom pet generator", () => {
     expect(prompt).toContain("左下 cuddle");
     expect(prompt).toContain("右下 hungry");
     expect(prompt).toContain("#00FF00");
-    expect(prompt).toContain("物种外观");
+    expect(prompt).toContain("辅助分析");
     expect(prompt).toContain("柴犬黑白");
     expect(prompt).toContain("用户上传参考图");
+    expect(prompt).toContain("如果辅助分析的物种");
     expect(prompt).toContain("姿态参考图只用于四宫格布局和姿态参考");
     expect(prompt).toContain("禁止把宠物改画成猫、狗");
     expect(prompt).not.toMatch(forbiddenPromptTerms);
@@ -204,7 +209,7 @@ describe("custom pet generator", () => {
     });
 
     expect(prompt).toContain("用户上传图分析得到的同一只宠物");
-    expect(prompt).toContain("物种外观：柴犬");
+    expect(prompt).toContain("辅助分析（若与参考图冲突必须忽略）：物种线索：柴犬");
     expect(prompt).toContain("主色：狗黄白");
     expect(prompt).toContain("不出现食物或食盆");
     expect(prompt).toContain("不出现爱心、抱枕或玩具");
@@ -214,6 +219,21 @@ describe("custom pet generator", () => {
     expect(prompt).toContain("不得覆盖用户上传图中的物种和外观");
     expect(prompt).not.toMatch(/人手|抚摸/);
     expect(prompt.length).toBeLessThanOrEqual(1200);
+  });
+
+  test("keeps a misclassified species label lower priority than the reference image", () => {
+    const prompt = buildMoodSheetPrompt({
+      speciesLabel: "猫",
+      traits: {
+        primaryColor: "白色",
+        markings: "脸部有浅棕色斑块",
+        bodyShape: "中等体型，四肢修长，尾巴细长",
+      },
+    });
+
+    expect(prompt).toContain("身份优先级：用户上传参考图是物种");
+    expect(prompt).toContain("辅助分析（若与参考图冲突必须忽略）：物种线索：猫");
+    expect(prompt).toContain("如果辅助分析的物种、体型或器官描述与用户上传参考图冲突，必须忽略辅助分析");
   });
 
   test("uses the generated image cloud function contract as the default source", async () => {
