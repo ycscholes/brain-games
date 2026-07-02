@@ -44,8 +44,33 @@ function requireOpenId() {
 }
 
 async function getSnapshot(transaction, ownerId) {
-  const result = await transaction.collection(SNAPSHOT_COLLECTION).doc(ownerId).get().catch(() => null);
+  const result = await transaction.collection(SNAPSHOT_COLLECTION).doc(ownerId).get().catch((error) => {
+    const message = error instanceof Error ? error.message : String(error || "");
+    if (message.includes("not found") || message.includes("does not exist")) {
+      return null;
+    }
+    throw error;
+  });
   return result && result.data ? result.data.snapshot || null : null;
+}
+
+function requireSnapshot(snapshot) {
+  if (!snapshot || !snapshot.petData) {
+    throw new Error("user snapshot unavailable");
+  }
+}
+
+async function getRequiredSnapshotDoc(ownerId) {
+  const result = await db.collection(SNAPSHOT_COLLECTION).doc(ownerId).get().catch((error) => {
+    const message = error instanceof Error ? error.message : String(error || "");
+    if (message.includes("not found") || message.includes("does not exist")) {
+      return null;
+    }
+    throw error;
+  });
+  const snapshot = result && result.data ? result.data.snapshot || null : null;
+  requireSnapshot(snapshot);
+  return snapshot;
 }
 
 function getPetData(snapshot) {
@@ -80,6 +105,7 @@ function assertGenerationAvailable(entitlement) {
 }
 
 async function writeSnapshot(transaction, ownerId, snapshot, petData) {
+  requireSnapshot(snapshot);
   const updatedAt = nowIso();
   const cleanSnapshot = stripDatabaseIds(snapshot || {});
   const createdAt = cleanSnapshot.createdAt || updatedAt;
@@ -147,13 +173,13 @@ async function createUploadIntent(ownerId) {
       .where({ ownerId })
       .limit(10)
       .get(),
-    db.collection(SNAPSHOT_COLLECTION).doc(ownerId).get().catch(() => null),
+    getRequiredSnapshotDoc(ownerId),
   ]);
   assertGenerationAvailable(entitlementResult && entitlementResult.data);
   if (activeResult.data.some((task) => isActiveStatus(task.status))) {
     throw new Error("custom pet task already active");
   }
-  const snapshot = snapshotResult && snapshotResult.data ? snapshotResult.data.snapshot : null;
+  const snapshot = snapshotResult;
   if (Number(snapshot?.petData?.balance || 0) < CUSTOM_PET_PRICE) {
     throw new Error("insufficient pet points");
   }
