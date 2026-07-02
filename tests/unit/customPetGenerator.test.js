@@ -26,13 +26,16 @@ const {
 describe("custom pet generator", () => {
   const forbiddenPromptTerms = /人手|抚摸/;
   let consoleInfoSpy;
+  let consoleWarnSpy;
 
   beforeEach(() => {
     consoleInfoSpy = jest.spyOn(console, "info").mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
     consoleInfoSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   test("normalizes the classifier to one supported template", () => {
@@ -47,7 +50,10 @@ describe("custom pet generator", () => {
         primaryColor: "黄色",
       },
     });
-    expect(normalizeAnalysis({ mappedSkin: "hamster" }).mappedSkin).toBe("cat");
+    expect(normalizeAnalysis({ mappedSkin: "hamster" })).toMatchObject({
+      speciesLabel: "上传图中的宠物",
+      mappedSkin: "rabbit",
+    });
   });
 
   test("normalizes null traits into a writable object", () => {
@@ -64,9 +70,13 @@ describe("custom pet generator", () => {
 
   test("falls back to default source analysis when the AI SDK is not ready", async () => {
     await expect(analyzeSource({ sourceBuffer: Buffer.from("source") })).resolves.toMatchObject({
-      speciesLabel: "自定义宠物",
-      mappedSkin: "cat",
+      speciesLabel: "上传图中的宠物",
+      mappedSkin: "rabbit",
     });
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      "[custom-pet-generator] analysis summary",
+      expect.stringContaining("\"status\":\"request_failed\""),
+    );
   });
 
   test("logs the analysis text prompt without treating mappedSkin as the generation source", async () => {
@@ -105,7 +115,43 @@ describe("custom pet generator", () => {
       "[custom-pet-generator] text prompt",
       expect.stringContaining("\"operation\":\"analyzeSource\""),
     );
+    expect(consoleInfoSpy).toHaveBeenCalledWith(
+      "[custom-pet-generator] analysis summary",
+      expect.stringContaining("\"status\":\"ok\""),
+    );
     expect(consoleInfoSpy.mock.calls[0][1]).not.toContain("base64");
+  });
+
+  test("logs weak analysis without falling back to a cat identity", async () => {
+    const generateText = jest.fn().mockResolvedValue({
+      text: JSON.stringify({
+        speciesLabel: "未知",
+        mappedSkin: "hamster",
+        traits: { primaryColor: "浅棕色" },
+      }),
+    });
+
+    await expect(
+      analyzeSource({
+        sourceBuffer: Buffer.from("source"),
+        app: {
+          ai: () => ({
+            createModel: () => ({ generateText }),
+          }),
+        },
+      }),
+    ).resolves.toMatchObject({
+      speciesLabel: "上传图中的宠物",
+      mappedSkin: "rabbit",
+      traits: {
+        primaryColor: "浅棕色",
+      },
+    });
+
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      "[custom-pet-generator] analysis summary",
+      expect.stringContaining("\"status\":\"weak_species\""),
+    );
   });
 
   test("builds a bounded watercolor chroma-key prompt for every mood", () => {
@@ -119,8 +165,11 @@ describe("custom pet generator", () => {
       expect(prompt).toContain("#00FF00");
       expect(prompt).toContain("物种外观");
       expect(prompt).toContain("柴犬黑白");
+      expect(prompt).toContain("image_url 用户上传参考图");
+      expect(prompt).toContain("pose_image_url 只用于四宫格布局和姿态参考");
+      expect(prompt).toContain("禁止把宠物改画成猫、狗");
       expect(prompt).not.toMatch(forbiddenPromptTerms);
-      expect(prompt.length).toBeLessThanOrEqual(250);
+      expect(prompt.length).toBeLessThanOrEqual(520);
     });
   });
 
@@ -141,8 +190,11 @@ describe("custom pet generator", () => {
     expect(prompt).toContain("#00FF00");
     expect(prompt).toContain("物种外观");
     expect(prompt).toContain("柴犬黑白");
+    expect(prompt).toContain("image_url 用户上传参考图");
+    expect(prompt).toContain("pose_image_url 只用于四宫格布局和姿态参考");
+    expect(prompt).toContain("禁止把宠物改画成猫、狗");
     expect(prompt).not.toMatch(forbiddenPromptTerms);
-    expect(prompt.length).toBeLessThanOrEqual(900);
+    expect(prompt.length).toBeLessThanOrEqual(1200);
   });
 
   test("keeps the custom-pet identity in the CloudBase text-to-image prompt", () => {
@@ -158,8 +210,10 @@ describe("custom pet generator", () => {
     expect(prompt).toContain("不出现爱心、抱枕或玩具");
     expect(prompt).toContain("只调整姿态和表情");
     expect(prompt).toContain("最终结果必须明显是 2x2 四宫格");
+    expect(prompt).toContain("image_url 用户上传参考图是物种");
+    expect(prompt).toContain("不得覆盖用户上传图中的物种和外观");
     expect(prompt).not.toMatch(/人手|抚摸/);
-    expect(prompt.length).toBeLessThanOrEqual(900);
+    expect(prompt.length).toBeLessThanOrEqual(1200);
   });
 
   test("uses the generated image cloud function contract as the default source", async () => {

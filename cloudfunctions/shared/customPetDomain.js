@@ -7,6 +7,7 @@ const QUOTA_RETRY_DELAY_MS = 30 * 60 * 1000;
 
 const CUSTOM_PET_MOODS = ["idle", "feed", "cuddle", "hungry"];
 const PET_SKINS = ["cat", "dog", "rabbit", "bear", "panda", "gecko", "turtle"];
+const DEFAULT_CUSTOM_PET_TEMPLATE_SKIN = "rabbit";
 const DEFAULT_CUSTOM_PET_TRAITS = {
   primaryColor: "保留原图主色",
   secondaryColor: "保留原图辅助色",
@@ -103,7 +104,7 @@ function getNextWorkerStep(status) {
 }
 
 function normalizeMappedSkin(value) {
-  return PET_SKINS.includes(value) ? value : "cat";
+  return PET_SKINS.includes(value) ? value : DEFAULT_CUSTOM_PET_TEMPLATE_SKIN;
 }
 
 function stripDatabaseIds(value) {
@@ -212,6 +213,7 @@ module.exports = {
   WORKER_STATUSES,
   CUSTOM_PET_MOODS,
   CUSTOM_PET_PRICE,
+  DEFAULT_CUSTOM_PET_TEMPLATE_SKIN,
   DEFAULT_CUSTOM_PET_TRAITS,
   MAX_CUSTOM_PET_GENERATIONS,
   MAX_QUOTA_RETRY_ATTEMPTS,

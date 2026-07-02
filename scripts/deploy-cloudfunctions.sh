@@ -87,10 +87,17 @@ for function_name in "${FUNCTIONS[@]}"; do
   timeout=30
   memory_size=256
   function_runtime="$RUNTIME"
+  env_variables_block=""
   if [[ "$function_name" == "customPetWorker" ]]; then
     timeout=900
     memory_size=1024
     function_runtime="$WORKER_RUNTIME"
+    env_variables_block=",
+      \"envVariables\": {
+        \"TARO_CLOUD_ENV_ID\": \"$ENV_ID\",
+        \"CLOUD_ENV_ID\": \"$ENV_ID\",
+        \"TCB_ENV\": \"$ENV_ID\"
+      }"
   elif [[ "$function_name" == "customPetImageGenerator" ]]; then
     timeout=240
     memory_size=512
@@ -109,7 +116,7 @@ for function_name in "${FUNCTIONS[@]}"; do
       "runtime": "$function_runtime",
       "handler": "index.main",
       "timeout": $timeout,
-      "memorySize": $memory_size
+      "memorySize": $memory_size$env_variables_block
     }
   ]
 }

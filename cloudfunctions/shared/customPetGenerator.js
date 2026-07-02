@@ -1,4 +1,5 @@
 const {
+  DEFAULT_CUSTOM_PET_TEMPLATE_SKIN,
   DEFAULT_CUSTOM_PET_TRAITS,
   normalizeMappedSkin,
 } = require("./customPetDomain");
@@ -21,10 +22,11 @@ const CLOUD_BASE_IMAGE_MODEL_NAME = "HY-Image-3.0-Plus-4090-Tob-v1.0";
 const DEFAULT_IMAGE_GENERATION_FUNCTION_NAME = "customPetImageGenerator";
 
 const DEFAULT_ANALYSIS = {
-  speciesLabel: "自定义宠物",
-  mappedSkin: "cat",
+  speciesLabel: "上传图中的宠物",
+  mappedSkin: DEFAULT_CUSTOM_PET_TEMPLATE_SKIN,
   traits: DEFAULT_CUSTOM_PET_TRAITS,
 };
+const WEAK_SPECIES_LABELS = new Set(["", "未知", "自定义宠物", "宠物", "unknown", "Unknown"]);
 
 function parseJsonObject(text) {
   const value = String(text || "").trim();
@@ -41,10 +43,12 @@ function parseJsonObject(text) {
 
 function normalizeAnalysis(value) {
   const traits = value && value.traits && typeof value.traits === "object" ? value.traits : {};
+  const rawSpeciesLabel = String(value && value.speciesLabel ? value.speciesLabel : "").trim();
+  const speciesLabel = WEAK_SPECIES_LABELS.has(rawSpeciesLabel)
+    ? DEFAULT_ANALYSIS.speciesLabel
+    : rawSpeciesLabel;
   return {
-    speciesLabel: String(value && value.speciesLabel ? value.speciesLabel : DEFAULT_ANALYSIS.speciesLabel)
-      .trim()
-      .slice(0, 30),
+    speciesLabel: speciesLabel.slice(0, 30),
     mappedSkin: normalizeMappedSkin(value && value.mappedSkin),
     traits: {
       ...DEFAULT_CUSTOM_PET_TRAITS,
@@ -63,6 +67,34 @@ function logTextPrompt({ provider, operation, messages }) {
       messages,
     }),
   );
+}
+
+function logAnalysisSummary({ status, analysis = null, reason = null }) {
+  const traits = analysis && analysis.traits && typeof analysis.traits === "object" ? analysis.traits : {};
+  const payload = {
+    event: "custom_pet_analysis_summary",
+    status,
+  };
+  if (analysis) {
+    payload.speciesLabel = analysis.speciesLabel || null;
+    payload.mappedSkin = analysis.mappedSkin || null;
+    payload.traitsValid = {
+      primaryColor: Boolean(traits.primaryColor),
+      secondaryColor: Boolean(traits.secondaryColor),
+      markings: Boolean(traits.markings),
+      bodyShape: Boolean(traits.bodyShape),
+      accessories: Boolean(traits.accessories),
+    };
+  }
+  if (reason) {
+    payload.reason = String(reason).slice(0, 180);
+  }
+  const message = JSON.stringify(payload);
+  if (status === "ok") {
+    console.info("[custom-pet-generator] analysis summary", message);
+  } else {
+    console.warn("[custom-pet-generator] analysis summary", message);
+  }
 }
 
 async function analyzeSource({ sourceBuffer, mimeType = "image/jpeg", app }) {
@@ -108,14 +140,41 @@ async function analyzeSource({ sourceBuffer, mimeType = "image/jpeg", app }) {
         },
       ],
     });
-    return normalizeAnalysis(parseJsonObject(result.text));
-  } catch {
+    const parsed = parseJsonObject(result.text);
+    if (!parsed) {
+      logAnalysisSummary({
+        status: "parse_failed",
+        analysis: DEFAULT_ANALYSIS,
+        reason: String(result && result.text ? result.text : "empty analysis response").slice(0, 180),
+      });
+      return DEFAULT_ANALYSIS;
+    }
+    const analysis = normalizeAnalysis(parsed);
+    const weakSpecies = analysis.speciesLabel === DEFAULT_ANALYSIS.speciesLabel;
+    logAnalysisSummary({
+      status: weakSpecies ? "weak_species" : "ok",
+      analysis,
+      reason: weakSpecies ? "speciesLabel missing or weak; generation must rely on reference image" : null,
+    });
+    return analysis;
+  } catch (error) {
+    logAnalysisSummary({
+      status: "request_failed",
+      analysis: DEFAULT_ANALYSIS,
+      reason: error && error.message ? error.message : String(error || "unknown analysis error"),
+    });
     return DEFAULT_ANALYSIS;
   }
 }
 
 const REFERENCE_VISUAL_TRAITS_PROMPT =
   "视觉特征：严格使用上传图分析得到的主色、辅色、纹理分布、体型轮廓、脸部轮廓和原有配饰";
+const REFERENCE_IDENTITY_PRIORITY_PROMPT =
+  "身份优先级：image_url 用户上传参考图是物种、脸型、耳朵、眼睛、嘴吻、尾巴、毛色和花纹的最高依据";
+const POSE_REFERENCE_LIMIT_PROMPT =
+  "pose_image_url 只用于四宫格布局和姿态参考，不得覆盖用户上传图中的物种和外观";
+const NO_CAT_DOG_SUBSTITUTION_PROMPT =
+  "除非用户上传图清楚可见为猫或狗，否则禁止把宠物改画成猫、狗、猫咪、小狗或犬类";
 const EXTRA_CONTENT_NEGATIVE_PROMPT =
   "每格只保留宠物本体及原有配饰，禁止出现其它角色、互动肢体、餐饮元素、器皿、玩具、特效、光环、场景物件";
 const IMAGE_NEGATIVE_PROMPT =
@@ -165,10 +224,13 @@ function buildMoodPrompt({ mood, speciesLabel, traits }) {
     identity,
     "固定水彩绘本风格，儿童友好，轮廓清楚，主体居中",
     "纯亮绿色背景 #00FF00，无场景、无地面、无投影、无边框、无文字",
+    REFERENCE_IDENTITY_PRIORITY_PROMPT,
+    POSE_REFERENCE_LIMIT_PROMPT,
     REFERENCE_VISUAL_TRAITS_PROMPT,
+    NO_CAT_DOG_SUBSTITUTION_PROMPT,
     EXTRA_CONTENT_NEGATIVE_PROMPT,
     "保留上传图分析得到的身份和外观",
-  ].join("。").slice(0, 250);
+  ].join("。").slice(0, 520);
 }
 
 function buildMoodSheetPrompt({ speciesLabel, traits }) {
@@ -187,10 +249,13 @@ function buildMoodSheetPrompt({ speciesLabel, traits }) {
     "右下 hungry：同一只宠物期待姿态和可爱表情，不要悲伤",
     "四格必须一眼认出是同一只宠物，物种、脸型、耳朵、眼睛、嘴吻、身体比例、毛色、花纹、尾巴和原有配饰完全一致",
     "纯亮绿色背景 #00FF00，无场景、无地面、无投影、无边框、无文字、无标签",
+    REFERENCE_IDENTITY_PRIORITY_PROMPT,
+    POSE_REFERENCE_LIMIT_PROMPT,
     REFERENCE_VISUAL_TRAITS_PROMPT,
+    NO_CAT_DOG_SUBSTITUTION_PROMPT,
     `${EXTRA_CONTENT_NEGATIVE_PROMPT}，尤其禁止食物、食盆、爱心、抱枕、玩具和特效`,
     "儿童绘本水彩风格，主体居中，只调整姿态和表情",
-  ].filter(Boolean).join("。").slice(0, 900);
+  ].filter(Boolean).join("。").slice(0, 1200);
 }
 
 function configureCloudBaseImageModel(model) {

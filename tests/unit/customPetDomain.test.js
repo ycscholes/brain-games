@@ -1,6 +1,7 @@
 const {
   CUSTOM_PET_PRICE,
   DEFAULT_CUSTOM_PET_TRAITS,
+  DEFAULT_CUSTOM_PET_TEMPLATE_SKIN,
   MAX_QUOTA_RETRY_ATTEMPTS,
   MAX_REROLLS,
   canTransition,
@@ -61,7 +62,9 @@ describe("custom pet domain", () => {
 
   test("normalizes unsupported template mappings", () => {
     expect(normalizeMappedSkin("turtle")).toBe("turtle");
-    expect(normalizeMappedSkin("hamster")).toBe("cat");
+    expect(normalizeMappedSkin("hamster")).toBe(DEFAULT_CUSTOM_PET_TEMPLATE_SKIN);
+    expect(DEFAULT_CUSTOM_PET_TEMPLATE_SKIN).not.toBe("cat");
+    expect(DEFAULT_CUSTOM_PET_TEMPLATE_SKIN).not.toBe("dog");
   });
 
   test("classifies provider moderation and temporary failures", () => {
