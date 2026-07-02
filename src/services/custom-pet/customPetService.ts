@@ -2,6 +2,7 @@ import Taro from "@tarojs/taro";
 import type { PetSpriteMood } from "../../pages/pet/components/PetSprite/types";
 import { savePetData } from "../../utils/petStorage";
 import { ensureCloudReady } from "../user-data/cloud/cloudFunctionsClient";
+import { syncLocalUserDataToCloudNow } from "../user-data/sync/userDataSyncService";
 import type {
   CustomPetApiResponse,
   CustomPetMoodUrls,
@@ -187,6 +188,7 @@ export async function getCustomPetStatus(): Promise<{
 }
 
 export async function chooseAndSubmitCustomPet(): Promise<CustomPetTask> {
+  await syncLocalUserDataToCloudNow();
   const intent = await callCustomPetApi<{
     jobId: string;
     cloudPath: string;
