@@ -5,6 +5,7 @@ import {
   resolveCachedCustomPetSpriteUrl,
   resolveCustomPetSpriteUrl,
 } from "../../../../services/custom-pet/customPetService";
+import { getPetImageRetryDelayMs } from "./retryPolicy";
 import type { PetSpriteProps } from "./types";
 import "./index.scss";
 
@@ -34,12 +35,51 @@ export default function PetSprite({
       : resolveCachedPetSpriteUrl(skin, safeMood),
   );
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
-  const hasRetriedRef = useRef(false);
+  const [imageRetryToken, setImageRetryToken] = useState(0);
+  const retryAttemptRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shouldShowImage = Boolean(imageSrc) && !imageLoadFailed;
+  const spriteKey = customAssetId ? `custom:${customAssetId}` : `standard:${skin}`;
+
+  const clearRetryTimer = useCallback(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleImageRetry = useCallback(() => {
+    const retryDelay = getPetImageRetryDelayMs(retryAttemptRef.current);
+    if (retryDelay === null) {
+      setImageLoadFailed(true);
+      return;
+    }
+
+    retryAttemptRef.current += 1;
+    clearRetryTimer();
+    setImageLoadFailed(false);
+    retryTimerRef.current = setTimeout(() => {
+      retryTimerRef.current = null;
+      setImageRetryToken((value) => value + 1);
+    }, retryDelay);
+  }, [clearRetryTimer]);
+
+  useEffect(() => () => clearRetryTimer(), [clearRetryTimer]);
+
+  useEffect(() => {
+    clearRetryTimer();
+    retryAttemptRef.current = 0;
+    setImageLoadFailed(false);
+    setImageRetryToken(0);
+    setImageSrc(
+      customAssetId
+        ? resolveCachedCustomPetSpriteUrl(customAssetId, safeMood)
+        : resolveCachedPetSpriteUrl(skin, safeMood),
+    );
+  }, [clearRetryTimer, customAssetId, safeMood, skin, spriteKey]);
 
   useEffect(() => {
     let isCurrent = true;
-    hasRetriedRef.current = false;
     setImageLoadFailed(false);
     setImageSrc(
       customAssetId
@@ -48,49 +88,43 @@ export default function PetSprite({
     );
 
     const resolver = customAssetId
-      ? resolveCustomPetSpriteUrl(customAssetId, safeMood)
-      : resolvePetSpriteUrl(skin, safeMood);
+      ? resolveCustomPetSpriteUrl(customAssetId, safeMood, {
+          forceRefresh: imageRetryToken > 0,
+        })
+      : resolvePetSpriteUrl(skin, safeMood, {
+          forceRefresh: imageRetryToken > 0,
+        });
     void resolver
       .then((url) => {
         if (isCurrent) {
+          if (!url) {
+            scheduleImageRetry();
+            return;
+          }
+
           setImageSrc(url);
         }
       })
       .catch(() => {
         if (isCurrent) {
-          setImageLoadFailed(true);
+          scheduleImageRetry();
         }
       });
 
     return () => {
       isCurrent = false;
     };
-  }, [customAssetId, safeMood, skin]);
+  }, [customAssetId, imageRetryToken, safeMood, scheduleImageRetry, skin]);
 
   const handleImageError = useCallback(() => {
-    if (hasRetriedRef.current) {
-      setImageLoadFailed(true);
-      return;
-    }
+    scheduleImageRetry();
+  }, [scheduleImageRetry]);
 
-    hasRetriedRef.current = true;
-    const resolver = customAssetId
-      ? resolveCustomPetSpriteUrl(customAssetId, safeMood, { forceRefresh: true })
-      : resolvePetSpriteUrl(skin, safeMood, { forceRefresh: true });
-    void resolver
-      .then((url) => {
-        if (url) {
-          setImageLoadFailed(false);
-          setImageSrc(url);
-          return;
-        }
-
-        setImageLoadFailed(true);
-      })
-      .catch(() => {
-        setImageLoadFailed(true);
-      });
-  }, [customAssetId, safeMood, skin]);
+  const handleImageLoad = useCallback(() => {
+    clearRetryTimer();
+    retryAttemptRef.current = 0;
+    setImageLoadFailed(false);
+  }, [clearRetryTimer]);
 
   const classes = [
     "pet-sprite",
@@ -109,10 +143,12 @@ export default function PetSprite({
       <View className="pet-sprite__shadow" />
       {shouldShowImage ? (
         <Image
+          key={`${spriteKey}:${safeMood}:${imageRetryToken}:${imageSrc}`}
           className="pet-sprite__image"
           src={imageSrc}
           mode="aspectFit"
           lazyLoad={false}
+          onLoad={handleImageLoad}
           onError={handleImageError}
         />
       ) : (
