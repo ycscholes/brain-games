@@ -46,9 +46,6 @@ case "$MODE" in
       if git check-ignore -q --no-index "$file"; then
         continue
       fi
-      if [[ "$file" == .agents/skills/* ]]; then
-        continue
-      fi
       scan_file "$file" "$file" || failed=1
     done < <(git ls-files -z)
     ;;
