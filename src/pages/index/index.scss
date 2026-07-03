@@ -106,6 +106,26 @@
   gap: 12px;
 }
 
+.all-games-button {
+  min-width: 72px;
+  height: 56px;
+  padding: 0 18px;
+  border-radius: 28px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-card-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(188, 188, 188, 0.16);
+  box-sizing: border-box;
+}
+
+.all-games-button-text {
+  color: var(--brand-primary-dark);
+  font-size: 24px;
+  font-weight: 850;
+}
+
 .search-button {
   width: 56px;
   height: 56px;
@@ -215,6 +235,30 @@
   display: flex;
   flex-direction: column;
   gap: 28px;
+}
+
+.home-list-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.home-list-entry {
+  min-height: 52px;
+  padding: 0 18px;
+  border-radius: 18px;
+  background: rgba(79, 70, 229, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.home-list-entry-text {
+  color: var(--brand-primary);
+  font-size: 23px;
+  font-weight: 850;
 }
 
 .game-category-section {

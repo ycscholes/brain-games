@@ -2,34 +2,16 @@ import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useState } from "react";
 import {
+  GAME_TITLE_MAP,
+} from "../../config/gameCatalog";
+import {
   getTrainingDifficultyLabel,
   readTrainingRecords,
   readDashboardStats,
-  type TrainingGameId,
   type TrainingRecord,
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
 import "./index.scss";
-
-const GAME_TITLES: Record<TrainingGameId, string> = {
-  memory: "记忆图形",
-  "memory-challenge": "记忆图形",
-  rps: "逆向猜拳",
-  "rock-paper-scissors": "逆向猜拳",
-  "dual-task": "多任务处理",
-  "mental-math": "速算挑战",
-  "twenty-four": "24 点",
-  "digit-span": "数字广度记忆",
-  mot: "追踪任务",
-  "multiple-object-tracking": "追踪任务",
-  pattern: "找规律",
-  "pattern-completion": "找规律",
-  "number-order": "星链回响",
-  "head-count": "小剧场清点",
-  "word-scramble": "词语拼盘",
-  "bird-count": "宠物速数",
-  "color-trap": "颜色陷阱",
-};
 
 function formatPlayedAt(value: string) {
   const date = new Date(value);
@@ -93,7 +75,7 @@ export default function TrainingRecords() {
             <View key={record.id} className="record-item-full">
               <View className="record-main">
                 <View className="record-copy">
-                  <Text className="record-game-title">{GAME_TITLES[record.gameId] || record.gameId}</Text>
+                  <Text className="record-game-title">{GAME_TITLE_MAP[record.gameId] || record.gameId}</Text>
                   <Text className="record-meta">
                     {record.difficulty ? `${getTrainingDifficultyLabel(record.difficulty)} · ` : ""}
                     {record.outcome === "completed" ? "正常完成" : "中途返回"} · {formatPlayedAt(record.playedAt)}

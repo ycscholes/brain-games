@@ -8,6 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   createNumberOrderSession,
@@ -115,6 +116,17 @@ export default function NumberOrder() {
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextAwardedPoints = getAwardedPoints("number-order", finalScore, rewardDifficulty);
+    if (completeGauntletLegIfNeeded({
+      gameId: "number-order",
+      score: finalScore,
+      awardedPoints: nextAwardedPoints,
+      durationSeconds,
+      difficulty: rewardDifficulty,
+      outcome: "completed",
+    })) {
+      return;
+    }
+
     addPointsToPet("number-order", finalScore, rewardDifficulty);
     recordTrainingSession({
       gameId: "number-order",

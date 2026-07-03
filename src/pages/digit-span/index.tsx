@@ -8,6 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
@@ -81,6 +82,16 @@ export default function DigitSpan() {
     (finalScore: number) => {
       clearTimers();
       const awardedPoints = getAwardedPoints("digit-span", finalScore, rewardDifficulty);
+      if (completeGauntletLegIfNeeded({
+        gameId: "digit-span",
+        score: finalScore,
+        awardedPoints,
+        difficulty: rewardDifficulty,
+        outcome: "completed",
+      })) {
+        return;
+      }
+
       setScore(finalScore);
       addPointsToPet("digit-span", finalScore, rewardDifficulty);
       recordTrainingSession({

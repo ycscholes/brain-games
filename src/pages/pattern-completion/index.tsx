@@ -8,6 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   generatePatternSession,
@@ -224,6 +225,17 @@ export default function PatternCompletion() {
 
       const settledElapsedMs = Date.now() - startTimeRef.current;
       const awardedPoints = getAwardedPoints("pattern-completion", settledFinalScore, rewardDifficulty);
+      const durationSeconds = Math.round(settledElapsedMs / 1000);
+      if (completeGauntletLegIfNeeded({
+        gameId: "pattern-completion",
+        score: settledFinalScore,
+        awardedPoints,
+        durationSeconds,
+        difficulty: rewardDifficulty,
+        outcome: "completed",
+      })) {
+        return;
+      }
 
       setElapsedMs(settledElapsedMs);
       setFinalScore(settledFinalScore);
@@ -232,7 +244,7 @@ export default function PatternCompletion() {
         gameId: "pattern-completion",
         score: settledFinalScore,
         awardedPoints,
-        durationSeconds: Math.round(settledElapsedMs / 1000),
+        durationSeconds,
         difficulty: rewardDifficulty,
         outcome: "completed",
       });

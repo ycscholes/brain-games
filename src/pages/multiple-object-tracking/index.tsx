@@ -8,6 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded, isGameGauntletRun } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
@@ -364,6 +365,16 @@ export default function MultipleObjectTracking() {
     clearRoundRuntime();
     if (phase !== "start" && phase !== "finished") {
       const awardedPoints = getAwardedPoints("multiple-object-tracking", score, rewardDifficulty);
+      if (completeGauntletLegIfNeeded({
+        gameId: "multiple-object-tracking",
+        score,
+        awardedPoints,
+        difficulty: rewardDifficulty,
+        outcome: "interrupted",
+      })) {
+        return;
+      }
+
       addPointsToPet("multiple-object-tracking", score, rewardDifficulty);
       recordTrainingSession({
         gameId: "multiple-object-tracking",
@@ -418,7 +429,7 @@ export default function MultipleObjectTracking() {
 
       setScore(nextScore);
 
-      if (nextScore > best) {
+      if (!isGameGauntletRun() && nextScore > best) {
         Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${rewardDifficulty}`, nextScore);
         setBest(nextScore);
         setIsNewBest(true);
@@ -430,6 +441,16 @@ export default function MultipleObjectTracking() {
 
     setRoundMessage("本轮未能完整锁定全部目标");
     const awardedPoints = getAwardedPoints("multiple-object-tracking", score, rewardDifficulty);
+    if (completeGauntletLegIfNeeded({
+      gameId: "multiple-object-tracking",
+      score,
+      awardedPoints,
+      difficulty: rewardDifficulty,
+      outcome: "completed",
+    })) {
+      return;
+    }
+
     addPointsToPet("multiple-object-tracking", score, rewardDifficulty);
     recordTrainingSession({
       gameId: "multiple-object-tracking",

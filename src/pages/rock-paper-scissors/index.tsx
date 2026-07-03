@@ -9,6 +9,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded, isGameGauntletRun } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
@@ -159,6 +160,17 @@ export default function RockPaperScissors() {
     const finalScore = Math.min(MAX_POINTS_PER_SESSION, score);
     const rewardDifficulty = getRewardDifficulty();
     const awardedPoints = getAwardedPoints("rock-paper-scissors", finalScore, rewardDifficulty);
+    if (completeGauntletLegIfNeeded({
+      gameId: "rock-paper-scissors",
+      score: finalScore,
+      awardedPoints,
+      mode: `D${difficulty}`,
+      difficulty: rewardDifficulty,
+      outcome: "completed",
+    })) {
+      return;
+    }
+
     Taro.setStorageSync("rps_last_score", finalScore);
     addPointsToPet("rock-paper-scissors", finalScore, rewardDifficulty);
     recordTrainingSession({
@@ -188,7 +200,9 @@ export default function RockPaperScissors() {
       setScore(newScore);
       setStreak(nextStreak);
       setBestStreak((prev) => Math.max(prev, nextStreak));
-      Taro.setStorageSync("rps_streak", nextStreak);
+      if (!isGameGauntletRun()) {
+        Taro.setStorageSync("rps_streak", nextStreak);
+      }
 
       setTimeout(() => {
         setTimeLeft(DIFFICULTY_CONFIG[difficulty].time);
@@ -199,7 +213,9 @@ export default function RockPaperScissors() {
 
     setFeedback("wrong");
     setStreak(0);
-    Taro.setStorageSync("rps_streak", 0);
+    if (!isGameGauntletRun()) {
+      Taro.setStorageSync("rps_streak", 0);
+    }
 
     setTimeout(() => {
       handleGameOver();

@@ -6,6 +6,7 @@ import {
   getAwardedPoints,
   recordTrainingSession,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   evaluateExpression,
@@ -93,6 +94,18 @@ export default function TwentyFour() {
     clearTimer();
     const finalScore = scoreRef.current;
     const awardedPoints = getAwardedPoints("twenty-four", finalScore, REWARD_DIFFICULTY);
+    if (completeGauntletLegIfNeeded({
+      gameId: "twenty-four",
+      score: finalScore,
+      awardedPoints,
+      durationSeconds: GAME_SECONDS,
+      mode: `${GAME_SECONDS}s`,
+      difficulty: REWARD_DIFFICULTY,
+      outcome: "completed",
+    })) {
+      return;
+    }
+
     addPointsToPet("twenty-four", finalScore, REWARD_DIFFICULTY);
     recordTrainingSession({
       gameId: "twenty-four",

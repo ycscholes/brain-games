@@ -10,6 +10,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import PetSprite from "../pet/components/PetSprite";
 import type { PetSpriteMood, PetSpriteSize } from "../pet/components/PetSprite/types";
@@ -358,6 +359,17 @@ export default function FarmCount() {
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextAwardedPoints = getAwardedPoints("bird-count", finalScore, difficulty);
+    if (completeGauntletLegIfNeeded({
+      gameId: "bird-count",
+      score: finalScore,
+      awardedPoints: nextAwardedPoints,
+      durationSeconds,
+      difficulty,
+      outcome: "completed",
+    })) {
+      return;
+    }
+
     addPointsToPet("bird-count", finalScore, difficulty);
     recordTrainingSession({
       gameId: "bird-count",
@@ -392,6 +404,18 @@ export default function FarmCount() {
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextRewardDifficulty = getHeadCountRewardDifficulty(yardDifficulty, speedDifficulty);
     const nextAwardedPoints = getAwardedPoints("head-count", finalScore, nextRewardDifficulty);
+    if (completeGauntletLegIfNeeded({
+      gameId: "head-count",
+      score: finalScore,
+      awardedPoints: nextAwardedPoints,
+      durationSeconds,
+      mode: `${yardDifficulty}:${speedDifficulty}`,
+      difficulty: nextRewardDifficulty,
+      outcome: "completed",
+    })) {
+      return;
+    }
+
     addPointsToPet("head-count", finalScore, nextRewardDifficulty);
     recordTrainingSession({
       gameId: "head-count",

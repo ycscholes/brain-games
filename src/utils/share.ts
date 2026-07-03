@@ -8,6 +8,8 @@ import Taro, {
 
 export const SHARE_PAGE_PATHS = [
   "pages/index/index",
+  "pages/all-games/index",
+  "pages/game-gauntlet/index",
   "pages/memory-challenge/index",
   "pages/rock-paper-scissors/index",
   "pages/dual-task/index",
@@ -43,6 +45,14 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/index/index": {
     title: APP_SHARE_TITLE,
     timelineTitle: "Cici的脑部锻炼：每天练一点",
+  },
+  "pages/all-games/index": {
+    title: "来看看Cici的脑部锻炼全部游戏",
+    timelineTitle: "Cici的脑部锻炼全部训练",
+  },
+  "pages/game-gauntlet/index": {
+    title: "来挑战游戏大闯关，一次玩 3 个脑力游戏",
+    timelineTitle: "游戏大闯关综合训练",
   },
   "pages/memory-challenge/index": {
     title: "来挑战奇趣记忆",

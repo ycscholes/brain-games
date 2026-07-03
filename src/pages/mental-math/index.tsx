@@ -7,6 +7,7 @@ import {
   getTrainingDifficultyLabel,
   recordTrainingSession,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   CUSTOM_MATH_STAGE_ID,
@@ -328,6 +329,17 @@ const handleGameOver = () => {
   const finalCorrectCount = correctCountRef.current;
   const effectiveScore = getEffectiveScoreForPoints(finalCorrectCount);
   const awardedPoints = getAwardedPoints("mental-math", effectiveScore, rewardDifficulty);
+  if (completeGauntletLegIfNeeded({
+    gameId: "mental-math",
+    score: finalCorrectCount,
+    awardedPoints,
+    mode: getTrainingModeRecord(),
+    difficulty: rewardDifficulty,
+    outcome: "completed",
+  })) {
+    return;
+  }
+
   Taro.setStorageSync("mental_math_last_score", finalCorrectCount);
   addPointsToPet("mental-math", effectiveScore, rewardDifficulty);
   recordTrainingSession({

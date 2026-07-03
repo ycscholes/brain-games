@@ -16,6 +16,7 @@ export type TrainingGameId =
   | "word-scramble"
   | "bird-count"
   | "color-trap"
+  | "game-gauntlet"
   | "memory"
   | "rps"
   | "mot"
@@ -104,6 +105,7 @@ const LEGACY_KEYS = [
   "mot_best",
   "pattern_completion_best",
   "pet_data",
+  "game_gauntlet_session_v1",
 ];
 
 function createRecordId() {
@@ -303,6 +305,7 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "word-scramble": 1,
   "bird-count": 1,
   "color-trap": 1,
+  "game-gauntlet": 1,
   memory: 1,
   rps: 1,
   mot: 3,

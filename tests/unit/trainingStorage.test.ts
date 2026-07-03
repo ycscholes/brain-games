@@ -182,6 +182,7 @@ describe("trainingStorage", () => {
     mockStorage.set("word_scramble_best_normal", "33");
     mockStorage.set("bird_count_best_hard", "41");
     mockStorage.set("color_trap_best_normal", "35");
+    mockStorage.set("game_gauntlet_session_v1", JSON.stringify({ id: "gauntlet_1" }));
     mockStorage.set("memory_highscore_shape_M1", JSON.stringify({ score: 42 }));
     mockStorage.set("memory_highscore_calculation_M4", JSON.stringify({ score: 128 }));
 
@@ -266,6 +267,13 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("color-trap", 50, "hard")).toBe(60);
     });
 
+    test("game gauntlet can award the summed child-game points without default caps", () => {
+      expect(getAwardedPoints("game-gauntlet", 86, "normal", {
+        applyDifficultyMultiplier: false,
+        maxPoints: 86,
+      })).toBe(86);
+    });
+
     test("typical good performance gives similar rewards across games", () => {
       // 良好表现应该获得大约 10-40 积分
       const rewards = [
@@ -282,6 +290,7 @@ describe("trainingStorage", () => {
         getAwardedPoints("word-scramble", 34),
         getAwardedPoints("bird-count", 34),
         getAwardedPoints("color-trap", 34),
+        getAwardedPoints("game-gauntlet", 34),
       ];
 
       rewards.forEach(reward => {

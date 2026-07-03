@@ -1,6 +1,8 @@
 export default defineAppConfig({
   pages: [
     'pages/index/index',
+    'pages/all-games/index',
+    'pages/game-gauntlet/index',
     'pages/memory-challenge/index',
     'pages/rock-paper-scissors/index',
     'pages/dual-task/index',

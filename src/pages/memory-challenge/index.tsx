@@ -10,6 +10,7 @@ import {
   type TrainingDifficulty,
   type TrainingRewardPolicy,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import { buildPetDisplayPool } from "../pet/petDisplayPool";
 import {
@@ -368,6 +369,18 @@ export default function MemoryChallenge() {
       rewardDifficulty,
       rewardPolicy,
     );
+    const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
+    if (completeGauntletLegIfNeeded({
+      gameId: "memory-challenge",
+      score: finalScore,
+      awardedPoints: finalAwardedPoints,
+      mode: getMemoryChallengeModeRecord(selectedMode, selectedN),
+      difficulty: rewardDifficulty,
+      durationSeconds,
+      outcome: "completed",
+    })) {
+      return;
+    }
 
     Taro.setStorageSync("memory_last_score", finalScore);
     addPointsToPet("memory-challenge", finalScore, rewardDifficulty, rewardPolicy);
@@ -377,7 +390,7 @@ export default function MemoryChallenge() {
       awardedPoints: finalAwardedPoints,
       mode: getMemoryChallengeModeRecord(selectedMode, selectedN),
       difficulty: rewardDifficulty,
-      durationSeconds: Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000)),
+      durationSeconds,
       outcome: "completed",
     });
 

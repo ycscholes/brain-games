@@ -8,6 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   createWordScrambleSession,
@@ -140,6 +141,17 @@ export default function WordScramble() {
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextAwardedPoints = getAwardedPoints("word-scramble", finalScore, difficulty);
+    if (completeGauntletLegIfNeeded({
+      gameId: "word-scramble",
+      score: finalScore,
+      awardedPoints: nextAwardedPoints,
+      durationSeconds,
+      difficulty,
+      outcome: "completed",
+    })) {
+      return;
+    }
+
     addPointsToPet("word-scramble", finalScore, difficulty);
     recordTrainingSession({
       gameId: "word-scramble",

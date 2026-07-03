@@ -8,6 +8,7 @@ import {
   MAX_POINTS_PER_SESSION,
   recordTrainingSession,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   applyDualTaskEvent,
@@ -185,6 +186,17 @@ export default function DualTaskGame() {
     const settledScore = Math.min(MAX_POINTS_PER_SESSION, Math.max(0, Math.round(settledStats.score)));
     const awardedPoints = getAwardedPoints("dual-task", settledScore, config.rewardDifficulty);
     const durationSeconds = Math.max(1, Math.round(Math.min(DUAL_TASK_SESSION_MS, elapsedOverride ?? elapsedMs) / 1000));
+    if (completeGauntletLegIfNeeded({
+      gameId: "dual-task",
+      score: settledScore,
+      awardedPoints,
+      mode: "command-center",
+      difficulty: config.rewardDifficulty,
+      durationSeconds,
+      outcome: "completed",
+    })) {
+      return;
+    }
 
     Taro.setStorageSync(`dual_task_last_command_center_${settledDifficulty}`, settledScore);
     addPointsToPet("dual-task", settledScore, config.rewardDifficulty);
