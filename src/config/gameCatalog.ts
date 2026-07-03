@@ -18,6 +18,7 @@ export interface GameCatalogItem {
   canAppearInGauntlet: boolean;
   showBestScore: boolean;
   recommendationWeight: 1 | 2;
+  gauntletModeWeight: number;
 }
 
 export const GAME_CATEGORIES: Array<{ id: GameCategoryId; title: string }> = [
@@ -44,6 +45,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: true,
     showBestScore: true,
     recommendationWeight: 2,
+    gauntletModeWeight: 2,
   },
   {
     id: "pattern-completion",
@@ -60,6 +62,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: true,
     showBestScore: true,
     recommendationWeight: 1,
+    gauntletModeWeight: 1,
   },
   {
     id: "digit-span",
@@ -76,6 +79,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: true,
     showBestScore: true,
     recommendationWeight: 2,
+    gauntletModeWeight: 1,
   },
   {
     id: "twenty-four",
@@ -92,6 +96,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: true,
     showBestScore: true,
     recommendationWeight: 2,
+    gauntletModeWeight: 1,
   },
   {
     id: "rock-paper-scissors",
@@ -108,6 +113,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: true,
     showBestScore: true,
     recommendationWeight: 2,
+    gauntletModeWeight: 1,
   },
   {
     id: "color-trap",
@@ -124,6 +130,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: true,
     showBestScore: true,
     recommendationWeight: 1,
+    gauntletModeWeight: 1,
   },
   {
     id: "number-order",
@@ -140,6 +147,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: true,
     showBestScore: true,
     recommendationWeight: 1,
+    gauntletModeWeight: 1,
   },
   {
     id: "memory-challenge",
@@ -156,6 +164,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: true,
     showBestScore: true,
     recommendationWeight: 2,
+    gauntletModeWeight: 3,
   },
   {
     id: "multiple-object-tracking",
@@ -172,6 +181,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: true,
     showBestScore: true,
     recommendationWeight: 1,
+    gauntletModeWeight: 1,
   },
   {
     id: "dual-task",
@@ -188,6 +198,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: true,
     showBestScore: true,
     recommendationWeight: 1,
+    gauntletModeWeight: 1,
   },
   {
     id: "word-scramble",
@@ -204,6 +215,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: true,
     showBestScore: true,
     recommendationWeight: 1,
+    gauntletModeWeight: 1,
   },
   {
     id: "bird-count",
@@ -220,6 +232,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: true,
     showBestScore: true,
     recommendationWeight: 2,
+    gauntletModeWeight: 2,
   },
   {
     id: GAME_GAUNTLET_ID,
@@ -236,6 +249,7 @@ export const GAME_CATALOG = [
     canAppearInGauntlet: false,
     showBestScore: false,
     recommendationWeight: 1,
+    gauntletModeWeight: 1,
   },
 ] satisfies GameCatalogItem[];
 

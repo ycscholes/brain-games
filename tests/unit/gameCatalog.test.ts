@@ -39,4 +39,18 @@ describe("gameCatalog", () => {
       expect(game.recommendationWeight).toBe(game.isHot ? 2 : 1);
     });
   });
+
+  test("gauntlet mode weights count gameplay modes only", () => {
+    const weights = new Map(GAME_CATALOG.map((game) => [game.id, game.gauntletModeWeight]));
+
+    expect(weights.get("mental-math")).toBe(2);
+    expect(weights.get("memory-challenge")).toBe(3);
+    expect(weights.get("bird-count")).toBe(2);
+
+    GAUNTLET_CANDIDATE_GAMES
+      .filter((game) => !["mental-math", "memory-challenge", "bird-count"].includes(game.id))
+      .forEach((game) => {
+        expect(game.gauntletModeWeight).toBe(1);
+      });
+  });
 });

@@ -3,6 +3,7 @@ import {
   GAME_GAUNTLET_ID,
   GAUNTLET_CANDIDATE_GAMES,
   getGameById,
+  type GameCatalogItem,
 } from "../config/gameCatalog";
 import { addPointsToPet } from "./petStorage";
 import {
@@ -80,9 +81,34 @@ export function clearGameGauntletSession() {
   Taro.removeStorageSync(GAUNTLET_STORAGE_KEY);
 }
 
+export function buildGameGauntletWeightedPool(games: GameCatalogItem[]) {
+  return games.flatMap((game) => (
+    Array.from({ length: Math.max(1, Math.floor(game.gauntletModeWeight)) }, () => game)
+  ));
+}
+
+export function selectWeightedUniqueGauntletGames(
+  games: GameCatalogItem[],
+  count: number,
+  seed = `${Date.now()}`,
+) {
+  const selectedGames: GameCatalogItem[] = [];
+  let remainingGames = [...games];
+
+  for (let index = 0; index < count && remainingGames.length > 0; index += 1) {
+    const weightedPool = buildGameGauntletWeightedPool(remainingGames);
+    const [selectedGame] = stableShuffle(weightedPool, `${seed}:${index}`);
+    if (!selectedGame) break;
+
+    selectedGames.push(selectedGame);
+    remainingGames = remainingGames.filter((game) => game.id !== selectedGame.id);
+  }
+
+  return selectedGames;
+}
+
 export function buildGameGauntletGameIds(seed = `${Date.now()}`) {
-  return stableShuffle(GAUNTLET_CANDIDATE_GAMES, seed)
-    .slice(0, GAUNTLET_LEG_COUNT)
+  return selectWeightedUniqueGauntletGames(GAUNTLET_CANDIDATE_GAMES, GAUNTLET_LEG_COUNT, seed)
     .map((game) => game.id);
 }
 
