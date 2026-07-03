@@ -231,6 +231,75 @@ describe("customPetService", () => {
     });
   });
 
+  test("reports local upload stages before the cloud generation task starts", async () => {
+    mockCallFunction
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            jobId: "job-1",
+            cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
+            maxBytes: 4 * 1024 * 1024,
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            task: { jobId: "job-1", status: "uploaded" },
+          },
+        },
+      });
+    mockChooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: "/tmp/source.jpg", size: 1024 }],
+    });
+    mockCropImage.mockResolvedValue({ tempFilePath: "/tmp/cropped.jpg" });
+    mockCompressImage.mockResolvedValue({ tempFilePath: "/tmp/compressed.jpg" });
+    mockGetFileInfo.mockResolvedValue({ size: 1024, errMsg: "ok", digest: "hash" });
+    mockUploadFile.mockResolvedValue({
+      fileID: "cloud://env/fixture/openid/custom-pets/job-1/source/source.jpg",
+    });
+    const stages: string[] = [];
+    const { chooseAndSubmitCustomPet } = await import(
+      "../../src/services/custom-pet/customPetService"
+    );
+
+    await chooseAndSubmitCustomPet({ onStage: (stage) => stages.push(stage) });
+
+    expect(stages).toEqual([
+      "syncing",
+      "preparing",
+      "choosing",
+      "processing",
+      "uploading",
+      "submitting",
+    ]);
+  });
+
+  test("treats user media picker cancellation as a quiet upload cancellation", async () => {
+    mockCallFunction.mockResolvedValueOnce({
+      result: {
+        ok: true,
+        data: {
+          jobId: "job-1",
+          cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
+          maxBytes: 4 * 1024 * 1024,
+        },
+      },
+    });
+    mockChooseMedia.mockRejectedValue({ errMsg: "chooseMedia:fail cancel" });
+    const {
+      chooseAndSubmitCustomPet,
+      CUSTOM_PET_UPLOAD_CANCELLED_MESSAGE,
+    } = await import("../../src/services/custom-pet/customPetService");
+
+    await expect(chooseAndSubmitCustomPet()).rejects.toThrow(
+      CUSTOM_PET_UPLOAD_CANCELLED_MESSAGE,
+    );
+    expect(mockUploadFile).not.toHaveBeenCalled();
+  });
+
   test("continues with compression when cropImage fails in the mini program runtime", async () => {
     mockCallFunction
       .mockResolvedValueOnce({

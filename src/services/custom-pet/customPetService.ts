@@ -7,6 +7,7 @@ import type {
   CustomPetApiResponse,
   CustomPetMoodUrls,
   CustomPetTask,
+  CustomPetUploadStage,
 } from "./types";
 
 const FUNCTION_NAME = "customPetApi";
@@ -14,6 +15,7 @@ const URL_CACHE_KEY = "custom_pet_url_cache_v1";
 const URL_CACHE_TTL_MS = 50 * 60 * 1000;
 const SOURCE_MAX_BYTES = 4 * 1024 * 1024;
 const SOURCE_COMPRESS_SIZE = 1280;
+export const CUSTOM_PET_UPLOAD_CANCELLED_MESSAGE = "已取消选择图片";
 const SOURCE_COMPRESS_ATTEMPTS = [
   { quality: 70, size: SOURCE_COMPRESS_SIZE },
   { quality: 55, size: 1024 },
@@ -86,6 +88,11 @@ function getReadableErrorMessage(error: unknown, fallback: string): string {
     }
   }
   return fallback;
+}
+
+function isUserCancelledFilePicker(error: unknown): boolean {
+  const message = getReadableErrorMessage(error, "");
+  return /cancel|取消/.test(message);
 }
 
 function applyServerSnapshot(value: { snapshot?: { petData?: Parameters<typeof savePetData>[0] } | null }) {
@@ -187,8 +194,12 @@ export async function getCustomPetStatus(): Promise<{
   });
 }
 
-export async function chooseAndSubmitCustomPet(): Promise<CustomPetTask> {
+export async function chooseAndSubmitCustomPet(options?: {
+  onStage?: (stage: CustomPetUploadStage) => void;
+}): Promise<CustomPetTask> {
+  options?.onStage?.("syncing");
   await syncLocalUserDataToCloudNow();
+  options?.onStage?.("preparing");
   const intent = await callCustomPetApi<{
     jobId: string;
     cloudPath: string;
@@ -196,16 +207,26 @@ export async function chooseAndSubmitCustomPet(): Promise<CustomPetTask> {
   }>({
     action: "createUploadIntent",
   });
-  const media = await Taro.chooseMedia({
-    count: 1,
-    mediaType: ["image"],
-    sourceType: ["album", "camera"],
-    sizeType: ["compressed"],
-  });
+  options?.onStage?.("choosing");
+  let media: Awaited<ReturnType<typeof Taro.chooseMedia>>;
+  try {
+    media = await Taro.chooseMedia({
+      count: 1,
+      mediaType: ["image"],
+      sourceType: ["album", "camera"],
+      sizeType: ["compressed"],
+    });
+  } catch (error) {
+    if (isUserCancelledFilePicker(error)) {
+      throw new Error(CUSTOM_PET_UPLOAD_CANCELLED_MESSAGE);
+    }
+    throw error;
+  }
   const file = media.tempFiles[0];
   if (!file?.tempFilePath) {
-    throw new Error("没有选择图片");
+    throw new Error(CUSTOM_PET_UPLOAD_CANCELLED_MESSAGE);
   }
+  options?.onStage?.("processing");
   const uploadFilePath = await prepareUploadImage(file.tempFilePath, intent.maxBytes || SOURCE_MAX_BYTES);
   const cloud = await ensureCloudReady();
   if (!cloud) {
@@ -213,6 +234,7 @@ export async function chooseAndSubmitCustomPet(): Promise<CustomPetTask> {
   }
   let uploaded: { fileID: string };
   try {
+    options?.onStage?.("uploading");
     uploaded = await cloud.uploadFile({
       cloudPath: intent.cloudPath,
       filePath: uploadFilePath,
@@ -221,6 +243,7 @@ export async function chooseAndSubmitCustomPet(): Promise<CustomPetTask> {
     throw new Error(`图片上传失败：${getReadableErrorMessage(error, "请稍后重试")}`);
   }
   try {
+    options?.onStage?.("submitting");
     const result = await callCustomPetApi<{
       task: CustomPetTask;
       snapshot?: { petData?: Parameters<typeof savePetData>[0] } | null;

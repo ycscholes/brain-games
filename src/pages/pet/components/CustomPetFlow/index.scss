@@ -46,6 +46,46 @@
   transition: width 0.35s ease;
 }
 
+.custom-pet-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.custom-pet-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  color: #7a5a35;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.custom-pet-step-dot {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 2px solid #8a5a2a;
+  border-radius: 50%;
+  background: #fffdf0;
+}
+
+.custom-pet-step-done,
+.custom-pet-step-active {
+  color: #4a2d18;
+}
+
+.custom-pet-step-done .custom-pet-step-dot,
+.custom-pet-step-active .custom-pet-step-dot {
+  background: #4daa68;
+  border-color: #356b4b;
+}
+
+.custom-pet-step-active .custom-pet-step-label {
+  color: #356b4b;
+}
+
 .custom-pet-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
