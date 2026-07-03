@@ -10,7 +10,7 @@ import {
   type TrainingDifficulty,
   type TrainingRewardPolicy,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
+import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import { buildPetDisplayPool } from "../pet/petDisplayPool";
 import {
@@ -166,10 +166,14 @@ function pickRandomItem(items: MemoryChallengeItem[]) {
 
 export default function MemoryChallenge() {
   usePageShare("pages/memory-challenge/index");
+  const gauntletPreset = readGameGauntletModePreset();
+  const isGauntletPreset = gauntletPreset !== null;
+  const presetMode = gauntletPreset?.memoryMode ?? "shape";
+  const presetN: MemoryChallengeN = gauntletPreset?.memoryN === "3" ? 3 : 1;
 
   const [gameState, setGameState] = useState<GameState>("start");
-  const [mode, setMode] = useState<MemoryChallengeMode>("shape");
-  const [memoryN, setMemoryN] = useState<MemoryChallengeN>(1);
+  const [mode, setMode] = useState<MemoryChallengeMode>(presetMode);
+  const [memoryN, setMemoryN] = useState<MemoryChallengeN>(presetN);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [isNewRecord, setIsNewRecord] = useState(false);
@@ -197,6 +201,7 @@ export default function MemoryChallenge() {
   const activePoolRef = useRef<MemoryChallengeItem[]>(SHAPE_ITEMS);
   const allPetItemsRef = useRef<MemoryChallengeItem[]>([]);
   const startedAtRef = useRef(0);
+  const autoStartedRef = useRef(false);
 
   const clearTimers = useCallback(() => {
     if (timerRef.current) {
@@ -332,6 +337,12 @@ export default function MemoryChallenge() {
       setIsLoadingPets(false);
     }
   }, [beginSession, isLoadingPets, memoryN, mode, petItems]);
+
+  useEffect(() => {
+    if (!isGauntletPreset || autoStartedRef.current || gameState !== "start" || isLoadingPets) return;
+    autoStartedRef.current = true;
+    void startGame();
+  }, [gameState, isGauntletPreset, isLoadingPets, startGame]);
 
   const updateHighScore = useCallback((
     finalScore: number,
@@ -520,6 +531,7 @@ export default function MemoryChallenge() {
             </View>
           </View>
 
+          {!isGauntletPreset && (
           <View className="difficulty-section">
             <View className="difficulty-header">
               <Text className="difficulty-icon-text">🎮</Text>
@@ -542,7 +554,9 @@ export default function MemoryChallenge() {
               })}
             </View>
           </View>
+          )}
 
+          {!isGauntletPreset && (
           <View className="difficulty-section">
             <View className="difficulty-header">
               <Text className="difficulty-icon-text">🧠</Text>
@@ -571,6 +585,7 @@ export default function MemoryChallenge() {
               })}
             </View>
           </View>
+          )}
 
           <View className="start-button-container floating-start-action">
             <View

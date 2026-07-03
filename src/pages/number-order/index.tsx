@@ -8,7 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
+import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   createNumberOrderSession,
@@ -35,9 +35,11 @@ function readBestScore(difficulty: TrainingDifficulty) {
 
 export default function NumberOrder() {
   usePageShare("pages/number-order/index");
+  const gauntletPreset = readGameGauntletModePreset();
+  const isGauntletPreset = gauntletPreset !== null;
 
   const [phase, setPhase] = useState<Phase>("start");
-  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
+  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [questions, setQuestions] = useState<NumberOrderQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -341,6 +343,7 @@ export default function NumberOrder() {
             <Text className="rule-line">3. 错误后会回放正确路径和本题得分。</Text>
           </View>
 
+          {!isGauntletPreset && (
           <View className="info-panel">
             <Text className="section-title">难度</Text>
             <View className="difficulty-grid">
@@ -348,6 +351,7 @@ export default function NumberOrder() {
               {renderDifficultyCard("hard", "4-7 步星链 · 节奏更紧")}
             </View>
           </View>
+          )}
 
           <View className="floating-start-action">
             <View className="primary-button" onClick={startGame}>

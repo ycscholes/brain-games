@@ -8,7 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
+import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   createWordScrambleSession,
@@ -31,9 +31,11 @@ function readBestScore(difficulty: TrainingDifficulty) {
 
 export default function WordScramble() {
   usePageShare("pages/word-scramble/index");
+  const gauntletPreset = readGameGauntletModePreset();
+  const isGauntletPreset = gauntletPreset !== null;
 
   const [phase, setPhase] = useState<Phase>("start");
-  const [difficulty, setDifficulty] = useState<TrainingDifficulty>("normal");
+  const [difficulty, setDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [questions, setQuestions] = useState<WordScrambleQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -347,6 +349,7 @@ export default function WordScramble() {
             <Text className="rule-line">3. 困难模式提示会延迟出现，限时更紧。</Text>
           </View>
 
+          {!isGauntletPreset && (
           <View className="info-panel">
             <Text className="section-title">难度</Text>
             <View className="difficulty-grid">
@@ -354,6 +357,7 @@ export default function WordScramble() {
               {renderDifficultyCard("hard", "3-5 字词组 · 4-6 个干扰字")}
             </View>
           </View>
+          )}
 
           <View className="primary-button" onClick={startGame}>
             <Text className="primary-button-text">开始训练</Text>

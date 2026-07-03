@@ -8,7 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
+import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
@@ -33,9 +33,11 @@ function buildSequence(length: number): string {
 
 export default function DigitSpan() {
   usePageShare("pages/digit-span/index");
+  const gauntletPreset = readGameGauntletModePreset();
+  const isGauntletPreset = gauntletPreset !== null;
 
   const [phase, setPhase] = useState<Phase>("start");
-  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
+  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [score, setScore] = useState(0);
   const [roundLength, setRoundLength] = useState(INITIAL_LENGTH.normal);
@@ -46,6 +48,7 @@ export default function DigitSpan() {
   const [isNewBest, setIsNewBest] = useState(false);
 
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const autoStartedRef = useRef(false);
 
   const clearTimers = () => {
     timeoutsRef.current.forEach((timer) => clearTimeout(timer));
@@ -149,6 +152,12 @@ export default function DigitSpan() {
     startRound(INITIAL_LENGTH[rewardDifficulty]);
   };
 
+  useEffect(() => {
+    if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
+    autoStartedRef.current = true;
+    startGame();
+  }, [isGauntletPreset, phase]);
+
   const appendDigit = (digit: string) => {
     if (phase !== "input" || inputValue.length >= roundLength) {
       return;
@@ -225,6 +234,7 @@ export default function DigitSpan() {
         </View>
       </View>
 
+      {!isGauntletPreset && (
       <View className="summary-card">
         <Text className="section-title">难度</Text>
         <View className="summary-grid">
@@ -244,6 +254,7 @@ export default function DigitSpan() {
           </View>
         </View>
       </View>
+      )}
 
       <View className="floating-start-action">
         <View className="primary-button" onClick={startGame}>

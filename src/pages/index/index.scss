@@ -168,30 +168,6 @@
   }
 }
 
-.home-list-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 18px;
-}
-
-.home-list-entry {
-  min-height: 52px;
-  padding: 0 18px;
-  border-radius: 18px;
-  background: rgba(79, 70, 229, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-.home-list-entry-text {
-  color: var(--brand-primary);
-  font-size: 23px;
-  font-weight: 850;
-}
-
 .overview-card,
 .records-card {
   margin-bottom: 18px;
@@ -226,6 +202,7 @@
 .section-header {
   display: flex;
   align-items: flex-start;
+  justify-content: space-between;
   gap: 16px;
   margin-bottom: 4px;
 }

@@ -8,7 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
+import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   COLOR_TRAP_TOTAL_QUESTIONS,
@@ -32,9 +32,11 @@ function readBestScore(difficulty: TrainingDifficulty) {
 
 export default function ColorTrap() {
   usePageShare("pages/color-trap/index");
+  const gauntletPreset = readGameGauntletModePreset();
+  const isGauntletPreset = gauntletPreset !== null;
 
   const [phase, setPhase] = useState<Phase>("start");
-  const [difficulty, setDifficulty] = useState<TrainingDifficulty>("normal");
+  const [difficulty, setDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [questions, setQuestions] = useState<ColorTrapQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -284,6 +286,7 @@ export default function ColorTrap() {
             <Text className="rule-line">3. 快速答对和连续答对会获得额外得分。</Text>
           </View>
 
+          {!isGauntletPreset && (
           <View className="info-panel">
             <Text className="section-title">难度</Text>
             <View className="difficulty-grid">
@@ -291,6 +294,7 @@ export default function ColorTrap() {
               {renderDifficultyCard("hard", "更多颜色干扰 · 限时更紧")}
             </View>
           </View>
+          )}
 
           <View className="primary-button" onClick={startGame}>
             <Text className="primary-button-text">开始训练</Text>

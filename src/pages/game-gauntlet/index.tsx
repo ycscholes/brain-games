@@ -87,10 +87,8 @@ export default function GameGauntlet() {
 
         <View className="gauntlet-hero">
           <Text className="hero-kicker">随机 3 个游戏</Text>
-          <Text className="hero-title">一次完成，汇总积分</Text>
-          <Text className="hero-copy">
-            子游戏不重复发积分，不刷新单项最高分；闯关结束后按三局应得积分求和计入总积分。
-          </Text>
+          <Text className="hero-title">连闯 3 局，拿下总积分</Text>
+          <Text className="hero-copy">随机开局，连续挑战，一次完成。</Text>
         </View>
 
         {displayedSession ? (
@@ -121,9 +119,9 @@ export default function GameGauntlet() {
 
         {status === "complete" ? (
           <View className="gauntlet-result">
-            <Text className="result-label">闯关总积分</Text>
+            <Text className="result-label">本次闯关获得</Text>
             <Text className="result-value">{awardedPoints}</Text>
-            <Text className="result-copy">已写入训练记录和宠物积分。</Text>
+            <Text className="result-copy">积分已计入总积分。</Text>
           </View>
         ) : null}
 

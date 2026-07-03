@@ -284,9 +284,6 @@ export default function Index() {
             <Text className="page-title">今日训练中枢</Text>
           </View>
           <View className="top-actions">
-            <View className="all-games-button" onClick={() => navigateTo("/pages/all-games/index")}>
-              <Text className="all-games-button-text">全部</Text>
-            </View>
             <View
               className={`search-button ${searchOpen ? "search-button-active" : ""}`}
               onClick={() => setSearchOpen((open) => !open)}
@@ -362,6 +359,9 @@ export default function Index() {
                 先从短时、低门槛项目开始，再逐步补齐进阶训练。
               </Text>
             </View>
+            <View className="all-games-button" onClick={() => navigateTo("/pages/all-games/index")}>
+              <Text className="all-games-button-text">全部游戏</Text>
+            </View>
           </View>
 
           <View className="focus-body">
@@ -381,15 +381,6 @@ export default function Index() {
         </View>
 
         <View className="game-category-list">
-          <View className="home-list-heading">
-            <View>
-              <Text className="section-title">热门游戏</Text>
-              <Text className="section-subtitle">先展示常用训练，完整目录在全部游戏里。</Text>
-            </View>
-            <View className="home-list-entry" onClick={() => navigateTo("/pages/all-games/index")}>
-              <Text className="home-list-entry-text">全部游戏</Text>
-            </View>
-          </View>
           {groupedGames.map((category) => (
             <View key={category.id} className="game-category-section">
               <View className="game-category-header">

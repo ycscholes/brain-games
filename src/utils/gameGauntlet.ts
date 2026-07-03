@@ -18,6 +18,22 @@ import { stableShuffle } from "./nextRecommendation";
 export const GAUNTLET_LEG_COUNT = 3;
 const GAUNTLET_STORAGE_KEY = "game_gauntlet_session_v1";
 
+export type GameGauntletDifficulty = TrainingDifficulty;
+export type GameGauntletModePreset = {
+  difficulty: GameGauntletDifficulty;
+  mode?: string;
+  stageId?: string;
+  memoryMode?: "shape" | "pet" | "calculation";
+  memoryN?: "1" | "3";
+  farmMode?: "speed" | "yard";
+  yardSpeed?: "slow" | "standard" | "fast";
+};
+
+export interface GameGauntletLeg {
+  gameId: TrainingGameId;
+  modePreset: GameGauntletModePreset;
+}
+
 export interface GameGauntletLegResult {
   gameId: TrainingGameId;
   score: number;
@@ -30,6 +46,8 @@ export interface GameGauntletLegResult {
 export interface GameGauntletSession {
   id: string;
   gameIds: TrainingGameId[];
+  difficulty: GameGauntletDifficulty;
+  legs: GameGauntletLeg[];
   currentLegIndex: number;
   results: GameGauntletLegResult[];
   status: "active" | "completed";
@@ -45,6 +63,50 @@ function createSessionId() {
   return `gauntlet_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function pickOne<T>(items: T[], seed: string) {
+  return stableShuffle(items, seed)[0] ?? items[0];
+}
+
+export function createGameGauntletModePreset(
+  gameId: TrainingGameId,
+  difficulty: GameGauntletDifficulty,
+  seed = `${Date.now()}`,
+): GameGauntletModePreset {
+  if (gameId === "mental-math") {
+    return {
+      difficulty,
+      mode: "timed",
+      stageId: difficulty === "hard" ? "G4_MIXED_100" : "G1A",
+    };
+  }
+
+  if (gameId === "memory-challenge") {
+    return {
+      difficulty,
+      memoryMode: pickOne(["shape", "pet", "calculation"], seed),
+      memoryN: difficulty === "hard" ? "3" : "1",
+    };
+  }
+
+  if (gameId === "bird-count") {
+    const farmMode = pickOne(["speed", "yard"] as const, seed);
+    return {
+      difficulty,
+      farmMode,
+      yardSpeed: difficulty === "hard" ? pickOne(["standard", "fast"], `${seed}:speed`) : "slow",
+    };
+  }
+
+  if (gameId === "rock-paper-scissors") {
+    return {
+      difficulty,
+      mode: difficulty === "hard" ? "3" : "1",
+    };
+  }
+
+  return { difficulty };
+}
+
 function readSessionFromStorage(): GameGauntletSession | null {
   const raw = Taro.getStorageSync(GAUNTLET_STORAGE_KEY);
   if (!raw) return null;
@@ -57,7 +119,17 @@ function readSessionFromStorage(): GameGauntletSession | null {
       Array.isArray(parsed?.results) &&
       (parsed?.status === "active" || parsed?.status === "completed")
     ) {
-      return parsed as GameGauntletSession;
+      const difficulty = parsed.difficulty === "hard" ? "hard" : "normal";
+      return {
+        ...parsed,
+        difficulty,
+        legs: Array.isArray(parsed.legs)
+          ? parsed.legs
+          : parsed.gameIds.map((gameId: TrainingGameId, index: number) => ({
+              gameId,
+              modePreset: createGameGauntletModePreset(gameId, difficulty, `${parsed.id}:${index}`),
+            })),
+      } as GameGauntletSession;
     }
   } catch {
     return null;
@@ -113,9 +185,17 @@ export function buildGameGauntletGameIds(seed = `${Date.now()}`) {
 }
 
 export function startGameGauntletSession() {
+  const difficulty: GameGauntletDifficulty = Math.random() < 0.5 ? "normal" : "hard";
+  const gameIds = buildGameGauntletGameIds();
+  const sessionId = createSessionId();
   const session: GameGauntletSession = {
-    id: createSessionId(),
-    gameIds: buildGameGauntletGameIds(),
+    id: sessionId,
+    gameIds,
+    difficulty,
+    legs: gameIds.map((gameId, index) => ({
+      gameId,
+      modePreset: createGameGauntletModePreset(gameId, difficulty, `${sessionId}:${gameId}:${index}`),
+    })),
     currentLegIndex: 0,
     results: [],
     status: "active",
@@ -133,7 +213,27 @@ function getGauntletPageUrl(sessionId: string) {
 export function getGauntletGameUrl(gameId: TrainingGameId, sessionId: string, legIndex: number) {
   const game = getGameById(gameId);
   const separator = game?.url.includes("?") ? "&" : "?";
-  return `${game?.url ?? "/pages/index/index"}${separator}gauntletSessionId=${encodeURIComponent(sessionId)}&gauntletLeg=${legIndex}`;
+  const session = readGameGauntletSession(sessionId);
+  const preset = session?.legs[legIndex]?.modePreset;
+  const params: Array<[string, string]> = [
+    ["gauntletSessionId", sessionId],
+    ["gauntletLeg", `${legIndex}`],
+  ];
+
+  if (preset) {
+    params.push(["gauntletDifficulty", preset.difficulty]);
+    if (preset.mode) params.push(["gauntletMode", preset.mode]);
+    if (preset.stageId) params.push(["gauntletStageId", preset.stageId]);
+    if (preset.memoryMode) params.push(["gauntletMemoryMode", preset.memoryMode]);
+    if (preset.memoryN) params.push(["gauntletMemoryN", preset.memoryN]);
+    if (preset.farmMode) params.push(["gauntletFarmMode", preset.farmMode]);
+    if (preset.yardSpeed) params.push(["gauntletYardSpeed", preset.yardSpeed]);
+  }
+
+  const query = params
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join("&");
+  return `${game?.url ?? "/pages/index/index"}${separator}${query}`;
 }
 
 export function readGauntletRouteParams() {
@@ -150,6 +250,28 @@ export function readGauntletRouteParams() {
 
 export function isGameGauntletRun() {
   return readGauntletRouteParams() !== null;
+}
+
+export function readGameGauntletModePreset(): GameGauntletModePreset | null {
+  const params = getCurrentInstance().router?.params ?? {};
+  const difficulty = params.gauntletDifficulty === "hard" ? "hard" : "normal";
+  if (!readGauntletRouteParams()) return null;
+
+  return {
+    difficulty,
+    mode: typeof params.gauntletMode === "string" ? params.gauntletMode : undefined,
+    stageId: typeof params.gauntletStageId === "string" ? params.gauntletStageId : undefined,
+    memoryMode:
+      params.gauntletMemoryMode === "pet" || params.gauntletMemoryMode === "calculation" || params.gauntletMemoryMode === "shape"
+        ? params.gauntletMemoryMode
+        : undefined,
+    memoryN: params.gauntletMemoryN === "3" ? "3" : params.gauntletMemoryN === "1" ? "1" : undefined,
+    farmMode: params.gauntletFarmMode === "yard" ? "yard" : params.gauntletFarmMode === "speed" ? "speed" : undefined,
+    yardSpeed:
+      params.gauntletYardSpeed === "fast" || params.gauntletYardSpeed === "standard" || params.gauntletYardSpeed === "slow"
+        ? params.gauntletYardSpeed
+        : undefined,
+  };
 }
 
 export function saveGameGauntletLegResult(
