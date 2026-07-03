@@ -18,8 +18,10 @@ const {
   CLOUD_BASE_IMAGE_MODEL_NAME,
   normalizeAnalysis,
   parseImageGenerationFunctionResult,
+  removeChromaKeyBackground,
   removeGeneratedSheetFootnote,
   removeNormalizedFootnote,
+  shouldRemoveChromaKeyPixel,
   splitMoodSheet,
 } = require("../../cloudfunctions/shared/customPetGenerator");
 
@@ -443,6 +445,52 @@ describe("custom pet generator", () => {
       { x: 0, y: 512, w: 512, h: 512 },
       { x: 512, y: 512, w: 512, h: 512 },
     ]);
+  });
+
+  test("detects chroma-key green variants without erasing normal pet colors", () => {
+    expect(shouldRemoveChromaKeyPixel(0, 255, 0)).toBe(true);
+    expect(shouldRemoveChromaKeyPixel(28, 230, 24)).toBe(true);
+    expect(shouldRemoveChromaKeyPixel(82, 180, 55)).toBe(true);
+    expect(shouldRemoveChromaKeyPixel(130, 220, 60)).toBe(true);
+    expect(shouldRemoveChromaKeyPixel(170, 126, 42)).toBe(false);
+    expect(shouldRemoveChromaKeyPixel(80, 80, 80)).toBe(false);
+    expect(shouldRemoveChromaKeyPixel(62, 96, 138)).toBe(false);
+  });
+
+  test("removes green background before users receive normalized sprites", () => {
+    const width = 4;
+    const height = 3;
+    const data = Buffer.alloc(width * height * 4, 0);
+    const setPixel = (x, y, red, green, blue, alpha = 255) => {
+      const offset = (width * y + x) * 4;
+      data[offset] = red;
+      data[offset + 1] = green;
+      data[offset + 2] = blue;
+      data[offset + 3] = alpha;
+    };
+    setPixel(0, 0, 0, 255, 0);
+    setPixel(1, 0, 82, 180, 55);
+    setPixel(2, 0, 130, 220, 60);
+    setPixel(1, 1, 214, 126, 42);
+    setPixel(2, 1, 62, 96, 138);
+
+    const bounds = removeChromaKeyBackground({
+      bitmap: { width, height, data },
+      scan(callback) {
+        for (let y = 0; y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            callback(x, y, (width * y + x) * 4);
+          }
+        }
+      },
+    });
+
+    expect(data[(width * 0 + 0) * 4 + 3]).toBe(0);
+    expect(data[(width * 0 + 1) * 4 + 3]).toBe(0);
+    expect(data[(width * 0 + 2) * 4 + 3]).toBe(0);
+    expect(data[(width * 1 + 1) * 4 + 3]).toBe(255);
+    expect(data[(width * 1 + 2) * 4 + 3]).toBe(255);
+    expect(bounds).toEqual({ minX: 1, minY: 1, maxX: 2, maxY: 1 });
   });
 
   test("removes the generated provider footnote without erasing saturated pet pixels", () => {

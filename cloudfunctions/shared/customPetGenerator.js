@@ -648,6 +648,47 @@ function removeNormalizedFootnote(image) {
   return image;
 }
 
+function shouldRemoveChromaKeyPixel(red, green, blue, alpha = 255) {
+  if (alpha <= 0) {
+    return false;
+  }
+  const exactGreenDistance = Math.max(Math.abs(red), Math.abs(255 - green), Math.abs(blue));
+  if (exactGreenDistance < 72) {
+    return true;
+  }
+  const maxOther = Math.max(red, blue);
+  const minOther = Math.min(red, blue);
+  const greenDominance = green - maxOther;
+  return (
+    (green >= 105 && greenDominance >= 35 && green >= maxOther * 1.25) ||
+    (green >= 140 && greenDominance >= 25 && green - minOther >= 45)
+  );
+}
+
+function removeChromaKeyBackground(image) {
+  const bounds = {
+    minX: image.bitmap.width,
+    minY: image.bitmap.height,
+    maxX: -1,
+    maxY: -1,
+  };
+  image.scan((x, y, offset) => {
+    const red = image.bitmap.data[offset];
+    const green = image.bitmap.data[offset + 1];
+    const blue = image.bitmap.data[offset + 2];
+    const alpha = image.bitmap.data[offset + 3];
+    if (alpha <= 0 || shouldRemoveChromaKeyPixel(red, green, blue, alpha)) {
+      image.bitmap.data[offset + 3] = 0;
+      return;
+    }
+    bounds.minX = Math.min(bounds.minX, x);
+    bounds.minY = Math.min(bounds.minY, y);
+    bounds.maxX = Math.max(bounds.maxX, x);
+    bounds.maxY = Math.max(bounds.maxY, y);
+  });
+  return bounds;
+}
+
 async function normalizeSprite({ inputBuffer }) {
   const { Jimp, JimpMime } = getJimp();
   const image = await Jimp.read(inputBuffer);
@@ -659,25 +700,7 @@ async function normalizeSprite({ inputBuffer }) {
     color: 0x00ff00ff,
   });
 
-  let minX = image.bitmap.width;
-  let minY = image.bitmap.height;
-  let maxX = -1;
-  let maxY = -1;
-  image.scan((x, y, offset) => {
-    const red = image.bitmap.data[offset];
-    const green = image.bitmap.data[offset + 1];
-    const blue = image.bitmap.data[offset + 2];
-    const greenDistance = Math.max(Math.abs(red), Math.abs(255 - green), Math.abs(blue));
-    if (greenDistance < 42 || (green > red * 1.55 && green > blue * 1.55 && green > 120)) {
-      // Remove both exact #00FF00 and anti-aliased green spill around the sprite.
-      image.bitmap.data[offset + 3] = 0;
-      return;
-    }
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    maxX = Math.max(maxX, x);
-    maxY = Math.max(maxY, y);
-  });
+  const { minX, minY, maxX, maxY } = removeChromaKeyBackground(image);
   if (maxX < minX || maxY < minY) {
     throw new Error("generated image has no visible subject");
   }
@@ -701,6 +724,7 @@ async function normalizeSprite({ inputBuffer }) {
     Math.round((768 - image.bitmap.width) / 2),
     Math.round((768 - image.bitmap.height) / 2),
   );
+  removeChromaKeyBackground(canvas);
   removeNormalizedFootnote(canvas);
   const png = await canvas.getBuffer(JimpMime.png);
   return addPngTextChunk(png, "AI-Generated", "Cici Custom Pet");
@@ -756,8 +780,10 @@ module.exports = {
   normalizeAnalysis,
   normalizeSprite,
   parseImageGenerationFunctionResult,
+  removeChromaKeyBackground,
   removeGeneratedSheetFootnote,
   removeNormalizedFootnote,
+  shouldRemoveChromaKeyPixel,
   splitMoodSheet,
   validateRuntimeDependencies,
 };
