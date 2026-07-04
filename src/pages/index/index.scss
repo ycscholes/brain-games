@@ -335,6 +335,97 @@
   color: #fff;
 }
 
+.gauntlet-entry {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 22px;
+  padding: 24px;
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(35, 50, 56, 0.96) 0%, rgba(30, 92, 86, 0.92) 100%);
+  border: 1px solid rgba(250, 204, 21, 0.28);
+  box-shadow:
+    0 18px 34px rgba(35, 50, 56, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  box-sizing: border-box;
+
+  &:active {
+    transform: scale(0.985);
+  }
+}
+
+.gauntlet-entry::after {
+  content: "";
+  position: absolute;
+  right: 22px;
+  top: -18px;
+  width: 96px;
+  height: 148px;
+  transform: rotate(18deg);
+  border-radius: 18px;
+  border: 2px solid rgba(250, 204, 21, 0.24);
+  pointer-events: none;
+}
+
+.gauntlet-entry-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.gauntlet-entry-kicker,
+.gauntlet-entry-title,
+.gauntlet-entry-meta,
+.gauntlet-entry-action-text {
+  display: block;
+}
+
+.gauntlet-entry-kicker {
+  color: #facc15;
+  font-size: 23px;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+.gauntlet-entry-title {
+  margin-top: 8px;
+  color: #fff7df;
+  font-size: 38px;
+  line-height: 1.12;
+  font-weight: 950;
+}
+
+.gauntlet-entry-meta {
+  margin-top: 10px;
+  color: rgba(255, 247, 223, 0.78);
+  font-size: 23px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.gauntlet-entry-action {
+  position: relative;
+  z-index: 1;
+  width: 96px;
+  min-height: 62px;
+  border-radius: 18px;
+  background: #f97316;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.gauntlet-entry-action-text {
+  color: #fff;
+  font-size: 26px;
+  font-weight: 900;
+}
+
 .record-list {
   margin-top: 18px;
 }

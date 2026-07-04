@@ -19,6 +19,7 @@ import { GAUNTLET_CANDIDATE_GAMES } from "../../src/config/gameCatalog";
 import {
   buildGameGauntletGameIds,
   buildGameGauntletWeightedPool,
+  createGameGauntletSession,
   createGameGauntletModePreset,
   getGauntletGameUrl,
   selectWeightedUniqueGauntletGames,
@@ -72,7 +73,7 @@ describe("gameGauntlet", () => {
   test("creates a session with one shared random difficulty and leg presets", () => {
     jest.spyOn(Math, "random").mockReturnValue(0.8);
 
-    const session = startGameGauntletSession();
+    const session = createGameGauntletSession("preview-seed");
 
     expect(session.difficulty).toBe("hard");
     expect(session.legs).toHaveLength(3);
@@ -80,6 +81,16 @@ describe("gameGauntlet", () => {
     session.legs.forEach((leg) => {
       expect(leg.modePreset.difficulty).toBe("hard");
     });
+    expect(Taro.setStorageSync).not.toHaveBeenCalled();
+  });
+
+  test("starts a gauntlet session from a preview session", () => {
+    jest.spyOn(Math, "random").mockReturnValue(0.2);
+    const previewSession = createGameGauntletSession("preview-seed");
+
+    const session = startGameGauntletSession(previewSession);
+
+    expect(session).toEqual(previewSession);
     expect(Taro.setStorageSync).toHaveBeenCalled();
   });
 

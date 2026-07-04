@@ -11,6 +11,7 @@ import {
 } from "../../utils/trainingStorage";
 import {
   GAME_CATEGORIES,
+  GAME_GAUNTLET_ID,
   GAME_TITLE_MAP,
   HOT_GAME_ITEMS,
   getGameById,
@@ -265,6 +266,7 @@ export default function Index() {
     games: visibleGames.filter((game) => game.category === category.id),
   })).filter((category) => category.games.length > 0);
   const recommendedGame = getGameById(recommendedGameId);
+  const gauntletGame = getGameById(GAME_GAUNTLET_ID);
 
   return (
     <View className="game-hub">
@@ -379,6 +381,19 @@ export default function Index() {
             </View>
           </View>
         </View>
+
+        {gauntletGame ? (
+          <View className="gauntlet-entry" onClick={() => navigateTo(gauntletGame.url)}>
+            <View className="gauntlet-entry-copy">
+              <Text className="gauntlet-entry-kicker">固定入口</Text>
+              <Text className="gauntlet-entry-title">游戏大闯关</Text>
+              <Text className="gauntlet-entry-meta">随机 3 局 · 本轮难度预览 · 退出重新开始</Text>
+            </View>
+            <View className="gauntlet-entry-action">
+              <Text className="gauntlet-entry-action-text">进入</Text>
+            </View>
+          </View>
+        ) : null}
 
         <View className="game-category-list">
           {groupedGames.map((category) => (

@@ -103,6 +103,36 @@
   font-weight: 600;
 }
 
+.difficulty-strip {
+  margin-top: 22px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(15, 159, 143, 0.12);
+  border: 1px solid rgba(15, 159, 143, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.difficulty-label,
+.difficulty-value,
+.route-difficulty {
+  display: block;
+}
+
+.difficulty-label {
+  color: var(--text-muted);
+  font-size: 23px;
+  font-weight: 800;
+}
+
+.difficulty-value {
+  color: #0f766e;
+  font-size: 28px;
+  font-weight: 900;
+}
+
 .gauntlet-route {
   padding: 18px;
   display: flex;
@@ -112,7 +142,7 @@
 
 .route-step {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
   padding: 18px;
   border-radius: 20px;
@@ -121,8 +151,8 @@
 }
 
 .route-step-current {
-  border-color: rgba(79, 70, 229, 0.26);
-  background: rgba(79, 70, 229, 0.08);
+  border-color: rgba(249, 115, 22, 0.32);
+  background: rgba(249, 115, 22, 0.09);
 }
 
 .route-step-done {
@@ -132,8 +162,8 @@
 .route-index {
   width: 48px;
   height: 48px;
-  border-radius: 16px;
-  background: var(--surface-card-strong);
+  border-radius: 14px;
+  background: #233238;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -141,7 +171,7 @@
 }
 
 .route-index-text {
-  color: var(--brand-primary-dark);
+  color: #facc15;
   font-size: 24px;
   font-weight: 900;
 }
@@ -161,6 +191,14 @@
   color: var(--text-muted);
   font-size: 23px;
   line-height: 1.35;
+}
+
+.route-difficulty {
+  margin-top: 8px;
+  color: #b45309;
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 850;
 }
 
 .gauntlet-result {
@@ -195,10 +233,14 @@
 .primary-action {
   min-height: 74px;
   border-radius: 22px;
-  background: var(--brand-primary);
+  background: #f97316;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.primary-action-disabled {
+  background: #94a3b8;
 }
 
 .primary-action-text {

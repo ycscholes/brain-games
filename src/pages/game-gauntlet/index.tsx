@@ -1,9 +1,11 @@
 import { View, Text } from "@tarojs/components";
-import Taro, { useDidShow } from "@tarojs/taro";
+import Taro, { getCurrentInstance, useDidShow } from "@tarojs/taro";
 import { useState } from "react";
 import { GAME_TITLE_MAP, getGameById } from "../../config/gameCatalog";
 import {
   GAUNTLET_LEG_COUNT,
+  clearGameGauntletSession,
+  createGameGauntletSession,
   finalizeGameGauntletSession,
   getGauntletGameUrl,
   readGameGauntletSession,
@@ -15,6 +17,10 @@ import "./index.scss";
 
 type PageStatus = "ready" | "active" | "complete";
 
+function getDifficultyLabel(difficulty: GameGauntletSession["difficulty"]) {
+  return difficulty === "hard" ? "进阶难度" : "标准难度";
+}
+
 export default function GameGauntlet() {
   usePageShare("pages/game-gauntlet/index");
 
@@ -23,11 +29,34 @@ export default function GameGauntlet() {
   const [awardedPoints, setAwardedPoints] = useState(0);
   const [status, setStatus] = useState<PageStatus>("ready");
 
-  const refreshSession = (sessionId?: string) => {
-    const nextSession = readGameGauntletSession(sessionId);
+  const enterLeg = (nextSession: GameGauntletSession) => {
+    const legIndex = nextSession.results.filter(Boolean).length;
+    const gameId = nextSession.gameIds[legIndex];
+    Taro.navigateTo({
+      url: getGauntletGameUrl(gameId, nextSession.id, legIndex),
+    });
+  };
+
+  const prepareNewPreview = () => {
+    clearGameGauntletSession();
+    setSession(createGameGauntletSession());
+    setCompletedSession(null);
+    setAwardedPoints(0);
+    setStatus("ready");
+  };
+
+  const refreshSession = () => {
+    const params = getCurrentInstance().router?.params ?? {};
+    const routeSessionId = typeof params.sessionId === "string" ? params.sessionId : "";
+
+    if (!routeSessionId) {
+      prepareNewPreview();
+      return;
+    }
+
+    const nextSession = readGameGauntletSession(routeSessionId);
     if (!nextSession) {
-      setSession(null);
-      setStatus("ready");
+      prepareNewPreview();
       return;
     }
 
@@ -41,6 +70,13 @@ export default function GameGauntlet() {
       return;
     }
 
+    if (nextSession.results.filter(Boolean).length > 0) {
+      setSession(nextSession);
+      setStatus("active");
+      enterLeg(nextSession);
+      return;
+    }
+
     setSession(nextSession);
     setStatus("active");
   };
@@ -49,24 +85,11 @@ export default function GameGauntlet() {
     refreshSession();
   });
 
-  const enterLeg = (nextSession: GameGauntletSession) => {
-    const legIndex = nextSession.results.filter(Boolean).length;
-    const gameId = nextSession.gameIds[legIndex];
-    Taro.navigateTo({
-      url: getGauntletGameUrl(gameId, nextSession.id, legIndex),
-    });
-  };
-
   const startGauntlet = () => {
-    const nextSession = startGameGauntletSession();
+    const nextSession = startGameGauntletSession(session ?? undefined);
     setSession(nextSession);
     setStatus("active");
     enterLeg(nextSession);
-  };
-
-  const continueGauntlet = () => {
-    if (!session) return;
-    enterLeg(session);
   };
 
   const displayedSession = completedSession ?? session;
@@ -86,9 +109,15 @@ export default function GameGauntlet() {
         </View>
 
         <View className="gauntlet-hero">
-          <Text className="hero-kicker">随机 3 个游戏</Text>
+          <Text className="hero-kicker">本轮直接开局</Text>
           <Text className="hero-title">连闯 3 局，拿下总积分</Text>
-          <Text className="hero-copy">随机开局，连续挑战，一次完成。</Text>
+          <Text className="hero-copy">退出后会重新抽取，从第一关开始。</Text>
+          {displayedSession ? (
+            <View className="difficulty-strip">
+              <Text className="difficulty-label">本次选择</Text>
+              <Text className="difficulty-value">{getDifficultyLabel(displayedSession.difficulty)}</Text>
+            </View>
+          ) : null}
         </View>
 
         {displayedSession ? (
@@ -110,6 +139,7 @@ export default function GameGauntlet() {
                     <Text className="route-meta">
                       {result ? `得分 ${result.score} · 计入 ${result.awardedPoints} 积分` : `${game?.duration ?? ""} · ${game?.skill ?? ""}`}
                     </Text>
+                    <Text className="route-difficulty">{getDifficultyLabel(displayedSession.difficulty)}</Text>
                   </View>
                 </View>
               );
@@ -127,8 +157,8 @@ export default function GameGauntlet() {
 
         <View className="gauntlet-actions">
           {status === "active" ? (
-            <View className="primary-action" onClick={continueGauntlet}>
-              <Text className="primary-action-text">继续第 {completedCount + 1} 关</Text>
+            <View className="primary-action primary-action-disabled">
+              <Text className="primary-action-text">正在进入第 {completedCount + 1} 关</Text>
             </View>
           ) : (
             <View className="primary-action" onClick={startGauntlet}>

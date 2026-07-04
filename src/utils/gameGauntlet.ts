@@ -184,11 +184,11 @@ export function buildGameGauntletGameIds(seed = `${Date.now()}`) {
     .map((game) => game.id);
 }
 
-export function startGameGauntletSession() {
+export function createGameGauntletSession(seed = `${Date.now()}`): GameGauntletSession {
   const difficulty: GameGauntletDifficulty = Math.random() < 0.5 ? "normal" : "hard";
-  const gameIds = buildGameGauntletGameIds();
+  const gameIds = buildGameGauntletGameIds(seed);
   const sessionId = createSessionId();
-  const session: GameGauntletSession = {
+  return {
     id: sessionId,
     gameIds,
     difficulty,
@@ -201,7 +201,10 @@ export function startGameGauntletSession() {
     status: "active",
     createdAt: new Date().toISOString(),
   };
+}
 
+export function startGameGauntletSession(previewSession?: GameGauntletSession) {
+  const session: GameGauntletSession = previewSession ?? createGameGauntletSession();
   saveGameGauntletSession(session);
   return session;
 }
