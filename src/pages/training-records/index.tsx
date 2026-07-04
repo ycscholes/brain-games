@@ -25,6 +25,7 @@ const GAME_TITLES: Record<TrainingGameId, string> = {
   pattern: "找规律",
   "pattern-completion": "找规律",
   "number-order": "星链回响",
+  "signal-sprint": "信号冲刺",
   "head-count": "小剧场清点",
   "word-scramble": "词语拼盘",
   "bird-count": "宠物速数",

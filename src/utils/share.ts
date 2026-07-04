@@ -17,6 +17,7 @@ export const SHARE_PAGE_PATHS = [
   "pages/multiple-object-tracking/index",
   "pages/pattern-completion/index",
   "pages/number-order/index",
+  "pages/signal-sprint/index",
   "pages/head-count/index",
   "pages/word-scramble/index",
   "pages/bird-count/index",
@@ -78,6 +79,10 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/number-order/index": {
     title: "来玩星链回响，练路径记忆",
     timelineTitle: "星链回响记忆训练",
+  },
+  "pages/signal-sprint/index": {
+    title: "来玩信号冲刺，练反应和刹车力",
+    timelineTitle: "信号冲刺反应抑制训练",
   },
   "pages/head-count/index": {
     title: "来玩小剧场清点，练动态心算",

@@ -10,6 +10,7 @@ export default defineAppConfig({
     'pages/multiple-object-tracking/index',
     'pages/pattern-completion/index',
     'pages/number-order/index',
+    'pages/signal-sprint/index',
     'pages/head-count/index',
     'pages/word-scramble/index',
     'pages/bird-count/index',

@@ -12,6 +12,7 @@ export type TrainingGameId =
   | "multiple-object-tracking"
   | "pattern-completion"
   | "number-order"
+  | "signal-sprint"
   | "head-count"
   | "word-scramble"
   | "bird-count"
@@ -298,6 +299,7 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "multiple-object-tracking": 3,
   "pattern-completion": 1.2,
   "number-order": 1,
+  "signal-sprint": 1,
   "head-count": 1,
   "word-scramble": 1,
   "bird-count": 1,
@@ -572,6 +574,7 @@ export function clearProductData() {
     gameSpecificKeys.push(`mot_best_${difficulty}`);
     gameSpecificKeys.push(`pattern_completion_best_${difficulty}`);
     gameSpecificKeys.push(`number_order_best_${difficulty}`);
+    gameSpecificKeys.push(`signal_sprint_best_${difficulty}`);
     gameSpecificKeys.push(`head_count_best_${difficulty}`);
     gameSpecificKeys.push(`word_scramble_best_${difficulty}`);
     gameSpecificKeys.push(`bird_count_best_${difficulty}`);
