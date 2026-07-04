@@ -242,6 +242,13 @@
     var(--surface-card);
 }
 
+.card-spatial-rotation {
+  background:
+    radial-gradient(circle at 38% 22%, rgba(43, 139, 162, 0.18), transparent 32%),
+    radial-gradient(circle at 76% 24%, rgba(245, 184, 79, 0.16), transparent 30%),
+    var(--surface-card);
+}
+
 .card-game-gauntlet {
   background:
     radial-gradient(circle at 36% 24%, rgba(249, 115, 22, 0.18), transparent 32%),
@@ -431,6 +438,11 @@
   color: #167249;
 }
 
+.card-spatial-rotation .game-badge {
+  background: rgba(43, 139, 162, 0.16);
+  color: #176378;
+}
+
 .card-game-gauntlet .game-badge {
   background: rgba(249, 115, 22, 0.16);
   color: #c2410c;
@@ -525,6 +537,10 @@
 
 .card-color-trap .enter-button {
   background: linear-gradient(90deg, #e14d43 0%, #2f9b6a 100%);
+}
+
+.card-spatial-rotation .enter-button {
+  background: linear-gradient(90deg, #176378 0%, #f0b84f 100%);
 }
 
 .card-game-gauntlet .enter-button {

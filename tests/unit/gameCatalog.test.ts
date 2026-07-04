@@ -21,6 +21,7 @@ describe("gameCatalog", () => {
     const allGameIds = ALL_GAME_ITEMS.map((game) => game.id);
 
     expect(allGameIds).toContain("signal-sprint");
+    expect(allGameIds).toContain("spatial-rotation");
     expect(allGameIds).toContain("game-gauntlet");
     expect(allGameIds).not.toContain("head-count");
   });
@@ -28,7 +29,7 @@ describe("gameCatalog", () => {
   test("gauntlet candidate pool includes playable single games only", () => {
     const candidateIds = GAUNTLET_CANDIDATE_GAMES.map((game) => game.id);
 
-    expect(candidateIds).toHaveLength(12);
+    expect(candidateIds).toHaveLength(13);
     expect(new Set(candidateIds).size).toBe(candidateIds.length);
     expect(candidateIds).not.toContain("game-gauntlet");
     expect(candidateIds).not.toContain("head-count");
