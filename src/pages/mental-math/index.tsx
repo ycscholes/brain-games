@@ -7,6 +7,7 @@ import {
   getTrainingDifficultyLabel,
   recordTrainingSession,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   CUSTOM_MATH_STAGE_ID,
@@ -37,10 +38,16 @@ interface HighScoreRecord {
 
 export default function MentalMath() {
   usePageShare("pages/mental-math/index");
+  const gauntletPreset = readGameGauntletModePreset();
+  const isGauntletPreset = gauntletPreset !== null;
+  const gauntletStageId = gauntletPreset?.stageId;
+  const presetStageId = gauntletStageId && MATH_STAGES.some((stage) => stage.id === gauntletStageId)
+    ? gauntletStageId as MathStageId
+    : DEFAULT_MATH_STAGE_ID;
 
   const [gameState, setGameState] = useState<GameState>("start");
-  const [gameMode, setGameMode] = useState<GameMode>("timed");
-  const [selectedStageId, setSelectedStageId] = useState<MathStageId>(DEFAULT_MATH_STAGE_ID);
+  const [gameMode, setGameMode] = useState<GameMode>(gauntletPreset?.mode === "death" ? "death" : "timed");
+  const [selectedStageId, setSelectedStageId] = useState<MathStageId>(presetStageId);
   const [customConfig, setCustomConfig] = useState(DEFAULT_CUSTOM_MATH_CONFIG);
   const [highScoreTimed, setHighScoreTimed] = useState(0);
   const [highScoreDeath, setHighScoreDeath] = useState(0);
@@ -55,6 +62,7 @@ export default function MentalMath() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const correctCountRef = useRef(0);
   const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoStartedRef = useRef(false);
   const selectedStage = useMemo(() => getMathStage(selectedStageId), [selectedStageId]);
   const customProfile = useMemo(() => getCustomMathProfile(customConfig), [customConfig]);
   const isCustomStage = selectedStageId === CUSTOM_MATH_STAGE_ID;
@@ -261,6 +269,12 @@ const startGame = () => {
   setGameState("playing");
 };
 
+useEffect(() => {
+  if (!isGauntletPreset || autoStartedRef.current || gameState !== "start") return;
+  autoStartedRef.current = true;
+  startGame();
+}, [gameState, isGauntletPreset]);
+
 // 下一题
 const nextProblem = () => {
   const problem = generateProblem();
@@ -328,6 +342,17 @@ const handleGameOver = () => {
   const finalCorrectCount = correctCountRef.current;
   const effectiveScore = getEffectiveScoreForPoints(finalCorrectCount);
   const awardedPoints = getAwardedPoints("mental-math", effectiveScore, rewardDifficulty);
+  if (completeGauntletLegIfNeeded({
+    gameId: "mental-math",
+    score: finalCorrectCount,
+    awardedPoints,
+    mode: getTrainingModeRecord(),
+    difficulty: rewardDifficulty,
+    outcome: "completed",
+  })) {
+    return;
+  }
+
   Taro.setStorageSync("mental_math_last_score", finalCorrectCount);
   addPointsToPet("mental-math", effectiveScore, rewardDifficulty);
   recordTrainingSession({
@@ -374,6 +399,7 @@ return (
           </View>
         </View>
 
+        {!isGauntletPreset && (
         <View className="mode-section">
           <View className="mode-header">
             <View className="mode-icon">
@@ -438,8 +464,10 @@ return (
             </View>
           )}
         </View>
+        )}
 
         {/* 模式选择 */}
+        {!isGauntletPreset && (
         <View className="mode-section">
           <View className="mode-header">
             <View className="mode-icon">
@@ -464,6 +492,7 @@ return (
             </View>
           </View>
         </View>
+        )}
 
         <View className="rules-card">
           <View className="rules-header">

@@ -8,6 +8,8 @@ import Taro, {
 
 export const SHARE_PAGE_PATHS = [
   "pages/index/index",
+  "pages/all-games/index",
+  "pages/game-gauntlet/index",
   "pages/memory-challenge/index",
   "pages/rock-paper-scissors/index",
   "pages/dual-task/index",
@@ -20,6 +22,7 @@ export const SHARE_PAGE_PATHS = [
   "pages/head-count/index",
   "pages/word-scramble/index",
   "pages/bird-count/index",
+  "pages/color-trap/index",
   "pages/pet/index",
   "pages/settings/index",
   "pages/training-records/index",
@@ -42,6 +45,14 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/index/index": {
     title: APP_SHARE_TITLE,
     timelineTitle: "Cici的脑部锻炼：每天练一点",
+  },
+  "pages/all-games/index": {
+    title: "来看看Cici的脑部锻炼全部游戏",
+    timelineTitle: "Cici的脑部锻炼全部训练",
+  },
+  "pages/game-gauntlet/index": {
+    title: "来挑战游戏大闯关，一次玩 3 个脑力游戏",
+    timelineTitle: "游戏大闯关综合训练",
   },
   "pages/memory-challenge/index": {
     title: "来挑战奇趣记忆",
@@ -90,6 +101,10 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/bird-count/index": {
     title: "来玩宠物速数，练快速观察",
     timelineTitle: "宠物速数观察训练",
+  },
+  "pages/color-trap/index": {
+    title: "来玩颜色陷阱，练选择注意",
+    timelineTitle: "颜色陷阱注意力训练",
   },
   "pages/pet/index": {
     title: "来看看我在Cici的脑部锻炼里养的宠物",

@@ -10,6 +10,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import PetSprite from "../pet/components/PetSprite";
 import type { PetSpriteMood, PetSpriteSize } from "../pet/components/PetSprite/types";
@@ -217,12 +218,17 @@ async function preloadSpeedQuestionImages(
 
 export default function FarmCount() {
   usePageShare("pages/bird-count/index");
+  const gauntletPreset = readGameGauntletModePreset();
+  const isGauntletPreset = gauntletPreset !== null;
+  const presetMode = gauntletPreset?.farmMode ?? "speed";
+  const presetDifficulty = gauntletPreset?.difficulty ?? "normal";
+  const presetYardSpeed = gauntletPreset?.yardSpeed ?? (presetDifficulty === "hard" ? "standard" : "slow");
 
-  const [mode, setMode] = useState<FarmCountMode>("speed");
+  const [mode, setMode] = useState<FarmCountMode>(presetMode);
   const [phase, setPhase] = useState<Phase>("start");
-  const [difficulty, setDifficulty] = useState<TrainingDifficulty>("normal");
-  const [yardDifficulty, setYardDifficulty] = useState<HeadCountDifficulty>("normal");
-  const [speedDifficulty, setSpeedDifficulty] = useState<HeadCountSpeedDifficulty>("slow");
+  const [difficulty, setDifficulty] = useState<TrainingDifficulty>(presetDifficulty);
+  const [yardDifficulty, setYardDifficulty] = useState<HeadCountDifficulty>(presetDifficulty);
+  const [speedDifficulty, setSpeedDifficulty] = useState<HeadCountSpeedDifficulty>(presetYardSpeed);
   const [best, setBest] = useState(0);
   const [petDisplayPool, setPetDisplayPool] = useState<PetDisplayItem[]>(() =>
     buildPetDisplayPool({
@@ -254,6 +260,7 @@ export default function FarmCount() {
   const answerStartedAtRef = useRef(0);
   const finishedRef = useRef(false);
   const preloadRunIdRef = useRef(0);
+  const autoStartedRef = useRef(false);
 
   const speedQuestion = speedQuestions[currentIndex] ?? null;
   const yardQuestion = yardQuestions[currentIndex] ?? null;
@@ -291,7 +298,9 @@ export default function FarmCount() {
   }, [difficulty, mode, speedDifficulty, yardDifficulty]);
 
   useLoad((query) => {
-    const nextMode = normalizeMode(String(query.mode ?? ""));
+    const nextMode = isGauntletPreset
+      ? presetMode
+      : normalizeMode(String(query.mode ?? ""));
     setMode(nextMode);
     refreshPetSkinPool();
   });
@@ -358,6 +367,18 @@ export default function FarmCount() {
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextAwardedPoints = getAwardedPoints("bird-count", finalScore, difficulty);
+    if (completeGauntletLegIfNeeded({
+      gameId: "bird-count",
+      score: finalScore,
+      awardedPoints: nextAwardedPoints,
+      durationSeconds,
+      mode: "speed",
+      difficulty,
+      outcome: "completed",
+    })) {
+      return;
+    }
+
     addPointsToPet("bird-count", finalScore, difficulty);
     recordTrainingSession({
       gameId: "bird-count",
@@ -392,6 +413,18 @@ export default function FarmCount() {
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextRewardDifficulty = getHeadCountRewardDifficulty(yardDifficulty, speedDifficulty);
     const nextAwardedPoints = getAwardedPoints("head-count", finalScore, nextRewardDifficulty);
+    if (completeGauntletLegIfNeeded({
+      gameId: isGauntletPreset ? "bird-count" : "head-count",
+      score: finalScore,
+      awardedPoints: nextAwardedPoints,
+      durationSeconds,
+      mode: `${yardDifficulty}:${speedDifficulty}`,
+      difficulty: nextRewardDifficulty,
+      outcome: "completed",
+    })) {
+      return;
+    }
+
     addPointsToPet("head-count", finalScore, nextRewardDifficulty);
     recordTrainingSession({
       gameId: "head-count",
@@ -414,7 +447,7 @@ export default function FarmCount() {
     } else {
       setIsNewBest(false);
     }
-  }, [best, clearTimers, speedDifficulty, yardDifficulty]);
+  }, [best, clearTimers, isGauntletPreset, speedDifficulty, yardDifficulty]);
 
   const beginSpeedQuestion = useCallback((questionIndex: number, nextQuestions = speedQuestions) => {
     clearTimers();
@@ -515,6 +548,12 @@ export default function FarmCount() {
     }
     void startSpeedGame(currentPetDisplayPool);
   };
+
+  useEffect(() => {
+    if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
+    autoStartedRef.current = true;
+    startGame();
+  }, [isGauntletPreset, phase]);
 
   const advanceAfterSpeedQuestion = useCallback((nextScore: number, nextCorrectQuestions: number) => {
     if (currentIndex >= BIRD_COUNT_TOTAL_QUESTIONS - 1) {
@@ -663,6 +702,7 @@ export default function FarmCount() {
             </View>
           </View>
 
+          {!isGauntletPreset && (
           <View className="info-panel">
             <Text className="section-title">游戏模式</Text>
             <View className="mode-grid">
@@ -682,42 +722,47 @@ export default function FarmCount() {
               </View>
             </View>
           </View>
+          )}
 
-          <View className="info-panel">
-            <Text className="section-title">训练规则</Text>
-            {mode === "yard" ? (
-              <>
-                <Text className="rule-line">1. 每局 8 题，先记住围栏里的初始宠物数。</Text>
-                <Text className="rule-line">2. 宠物进出时不再显示总数，需要在心里清点。</Text>
-                <Text className="rule-line">3. 事件结束后从 4 个选项中选择剩余数量。</Text>
-              </>
-            ) : (
-              <>
-                <Text className="rule-line">1. 每局 8 题，先看本题要数哪种宠物。</Text>
-                <Text className="rule-line">2. 宠物经过农场时，只统计目标宠物。</Text>
-                <Text className="rule-line">3. 速度会逐题提升，快速正确和连击有额外分。</Text>
-              </>
-            )}
-          </View>
+          {!isGauntletPreset && (
+            <>
+              <View className="info-panel">
+                <Text className="section-title">训练规则</Text>
+                {mode === "yard" ? (
+                  <>
+                    <Text className="rule-line">1. 每局 8 题，先记住围栏里的初始宠物数。</Text>
+                    <Text className="rule-line">2. 宠物进出时不再显示总数，需要在心里清点。</Text>
+                    <Text className="rule-line">3. 事件结束后从 4 个选项中选择剩余数量。</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text className="rule-line">1. 每局 8 题，先看本题要数哪种宠物。</Text>
+                    <Text className="rule-line">2. 宠物经过农场时，只统计目标宠物。</Text>
+                    <Text className="rule-line">3. 速度会逐题提升，快速正确和连击有额外分。</Text>
+                  </>
+                )}
+              </View>
 
-          <View className="info-panel">
-            <Text className="section-title">{mode === "yard" ? "事件难度" : "难度"}</Text>
-            <View className="difficulty-grid">
-              {mode === "yard" ? (
-                <>
-                  {renderYardDifficultyCard("normal", "3-4 段事件 · 节奏清晰")}
-                  {renderYardDifficultyCard("hard", "4-6 段事件 · 数量变化更大")}
-                </>
-              ) : (
+              <View className="info-panel">
+                <Text className="section-title">{mode === "yard" ? "事件难度" : "难度"}</Text>
+                <View className="difficulty-grid">
+                  {mode === "yard" ? (
+                    <>
+                      {renderYardDifficultyCard("normal", "3-4 段事件 · 节奏清晰")}
+                      {renderYardDifficultyCard("hard", "4-6 段事件 · 数量变化更大")}
+                    </>
+                  ) : (
                 <>
                   {renderSpeedDifficultyCard("normal", "8-15 只宠物")}
                   {renderSpeedDifficultyCard("hard", "14-21 只宠物")}
                 </>
-              )}
-            </View>
-          </View>
+                  )}
+                </View>
+              </View>
+            </>
+          )}
 
-          {mode === "yard" ? (
+          {!isGauntletPreset && mode === "yard" ? (
             <View className="info-panel">
               <Text className="section-title">出入速度</Text>
               <View className="difficulty-grid speed-grid">

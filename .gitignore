@@ -26,3 +26,5 @@ tcb_custom_login.json
 
 # Local agent/editor state
 .claude/settings.local.json
+.agents/
+.trae/skills/

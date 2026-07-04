@@ -1,4 +1,5 @@
 const {
+  DEFAULT_CUSTOM_PET_TEMPLATE_SKIN,
   DEFAULT_CUSTOM_PET_TRAITS,
   normalizeMappedSkin,
 } = require("./customPetDomain");
@@ -21,10 +22,11 @@ const CLOUD_BASE_IMAGE_MODEL_NAME = "HY-Image-3.0-Plus-4090-Tob-v1.0";
 const DEFAULT_IMAGE_GENERATION_FUNCTION_NAME = "customPetImageGenerator";
 
 const DEFAULT_ANALYSIS = {
-  speciesLabel: "自定义宠物",
-  mappedSkin: "cat",
+  speciesLabel: "上传图中的宠物",
+  mappedSkin: DEFAULT_CUSTOM_PET_TEMPLATE_SKIN,
   traits: DEFAULT_CUSTOM_PET_TRAITS,
 };
+const WEAK_SPECIES_LABELS = new Set(["", "未知", "自定义宠物", "宠物", "unknown", "Unknown"]);
 
 function parseJsonObject(text) {
   const value = String(text || "").trim();
@@ -41,10 +43,12 @@ function parseJsonObject(text) {
 
 function normalizeAnalysis(value) {
   const traits = value && value.traits && typeof value.traits === "object" ? value.traits : {};
+  const rawSpeciesLabel = String(value && value.speciesLabel ? value.speciesLabel : "").trim();
+  const speciesLabel = WEAK_SPECIES_LABELS.has(rawSpeciesLabel)
+    ? DEFAULT_ANALYSIS.speciesLabel
+    : rawSpeciesLabel;
   return {
-    speciesLabel: String(value && value.speciesLabel ? value.speciesLabel : DEFAULT_ANALYSIS.speciesLabel)
-      .trim()
-      .slice(0, 30),
+    speciesLabel: speciesLabel.slice(0, 30),
     mappedSkin: normalizeMappedSkin(value && value.mappedSkin),
     traits: {
       ...DEFAULT_CUSTOM_PET_TRAITS,
@@ -65,6 +69,34 @@ function logTextPrompt({ provider, operation, messages }) {
   );
 }
 
+function logAnalysisSummary({ status, analysis = null, reason = null }) {
+  const traits = analysis && analysis.traits && typeof analysis.traits === "object" ? analysis.traits : {};
+  const payload = {
+    event: "custom_pet_analysis_summary",
+    status,
+  };
+  if (analysis) {
+    payload.speciesLabel = analysis.speciesLabel || null;
+    payload.mappedSkin = analysis.mappedSkin || null;
+    payload.traitsValid = {
+      primaryColor: Boolean(traits.primaryColor),
+      secondaryColor: Boolean(traits.secondaryColor),
+      markings: Boolean(traits.markings),
+      bodyShape: Boolean(traits.bodyShape),
+      accessories: Boolean(traits.accessories),
+    };
+  }
+  if (reason) {
+    payload.reason = String(reason).slice(0, 180);
+  }
+  const message = JSON.stringify(payload);
+  if (status === "ok") {
+    console.info("[custom-pet-generator] analysis summary", message);
+  } else {
+    console.warn("[custom-pet-generator] analysis summary", message);
+  }
+}
+
 async function analyzeSource({ sourceBuffer, mimeType = "image/jpeg", app }) {
   try {
     const tcb = getCloudBaseSdk();
@@ -74,12 +106,12 @@ async function analyzeSource({ sourceBuffer, mimeType = "image/jpeg", app }) {
       {
         role: "system",
         content:
-          "你是宠物参考图分析器。只输出 JSON，不要解释。speciesLabel 必须来自用户上传图的真实可见外观；mappedSkin 只是前端兼容分类，只能是 cat,dog,rabbit,bear,panda,gecko,turtle，不得作为生成物种或外观依据。",
+          "你是宠物参考图分析器。只输出 JSON，不要解释。speciesLabel 必须来自用户上传图的真实可见外观，可以是任意真实物种。先判断开放物种类别，不要默认归入猫狗兔；看到喙、羽毛、翅膀、爪趾、站在树枝上的小型动物时必须标为鸟类或具体鸟名，不能标为犬类、猫或兔。mappedSkin 只是前端兼容分类，只能是 cat,dog,rabbit,bear,panda,gecko,turtle，不得作为生成物种或外观依据。只有参考图确实像猫或狗时才做猫狗细分；看到黑色犬鼻、突出口吻、张嘴吐舌、柴犬或犬类竖耳时标为犬类，不要因竖耳、脸颊白毛或胡须误判为猫。",
       },
       {
         role: "user",
         content:
-          "根据用户上传的单只宠物参考图输出 speciesLabel、mappedSkin、traits。traits 包含 primaryColor、secondaryColor、markings、bodyShape、accessories，必须直接描述参考图可见特征，不要套用 mappedSkin 的默认外观。",
+          "根据用户上传的单只宠物参考图输出 speciesLabel、mappedSkin、traits。traits 包含 primaryColor、secondaryColor、markings、bodyShape、accessories，必须直接描述参考图可见特征，不要套用 mappedSkin 的默认外观。若图中是鸟，speciesLabel 输出鸟类或具体鸟名，traits 必须描述喙、羽毛、翅膀、胸腹颜色、爪趾和站姿。",
       },
     ];
     logTextPrompt({
@@ -108,14 +140,45 @@ async function analyzeSource({ sourceBuffer, mimeType = "image/jpeg", app }) {
         },
       ],
     });
-    return normalizeAnalysis(parseJsonObject(result.text));
-  } catch {
+    const parsed = parseJsonObject(result.text);
+    if (!parsed) {
+      logAnalysisSummary({
+        status: "parse_failed",
+        analysis: DEFAULT_ANALYSIS,
+        reason: String(result && result.text ? result.text : "empty analysis response").slice(0, 180),
+      });
+      return DEFAULT_ANALYSIS;
+    }
+    const analysis = normalizeAnalysis(parsed);
+    const weakSpecies = analysis.speciesLabel === DEFAULT_ANALYSIS.speciesLabel;
+    logAnalysisSummary({
+      status: weakSpecies ? "weak_species" : "ok",
+      analysis,
+      reason: weakSpecies ? "speciesLabel missing or weak; generation must rely on reference image" : null,
+    });
+    return analysis;
+  } catch (error) {
+    logAnalysisSummary({
+      status: "request_failed",
+      analysis: DEFAULT_ANALYSIS,
+      reason: error && error.message ? error.message : String(error || "unknown analysis error"),
+    });
     return DEFAULT_ANALYSIS;
   }
 }
 
 const REFERENCE_VISUAL_TRAITS_PROMPT =
   "视觉特征：严格使用上传图分析得到的主色、辅色、纹理分布、体型轮廓、脸部轮廓和原有配饰";
+const REFERENCE_IDENTITY_PRIORITY_PROMPT =
+  "身份优先级：用户上传参考图是物种、脸型、耳朵、眼睛、嘴吻、尾巴、毛色和花纹的最高依据";
+const REFERENCE_MORPHOLOGY_PROMPT =
+  "必须保留参考图的真实动物结构；如果参考图有喙、羽毛、翅膀、爪趾或站在树枝上，必须生成鸟类，禁止改成狗、猫、兔或其它四足哺乳动物";
+const ANALYSIS_CONFLICT_PROMPT =
+  "辅助分析只用于补充颜色和花纹；如果辅助分析的物种、体型或器官描述与用户上传参考图冲突，必须忽略辅助分析";
+const POSE_REFERENCE_LIMIT_PROMPT =
+  "姿态参考图只用于四宫格布局和姿态参考，不得覆盖用户上传图中的物种和外观";
+const NO_CAT_DOG_SUBSTITUTION_PROMPT =
+  "除非用户上传图清楚可见为猫或狗，否则禁止把宠物改画成猫、狗、猫咪、小狗或犬类";
 const EXTRA_CONTENT_NEGATIVE_PROMPT =
   "每格只保留宠物本体及原有配饰，禁止出现其它角色、互动肢体、餐饮元素、器皿、玩具、特效、光环、场景物件";
 const IMAGE_NEGATIVE_PROMPT =
@@ -124,6 +187,7 @@ const FOOTNOTE_REGION_WIDTH_RATIO = 0.28;
 const FOOTNOTE_REGION_HEIGHT_RATIO = 0.16;
 const NORMALIZED_FOOTNOTE_REGION_WIDTH_RATIO = 0.3;
 const NORMALIZED_FOOTNOTE_REGION_HEIGHT_RATIO = 0.13;
+const CLOUD_BASE_IMAGE_GENERATION_SUB_URL = "images/ar/generations";
 
 function logImagePrompt({ provider, operation, prompt, negativePrompt = null, references = null }) {
   const payload = {
@@ -142,14 +206,17 @@ function logImagePrompt({ provider, operation, prompt, negativePrompt = null, re
 }
 
 function describeCustomPet({ speciesLabel, traits = {} }) {
-  return [
-    speciesLabel ? `物种外观：${String(speciesLabel).slice(0, 30)}` : "",
+  const details = [
+    speciesLabel ? `物种线索：${String(speciesLabel).slice(0, 30)}` : "",
     traits.primaryColor ? `主色：${String(traits.primaryColor).slice(0, 40)}` : "",
     traits.secondaryColor ? `辅色：${String(traits.secondaryColor).slice(0, 40)}` : "",
     traits.markings ? `花纹：${String(traits.markings).slice(0, 60)}` : "",
     traits.bodyShape ? `体型：${String(traits.bodyShape).slice(0, 60)}` : "",
     traits.accessories ? `配饰：${String(traits.accessories).slice(0, 60)}` : "",
-  ].filter(Boolean).join("；");
+  ].filter(Boolean);
+  return details.length > 0
+    ? `辅助分析（若与参考图冲突必须忽略）：${details.join("；")}`
+    : "";
 }
 
 function buildMoodPrompt({ mood, speciesLabel, traits }) {
@@ -165,10 +232,15 @@ function buildMoodPrompt({ mood, speciesLabel, traits }) {
     identity,
     "固定水彩绘本风格，儿童友好，轮廓清楚，主体居中",
     "纯亮绿色背景 #00FF00，无场景、无地面、无投影、无边框、无文字",
+    REFERENCE_IDENTITY_PRIORITY_PROMPT,
+    REFERENCE_MORPHOLOGY_PROMPT,
+    ANALYSIS_CONFLICT_PROMPT,
+    POSE_REFERENCE_LIMIT_PROMPT,
     REFERENCE_VISUAL_TRAITS_PROMPT,
+    NO_CAT_DOG_SUBSTITUTION_PROMPT,
     EXTRA_CONTENT_NEGATIVE_PROMPT,
     "保留上传图分析得到的身份和外观",
-  ].join("。").slice(0, 250);
+  ].join("。").slice(0, 520);
 }
 
 function buildMoodSheetPrompt({ speciesLabel, traits }) {
@@ -187,10 +259,15 @@ function buildMoodSheetPrompt({ speciesLabel, traits }) {
     "右下 hungry：同一只宠物期待姿态和可爱表情，不要悲伤",
     "四格必须一眼认出是同一只宠物，物种、脸型、耳朵、眼睛、嘴吻、身体比例、毛色、花纹、尾巴和原有配饰完全一致",
     "纯亮绿色背景 #00FF00，无场景、无地面、无投影、无边框、无文字、无标签",
+    REFERENCE_IDENTITY_PRIORITY_PROMPT,
+    REFERENCE_MORPHOLOGY_PROMPT,
+    ANALYSIS_CONFLICT_PROMPT,
+    POSE_REFERENCE_LIMIT_PROMPT,
     REFERENCE_VISUAL_TRAITS_PROMPT,
+    NO_CAT_DOG_SUBSTITUTION_PROMPT,
     `${EXTRA_CONTENT_NEGATIVE_PROMPT}，尤其禁止食物、食盆、爱心、抱枕、玩具和特效`,
     "儿童绘本水彩风格，主体居中，只调整姿态和表情",
-  ].filter(Boolean).join("。").slice(0, 900);
+  ].filter(Boolean).join("。").slice(0, 1200);
 }
 
 function configureCloudBaseImageModel(model) {
@@ -200,12 +277,15 @@ function configureCloudBaseImageModel(model) {
   if (!model.generateImageSubUrlConfig) {
     model.generateImageSubUrlConfig = {};
   }
-  if (!model.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME]) {
-    model.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME] = {};
-  }
-  model.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME][CLOUD_BASE_IMAGE_MODEL_NAME] =
-    "images/ar/generations";
+  model.generateImageSubUrlConfig[CLOUD_BASE_IMAGE_MODEL_CLIENT_NAME] = [
+    [new RegExp(`^${CLOUD_BASE_IMAGE_MODEL_NAME}$`), CLOUD_BASE_IMAGE_GENERATION_SUB_URL],
+  ];
+  model.generateImageSubUrl = CLOUD_BASE_IMAGE_GENERATION_SUB_URL;
   return model;
+}
+
+function getReferenceImageUrls({ referenceImageUrl, poseImageUrl } = {}) {
+  return [referenceImageUrl, poseImageUrl].filter(Boolean);
 }
 
 function createCloudBaseImageModel(app) {
@@ -385,11 +465,9 @@ async function generateCloudBaseSdkImage({
     revise: { value: false },
     enable_thinking: { value: false },
   };
-  if (referenceImageUrl) {
-    request.image_url = referenceImageUrl;
-  }
-  if (poseImageUrl) {
-    request.pose_image_url = poseImageUrl;
+  const imageUrls = getReferenceImageUrls({ referenceImageUrl, poseImageUrl });
+  if (imageUrls.length > 0) {
+    request.image_urls = imageUrls;
   }
   const response = await model.generateImage(request);
   const url = response && response.data && response.data[0] && response.data[0].url;
@@ -570,6 +648,47 @@ function removeNormalizedFootnote(image) {
   return image;
 }
 
+function shouldRemoveChromaKeyPixel(red, green, blue, alpha = 255) {
+  if (alpha <= 0) {
+    return false;
+  }
+  const exactGreenDistance = Math.max(Math.abs(red), Math.abs(255 - green), Math.abs(blue));
+  if (exactGreenDistance < 72) {
+    return true;
+  }
+  const maxOther = Math.max(red, blue);
+  const minOther = Math.min(red, blue);
+  const greenDominance = green - maxOther;
+  return (
+    (green >= 105 && greenDominance >= 35 && green >= maxOther * 1.25) ||
+    (green >= 140 && greenDominance >= 25 && green - minOther >= 45)
+  );
+}
+
+function removeChromaKeyBackground(image) {
+  const bounds = {
+    minX: image.bitmap.width,
+    minY: image.bitmap.height,
+    maxX: -1,
+    maxY: -1,
+  };
+  image.scan((x, y, offset) => {
+    const red = image.bitmap.data[offset];
+    const green = image.bitmap.data[offset + 1];
+    const blue = image.bitmap.data[offset + 2];
+    const alpha = image.bitmap.data[offset + 3];
+    if (alpha <= 0 || shouldRemoveChromaKeyPixel(red, green, blue, alpha)) {
+      image.bitmap.data[offset + 3] = 0;
+      return;
+    }
+    bounds.minX = Math.min(bounds.minX, x);
+    bounds.minY = Math.min(bounds.minY, y);
+    bounds.maxX = Math.max(bounds.maxX, x);
+    bounds.maxY = Math.max(bounds.maxY, y);
+  });
+  return bounds;
+}
+
 async function normalizeSprite({ inputBuffer }) {
   const { Jimp, JimpMime } = getJimp();
   const image = await Jimp.read(inputBuffer);
@@ -581,25 +700,7 @@ async function normalizeSprite({ inputBuffer }) {
     color: 0x00ff00ff,
   });
 
-  let minX = image.bitmap.width;
-  let minY = image.bitmap.height;
-  let maxX = -1;
-  let maxY = -1;
-  image.scan((x, y, offset) => {
-    const red = image.bitmap.data[offset];
-    const green = image.bitmap.data[offset + 1];
-    const blue = image.bitmap.data[offset + 2];
-    const greenDistance = Math.max(Math.abs(red), Math.abs(255 - green), Math.abs(blue));
-    if (greenDistance < 42 || (green > red * 1.55 && green > blue * 1.55 && green > 120)) {
-      // Remove both exact #00FF00 and anti-aliased green spill around the sprite.
-      image.bitmap.data[offset + 3] = 0;
-      return;
-    }
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    maxX = Math.max(maxX, x);
-    maxY = Math.max(maxY, y);
-  });
+  const { minX, minY, maxX, maxY } = removeChromaKeyBackground(image);
   if (maxX < minX || maxY < minY) {
     throw new Error("generated image has no visible subject");
   }
@@ -623,6 +724,7 @@ async function normalizeSprite({ inputBuffer }) {
     Math.round((768 - image.bitmap.width) / 2),
     Math.round((768 - image.bitmap.height) / 2),
   );
+  removeChromaKeyBackground(canvas);
   removeNormalizedFootnote(canvas);
   const png = await canvas.getBuffer(JimpMime.png);
   return addPngTextChunk(png, "AI-Generated", "Cici Custom Pet");
@@ -678,8 +780,10 @@ module.exports = {
   normalizeAnalysis,
   normalizeSprite,
   parseImageGenerationFunctionResult,
+  removeChromaKeyBackground,
   removeGeneratedSheetFootnote,
   removeNormalizedFootnote,
+  shouldRemoveChromaKeyPixel,
   splitMoodSheet,
   validateRuntimeDependencies,
 };

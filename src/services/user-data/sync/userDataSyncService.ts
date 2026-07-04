@@ -14,6 +14,7 @@ let pendingSyncTimer: ReturnType<typeof setTimeout> | null = null;
 let syncInFlight = false;
 let syncQueuedWhileInFlight = false;
 let initializePromise: Promise<void> | null = null;
+let activeSyncPromise: Promise<void> | null = null;
 
 export function getCloudSyncStatusText(meta: CloudSyncMeta): string {
   if (meta.lastSyncError === "missing cloud env id") return "云备份未启用：缺少云环境配置";
@@ -29,9 +30,14 @@ async function uploadSnapshot(reason: "startup" | "change") {
     if (reason === "change") {
       syncQueuedWhileInFlight = true;
     }
-    return;
+    return activeSyncPromise || undefined;
   }
 
+  activeSyncPromise = uploadSnapshotOnce(reason);
+  await activeSyncPromise;
+}
+
+async function uploadSnapshotOnce(reason: "startup" | "change") {
   const meta = userDataLocalRepository.readCloudSyncMeta();
   if (!meta.openid) {
     return;
@@ -76,6 +82,7 @@ async function uploadSnapshot(reason: "startup" | "change") {
     emitCloudSyncStatusChangedEvent();
   } finally {
     syncInFlight = false;
+    activeSyncPromise = null;
     if (syncQueuedWhileInFlight) {
       syncQueuedWhileInFlight = false;
       scheduleCloudBackup();
@@ -185,4 +192,63 @@ async function initializeCloudSyncOnce() {
   });
 
   await bootstrapCloudSync();
+}
+
+export async function syncLocalUserDataToCloudNow() {
+  if (!CLOUD_ENV_ID) {
+    return;
+  }
+
+  if (pendingSyncTimer) {
+    clearTimeout(pendingSyncTimer);
+    pendingSyncTimer = null;
+  }
+
+  if (syncInFlight && activeSyncPromise) {
+    await activeSyncPromise;
+  }
+
+  let meta = userDataLocalRepository.readCloudSyncMeta();
+  let openid = meta.openid;
+  if (!openid) {
+    openid = await userDataCloudRepository.ensureIdentity();
+  }
+  if (!openid) {
+    return;
+  }
+
+  meta = userDataLocalRepository.readCloudSyncMeta();
+  const snapshot = userDataLocalRepository.buildSnapshot(openid);
+  const snapshotHash = userDataLocalRepository.createSnapshotHashFromCloudSnapshot(snapshot);
+  if (snapshotHash === meta.lastSyncedSnapshotHash) {
+    return;
+  }
+
+  userDataLocalRepository.saveCloudSyncMeta({
+    cloudEnabled: true,
+    lastCloudSyncAttemptAt: new Date().toISOString(),
+    lastSyncStatus: "syncing",
+    lastSyncError: null,
+  });
+  emitCloudSyncStatusChangedEvent();
+
+  try {
+    const updatedAt = await userDataCloudRepository.pushSnapshot(snapshot);
+    userDataLocalRepository.saveCloudSyncMeta({
+      cloudEnabled: true,
+      lastCloudSyncAt: updatedAt,
+      lastSyncedSnapshotHash: snapshotHash,
+      lastSyncStatus: "success",
+      lastSyncError: null,
+    });
+    emitCloudSyncStatusChangedEvent();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown sync error";
+    userDataLocalRepository.saveCloudSyncMeta({
+      lastSyncStatus: "error",
+      lastSyncError: message,
+    });
+    emitCloudSyncStatusChangedEvent();
+    throw error;
+  }
 }

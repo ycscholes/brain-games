@@ -16,6 +16,14 @@ export type CustomPetTaskStatus =
   | "deleting"
   | "deleted";
 
+export type CustomPetUploadStage =
+  | "syncing"
+  | "preparing"
+  | "choosing"
+  | "processing"
+  | "uploading"
+  | "submitting";
+
 export interface CustomPetTask {
   jobId: string;
   status: CustomPetTaskStatus;

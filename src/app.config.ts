@@ -1,6 +1,8 @@
 export default defineAppConfig({
   pages: [
     'pages/index/index',
+    'pages/all-games/index',
+    'pages/game-gauntlet/index',
     'pages/memory-challenge/index',
     'pages/rock-paper-scissors/index',
     'pages/dual-task/index',
@@ -13,6 +15,7 @@ export default defineAppConfig({
     'pages/head-count/index',
     'pages/word-scramble/index',
     'pages/bird-count/index',
+    'pages/color-trap/index',
     'pages/pet/index',
     'pages/settings/index',
     'pages/training-records/index'

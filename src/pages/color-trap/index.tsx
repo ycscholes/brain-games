@@ -11,42 +11,41 @@ import {
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
-  createWordScrambleSession,
-  scoreWordScrambleQuestion,
-  WORD_SCRAMBLE_TOTAL_QUESTIONS,
-  type WordScrambleQuestion,
-  type WordScrambleQuestionResult,
+  COLOR_TRAP_TOTAL_QUESTIONS,
+  createColorTrapSession,
+  scoreColorTrapQuestion,
+  type ColorTrapColorId,
+  type ColorTrapQuestion,
+  type ColorTrapQuestionResult,
 } from "./gameLogic";
 import "./index.scss";
 
 type Phase = "start" | "playing" | "feedback" | "finished";
 
-const STORAGE_KEY_PREFIX = "word_scramble_best";
-const FEEDBACK_MS = 850;
+const STORAGE_KEY_PREFIX = "color_trap_best";
+const FEEDBACK_MS = 760;
 
 function readBestScore(difficulty: TrainingDifficulty) {
   const value = Number(Taro.getStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`) || 0);
   return Number.isFinite(value) ? value : 0;
 }
 
-export default function WordScramble() {
-  usePageShare("pages/word-scramble/index");
+export default function ColorTrap() {
+  usePageShare("pages/color-trap/index");
   const gauntletPreset = readGameGauntletModePreset();
   const isGauntletPreset = gauntletPreset !== null;
 
   const [phase, setPhase] = useState<Phase>("start");
   const [difficulty, setDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
-  const [questions, setQuestions] = useState<WordScrambleQuestion[]>([]);
+  const [questions, setQuestions] = useState<ColorTrapQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedWord, setSelectedWord] = useState("");
-  const [selectedCharIds, setSelectedCharIds] = useState<string[]>([]);
-  const [isHintVisible, setIsHintVisible] = useState(false);
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [bestCombo, setBestCombo] = useState(0);
   const [correctQuestions, setCorrectQuestions] = useState(0);
-  const [lastResult, setLastResult] = useState<WordScrambleQuestionResult | null>(null);
+  const [selectedColorId, setSelectedColorId] = useState<ColorTrapColorId | "">("");
+  const [lastResult, setLastResult] = useState<ColorTrapQuestionResult | null>(null);
   const [awardedPoints, setAwardedPoints] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
 
@@ -54,24 +53,14 @@ export default function WordScramble() {
   const startedAtRef = useRef(0);
   const questionStartedAtRef = useRef(0);
   const finishedRef = useRef(false);
+  const answeredRef = useRef(false);
   const phaseRef = useRef<Phase>("start");
-  const selectedWordRef = useRef("");
   const scoreRef = useRef(0);
   const comboRef = useRef(0);
   const bestComboRef = useRef(0);
   const correctQuestionsRef = useRef(0);
   const currentIndexRef = useRef(0);
-
   const currentQuestion = questions[currentIndex] ?? null;
-  const selectedChars = useMemo(() => {
-    if (!currentQuestion) {
-      return [];
-    }
-
-    return selectedCharIds
-      .map((id) => currentQuestion.charChoices.find((choice) => choice.id === id)?.char || "")
-      .filter(Boolean);
-  }, [currentQuestion, selectedCharIds]);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach((timer) => clearTimeout(timer));
@@ -110,10 +99,6 @@ export default function WordScramble() {
   }, [phase]);
 
   useEffect(() => {
-    selectedWordRef.current = selectedWord;
-  }, [selectedWord]);
-
-  useEffect(() => {
     scoreRef.current = score;
   }, [score]);
 
@@ -142,9 +127,9 @@ export default function WordScramble() {
     clearTimers();
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
-    const nextAwardedPoints = getAwardedPoints("word-scramble", finalScore, difficulty);
+    const nextAwardedPoints = getAwardedPoints("color-trap", finalScore, difficulty);
     if (completeGauntletLegIfNeeded({
-      gameId: "word-scramble",
+      gameId: "color-trap",
       score: finalScore,
       awardedPoints: nextAwardedPoints,
       durationSeconds,
@@ -154,9 +139,9 @@ export default function WordScramble() {
       return;
     }
 
-    addPointsToPet("word-scramble", finalScore, difficulty);
+    addPointsToPet("color-trap", finalScore, difficulty);
     recordTrainingSession({
-      gameId: "word-scramble",
+      gameId: "color-trap",
       score: finalScore,
       awardedPoints: nextAwardedPoints,
       durationSeconds,
@@ -177,43 +162,72 @@ export default function WordScramble() {
     }
   }, [best, clearTimers, difficulty]);
 
-  const beginQuestion = (questionIndex: number, nextQuestions = questions) => {
+  const submitAnswer = useCallback((
+    colorId: ColorTrapColorId | "",
+    question = currentQuestion,
+    timedOut = false,
+  ) => {
+    if (phaseRef.current !== "playing" || !question || answeredRef.current) {
+      return;
+    }
+
+    answeredRef.current = true;
+    clearTimers();
+    const result = scoreColorTrapQuestion({
+      selectedColorId: timedOut ? "" : colorId,
+      correctColorId: question.answer,
+      answerMs: Date.now() - questionStartedAtRef.current,
+      currentCombo: comboRef.current,
+    });
+    const nextScore = scoreRef.current + result.score;
+    const nextCombo = result.correct ? comboRef.current + 1 : 0;
+    const nextCorrectQuestions = correctQuestionsRef.current + (result.correct ? 1 : 0);
+
+    setSelectedColorId(timedOut ? "" : colorId);
+    setLastResult(result);
+    setScore(nextScore);
+    setCombo(nextCombo);
+    setBestCombo(Math.max(bestComboRef.current, nextCombo));
+    setCorrectQuestions(nextCorrectQuestions);
+    setPhase("feedback");
+
+    schedule(() => {
+      if (currentIndexRef.current >= COLOR_TRAP_TOTAL_QUESTIONS - 1) {
+        finishGame(nextScore, nextCorrectQuestions);
+        return;
+      }
+
+      beginQuestion(currentIndexRef.current + 1);
+    }, FEEDBACK_MS);
+  }, [clearTimers, currentQuestion, finishGame, schedule, selectedColorId]);
+
+  const beginQuestion = useCallback((questionIndex: number, nextQuestions = questions) => {
     clearTimers();
     const question = nextQuestions[questionIndex];
     setCurrentIndex(questionIndex);
-    setSelectedWord("");
-    setSelectedCharIds([]);
-    setIsHintVisible(false);
+    setSelectedColorId("");
     setLastResult(null);
+    answeredRef.current = false;
     questionStartedAtRef.current = Date.now();
     setPhase("playing");
 
     schedule(() => {
-      setIsHintVisible(true);
-    }, question?.hintDelayMs ?? 0);
-
-    schedule(() => {
-      if (!question) {
-        return;
-      }
-
       submitAnswer("", question, true);
-    }, question?.timeLimitMs ?? 6000);
-  };
+    }, question?.timeLimitMs ?? 4000);
+  }, [clearTimers, questions, schedule, submitAnswer]);
 
   const startGame = () => {
     clearTimers();
-    const nextQuestions = createWordScrambleSession(difficulty);
+    const nextQuestions = createColorTrapSession(difficulty);
     finishedRef.current = false;
     startedAtRef.current = Date.now();
     setQuestions(nextQuestions);
+    setCurrentIndex(0);
     setScore(0);
     setCombo(0);
     setBestCombo(0);
     setCorrectQuestions(0);
-    setSelectedWord("");
-    setSelectedCharIds([]);
-    setIsHintVisible(false);
+    setSelectedColorId("");
     setLastResult(null);
     setAwardedPoints(0);
     setIsNewBest(false);
@@ -229,9 +243,7 @@ export default function WordScramble() {
     setCombo(0);
     setBestCombo(0);
     setCorrectQuestions(0);
-    setSelectedWord("");
-    setSelectedCharIds([]);
-    setIsHintVisible(false);
+    setSelectedColorId("");
     setLastResult(null);
     setAwardedPoints(0);
     setIsNewBest(false);
@@ -239,83 +251,8 @@ export default function WordScramble() {
     refreshBest();
   };
 
-  const submitAnswer = (word: string, question = currentQuestion, timedOut = false) => {
-    if (phaseRef.current !== "playing" || !question || selectedWordRef.current) {
-      return;
-    }
-
-    clearTimers();
-    const result = scoreWordScrambleQuestion({
-      selectedWord: timedOut ? "" : word,
-      correctWord: question.target.word,
-      answerMs: Date.now() - questionStartedAtRef.current,
-      currentCombo: comboRef.current,
-    });
-    const nextScore = scoreRef.current + result.score;
-    const nextCombo = result.correct ? comboRef.current + 1 : 0;
-    const nextCorrectQuestions = correctQuestionsRef.current + (result.correct ? 1 : 0);
-
-    setSelectedWord(timedOut ? "超时" : word);
-    setLastResult(result);
-    setScore(nextScore);
-    setCombo(nextCombo);
-    setBestCombo(Math.max(bestComboRef.current, nextCombo));
-    setCorrectQuestions(nextCorrectQuestions);
-    setPhase("feedback");
-
-    schedule(() => {
-      if (currentIndexRef.current >= WORD_SCRAMBLE_TOTAL_QUESTIONS - 1) {
-        finishGame(nextScore, nextCorrectQuestions);
-        return;
-      }
-
-      beginQuestion(currentIndexRef.current + 1);
-    }, FEEDBACK_MS);
-  };
-
-  const handleCharTap = (choiceId: string) => {
-    if (
-      phase !== "playing" ||
-      !currentQuestion ||
-      selectedWord ||
-      selectedCharIds.includes(choiceId) ||
-      selectedCharIds.length >= currentQuestion.target.word.length
-    ) {
-      return;
-    }
-
-    const nextSelectedCharIds = [...selectedCharIds, choiceId];
-    const nextWord = nextSelectedCharIds
-      .map((id) => currentQuestion.charChoices.find((choice) => choice.id === id)?.char || "")
-      .join("");
-
-    setSelectedCharIds(nextSelectedCharIds);
-
-    if (nextWord.length >= currentQuestion.target.word.length) {
-      schedule(() => {
-        submitAnswer(nextWord, currentQuestion);
-      }, 120);
-    }
-  };
-
-  const undoChar = () => {
-    if (phase !== "playing" || selectedWord) {
-      return;
-    }
-
-    setSelectedCharIds((ids) => ids.slice(0, -1));
-  };
-
-  const clearSelection = () => {
-    if (phase !== "playing" || selectedWord) {
-      return;
-    }
-
-    setSelectedCharIds([]);
-  };
-
   const accuracyText = useMemo(() => {
-    return `${Math.round((correctQuestions / WORD_SCRAMBLE_TOTAL_QUESTIONS) * 100)}%`;
+    return `${Math.round((correctQuestions / COLOR_TRAP_TOTAL_QUESTIONS) * 100)}%`;
   }, [correctQuestions]);
 
   const renderDifficultyCard = (nextDifficulty: TrainingDifficulty, copy: string) => (
@@ -329,13 +266,13 @@ export default function WordScramble() {
   );
 
   return (
-    <View className="word-scramble-page">
+    <View className="color-trap-page">
       {phase === "start" ? (
-        <View className="word-start">
-          <View className="word-hero">
-            <Text className="hero-kicker">语言处理训练</Text>
-            <Text className="hero-title">词语拼盘</Text>
-            <Text className="hero-copy">从混入干扰字的字盘里点选汉字，按顺序拼出目标词。</Text>
+        <View className="trap-start">
+          <View className="trap-hero">
+            <Text className="hero-kicker">选择注意训练</Text>
+            <Text className="hero-title">颜色陷阱</Text>
+            <Text className="hero-copy">看清本题要求，在文字含义和字体颜色之间快速切换。</Text>
             <View className="best-pill">
               <Text className="best-label">当前难度最高</Text>
               <Text className="best-value">{best}</Text>
@@ -344,17 +281,17 @@ export default function WordScramble() {
 
           <View className="info-panel">
             <Text className="section-title">训练规则</Text>
-            <Text className="rule-line">1. 每局 8 题，字盘会混入无关汉字。</Text>
-            <Text className="rule-line">2. 按正确顺序点字，字数满后自动判定。</Text>
-            <Text className="rule-line">3. 困难模式提示会延迟出现，限时更紧。</Text>
+            <Text className="rule-line">1. 每局 8 题，按提示选择颜色。</Text>
+            <Text className="rule-line">2. “字体颜色”看字的颜色，“文字含义”看字本身。</Text>
+            <Text className="rule-line">3. 快速答对和连续答对会获得额外得分。</Text>
           </View>
 
           {!isGauntletPreset && (
           <View className="info-panel">
             <Text className="section-title">难度</Text>
             <View className="difficulty-grid">
-              {renderDifficultyCard("normal", "2 字词 · 2-3 个干扰字")}
-              {renderDifficultyCard("hard", "3-5 字词组 · 4-6 个干扰字")}
+              {renderDifficultyCard("normal", "规则交替 · 节奏舒缓")}
+              {renderDifficultyCard("hard", "更多颜色干扰 · 限时更紧")}
             </View>
           </View>
           )}
@@ -366,10 +303,10 @@ export default function WordScramble() {
       ) : null}
 
       {(phase === "playing" || phase === "feedback") && currentQuestion ? (
-        <View className="word-play">
+        <View className="trap-play">
           <View className="status-row">
             <View className="status-card">
-              <Text className="status-value">{currentIndex + 1}/{WORD_SCRAMBLE_TOTAL_QUESTIONS}</Text>
+              <Text className="status-value">{currentIndex + 1}/{COLOR_TRAP_TOTAL_QUESTIONS}</Text>
               <Text className="status-label">题目</Text>
             </View>
             <View className="status-card">
@@ -382,38 +319,35 @@ export default function WordScramble() {
             </View>
           </View>
 
-          <View className="scramble-card">
-            <Text className="question-kicker">{currentQuestion.target.category}</Text>
-            <View className="answer-rack">
-              {Array.from(currentQuestion.target.word).map((_, index) => (
-                <View key={`slot-${index}`} className={`answer-slot ${selectedChars[index] ? "answer-slot-filled" : ""}`}>
-                  <Text className="answer-slot-text">{selectedChars[index] || ""}</Text>
-                </View>
-              ))}
-            </View>
-            <Text className="hint-text">
-              {isHintVisible ? currentQuestion.target.hint : "提示蓄力中，先靠字形和类别判断"}
+          <View className="stimulus-card">
+            <Text className="question-kicker">
+              {currentQuestion.rule === "ink" ? "选择字体颜色" : "选择文字含义"}
             </Text>
-            <View className="tool-row">
-              <View className="tool-button" onClick={undoChar}>
-                <Text className="tool-button-text">撤销</Text>
-              </View>
-              <View className="tool-button" onClick={clearSelection}>
-                <Text className="tool-button-text">清空</Text>
-              </View>
-            </View>
+            <Text
+              className="color-word"
+              style={{ color: currentQuestion.inkColor.hex }}
+            >
+              {currentQuestion.wordColor.label}
+            </Text>
+            <Text className="stimulus-copy">
+              {currentQuestion.rule === "ink"
+                ? "忽略字的意思，只看它显示成什么颜色"
+                : "忽略显示颜色，只看这个字写的是什么"}
+            </Text>
           </View>
 
-          <View className="char-bank">
-            {currentQuestion.charChoices.map((choice) => {
-              const isUsed = selectedCharIds.includes(choice.id);
+          <View className="option-grid">
+            {currentQuestion.options.map((option) => {
+              const isSelected = selectedColorId === option.id;
+              const isAnswer = phase === "feedback" && option.id === currentQuestion.answer;
               return (
                 <View
-                  key={choice.id}
-                  className={`char-tile ${isUsed ? "char-tile-used" : ""} ${phase === "feedback" && choice.isTarget ? "char-tile-answer" : ""}`}
-                  onClick={() => handleCharTap(choice.id)}
+                  key={option.id}
+                  className={`option-card ${isSelected ? "option-selected" : ""} ${isAnswer ? "option-answer" : ""}`}
+                  onClick={() => submitAnswer(option.id)}
                 >
-                  <Text className="char-text">{choice.char}</Text>
+                  <View className="option-swatch" style={{ backgroundColor: option.hex }} />
+                  <Text className="option-text">{option.label}</Text>
                 </View>
               );
             })}
@@ -421,20 +355,23 @@ export default function WordScramble() {
 
           {phase === "feedback" ? (
             <View className={`feedback-card ${lastResult?.correct ? "feedback-correct" : "feedback-wrong"}`}>
-              <Text className="feedback-title">{lastResult?.correct ? "拼盘完成" : "正确词语"}</Text>
-              <Text className="feedback-copy">{currentQuestion.target.word} · 本题 +{lastResult?.score ?? 0}</Text>
+              <Text className="feedback-title">{lastResult?.correct ? "判断正确" : "正确答案"}</Text>
+              <Text className="feedback-copy">
+                {currentQuestion.options.find((option) => option.id === currentQuestion.answer)?.label}
+                色 · 本题 +{lastResult?.score ?? 0}
+              </Text>
             </View>
           ) : null}
         </View>
       ) : null}
 
       {phase === "finished" ? (
-        <View className="word-result">
+        <View className="trap-result">
           <View className="result-card">
             <Text className="result-kicker">训练完成</Text>
             <Text className="result-score">{score}</Text>
             <Text className="result-copy">
-              词语拼盘 · {getTrainingDifficultyLabel(difficulty)} {isNewBest ? "· 新最高" : ""}
+              颜色陷阱 · {getTrainingDifficultyLabel(difficulty)} {isNewBest ? "· 新最高" : ""}
             </Text>
             <View className="result-grid">
               <View className="result-item">

@@ -1,0 +1,216 @@
+.gauntlet-page {
+  min-height: 100vh;
+  padding: calc(20px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: var(--page-gradient);
+}
+
+.gauntlet-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.gauntlet-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.back-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-card-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(188, 188, 188, 0.16);
+  flex: 0 0 auto;
+}
+
+.back-icon {
+  color: var(--text-secondary);
+  font-size: 46px;
+  line-height: 1;
+  transform: translateY(-2px);
+}
+
+.page-title,
+.page-eyebrow,
+.hero-kicker,
+.hero-title,
+.hero-copy,
+.route-title,
+.route-meta,
+.result-label,
+.result-value,
+.result-copy,
+.action-note {
+  display: block;
+}
+
+.page-title {
+  color: var(--text-primary);
+  font-size: 46px;
+  line-height: 1.12;
+  font-weight: 850;
+}
+
+.page-eyebrow {
+  margin-bottom: 8px;
+  color: var(--brand-primary);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+}
+
+.gauntlet-hero,
+.gauntlet-route,
+.gauntlet-result,
+.gauntlet-actions {
+  border-radius: 24px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-inverse);
+  box-shadow: var(--shadow-card);
+}
+
+.gauntlet-hero {
+  padding: 30px 28px;
+}
+
+.hero-kicker {
+  color: var(--brand-primary);
+  font-size: 24px;
+  font-weight: 850;
+}
+
+.hero-title {
+  margin-top: 8px;
+  color: var(--text-primary);
+  font-size: 42px;
+  line-height: 1.15;
+  font-weight: 900;
+}
+
+.hero-copy {
+  margin-top: 14px;
+  color: var(--text-muted);
+  font-size: 25px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+.gauntlet-route {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.route-step {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--surface-muted);
+  border: 1px solid transparent;
+}
+
+.route-step-current {
+  border-color: rgba(79, 70, 229, 0.26);
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.route-step-done {
+  background: rgba(31, 157, 114, 0.1);
+}
+
+.route-index {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--surface-card-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.route-index-text {
+  color: var(--brand-primary-dark);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.route-copy {
+  min-width: 0;
+}
+
+.route-title {
+  color: var(--text-primary);
+  font-size: 29px;
+  font-weight: 850;
+}
+
+.route-meta {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 23px;
+  line-height: 1.35;
+}
+
+.gauntlet-result {
+  padding: 28px;
+  text-align: center;
+}
+
+.result-label {
+  color: var(--text-muted);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.result-value {
+  margin-top: 8px;
+  color: var(--text-primary);
+  font-size: 62px;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.result-copy {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 24px;
+}
+
+.gauntlet-actions {
+  padding: 20px;
+}
+
+.primary-action {
+  min-height: 74px;
+  border-radius: 22px;
+  background: var(--brand-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primary-action-text {
+  color: #fff;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.action-note {
+  margin-top: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 22px;
+  line-height: 1.35;
+}

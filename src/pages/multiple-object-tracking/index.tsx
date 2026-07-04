@@ -8,6 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded, isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
@@ -145,6 +146,8 @@ const buildCircles = (targetCount: number, speed: number, boardSize: BoardSize):
 
 export default function MultipleObjectTracking() {
   usePageShare("pages/multiple-object-tracking/index");
+  const gauntletPreset = readGameGauntletModePreset();
+  const isGauntletPreset = gauntletPreset !== null;
 
   const systemInfoRef = useRef(Taro.getSystemInfoSync());
   const boardSizeRef = useRef(getBoardSize(systemInfoRef.current.windowWidth));
@@ -156,7 +159,7 @@ export default function MultipleObjectTracking() {
   const trackStartTimeRef = useRef(0);
 
   const [phase, setPhase] = useState<Phase>("start");
-  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
+  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [score, setScore] = useState(0);
   const [targetCount, setTargetCount] = useState(INITIAL_TARGET_COUNT.normal);
@@ -165,6 +168,7 @@ export default function MultipleObjectTracking() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [roundMessage, setRoundMessage] = useState("记住高亮的目标圆圈");
   const [isNewBest, setIsNewBest] = useState(false);
+  const autoStartedRef = useRef(false);
 
   const boardSize = boardSizeRef.current;
 
@@ -360,10 +364,26 @@ export default function MultipleObjectTracking() {
     startRound(INITIAL_TARGET_COUNT[rewardDifficulty], BASE_SPEED + (rewardDifficulty === "hard" ? HARD_SPEED_BONUS : 0));
   };
 
+  useEffect(() => {
+    if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
+    autoStartedRef.current = true;
+    startGame();
+  }, [isGauntletPreset, phase]);
+
   const backToStart = () => {
     clearRoundRuntime();
     if (phase !== "start" && phase !== "finished") {
       const awardedPoints = getAwardedPoints("multiple-object-tracking", score, rewardDifficulty);
+      if (completeGauntletLegIfNeeded({
+        gameId: "multiple-object-tracking",
+        score,
+        awardedPoints,
+        difficulty: rewardDifficulty,
+        outcome: "interrupted",
+      })) {
+        return;
+      }
+
       addPointsToPet("multiple-object-tracking", score, rewardDifficulty);
       recordTrainingSession({
         gameId: "multiple-object-tracking",
@@ -418,7 +438,7 @@ export default function MultipleObjectTracking() {
 
       setScore(nextScore);
 
-      if (nextScore > best) {
+      if (!isGameGauntletRun() && nextScore > best) {
         Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${rewardDifficulty}`, nextScore);
         setBest(nextScore);
         setIsNewBest(true);
@@ -430,6 +450,16 @@ export default function MultipleObjectTracking() {
 
     setRoundMessage("本轮未能完整锁定全部目标");
     const awardedPoints = getAwardedPoints("multiple-object-tracking", score, rewardDifficulty);
+    if (completeGauntletLegIfNeeded({
+      gameId: "multiple-object-tracking",
+      score,
+      awardedPoints,
+      difficulty: rewardDifficulty,
+      outcome: "completed",
+    })) {
+      return;
+    }
+
     addPointsToPet("multiple-object-tracking", score, rewardDifficulty);
     recordTrainingSession({
       gameId: "multiple-object-tracking",
@@ -521,6 +551,7 @@ export default function MultipleObjectTracking() {
             </View>
           </View>
 
+          {!isGauntletPreset && (
           <View className="summary-card">
             <Text className="section-title">难度</Text>
             <View className="summary-grid">
@@ -540,6 +571,7 @@ export default function MultipleObjectTracking() {
               </View>
             </View>
           </View>
+          )}
 
           <View className="floating-start-action">
             <View className="primary-button" onClick={startGame}>

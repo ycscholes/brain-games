@@ -5,6 +5,7 @@ import {
   adoptCustomPet,
   cancelCustomPet,
   chooseAndSubmitCustomPet,
+  CUSTOM_PET_UPLOAD_CANCELLED_MESSAGE,
   getCustomPetStatus,
   rerollCustomPet,
   resolveCustomPetSpriteUrls,
@@ -12,8 +13,17 @@ import {
 import type {
   CustomPetMoodUrls,
   CustomPetTask,
+  CustomPetUploadStage,
 } from "../../../../services/custom-pet/types";
 import type { PetSpriteMood } from "../PetSprite/types";
+import {
+  CUSTOM_PET_FLOW_STEPS,
+  getActiveFlowStage,
+  getActiveStatusText,
+  getFlowProgress,
+  getStepState,
+  getTerminalStatusCopy,
+} from "./customPetFlowSteps";
 import "./index.scss";
 
 const POLL_MS = 4000;
@@ -25,16 +35,6 @@ const MOODS: Array<{ id: PetSpriteMood; label: string }> = [
   { id: "hungry", label: "饥饿" },
 ];
 
-const STATUS_TEXT: Record<string, string> = {
-  uploaded: "准备开始",
-  analyzing: "正在识别宠物",
-  generating_idle: "正在绘制默认形象",
-  generating_variants: "正在生成互动状态",
-  validating: "正在检查结果",
-  rerolling: "正在重新绘制",
-  failed: "本次生成未完成，积分已退回",
-};
-
 interface CustomPetFlowProps {
   onClose: () => void;
   onAdopted: () => void;
@@ -45,6 +45,7 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
   const [urls, setUrls] = useState<CustomPetMoodUrls>({});
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [localStage, setLocalStage] = useState<CustomPetUploadStage | null>(null);
   const [generationCount, setGenerationCount] = useState(0);
   const [maxGenerations, setMaxGenerations] = useState(10);
   const [showRefundNotice, setShowRefundNotice] = useState(false);
@@ -113,30 +114,46 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
     });
   }, [readSeenRefundNotices, task, writeSeenRefundNotices]);
 
-  const progress = useMemo(() => {
-    const steps = ["uploaded", "analyzing", "generating_idle", "generating_variants", "validating"];
-    const index = Math.max(0, steps.indexOf(task?.status || "uploaded"));
-    return Math.min(95, 10 + index * 20);
-  }, [task?.status]);
+  const activeStage = useMemo(() => getActiveFlowStage({
+    localStage,
+    taskStatus: task?.status || null,
+  }), [localStage, task?.status]);
+  const progress = useMemo(() => getFlowProgress(activeStage), [activeStage]);
 
-  const activeStatusText = isQuotaWaiting
-    ? "图片生成额度繁忙，已排队自动重试"
-    : STATUS_TEXT[task?.status || ""] || "正在处理";
-  const activeStatusCopy = isQuotaWaiting
+  const activeStatusText = getActiveStatusText({
+    localStage,
+    taskStatus: task?.status || null,
+    isQuotaWaiting,
+  });
+  const activeStatusCopy = localStage
+    ? "请保持本页打开，提交完成后云端会继续生成。"
+    : isQuotaWaiting
     ? "可以离开本页，额度恢复后云端会继续生成。"
     : "可以离开本页，生成会在云端继续。";
+  const terminalStatusCopy = task?.status === "failed" || task?.status === "cancelled"
+    ? getTerminalStatusCopy({
+      status: task.status,
+      showRefundNotice,
+    })
+    : "";
 
   const handleSubmit = useCallback(async () => {
     setBusy(true);
+    setLocalStage("syncing");
     try {
-      setTask(await chooseAndSubmitCustomPet());
-      Taro.showToast({ title: "已提交，可稍后回来查看", icon: "none" });
+      setTask(await chooseAndSubmitCustomPet({
+        onStage: setLocalStage,
+      }));
     } catch (error) {
+      if (error instanceof Error && error.message === CUSTOM_PET_UPLOAD_CANCELLED_MESSAGE) {
+        return;
+      }
       Taro.showToast({
         title: error instanceof Error ? error.message : "提交失败",
         icon: "none",
       });
     } finally {
+      setLocalStage(null);
       setBusy(false);
     }
   }, []);
@@ -216,7 +233,26 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
           </View>
         </View>
 
-        {!task ? (
+        {!task && busy ? (
+          <View className="custom-pet-progress">
+            <Text className="custom-pet-status">{activeStatusText}</Text>
+            <View className="custom-pet-progress-track">
+              <View className="custom-pet-progress-fill" style={{ width: `${progress}%` }} />
+            </View>
+            <View className="custom-pet-steps">
+              {CUSTOM_PET_FLOW_STEPS.map((step) => (
+                <View
+                  className={`custom-pet-step custom-pet-step-${getStepState(step.id, activeStage)}`}
+                  key={step.id}
+                >
+                  <Text className="custom-pet-step-dot" />
+                  <Text className="custom-pet-step-label">{step.label}</Text>
+                </View>
+              ))}
+            </View>
+            <Text className="custom-pet-copy">{activeStatusCopy}</Text>
+          </View>
+        ) : !task ? (
           <View className="custom-pet-intro">
             <Text className="custom-pet-copy">
               最多可成功生成 {maxGenerations} 次，已用 {generationCount} 次。原图与结果仅本人可在应用内访问。
@@ -274,7 +310,7 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
           </View>
         ) : task.status === "failed" || task.status === "cancelled" ? (
           <View className="custom-pet-progress">
-            {showRefundNotice ? <Text className="custom-pet-status">{STATUS_TEXT.failed}</Text> : null}
+            <Text className="custom-pet-status">{terminalStatusCopy}</Text>
             <View
               className="stage-button custom-pet-secondary"
               onClick={handleSubmit}
@@ -287,6 +323,17 @@ export default function CustomPetFlow({ onClose, onAdopted }: CustomPetFlowProps
             <Text className="custom-pet-status">{activeStatusText}</Text>
             <View className="custom-pet-progress-track">
               <View className="custom-pet-progress-fill" style={{ width: `${progress}%` }} />
+            </View>
+            <View className="custom-pet-steps">
+              {CUSTOM_PET_FLOW_STEPS.map((step) => (
+                <View
+                  className={`custom-pet-step custom-pet-step-${getStepState(step.id, activeStage)}`}
+                  key={step.id}
+                >
+                  <Text className="custom-pet-step-dot" />
+                  <Text className="custom-pet-step-label">{step.label}</Text>
+                </View>
+              ))}
             </View>
             <Text className="custom-pet-copy">{activeStatusCopy}</Text>
             <View className="custom-pet-cancel" onClick={handleCancel}>

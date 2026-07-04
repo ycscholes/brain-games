@@ -9,6 +9,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded, isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import "./index.scss";
 
@@ -45,12 +46,15 @@ interface HighScoreRecord {
 
 export default function RockPaperScissors() {
   usePageShare("pages/rock-paper-scissors/index");
+  const gauntletPreset = readGameGauntletModePreset();
+  const isGauntletPreset = gauntletPreset !== null;
+  const presetDifficulty = gauntletPreset?.mode === "3" || gauntletPreset?.difficulty === "hard" ? 3 : 1;
 
   const [gameState, setGameState] = useState<GameState>("start");
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
-  const [difficulty, setDifficulty] = useState<Difficulty>(1);
+  const [difficulty, setDifficulty] = useState<Difficulty>(presetDifficulty);
   const [timeLeft, setTimeLeft] = useState(5);
   const [currentHand, setCurrentHand] = useState<HandType | null>(null);
   const [targetOutcome, setTargetOutcome] = useState<OutcomeType | null>(null);
@@ -60,6 +64,7 @@ export default function RockPaperScissors() {
   const [isNewRecord, setIsNewRecord] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoStartedRef = useRef(false);
 
   const getHighScoreKey = () => `rps_highscore_D${difficulty}`;
 
@@ -150,6 +155,12 @@ export default function RockPaperScissors() {
     generateQuestion();
   };
 
+  useEffect(() => {
+    if (!isGauntletPreset || autoStartedRef.current || gameState !== "start") return;
+    autoStartedRef.current = true;
+    startGame();
+  }, [gameState, isGauntletPreset]);
+
   const getRewardDifficulty = (): TrainingDifficulty => {
     return difficulty >= 3 ? "hard" : "normal";
   };
@@ -159,6 +170,17 @@ export default function RockPaperScissors() {
     const finalScore = Math.min(MAX_POINTS_PER_SESSION, score);
     const rewardDifficulty = getRewardDifficulty();
     const awardedPoints = getAwardedPoints("rock-paper-scissors", finalScore, rewardDifficulty);
+    if (completeGauntletLegIfNeeded({
+      gameId: "rock-paper-scissors",
+      score: finalScore,
+      awardedPoints,
+      mode: `D${difficulty}`,
+      difficulty: rewardDifficulty,
+      outcome: "completed",
+    })) {
+      return;
+    }
+
     Taro.setStorageSync("rps_last_score", finalScore);
     addPointsToPet("rock-paper-scissors", finalScore, rewardDifficulty);
     recordTrainingSession({
@@ -188,7 +210,9 @@ export default function RockPaperScissors() {
       setScore(newScore);
       setStreak(nextStreak);
       setBestStreak((prev) => Math.max(prev, nextStreak));
-      Taro.setStorageSync("rps_streak", nextStreak);
+      if (!isGameGauntletRun()) {
+        Taro.setStorageSync("rps_streak", nextStreak);
+      }
 
       setTimeout(() => {
         setTimeLeft(DIFFICULTY_CONFIG[difficulty].time);
@@ -199,7 +223,9 @@ export default function RockPaperScissors() {
 
     setFeedback("wrong");
     setStreak(0);
-    Taro.setStorageSync("rps_streak", 0);
+    if (!isGameGauntletRun()) {
+      Taro.setStorageSync("rps_streak", 0);
+    }
 
     setTimeout(() => {
       handleGameOver();
@@ -282,6 +308,7 @@ export default function RockPaperScissors() {
             </View>
           </View>
 
+          {!isGauntletPreset && (
           <View className="difficulty-section-rps">
             <View className="difficulty-header-rps">
               <View className="difficulty-icon-rps">
@@ -313,6 +340,7 @@ export default function RockPaperScissors() {
               })}
             </View>
           </View>
+          )}
 
           <View className="start-button-container-rps floating-start-action">
             <View className="start-button-rps" onClick={startGame}>

@@ -2,17 +2,21 @@ const tcb = require("@cloudbase/node-sdk");
 
 const IMAGE_MODEL_CLIENT_NAME = "hunyuan-image";
 const IMAGE_MODEL_NAME = "HY-Image-3.0-Plus-4090-Tob-v1.0";
+const IMAGE_GENERATION_SUB_URL = "images/ar/generations";
 
 function configureImageModel(model) {
   if (!model.generateImageSubUrlConfig) {
     model.generateImageSubUrlConfig = {};
   }
-  if (!model.generateImageSubUrlConfig[IMAGE_MODEL_CLIENT_NAME]) {
-    model.generateImageSubUrlConfig[IMAGE_MODEL_CLIENT_NAME] = {};
-  }
-  model.generateImageSubUrlConfig[IMAGE_MODEL_CLIENT_NAME][IMAGE_MODEL_NAME] =
-    "images/ar/generations";
+  model.generateImageSubUrlConfig[IMAGE_MODEL_CLIENT_NAME] = [
+    [new RegExp(`^${IMAGE_MODEL_NAME}$`), IMAGE_GENERATION_SUB_URL],
+  ];
+  model.generateImageSubUrl = IMAGE_GENERATION_SUB_URL;
   return model;
+}
+
+function getReferenceImageUrls(options = {}) {
+  return [options.referenceImageUrl, options.poseImageUrl].filter(Boolean);
 }
 
 function getImageUrl(response) {
@@ -71,11 +75,9 @@ async function generateImage(prompt, options = {}) {
     revise: { value: false },
     enable_thinking: { value: false },
   };
-  if (options.referenceImageUrl) {
-    request.image_url = options.referenceImageUrl;
-  }
-  if (options.poseImageUrl) {
-    request.pose_image_url = options.poseImageUrl;
+  const imageUrls = getReferenceImageUrls(options);
+  if (imageUrls.length > 0) {
+    request.image_urls = imageUrls;
   }
   const response = await model.generateImage(request);
   const imageUrl = getImageUrl(response);
@@ -115,4 +117,5 @@ exports.main = async (event = {}) => {
 
 exports.generateImage = generateImage;
 exports.configureImageModel = configureImageModel;
+exports.getReferenceImageUrls = getReferenceImageUrls;
 exports.getImageUrl = getImageUrl;

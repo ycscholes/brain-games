@@ -27,7 +27,7 @@ const SNAPSHOT_COLLECTION = "xiaoyuyuan_user_snapshots";
 const LOCK_TTL_MS = 12 * 60 * 1000;
 // The pose sheet is uploaded per job so the CloudBase image model receives it
 // as a reachable reference URL without bundling public asset assumptions into AI calls.
-const POSE_REFERENCE_SHEET_STORAGE_NAME = "pose-reference-sheet.png";
+const POSE_REFERENCE_SHEET_STORAGE_NAME = "cat-reference-sheet.png";
 
 function nowIso() {
   return new Date().toISOString();

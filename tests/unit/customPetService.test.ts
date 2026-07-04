@@ -7,6 +7,7 @@ const mockChooseMedia = jest.fn();
 const mockCropImage = jest.fn();
 const mockCompressImage = jest.fn();
 const mockGetFileInfo = jest.fn();
+const mockSyncLocalUserDataToCloudNow = jest.fn();
 
 jest.mock("@tarojs/taro", () => ({
   __esModule: true,
@@ -24,6 +25,10 @@ jest.mock("../../src/services/user-data/cloud/cloudFunctionsClient", () => ({
   ensureCloudReady: mockEnsureCloudReady,
 }));
 
+jest.mock("../../src/services/user-data/sync/userDataSyncService", () => ({
+  syncLocalUserDataToCloudNow: mockSyncLocalUserDataToCloudNow,
+}));
+
 jest.mock("../../src/utils/petStorage", () => ({
   savePetData: jest.fn(),
 }));
@@ -39,6 +44,8 @@ describe("customPetService", () => {
     mockCropImage.mockReset();
     mockCompressImage.mockReset();
     mockGetFileInfo.mockReset();
+    mockSyncLocalUserDataToCloudNow.mockReset();
+    mockSyncLocalUserDataToCloudNow.mockResolvedValue(undefined);
     mockEnsureCloudReady.mockResolvedValue({
       callFunction: mockCallFunction,
       uploadFile: mockUploadFile,
@@ -115,7 +122,7 @@ describe("customPetService", () => {
         ok: true,
         data: {
           jobId: "job-1",
-          cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+          cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
           maxBytes: 4 * 1024 * 1024,
         },
       },
@@ -145,7 +152,7 @@ describe("customPetService", () => {
           ok: true,
           data: {
             jobId: "job-1",
-            cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+            cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
             maxBytes: 4 * 1024 * 1024,
           },
         },
@@ -174,9 +181,123 @@ describe("customPetService", () => {
       status: "uploaded",
     });
     expect(mockUploadFile).toHaveBeenCalledWith({
-      cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+      cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
       filePath: "/tmp/compressed.jpg",
     });
+  });
+
+  test("syncs local user data before requesting a custom pet upload intent", async () => {
+    mockCallFunction
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            jobId: "job-1",
+            cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
+            maxBytes: 4 * 1024 * 1024,
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            task: { jobId: "job-1", status: "uploaded" },
+          },
+        },
+      });
+    mockChooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: "/tmp/source.jpg", size: 1024 }],
+    });
+    mockCropImage.mockResolvedValue({ tempFilePath: "/tmp/cropped.jpg" });
+    mockCompressImage.mockResolvedValue({ tempFilePath: "/tmp/compressed.jpg" });
+    mockGetFileInfo.mockResolvedValue({ size: 1024, errMsg: "ok", digest: "hash" });
+    mockUploadFile.mockResolvedValue({
+      fileID: "cloud://env/fixture/openid/custom-pets/job-1/source/source.jpg",
+    });
+    const { chooseAndSubmitCustomPet } = await import(
+      "../../src/services/custom-pet/customPetService"
+    );
+
+    await chooseAndSubmitCustomPet();
+
+    expect(mockSyncLocalUserDataToCloudNow).toHaveBeenCalledTimes(1);
+    expect(mockSyncLocalUserDataToCloudNow.mock.invocationCallOrder[0]).toBeLessThan(
+      mockCallFunction.mock.invocationCallOrder[0],
+    );
+    expect(mockCallFunction).toHaveBeenNthCalledWith(1, {
+      name: "customPetApi",
+      data: { action: "createUploadIntent" },
+    });
+  });
+
+  test("reports local upload stages before the cloud generation task starts", async () => {
+    mockCallFunction
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            jobId: "job-1",
+            cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
+            maxBytes: 4 * 1024 * 1024,
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        result: {
+          ok: true,
+          data: {
+            task: { jobId: "job-1", status: "uploaded" },
+          },
+        },
+      });
+    mockChooseMedia.mockResolvedValue({
+      tempFiles: [{ tempFilePath: "/tmp/source.jpg", size: 1024 }],
+    });
+    mockCropImage.mockResolvedValue({ tempFilePath: "/tmp/cropped.jpg" });
+    mockCompressImage.mockResolvedValue({ tempFilePath: "/tmp/compressed.jpg" });
+    mockGetFileInfo.mockResolvedValue({ size: 1024, errMsg: "ok", digest: "hash" });
+    mockUploadFile.mockResolvedValue({
+      fileID: "cloud://env/fixture/openid/custom-pets/job-1/source/source.jpg",
+    });
+    const stages: string[] = [];
+    const { chooseAndSubmitCustomPet } = await import(
+      "../../src/services/custom-pet/customPetService"
+    );
+
+    await chooseAndSubmitCustomPet({ onStage: (stage) => stages.push(stage) });
+
+    expect(stages).toEqual([
+      "syncing",
+      "preparing",
+      "choosing",
+      "processing",
+      "uploading",
+      "submitting",
+    ]);
+  });
+
+  test("treats user media picker cancellation as a quiet upload cancellation", async () => {
+    mockCallFunction.mockResolvedValueOnce({
+      result: {
+        ok: true,
+        data: {
+          jobId: "job-1",
+          cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
+          maxBytes: 4 * 1024 * 1024,
+        },
+      },
+    });
+    mockChooseMedia.mockRejectedValue({ errMsg: "chooseMedia:fail cancel" });
+    const {
+      chooseAndSubmitCustomPet,
+      CUSTOM_PET_UPLOAD_CANCELLED_MESSAGE,
+    } = await import("../../src/services/custom-pet/customPetService");
+
+    await expect(chooseAndSubmitCustomPet()).rejects.toThrow(
+      CUSTOM_PET_UPLOAD_CANCELLED_MESSAGE,
+    );
+    expect(mockUploadFile).not.toHaveBeenCalled();
   });
 
   test("continues with compression when cropImage fails in the mini program runtime", async () => {
@@ -186,7 +307,7 @@ describe("customPetService", () => {
           ok: true,
           data: {
             jobId: "job-1",
-            cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+            cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
             maxBytes: 4 * 1024 * 1024,
           },
         },
@@ -226,7 +347,7 @@ describe("customPetService", () => {
           ok: true,
           data: {
             jobId: "job-1",
-            cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+            cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
             maxBytes: 4 * 1024 * 1024,
           },
         },
@@ -264,7 +385,7 @@ describe("customPetService", () => {
       status: "uploaded",
     });
     expect(mockUploadFile).toHaveBeenCalledWith({
-      cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+      cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
       filePath: "http://tmp/wb-image.jpg",
     });
   });
@@ -276,7 +397,7 @@ describe("customPetService", () => {
           ok: true,
           data: {
             jobId: "job-1",
-            cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+            cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
             maxBytes: 4 * 1024 * 1024,
           },
         },
@@ -310,7 +431,7 @@ describe("customPetService", () => {
       src: "/tmp/cropped-from-path.jpg",
     }));
     expect(mockUploadFile).toHaveBeenCalledWith({
-      cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+      cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
       filePath: "/tmp/compressed-from-path.jpg",
     });
   });
@@ -321,7 +442,7 @@ describe("customPetService", () => {
         ok: true,
         data: {
           jobId: "job-1",
-          cloudPath: "users/openid/custom-pets/job-1/source/source.jpg",
+          cloudPath: "fixture/openid/custom-pets/job-1/source/source.jpg",
           maxBytes: 4 * 1024 * 1024,
         },
       },

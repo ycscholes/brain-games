@@ -4,6 +4,7 @@ const stores = {
   xiaoyuyuan_user_snapshots: new Map(),
   custom_pet_assets: new Map(),
 };
+const READ_ERROR = Symbol("read-error");
 
 const mockCloud = {
   DYNAMIC_CURRENT_ENV: "current",
@@ -44,6 +45,9 @@ function createCollection(name) {
     doc: (id) => ({
       get: jest.fn(async () => {
         const data = getStore(name).get(id);
+        if (data === READ_ERROR) {
+          throw new Error("database request fail");
+        }
         if (!data) {
           throw new Error(`${name}/${id} not found`);
         }
@@ -248,6 +252,87 @@ describe("custom pet api generation eligibility", () => {
     expect(stores.xiaoyuyuan_user_snapshots.get("user-1").snapshot.petData).toMatchObject({
       balance: 1000,
       reservedBalance: 0,
+    });
+  });
+
+  test("does not create an empty snapshot when cancelling without an existing user snapshot", async () => {
+    stores.xiaoyuyuan_user_snapshots.delete("user-1");
+    const jobId = "custom_pet_job_cancel_missing_snapshot";
+    stores.custom_pet_jobs.set(jobId, {
+      jobId,
+      ownerId: "user-1",
+      status: "preview_ready",
+      step: "preview_ready",
+      candidateVersion: 1,
+      settlementStatus: "reserved",
+      reservedPoints: 300,
+      rerollUsed: false,
+      updatedAt: "2026-06-22T00:00:00.000Z",
+    });
+    stores.custom_pet_entitlements.set("user-1", {
+      ownerId: "user-1",
+      activeJobId: jobId,
+      customPetGenerationUsed: true,
+      customPetGenerationCount: 4,
+      updatedAt: "2026-06-22T00:00:00.000Z",
+    });
+
+    const { main } = require("../../cloudfunctions/customPetApi/index");
+    const response = await main({ action: "cancel", jobId });
+
+    expect(response).toEqual({
+      ok: false,
+      error: "user snapshot unavailable",
+    });
+    expect(stores.xiaoyuyuan_user_snapshots.has("user-1")).toBe(false);
+    expect(stores.custom_pet_jobs.get(jobId)).toMatchObject({
+      status: "preview_ready",
+      settlementStatus: "reserved",
+    });
+    expect(stores.custom_pet_entitlements.get("user-1")).toMatchObject({
+      activeJobId: jobId,
+      customPetGenerationUsed: true,
+    });
+  });
+
+  test("does not overwrite snapshot state when cancelling after a snapshot read failure", async () => {
+    stores.xiaoyuyuan_user_snapshots.set("user-1", READ_ERROR);
+    const jobId = "custom_pet_job_cancel_read_error";
+    stores.custom_pet_jobs.set(jobId, {
+      jobId,
+      ownerId: "user-1",
+      status: "preview_ready",
+      step: "preview_ready",
+      candidateVersion: 1,
+      settlementStatus: "reserved",
+      reservedPoints: 300,
+      rerollUsed: false,
+      updatedAt: "2026-06-22T00:00:00.000Z",
+    });
+
+    const { main } = require("../../cloudfunctions/customPetApi/index");
+    const response = await main({ action: "cancel", jobId });
+
+    expect(response).toEqual({
+      ok: false,
+      error: "database request fail",
+    });
+    expect(stores.xiaoyuyuan_user_snapshots.get("user-1")).toBe(READ_ERROR);
+    expect(stores.custom_pet_jobs.get(jobId)).toMatchObject({
+      status: "preview_ready",
+      settlementStatus: "reserved",
+    });
+  });
+
+  test("does not report insufficient points when upload intent cannot read the snapshot", async () => {
+    stores.xiaoyuyuan_user_snapshots.set("user-1", READ_ERROR);
+
+    const { main } = require("../../cloudfunctions/customPetApi/index");
+    const response = await main({ action: "createUploadIntent" });
+
+    expect(response).toEqual({
+      ok: false,
+      error: "database request fail",
     });
   });
 });

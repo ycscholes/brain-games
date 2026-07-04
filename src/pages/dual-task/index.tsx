@@ -8,6 +8,7 @@ import {
   MAX_POINTS_PER_SESSION,
   recordTrainingSession,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   applyDualTaskEvent,
@@ -81,9 +82,11 @@ function createFrame(difficulty: DualTaskDifficulty, elapsedMs: number, targetCe
 
 export default function DualTaskGame() {
   usePageShare("pages/dual-task/index");
+  const gauntletPreset = readGameGauntletModePreset();
+  const isGauntletPreset = gauntletPreset !== null;
 
   const [gameStatus, setGameStatus] = useState<GameStatus>("start");
-  const [difficulty, setDifficulty] = useState<DualTaskDifficulty>("normal");
+  const [difficulty, setDifficulty] = useState<DualTaskDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [stats, setStats] = useState<DualTaskStats>(() => createInitialDualTaskStats());
   const [finalStats, setFinalStats] = useState<DualTaskStats>(() => createInitialDualTaskStats());
   const [bestScore, setBestScore] = useState(0);
@@ -104,6 +107,7 @@ export default function DualTaskGame() {
   const difficultyRef = useRef<DualTaskDifficulty>(difficulty);
   const recoveryUntilRef = useRef(0);
   const finishedRef = useRef(false);
+  const autoStartedRef = useRef(false);
 
   const difficultyConfig = getDualTaskDifficultyConfig(difficulty);
   const displayStats = gameStatus === "finished" ? finalStats : stats;
@@ -185,6 +189,17 @@ export default function DualTaskGame() {
     const settledScore = Math.min(MAX_POINTS_PER_SESSION, Math.max(0, Math.round(settledStats.score)));
     const awardedPoints = getAwardedPoints("dual-task", settledScore, config.rewardDifficulty);
     const durationSeconds = Math.max(1, Math.round(Math.min(DUAL_TASK_SESSION_MS, elapsedOverride ?? elapsedMs) / 1000));
+    if (completeGauntletLegIfNeeded({
+      gameId: "dual-task",
+      score: settledScore,
+      awardedPoints,
+      mode: "command-center",
+      difficulty: config.rewardDifficulty,
+      durationSeconds,
+      outcome: "completed",
+    })) {
+      return;
+    }
 
     Taro.setStorageSync(`dual_task_last_command_center_${settledDifficulty}`, settledScore);
     addPointsToPet("dual-task", settledScore, config.rewardDifficulty);
@@ -355,6 +370,12 @@ export default function DualTaskGame() {
   }, [difficulty, finishGame, setMomentaryFeedback]);
 
   useEffect(() => {
+    if (!isGauntletPreset || autoStartedRef.current || gameStatus !== "start") return;
+    autoStartedRef.current = true;
+    startGame();
+  }, [gameStatus, isGauntletPreset, startGame]);
+
+  useEffect(() => {
     return () => {
       clearTimers();
     };
@@ -408,6 +429,7 @@ export default function DualTaskGame() {
             </View>
           </View>
 
+          {!isGauntletPreset && (
           <View className="panel-grid command-panel-grid">
             <View className="panel panel-primary">
               <Text className="panel-title">难度</Text>
@@ -430,6 +452,7 @@ export default function DualTaskGame() {
               </View>
             </View>
           </View>
+          )}
 
           <View className="floating-start-action">
             <View className="primary-button" onClick={startGame}>

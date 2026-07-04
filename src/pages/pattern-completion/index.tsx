@@ -8,6 +8,7 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
+import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   generatePatternSession,
@@ -130,9 +131,11 @@ function PatternBoard({
 
 export default function PatternCompletion() {
   usePageShare("pages/pattern-completion/index");
+  const gauntletPreset = readGameGauntletModePreset();
+  const isGauntletPreset = gauntletPreset !== null;
 
   const [phase, setPhase] = useState<Phase>("start");
-  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>("normal");
+  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [session, setSession] = useState<PatternQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -153,6 +156,7 @@ export default function PatternCompletion() {
   const questionStartedAtRef = useRef(0);
   const tickerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const finishRecordedRef = useRef(false);
+  const autoStartedRef = useRef(false);
 
   const totalQuestions = session.length || PATTERN_SESSION_LENGTH;
   const currentQuestion =
@@ -224,6 +228,17 @@ export default function PatternCompletion() {
 
       const settledElapsedMs = Date.now() - startTimeRef.current;
       const awardedPoints = getAwardedPoints("pattern-completion", settledFinalScore, rewardDifficulty);
+      const durationSeconds = Math.round(settledElapsedMs / 1000);
+      if (completeGauntletLegIfNeeded({
+        gameId: "pattern-completion",
+        score: settledFinalScore,
+        awardedPoints,
+        durationSeconds,
+        difficulty: rewardDifficulty,
+        outcome: "completed",
+      })) {
+        return;
+      }
 
       setElapsedMs(settledElapsedMs);
       setFinalScore(settledFinalScore);
@@ -232,7 +247,7 @@ export default function PatternCompletion() {
         gameId: "pattern-completion",
         score: settledFinalScore,
         awardedPoints,
-        durationSeconds: Math.round(settledElapsedMs / 1000),
+        durationSeconds,
         difficulty: rewardDifficulty,
         outcome: "completed",
       });
@@ -277,6 +292,12 @@ export default function PatternCompletion() {
     setIsNewBest(false);
     resetRoundState();
   };
+
+  useEffect(() => {
+    if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
+    autoStartedRef.current = true;
+    startGame();
+  }, [isGauntletPreset, phase]);
 
   const backToStart = () => {
     clearTicker();
@@ -403,6 +424,7 @@ export default function PatternCompletion() {
             </View>
           </View>
 
+          {!isGauntletPreset && (
           <View className="summary-card">
             <Text className="section-title">难度</Text>
             <View className="summary-grid difficulty-grid">
@@ -422,6 +444,7 @@ export default function PatternCompletion() {
               </View>
             </View>
           </View>
+          )}
 
           <View className="floating-start-action">
             <View className="primary-button" onClick={startGame}>

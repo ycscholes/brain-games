@@ -15,6 +15,8 @@ export type TrainingGameId =
   | "head-count"
   | "word-scramble"
   | "bird-count"
+  | "color-trap"
+  | "game-gauntlet"
   | "memory"
   | "rps"
   | "mot"
@@ -103,6 +105,7 @@ const LEGACY_KEYS = [
   "mot_best",
   "pattern_completion_best",
   "pet_data",
+  "game_gauntlet_session_v1",
 ];
 
 function createRecordId() {
@@ -301,6 +304,8 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "head-count": 1,
   "word-scramble": 1,
   "bird-count": 1,
+  "color-trap": 1,
+  "game-gauntlet": 1,
   memory: 1,
   rps: 1,
   mot: 3,
@@ -575,6 +580,7 @@ export function clearProductData() {
     gameSpecificKeys.push(`head_count_best_${difficulty}`);
     gameSpecificKeys.push(`word_scramble_best_${difficulty}`);
     gameSpecificKeys.push(`bird_count_best_${difficulty}`);
+    gameSpecificKeys.push(`color_trap_best_${difficulty}`);
 
     ["slow", "standard", "fast"].forEach((speedDifficulty) => {
       gameSpecificKeys.push(`head_count_best_${difficulty}_${speedDifficulty}`);

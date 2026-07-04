@@ -7,9 +7,16 @@ import { initializeCloudSync } from "../../services/user-data/sync/userDataSyncS
 import {
   readDashboardStats,
   readTrainingSummary,
-  recommendNextGame,
   type TrainingGameId,
 } from "../../utils/trainingStorage";
+import {
+  GAME_CATEGORIES,
+  GAME_TITLE_MAP,
+  HOT_GAME_ITEMS,
+  getGameById,
+  type GameCatalogItem,
+} from "../../config/gameCatalog";
+import { readRecommendedGame } from "../../utils/nextRecommendation";
 import { preloadGameAssets, type AssetPreloadProgress } from "../../utils/resourcePreloader";
 import { usePageShare } from "../../utils/share";
 import { MAX_HUNGER, PetData, PetStorageData } from "../../pages/pet/types";
@@ -32,147 +39,9 @@ interface ScoreSummary {
   totalSessions: number;
 }
 
-type GameCategoryId = "daily" | "memory" | "advanced";
-
-interface GameItem {
-  id: TrainingGameId;
-  title: string;
-  badge: string;
-  cardClass: string;
-  url: string;
-  category: GameCategoryId;
-  duration: string;
-  skill: string;
-  level: "轻松" | "标准" | "进阶";
+interface GameItem extends GameCatalogItem {
   summary: ScoreSummary;
 }
-
-const GAME_CATEGORIES: Array<{ id: GameCategoryId; title: string }> = [
-  { id: "daily", title: "日常优先" },
-  { id: "memory", title: "反应与记忆" },
-  { id: "advanced", title: "进阶专注" },
-];
-
-const BASE_GAMES = [
-  {
-    id: "mental-math",
-    title: "速算挑战",
-    badge: "计算",
-    cardClass: "card-mental",
-    url: "/pages/mental-math/index",
-    category: "daily",
-    duration: "30 秒",
-    skill: "计算速度",
-    level: "轻松",
-  },
-  {
-    id: "pattern-completion",
-    title: "找规律",
-    badge: "逻辑",
-    cardClass: "card-pattern",
-    url: "/pages/pattern-completion/index",
-    category: "daily",
-    duration: "约 2 分钟",
-    skill: "规律推理",
-    level: "轻松",
-  },
-  {
-    id: "digit-span",
-    title: "数字广度记忆",
-    badge: "记忆",
-    cardClass: "card-digit",
-    url: "/pages/digit-span/index",
-    category: "daily",
-    duration: "1-3 分钟",
-    skill: "短时记忆",
-    level: "轻松",
-  },
-  {
-    id: "twenty-four",
-    title: "24 点",
-    badge: "计算",
-    cardClass: "card-twenty-four",
-    url: "/pages/twenty-four/index",
-    category: "daily",
-    duration: "90 秒",
-    skill: "算术组合",
-    level: "标准",
-  },
-  {
-    id: "rock-paper-scissors",
-    title: "逆向猜拳",
-    badge: "反应",
-    cardClass: "card-rps",
-    url: "/pages/rock-paper-scissors/index",
-    category: "memory",
-    duration: "1-2 分钟",
-    skill: "抑制控制",
-    level: "标准",
-  },
-  {
-    id: "number-order",
-    title: "星链回响",
-    badge: "记忆",
-    cardClass: "card-number-order",
-    url: "/pages/number-order/index",
-    category: "memory",
-    duration: "约 2 分钟",
-    skill: "路径记忆",
-    level: "标准",
-  },
-  {
-    id: "memory-challenge",
-    title: "奇趣记忆",
-    badge: "记忆",
-    cardClass: "card-memory",
-    url: "/pages/memory-challenge/index",
-    category: "memory",
-    duration: "失误即止",
-    skill: "N-back",
-    level: "进阶",
-  },
-  {
-    id: "multiple-object-tracking",
-    title: "追踪任务",
-    badge: "专注",
-    cardClass: "card-mot",
-    url: "/pages/multiple-object-tracking/index",
-    category: "advanced",
-    duration: "每轮 6 秒",
-    skill: "视觉追踪",
-    level: "进阶",
-  },
-  {
-    id: "bird-count",
-    title: "农场清点",
-    badge: "观察",
-    cardClass: "card-bird-count",
-    url: "/pages/bird-count/index",
-    category: "advanced",
-    duration: "约 2 分钟",
-    skill: "动态计数",
-    level: "标准",
-  },
-] satisfies Array<Omit<GameItem, "summary">>;
-
-const GAME_TITLES: Record<TrainingGameId, string> = {
-  memory: "奇趣记忆",
-  "memory-challenge": "奇趣记忆",
-  rps: "逆向猜拳",
-  "rock-paper-scissors": "逆向猜拳",
-  "dual-task": "多任务处理",
-  "mental-math": "速算挑战",
-  "twenty-four": "24 点",
-  "digit-span": "数字广度记忆",
-  mot: "追踪任务",
-  "multiple-object-tracking": "追踪任务",
-  pattern: "找规律",
-  "pattern-completion": "找规律",
-  "number-order": "星链回响",
-  "head-count": "农场进出",
-  "word-scramble": "词语拼盘",
-  "bird-count": "农场清点",
-};
 
 const HOME_ASSET_LOADING_TIMEOUT_MS = 3500;
 const HOME_ASSET_LOADING_MIN_MS = 520;
@@ -244,7 +113,7 @@ export default function Index() {
     activeDaysLast7: 0,
     totalAwardedPoints: 0,
   });
-  const [recommendedGameId, setRecommendedGameId] = useState<TrainingGameId>("memory");
+  const [recommendedGameId, setRecommendedGameId] = useState<TrainingGameId>("mental-math");
   const [petData, setPetData] = useState<PetStorageData>(() => readPetData());
   const [isFloatingPetReady, setIsFloatingPetReady] = useState(false);
   const [isHomeAssetsReady, setIsHomeAssetsReady] = useState(isHomeAssetPreloadComplete);
@@ -273,7 +142,7 @@ export default function Index() {
     setPetData(nextPetData);
 
     setDashboard(readDashboardStats());
-    const nextGames = BASE_GAMES.map((game) => {
+    const nextGames = HOT_GAME_ITEMS.map((game) => {
       const summary = readTrainingSummary(game.id);
       return {
         ...game,
@@ -287,7 +156,7 @@ export default function Index() {
     });
 
     setGames(nextGames);
-    setRecommendedGameId(recommendNextGame(BASE_GAMES.map((game) => game.id)));
+    setRecommendedGameId(readRecommendedGame());
   }, []);
 
   const refreshDashboardDeferred = useCallback(() => {
@@ -395,6 +264,7 @@ export default function Index() {
     ...category,
     games: visibleGames.filter((game) => game.category === category.id),
   })).filter((category) => category.games.length > 0);
+  const recommendedGame = getGameById(recommendedGameId);
 
   return (
     <View className="game-hub">
@@ -489,18 +359,21 @@ export default function Index() {
                 先从短时、低门槛项目开始，再逐步补齐进阶训练。
               </Text>
             </View>
+            <View className="all-games-button" onClick={() => navigateTo("/pages/all-games/index")}>
+              <Text className="all-games-button-text">全部游戏</Text>
+            </View>
           </View>
 
           <View className="focus-body">
             <View className="focus-main">
-              <Text className="focus-name">{GAME_TITLES[recommendedGameId]}</Text>
+              <Text className="focus-name">{GAME_TITLE_MAP[recommendedGameId]}</Text>
               <Text className="focus-copy">
                 推荐你先完成这一项，持续拉齐不同认知维度的训练记录。
               </Text>
             </View>
             <View
               className="focus-action"
-              onClick={() => navigateTo(BASE_GAMES.find((game) => game.id === recommendedGameId)?.url || "/pages/index/index")}
+              onClick={() => navigateTo(recommendedGame?.url || "/pages/index/index")}
             >
               <Text className="focus-action-text">立即开始</Text>
             </View>
