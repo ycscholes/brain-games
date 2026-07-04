@@ -181,6 +181,13 @@
     var(--surface-card);
 }
 
+.card-signal-sprint {
+  background:
+    radial-gradient(circle at 42% 24%, rgba(22, 163, 74, 0.18), transparent 30%),
+    radial-gradient(circle at 74% 34%, rgba(220, 38, 38, 0.12), transparent 28%),
+    var(--surface-card);
+}
+
 .card-head-count {
   background:
     radial-gradient(circle at 52% 28%, rgba(245, 158, 11, 0.2), transparent 34%),
@@ -369,6 +376,11 @@
   color: #0f766e;
 }
 
+.card-signal-sprint .game-badge {
+  background: rgba(22, 163, 74, 0.16);
+  color: #15803d;
+}
+
 .card-head-count .game-badge {
   background: rgba(245, 158, 11, 0.18);
   color: #b45309;
@@ -463,6 +475,10 @@
 
 .card-number-order .enter-button {
   background: linear-gradient(90deg, #0f766e 0%, #2563eb 100%);
+}
+
+.card-signal-sprint .enter-button {
+  background: linear-gradient(90deg, #15803d 0%, #dc2626 100%);
 }
 
 .card-head-count .enter-button {

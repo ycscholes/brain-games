@@ -179,6 +179,7 @@ describe("trainingStorage", () => {
     mockStorage.set("head_count_best_hard", "45");
     mockStorage.set("head_count_best_normal_slow", "35");
     mockStorage.set("head_count_best_hard_fast", "48");
+    mockStorage.set("signal_sprint_best_normal", "34");
     mockStorage.set("word_scramble_best_normal", "33");
     mockStorage.set("bird_count_best_hard", "41");
     mockStorage.set("color_trap_best_normal", "35");
@@ -258,7 +259,10 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("head-count", 50, "hard")).toBe(60);
     });
 
-    test("word-scramble, bird-count, and color-trap use 1x conversion with difficulty caps", () => {
+    test("signal-sprint, word-scramble, bird-count, and color-trap use 1x conversion with difficulty caps", () => {
+      expect(getAwardedPoints("signal-sprint", 34, "normal")).toBe(34);
+      expect(getAwardedPoints("signal-sprint", 50, "normal")).toBe(40);
+      expect(getAwardedPoints("signal-sprint", 34, "hard")).toBe(51);
       expect(getAwardedPoints("word-scramble", 32, "normal")).toBe(32);
       expect(getAwardedPoints("word-scramble", 50, "normal")).toBe(40);
       expect(getAwardedPoints("bird-count", 32, "hard")).toBe(48);
@@ -286,6 +290,7 @@ describe("trainingStorage", () => {
         getAwardedPoints("rock-paper-scissors", 24),
         getAwardedPoints("memory-challenge", 24),
         getAwardedPoints("number-order", 30),
+        getAwardedPoints("signal-sprint", 34),
         getAwardedPoints("head-count", 35),
         getAwardedPoints("word-scramble", 34),
         getAwardedPoints("bird-count", 34),

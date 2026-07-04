@@ -20,6 +20,7 @@ describe("gameCatalog", () => {
   test("all games includes gauntlet but excludes head-count redirect", () => {
     const allGameIds = ALL_GAME_ITEMS.map((game) => game.id);
 
+    expect(allGameIds).toContain("signal-sprint");
     expect(allGameIds).toContain("game-gauntlet");
     expect(allGameIds).not.toContain("head-count");
   });
@@ -31,6 +32,7 @@ describe("gameCatalog", () => {
     expect(new Set(candidateIds).size).toBe(candidateIds.length);
     expect(candidateIds).not.toContain("game-gauntlet");
     expect(candidateIds).not.toContain("head-count");
+    expect(candidateIds).not.toContain("signal-sprint");
   });
 
   test("hot games carry double recommendation weight", () => {
