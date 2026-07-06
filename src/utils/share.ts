@@ -12,14 +12,12 @@ export const SHARE_PAGE_PATHS = [
   "pages/game-gauntlet/index",
   "pages/memory-challenge/index",
   "pages/rock-paper-scissors/index",
-  "pages/dual-task/index",
   "pages/mental-math/index",
   "pages/twenty-four/index",
   "pages/digit-span/index",
   "pages/multiple-object-tracking/index",
   "pages/pattern-completion/index",
   "pages/number-order/index",
-  "pages/signal-sprint/index",
   "pages/head-count/index",
   "pages/word-scramble/index",
   "pages/bird-count/index",
@@ -64,10 +62,6 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
     title: "来玩逆向猜拳，练反应和抑制力",
     timelineTitle: "逆向猜拳反应训练",
   },
-  "pages/dual-task/index": {
-    title: "来做双重任务，练多任务切换",
-    timelineTitle: "双重任务脑力训练",
-  },
   "pages/mental-math/index": {
     title: "来挑战速算，练心算反应",
     timelineTitle: "速算挑战脑力训练",
@@ -91,10 +85,6 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/number-order/index": {
     title: "来玩星链回响，练路径记忆",
     timelineTitle: "星链回响记忆训练",
-  },
-  "pages/signal-sprint/index": {
-    title: "来玩信号冲刺，练反应和刹车力",
-    timelineTitle: "信号冲刺反应抑制训练",
   },
   "pages/head-count/index": {
     title: "来玩小剧场清点，练动态心算",

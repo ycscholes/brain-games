@@ -5,14 +5,12 @@ import { resetCloudSyncMeta } from "./cloudSyncMeta";
 export type TrainingGameId =
   | "memory-challenge"
   | "rock-paper-scissors"
-  | "dual-task"
   | "mental-math"
   | "twenty-four"
   | "digit-span"
   | "multiple-object-tracking"
   | "pattern-completion"
   | "number-order"
-  | "signal-sprint"
   | "head-count"
   | "word-scramble"
   | "bird-count"
@@ -198,29 +196,6 @@ function readLegacySummary(gameId: TrainingGameId): TrainingSummary {
       };
     }
 
-    case "dual-task": {
-      const modes = ["alternating", "simultaneous", "stroop"];
-      let best = 0;
-      let recent = 0;
-      let played = false;
-
-      modes.forEach((mode) => {
-        const bestKey = `dual_task_best_${mode}`;
-        const lastKey = `dual_task_last_${mode}`;
-        best = Math.max(best, readNumericValue(bestKey));
-        recent = Math.max(recent, readNumericValue(lastKey));
-        played = played || hasStorageValue(bestKey) || hasStorageValue(lastKey);
-      });
-
-      return {
-        best,
-        recent,
-        played,
-        totalSessions: 0,
-        lastPlayedAt: null,
-      };
-    }
-
     case "mental-math": {
       const best = Math.max(
         readJsonScore("mental_math_high_score_timed"),
@@ -296,14 +271,12 @@ function readLegacySummary(gameId: TrainingGameId): TrainingSummary {
 const TRAINING_POINT_RATES: Record<string, number> = {
   "memory-challenge": 1,
   "rock-paper-scissors": 1,
-  "dual-task": 1,
   "mental-math": 1,
   "twenty-four": 2,
   "digit-span": 3,
   "multiple-object-tracking": 3,
   "pattern-completion": 1.2,
   "number-order": 1,
-  "signal-sprint": 1,
   "head-count": 1,
   "word-scramble": 1,
   "bird-count": 1,
@@ -581,7 +554,6 @@ export function clearProductData() {
     gameSpecificKeys.push(`mot_best_${difficulty}`);
     gameSpecificKeys.push(`pattern_completion_best_${difficulty}`);
     gameSpecificKeys.push(`number_order_best_${difficulty}`);
-    gameSpecificKeys.push(`signal_sprint_best_${difficulty}`);
     gameSpecificKeys.push(`head_count_best_${difficulty}`);
     gameSpecificKeys.push(`word_scramble_best_${difficulty}`);
     gameSpecificKeys.push(`bird_count_best_${difficulty}`);
@@ -596,11 +568,6 @@ export function clearProductData() {
   ["G1A", "G1B", "G2", "G3", "G4", "G5_6", "G2_ADD", "G2_MUL", "G3_ADD", "G4_MIXED_100", "CUSTOM"].forEach((stageId) => {
     gameSpecificKeys.push(`mental_math_high_score_timed_${stageId}`);
     gameSpecificKeys.push(`mental_math_high_score_death_${stageId}`);
-  });
-
-  ["alternating", "simultaneous", "stroop"].forEach((mode) => {
-    gameSpecificKeys.push(`dual_task_best_${mode}`);
-    gameSpecificKeys.push(`dual_task_last_${mode}`);
   });
 
   [...LEGACY_KEYS, ...gameSpecificKeys, TRAINING_STORAGE_KEY, SETTINGS_STORAGE_KEY].forEach((key) => {

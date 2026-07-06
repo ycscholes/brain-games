@@ -22,12 +22,10 @@
 | **心算大师 (mental-math)** | 1.0x | 10-30 | 15-45 | 分数适中，保持 1 倍 |
 | **24 点 (twenty-four)** | 2.0x | 12-40 | 不适用 | 固定 60 秒，无难度选择；初始每题 2 分，每答对 3 题后续每题加 1 分 |
 | **图案推理 (pattern-completion)** | 1.2x | 约 26-38 | 约 39-60 | 8 题多规则推理，困难接近满分时封顶 |
-| **双任务挑战 (dual-task)** | 1.0x | 10-40 | 15-60 | 高难度获得额外积分 |
 | **多目标追踪 (multiple-object-tracking)** | 3.0x | 15-40 | 22-60 | 分数较低，提升 3 倍并封顶 |
 | **逆向猜拳 (rock-paper-scissors)** | 1.0x | 10-40 | 15-60 | 高难度获得额外积分 |
 | **奇趣记忆 (memory-challenge)** | 1.0x | 最高 40/60 | 最高 80/100 | 按模式与 N 自定义上限，不使用困难倍率 |
 | **星链回响 (number-order)** | 1.0x | 约 20-40 | 约 30-60 | 路径工作记忆，困难封顶 |
-| **信号冲刺 (signal-sprint)** | 1.0x | 约 20-40 | 约 30-60 | Go/No-Go 反应抑制，困难封顶 |
 | **小剧场清点 (head-count)** | 1.0x | 约 18-40 | 约 27-60 | 动态计数与持续注意，事件困难或快速速度进入困难积分档 |
 | **词语拼盘 (word-scramble)** | 1.0x | 约 20-40 | 约 30-60 | 语言重组与快速词义匹配，困难封顶 |
 | **宠物速数 (bird-count)** | 1.0x | 约 20-40 | 约 30-60 | 指定宠物的选择性计数，困难封顶 |
@@ -98,14 +96,12 @@ export function getAwardedPoints(
 |------|------------|-------------------------|
 | 记忆挑战 | `memory-challenge` | `memory` |
 | 逆向猜拳 | `rock-paper-scissors` | `rps` |
-| 双任务挑战 | `dual-task` | `dual-task` |
 | 心算大师 | `mental-math` | `mental-math` |
 | 24 点 | `twenty-four` | `twenty-four` |
 | 数字广度 | `digit-span` | `digit-span` |
 | 多目标追踪 | `multiple-object-tracking` | `mot` |
 | 图案推理 | `pattern-completion` | `pattern` |
 | 星链回响 | `number-order` | - |
-| 信号冲刺 | `signal-sprint` | - |
 | 小剧场清点 | `head-count` | - |
 | 词语拼盘 | `word-scramble` | - |
 | 宠物速数 | `bird-count` | - |
@@ -210,7 +206,6 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 - ✅ 训练记录 `awardedPoints` 与宠物实际获得积分使用同一转换口径
 - ✅ 旧缩写 gameId 与标准长 gameId 在统计中合并处理
 - ✅ 星链回响和小剧场清点使用 1.0 倍积分转换并沿用普通/困难封顶
-- ✅ 信号冲刺使用 1.0 倍积分转换，普通/困难分数落入默认积分范围
 - ✅ 小剧场清点速度维度默认放慢流程，快速速度或事件困难映射到困难积分档
 - ✅ 新增游戏逻辑测试覆盖题目生成、答案唯一性和计分规则
 - ✅ 颜色陷阱逻辑测试覆盖 Stroop 冲突题目生成、限时梯度和计分规则
@@ -243,5 +238,5 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 
 ---
 
-**最后更新**：2026-07-04
-**版本**：v1.9
+**最后更新**：2026-07-07
+**版本**：v1.10

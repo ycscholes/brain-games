@@ -1,6 +1,6 @@
 # Cici的脑部锻炼
 
-Cici的脑部锻炼是一个基于 Taro 和 React 的微信小程序脑力训练项目。项目通过短时小游戏训练计算、工作记忆、抑制控制、视觉追踪、规律推理和多任务处理，并用统一的训练记录与宠物积分系统连接长期使用体验。
+Cici的脑部锻炼是一个基于 Taro 和 React 的微信小程序脑力训练项目。项目通过短时小游戏训练计算、工作记忆、抑制控制、视觉追踪、规律推理和空间推理，并用统一的训练记录与宠物积分系统连接长期使用体验。
 
 ## 游戏清单
 
@@ -15,7 +15,6 @@ Cici的脑部锻炼是一个基于 Taro 和 React 的微信小程序脑力训练
 | 奇趣图形记忆 | N-Back 图形记忆 | `/pages/memory-challenge/index` | [游戏说明](src/pages/memory-challenge/README.md) |
 | 追踪任务 | 多目标视觉追踪 | `/pages/multiple-object-tracking/index` | [游戏说明](src/pages/multiple-object-tracking/README.md) |
 | 农场清点 | 选择性计数与动态计数 | `/pages/bird-count/index` | [游戏说明](src/pages/bird-count/README.md) |
-| 多任务处理 | 持续控制与任务切换 | `/pages/dual-task/index` | [游戏说明](src/pages/dual-task/README.md) |
 | 词语拼盘 | 语言重组与词义匹配 | `/pages/word-scramble/index` | [游戏说明](src/pages/word-scramble/README.md) |
 
 `词语拼盘` 当前未在首页展示，但页面、训练记录和积分管线仍然可用。`/pages/head-count/index` 是农场清点中“农场进出”模式的[兼容路由](src/pages/head-count/README.md)。
