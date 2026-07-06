@@ -109,24 +109,25 @@
 .game-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: 16px;
 }
 
 .game-card {
   position: relative;
   overflow: hidden;
-  min-height: 334px;
-  padding: 20px 18px 16px;
+  min-height: 316px;
+  padding: 20px 18px 14px;
   border-radius: 18px;
   background: var(--surface-card);
-  border: 1px solid rgba(35, 50, 56, 0.08);
+  border: 2px solid rgba(35, 50, 56, 0.1);
   box-shadow:
-    0 14px 26px rgba(35, 50, 56, 0.08),
+    0 16px 28px rgba(35, 50, 56, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
 }
 
 .game-card::before {
@@ -139,21 +140,12 @@
   background: #f97316;
 }
 
-.game-card::after {
-  content: "";
-  position: absolute;
-  right: -24px;
-  top: 54px;
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: rgba(255, 247, 223, 0.92);
-  border: 1px dashed rgba(35, 50, 56, 0.14);
-  pointer-events: none;
-}
-
 .game-card:active {
-  transform: scale(0.985);
+  transform: translateY(3px) scale(0.985);
+  border-color: rgba(249, 115, 22, 0.34);
+  box-shadow:
+    0 8px 16px rgba(35, 50, 56, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .card-memory {
@@ -294,16 +286,20 @@
 }
 
 .game-copy {
-  margin-bottom: 12px;
-  padding-right: 34px;
+  min-width: 0;
+  margin-bottom: 10px;
 }
 
 .game-title {
   display: block;
-  font-size: 38px;
-  line-height: 1.15;
-  font-weight: 800;
+  width: 100%;
+  overflow: hidden;
   color: var(--text-primary);
+  font-size: 34px;
+  line-height: 1.12;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .game-meta {
@@ -317,8 +313,9 @@
 .game-badge-row {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+  max-width: 100%;
 }
 
 .game-badge {
@@ -326,11 +323,15 @@
   align-items: center;
   justify-content: center;
   min-height: 38px;
+  max-width: 170px;
   padding: 0 16px;
   border-radius: 12px;
   font-size: 28px;
   line-height: 1;
   font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .game-level {
@@ -343,6 +344,8 @@
   font-size: 22px;
   line-height: 1;
   font-weight: 800;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .game-level-easy {
@@ -362,10 +365,14 @@
 
 .game-detail-line {
   display: block;
+  max-width: 100%;
+  overflow: hidden;
   color: var(--text-secondary);
   font-size: 26px;
   line-height: 1.35;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-memory .game-badge {
@@ -455,9 +462,13 @@
 
 .score-line {
   display: block;
+  max-width: 100%;
+  overflow: hidden;
   font-size: 28px;
   color: var(--text-secondary);
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .score-line-secondary {
@@ -468,7 +479,7 @@
 
 .game-footer {
   margin-top: auto;
-  padding-top: 18px;
+  padding-top: 14px;
 }
 
 .enter-button {
@@ -481,6 +492,15 @@
   box-shadow:
     0 10px 18px rgba(35, 50, 56, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.enter-button::after {
+  content: "›";
+  margin-left: 10px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .card-memory .enter-button {

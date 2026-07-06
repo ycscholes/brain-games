@@ -113,19 +113,25 @@
   height: 56px;
   padding: 0 18px;
   border-radius: 28px;
-  border: 1px solid var(--border-soft);
-  background: var(--surface-card-strong);
+  border: 2px solid rgba(249, 115, 22, 0.24);
+  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(188, 188, 188, 0.16);
+  box-shadow: 0 10px 22px rgba(249, 115, 22, 0.18);
   box-sizing: border-box;
 }
 
+.all-games-button:active {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: 0 5px 12px rgba(249, 115, 22, 0.16);
+}
+
 .all-games-button-text {
-  color: var(--brand-primary-dark);
+  color: #c2410c;
   font-size: 24px;
   font-weight: 850;
+  white-space: nowrap;
 }
 
 .search-button {

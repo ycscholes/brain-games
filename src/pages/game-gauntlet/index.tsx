@@ -21,6 +21,14 @@ function getDifficultyLabel(difficulty: GameGauntletSession["difficulty"]) {
   return difficulty === "hard" ? "进阶难度" : "标准难度";
 }
 
+function getCurrentLegIndex(session: GameGauntletSession) {
+  return session.results.filter(Boolean).length;
+}
+
+function getLegEntryKey(session: GameGauntletSession) {
+  return `${session.id}:${getCurrentLegIndex(session)}`;
+}
+
 export default function GameGauntlet() {
   usePageShare("pages/game-gauntlet/index");
 
@@ -29,6 +37,7 @@ export default function GameGauntlet() {
   const [awardedPoints, setAwardedPoints] = useState(0);
   const [status, setStatus] = useState<PageStatus>("ready");
   const pendingNavigationRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastAutoEnteredLegKeyRef = useRef("");
 
   const clearPendingNavigation = () => {
     if (pendingNavigationRef.current) {
@@ -39,15 +48,16 @@ export default function GameGauntlet() {
 
   const enterLeg = (nextSession: GameGauntletSession) => {
     clearPendingNavigation();
-    const legIndex = nextSession.results.filter(Boolean).length;
+    const legIndex = getCurrentLegIndex(nextSession);
     const gameId = nextSession.gameIds[legIndex];
     if (!gameId) {
       return;
     }
-    Taro.redirectTo({
+    lastAutoEnteredLegKeyRef.current = getLegEntryKey(nextSession);
+    Taro.navigateTo({
       url: getGauntletGameUrl(gameId, nextSession.id, legIndex),
     }).catch(() => {
-      void Taro.navigateTo({
+      void Taro.redirectTo({
         url: getGauntletGameUrl(gameId, nextSession.id, legIndex),
       });
     });
@@ -55,6 +65,9 @@ export default function GameGauntlet() {
 
   const scheduleEnterLeg = (nextSession: GameGauntletSession) => {
     clearPendingNavigation();
+    if (lastAutoEnteredLegKeyRef.current === getLegEntryKey(nextSession)) {
+      return;
+    }
     pendingNavigationRef.current = setTimeout(() => {
       pendingNavigationRef.current = null;
       enterLeg(nextSession);
@@ -94,7 +107,7 @@ export default function GameGauntlet() {
       return;
     }
 
-    if (nextSession.results.filter(Boolean).length > 0) {
+    if (getCurrentLegIndex(nextSession) > 0) {
       setSession(nextSession);
       setStatus("active");
       scheduleEnterLeg(nextSession);
