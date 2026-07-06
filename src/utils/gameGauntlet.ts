@@ -309,7 +309,7 @@ export function completeGauntletLegIfNeeded(input: GameGauntletCompletionInput) 
     return false;
   }
 
-  saveGameGauntletLegResult(params.sessionId, params.legIndex, {
+  const nextSession = saveGameGauntletLegResult(params.sessionId, params.legIndex, {
     gameId: input.gameId,
     score: input.score,
     awardedPoints: input.awardedPoints,
@@ -317,6 +317,9 @@ export function completeGauntletLegIfNeeded(input: GameGauntletCompletionInput) 
     mode: input.mode,
     outcome: input.outcome,
   });
+  if (!nextSession) {
+    return false;
+  }
 
   void Taro.redirectTo({ url: getGauntletPageUrl(params.sessionId) }).catch(() => {
     void Taro.navigateTo({ url: getGauntletPageUrl(params.sessionId) });

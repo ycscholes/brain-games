@@ -1,6 +1,6 @@
 import { View, Text } from "@tarojs/components";
-import Taro, { getCurrentInstance, useDidShow } from "@tarojs/taro";
-import { useState } from "react";
+import Taro, { getCurrentInstance, useDidHide, useDidShow } from "@tarojs/taro";
+import { useRef, useState } from "react";
 import { GAME_TITLE_MAP, getGameById } from "../../config/gameCatalog";
 import {
   GAUNTLET_LEG_COUNT,
@@ -28,13 +28,33 @@ export default function GameGauntlet() {
   const [completedSession, setCompletedSession] = useState<GameGauntletSession | null>(null);
   const [awardedPoints, setAwardedPoints] = useState(0);
   const [status, setStatus] = useState<PageStatus>("ready");
+  const pendingNavigationRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPendingNavigation = () => {
+    if (pendingNavigationRef.current) {
+      clearTimeout(pendingNavigationRef.current);
+      pendingNavigationRef.current = null;
+    }
+  };
 
   const enterLeg = (nextSession: GameGauntletSession) => {
+    clearPendingNavigation();
     const legIndex = nextSession.results.filter(Boolean).length;
     const gameId = nextSession.gameIds[legIndex];
+    if (!gameId) {
+      return;
+    }
     Taro.navigateTo({
       url: getGauntletGameUrl(gameId, nextSession.id, legIndex),
     });
+  };
+
+  const scheduleEnterLeg = (nextSession: GameGauntletSession) => {
+    clearPendingNavigation();
+    pendingNavigationRef.current = setTimeout(() => {
+      pendingNavigationRef.current = null;
+      enterLeg(nextSession);
+    }, 120);
   };
 
   const prepareNewPreview = () => {
@@ -73,7 +93,7 @@ export default function GameGauntlet() {
     if (nextSession.results.filter(Boolean).length > 0) {
       setSession(nextSession);
       setStatus("active");
-      enterLeg(nextSession);
+      scheduleEnterLeg(nextSession);
       return;
     }
 
@@ -83,6 +103,10 @@ export default function GameGauntlet() {
 
   useDidShow(() => {
     refreshSession();
+  });
+
+  useDidHide(() => {
+    clearPendingNavigation();
   });
 
   const startGauntlet = () => {
@@ -157,8 +181,8 @@ export default function GameGauntlet() {
 
         <View className="gauntlet-actions">
           {status === "active" ? (
-            <View className="primary-action primary-action-disabled">
-              <Text className="primary-action-text">正在进入第 {completedCount + 1} 关</Text>
+            <View className="primary-action" onClick={() => session && enterLeg(session)}>
+              <Text className="primary-action-text">继续第 {completedCount + 1} 关</Text>
             </View>
           ) : (
             <View className="primary-action" onClick={startGauntlet}>

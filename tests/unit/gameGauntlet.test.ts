@@ -1,4 +1,5 @@
 const mockStorage = new Map<string, string>();
+let mockRouteParams: Record<string, string> = {};
 
 jest.mock("@tarojs/taro", () => ({
   __esModule: true,
@@ -10,8 +11,10 @@ jest.mock("@tarojs/taro", () => ({
     removeStorageSync: jest.fn((key: string) => {
       mockStorage.delete(key);
     }),
+    redirectTo: jest.fn(() => Promise.resolve()),
+    navigateTo: jest.fn(() => Promise.resolve()),
   },
-  getCurrentInstance: jest.fn(() => ({ router: { params: {} } })),
+  getCurrentInstance: jest.fn(() => ({ router: { params: mockRouteParams } })),
 }));
 
 import Taro from "@tarojs/taro";
@@ -19,9 +22,11 @@ import { GAUNTLET_CANDIDATE_GAMES } from "../../src/config/gameCatalog";
 import {
   buildGameGauntletGameIds,
   buildGameGauntletWeightedPool,
+  completeGauntletLegIfNeeded,
   createGameGauntletSession,
   createGameGauntletModePreset,
   getGauntletGameUrl,
+  readGameGauntletSession,
   selectWeightedUniqueGauntletGames,
   startGameGauntletSession,
 } from "../../src/utils/gameGauntlet";
@@ -29,6 +34,7 @@ import {
 describe("gameGauntlet", () => {
   beforeEach(() => {
     mockStorage.clear();
+    mockRouteParams = {};
     jest.clearAllMocks();
   });
 
@@ -164,5 +170,76 @@ describe("gameGauntlet", () => {
     const farmUrl = getGauntletGameUrl("bird-count", "session_1", 2);
     expect(farmUrl).toContain("gauntletFarmMode=yard");
     expect(farmUrl).toContain("gauntletYardSpeed=fast");
+  });
+
+  test("does not redirect when a leg result does not match the expected game", () => {
+    mockStorage.set("game_gauntlet_session_v1", JSON.stringify({
+      id: "session_1",
+      gameIds: ["bird-count", "memory-challenge", "mental-math"],
+      difficulty: "normal",
+      legs: [
+        { gameId: "bird-count", modePreset: { difficulty: "normal", farmMode: "yard", yardSpeed: "slow" } },
+        { gameId: "memory-challenge", modePreset: { difficulty: "normal", memoryMode: "shape", memoryN: "1" } },
+        { gameId: "mental-math", modePreset: { difficulty: "normal", mode: "timed", stageId: "G1A" } },
+      ],
+      currentLegIndex: 0,
+      results: [],
+      status: "active",
+      createdAt: "2026-07-04T00:00:00.000Z",
+    }));
+    mockRouteParams = { gauntletSessionId: "session_1", gauntletLeg: "0" };
+
+    const completed = completeGauntletLegIfNeeded({
+      gameId: "head-count",
+      score: 12,
+      awardedPoints: 12,
+      difficulty: "normal",
+      mode: "yard:slow",
+      outcome: "completed",
+    });
+
+    expect(completed).toBe(false);
+    expect(Taro.redirectTo).not.toHaveBeenCalled();
+    expect(readGameGauntletSession("session_1")?.results).toEqual([]);
+  });
+
+  test("saves a matching leg result so the gauntlet can advance to the second game", () => {
+    mockStorage.set("game_gauntlet_session_v1", JSON.stringify({
+      id: "session_1",
+      gameIds: ["bird-count", "memory-challenge", "mental-math"],
+      difficulty: "normal",
+      legs: [
+        { gameId: "bird-count", modePreset: { difficulty: "normal", farmMode: "yard", yardSpeed: "slow" } },
+        { gameId: "memory-challenge", modePreset: { difficulty: "normal", memoryMode: "shape", memoryN: "1" } },
+        { gameId: "mental-math", modePreset: { difficulty: "normal", mode: "timed", stageId: "G1A" } },
+      ],
+      currentLegIndex: 0,
+      results: [],
+      status: "active",
+      createdAt: "2026-07-04T00:00:00.000Z",
+    }));
+    mockRouteParams = { gauntletSessionId: "session_1", gauntletLeg: "0" };
+
+    const completed = completeGauntletLegIfNeeded({
+      gameId: "bird-count",
+      score: 12,
+      awardedPoints: 12,
+      difficulty: "normal",
+      mode: "yard:slow",
+      outcome: "completed",
+    });
+    const nextSession = readGameGauntletSession("session_1");
+
+    expect(completed).toBe(true);
+    expect(Taro.redirectTo).toHaveBeenCalledWith({
+      url: "/pages/game-gauntlet/index?sessionId=session_1",
+    });
+    expect(nextSession?.currentLegIndex).toBe(1);
+    expect(nextSession?.results[0]).toMatchObject({
+      gameId: "bird-count",
+      score: 12,
+      awardedPoints: 12,
+    });
+    expect(getGauntletGameUrl("memory-challenge", "session_1", 1)).toContain("gauntletLeg=1");
   });
 });
