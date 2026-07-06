@@ -127,7 +127,20 @@ export default function GameGauntlet() {
   });
 
   const startGauntlet = () => {
+    if (status === "complete") {
+      const nextSession = startGameGauntletSession(createGameGauntletSession());
+      lastAutoEnteredLegKeyRef.current = "";
+      setCompletedSession(null);
+      setAwardedPoints(0);
+      setSession(nextSession);
+      setStatus("active");
+      enterLeg(nextSession);
+      return;
+    }
+
     const nextSession = startGameGauntletSession(session ?? undefined);
+    setCompletedSession(null);
+    setAwardedPoints(0);
     setSession(nextSession);
     setStatus("active");
     enterLeg(nextSession);
