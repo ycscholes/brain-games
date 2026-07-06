@@ -44,8 +44,12 @@ export default function GameGauntlet() {
     if (!gameId) {
       return;
     }
-    Taro.navigateTo({
+    Taro.redirectTo({
       url: getGauntletGameUrl(gameId, nextSession.id, legIndex),
+    }).catch(() => {
+      void Taro.navigateTo({
+        url: getGauntletGameUrl(gameId, nextSession.id, legIndex),
+      });
     });
   };
 
@@ -123,7 +127,7 @@ export default function GameGauntlet() {
     <View className="gauntlet-page">
       <View className="gauntlet-shell">
         <View className="gauntlet-header">
-          <View className="back-button" onClick={() => Taro.navigateBack()}>
+          <View className="back-button" onClick={() => Taro.reLaunch({ url: "/pages/index/index" })}>
             <Text className="back-icon">‹</Text>
           </View>
           <View className="header-copy">
