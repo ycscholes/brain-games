@@ -13,6 +13,7 @@ jest.mock("@tarojs/taro", () => ({
     }),
     redirectTo: jest.fn(() => Promise.resolve()),
     navigateTo: jest.fn(() => Promise.resolve()),
+    navigateBack: jest.fn(() => Promise.resolve()),
   },
   getCurrentInstance: jest.fn(() => ({ router: { params: mockRouteParams } })),
 }));
@@ -199,6 +200,7 @@ describe("gameGauntlet", () => {
     });
 
     expect(completed).toBe(false);
+    expect(Taro.navigateBack).not.toHaveBeenCalled();
     expect(Taro.redirectTo).not.toHaveBeenCalled();
     expect(readGameGauntletSession("session_1")?.results).toEqual([]);
   });
@@ -231,9 +233,8 @@ describe("gameGauntlet", () => {
     const nextSession = readGameGauntletSession("session_1");
 
     expect(completed).toBe(true);
-    expect(Taro.redirectTo).toHaveBeenCalledWith({
-      url: "/pages/game-gauntlet/index?sessionId=session_1",
-    });
+    expect(Taro.navigateBack).toHaveBeenCalledWith({ delta: 1 });
+    expect(Taro.redirectTo).not.toHaveBeenCalled();
     expect(nextSession?.currentLegIndex).toBe(1);
     expect(nextSession?.results[0]).toMatchObject({
       gameId: "bird-count",

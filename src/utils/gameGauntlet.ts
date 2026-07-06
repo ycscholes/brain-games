@@ -321,8 +321,8 @@ export function completeGauntletLegIfNeeded(input: GameGauntletCompletionInput) 
     return false;
   }
 
-  void Taro.redirectTo({ url: getGauntletPageUrl(params.sessionId) }).catch(() => {
-    void Taro.navigateTo({ url: getGauntletPageUrl(params.sessionId) });
+  void Taro.navigateBack({ delta: 1 }).catch(() => {
+    void Taro.redirectTo({ url: getGauntletPageUrl(params.sessionId) });
   });
   return true;
 }
