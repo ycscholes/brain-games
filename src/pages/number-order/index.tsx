@@ -56,6 +56,7 @@ export default function NumberOrder() {
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const startedAtRef = useRef(0);
   const finishedRef = useRef(false);
+  const autoStartedRef = useRef(false);
 
   const currentQuestion = questions[currentIndex] ?? null;
   const answerProgress = currentQuestion ? `${Math.min(tappedIds.length + 1, currentQuestion.answerIds.length)}/${currentQuestion.answerIds.length}` : "0/0";
@@ -237,6 +238,12 @@ export default function NumberOrder() {
       scheduleEchoPlayback(nextQuestions[0]);
     }, READY_MS);
   };
+
+  useEffect(() => {
+    if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
+    autoStartedRef.current = true;
+    startGame();
+  }, [isGauntletPreset, phase, startGame]);
 
   const backToStart = () => {
     clearTimers();

@@ -78,6 +78,7 @@ export default function SpatialRotation() {
   const puzzleStartedAtRef = useRef(0);
   const finishedRef = useRef(false);
   const answeredRef = useRef(false);
+  const autoStartedRef = useRef(false);
   const phaseRef = useRef<Phase>("start");
   const scoreRef = useRef(0);
   const comboRef = useRef(0);
@@ -257,6 +258,12 @@ export default function SpatialRotation() {
     setIsNewBest(false);
     beginPuzzle(0, nextPuzzles);
   };
+
+  useEffect(() => {
+    if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
+    autoStartedRef.current = true;
+    startGame();
+  }, [isGauntletPreset, phase, startGame]);
 
   const backToStart = () => {
     clearTimers();

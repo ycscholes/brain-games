@@ -6,7 +6,7 @@ import {
   getAwardedPoints,
   recordTrainingSession,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
+import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import {
   evaluateExpression,
@@ -40,6 +40,8 @@ function tokenToText(token: Token) {
 
 export default function TwentyFour() {
   usePageShare("pages/twenty-four/index");
+  const gauntletPreset = readGameGauntletModePreset();
+  const isGauntletPreset = gauntletPreset !== null;
 
   const [round, setRound] = useState(() => generateRound());
   const [phase, setPhase] = useState<Phase>("start");
@@ -54,6 +56,7 @@ export default function TwentyFour() {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scoreRef = useRef(0);
+  const autoStartedRef = useRef(false);
 
   useEffect(() => {
     scoreRef.current = score;
@@ -156,6 +159,12 @@ export default function TwentyFour() {
     setHintUsed(false);
     setPhase("playing");
   };
+
+  useEffect(() => {
+    if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
+    autoStartedRef.current = true;
+    startGame();
+  }, [isGauntletPreset, phase, startGame]);
 
   const nextRound = () => {
     setRound(generateRound());
