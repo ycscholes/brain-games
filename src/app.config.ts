@@ -16,6 +16,7 @@ export default defineAppConfig({
     'pages/bird-count/index',
     'pages/color-trap/index',
     'pages/spatial-rotation/index',
+    'pages/hidato/index',
     'pages/pet/index',
     'pages/settings/index',
     'pages/training-records/index'

@@ -228,6 +228,12 @@
     var(--surface-card);
 }
 
+.card-hidato {
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.14) 0%, rgba(245, 158, 11, 0.16) 100%),
+    var(--surface-card);
+}
+
 .card-game-gauntlet {
   background:
     radial-gradient(circle at 36% 24%, rgba(249, 115, 22, 0.18), transparent 32%),
@@ -423,6 +429,11 @@
   color: #176378;
 }
 
+.card-hidato .game-badge {
+  background: rgba(15, 118, 110, 0.16);
+  color: #0f766e;
+}
+
 .card-game-gauntlet .game-badge {
   background: rgba(249, 115, 22, 0.16);
   color: #c2410c;
@@ -526,6 +537,10 @@
 
 .card-spatial-rotation .enter-button {
   background: linear-gradient(90deg, #176378 0%, #f0b84f 100%);
+}
+
+.card-hidato .enter-button {
+  background: linear-gradient(90deg, #0f766e 0%, #f59e0b 100%);
 }
 
 .card-game-gauntlet .enter-button {
