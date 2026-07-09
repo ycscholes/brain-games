@@ -7,7 +7,6 @@ import {
   createHidatoPuzzle,
   createInitialClickState,
   getHidatoHiddenRatio,
-  hasLocallyUniqueRevealedPath,
   scoreHidatoGame,
   validateHidatoPath,
 } from "../../src/pages/hidato/gameLogic";
@@ -18,11 +17,11 @@ describe("hidato game logic", () => {
     const hard = createHidatoPuzzle("hard");
 
     expect(normal.cols).toBe(5);
-    expect(normal.rows).toBe(10);
-    expect(normal.total).toBe(50);
-    expect(hard.cols).toBe(5);
-    expect(hard.rows).toBe(15);
-    expect(hard.total).toBe(75);
+    expect(normal.rows).toBe(8);
+    expect(normal.total).toBe(40);
+    expect(hard.cols).toBe(6);
+    expect(hard.rows).toBe(10);
+    expect(hard.total).toBe(60);
   });
 
   test("fills every cell with one value from 1 to N", () => {
@@ -58,10 +57,16 @@ describe("hidato game logic", () => {
     expect(hard.givenValues).toContain(hard.total);
   });
 
-  test("revealed anchors keep hidden stretches locally unique", () => {
-    const puzzle = createHidatoPuzzle("normal");
+  test("randomized paths are not limited to horizontal or vertical snakes", () => {
+    const puzzles = Array.from({ length: 8 }, () => createHidatoPuzzle("hard"));
+    const hasDiagonalStep = puzzles.some((puzzle) =>
+      puzzle.path.slice(1).some((cell, index) => {
+        const previous = puzzle.path[index];
+        return Math.abs(cell.row - previous.row) === 1 && Math.abs(cell.col - previous.col) === 1;
+      }),
+    );
 
-    expect(hasLocallyUniqueRevealedPath(puzzle)).toBe(true);
+    expect(hasDiagonalStep).toBe(true);
   });
 
   test("clicking advances only when the next number is tapped", () => {

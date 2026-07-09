@@ -37,8 +37,8 @@ function readBestScore(difficulty: TrainingDifficulty) {
 function getDifficultyCopy(difficulty: TrainingDifficulty) {
   const config = HIDATO_CONFIG[difficulty];
   return difficulty === "hard"
-    ? `${config.cols}列 x ${config.rows}行 · 路径更长`
-    : `${config.cols}列 x ${config.rows}行 · 锚点更多`;
+    ? `${config.cols}列 x ${config.rows}行 · 空白 40%-50%`
+    : `${config.cols}列 x ${config.rows}行 · 空白 40%`;
 }
 
 export default function HidatoPage() {
@@ -291,26 +291,11 @@ export default function HidatoPage() {
           <View className="hidato-hero">
             <Text className="hero-kicker">希托达 · 逻辑路径</Text>
             <Text className="hero-title">连数迷阵</Text>
-            <Text className="hero-copy">从 1 出发，按顺序连接相邻格，直到走完整条数字路径。</Text>
-            <View className="mini-board" aria-hidden>
-              <View className="mini-line mini-line-one" />
-              <View className="mini-line mini-line-two" />
-              <Text className="mini-cell mini-cell-one">1</Text>
-              <Text className="mini-cell mini-cell-two">2</Text>
-              <Text className="mini-cell mini-cell-three">3</Text>
-              <Text className="mini-cell mini-cell-four">4</Text>
-            </View>
+            <Text className="hero-copy">从 1 出发，按顺序点击相邻格；正确路径会自动连线，错误和提示会扣分。</Text>
             <View className="best-pill">
               <Text className="best-label">当前难度最高</Text>
               <Text className="best-value">{best}</Text>
             </View>
-          </View>
-
-          <View className="info-panel">
-            <Text className="section-title">训练规则</Text>
-            <Text className="rule-line">1. 先点击数字 1。</Text>
-            <Text className="rule-line">2. 下一步只能走到上下左右或斜角相邻格。</Text>
-            <Text className="rule-line">3. 正确点击会自动连线，错误和提示会扣分。</Text>
           </View>
 
           {!isGauntletPreset && (
@@ -334,28 +319,26 @@ export default function HidatoPage() {
 
       {phase === "playing" && puzzle ? (
         <View className="hidato-play">
-          <View className="status-row">
-            <View className="status-card">
-              <Text className="status-value">{clickState.nextValue > puzzle.total ? puzzle.total : clickState.nextValue}</Text>
-              <Text className="status-label">目标</Text>
+          <View className="play-hud">
+            <View className="play-hud-main">
+              <View className="target-pill">
+                <Text className="target-label">寻找</Text>
+                <Text className="target-value">{clickState.nextValue > puzzle.total ? puzzle.total : clickState.nextValue}</Text>
+              </View>
+              <View className="progress-block">
+                <Text className="progress-label">进度 {progressPercent}%</Text>
+                <View className="progress-track">
+                  <View className="progress-fill" style={{ width: `${progressPercent}%` }} />
+                </View>
+              </View>
             </View>
-            <View className="status-card">
-              <Text className="status-value">{progressPercent}%</Text>
-              <Text className="status-label">进度</Text>
+            <View className="hud-meta-row">
+              <Text className="hud-feedback">{feedback}</Text>
+              <View className="hud-counters">
+                <Text className="hud-counter">错 {clickState.mistakeCount}</Text>
+                <Text className="hud-counter">提示 {clickState.hintCount}</Text>
+              </View>
             </View>
-            <View className="status-card">
-              <Text className="status-value">{clickState.mistakeCount}</Text>
-              <Text className="status-label">错误</Text>
-            </View>
-            <View className="status-card">
-              <Text className="status-value">{clickState.hintCount}</Text>
-              <Text className="status-label">提示</Text>
-            </View>
-          </View>
-
-          <View className="prompt-card">
-            <Text className="prompt-title">寻找 {clickState.nextValue > puzzle.total ? puzzle.total : clickState.nextValue}</Text>
-            <Text className="prompt-copy">{feedback}</Text>
           </View>
 
           <View className="board-shell">
@@ -363,7 +346,7 @@ export default function HidatoPage() {
               className={`hidato-board hidato-board-${difficulty}`}
               style={{
                 gridTemplateColumns: `repeat(${puzzle.cols}, 1fr)`,
-                gridTemplateRows: `repeat(${puzzle.rows}, 92rpx)`,
+                gridTemplateRows: `repeat(${puzzle.rows}, ${difficulty === "hard" ? 88 : 92}rpx)`,
               }}
             >
               <View className="hidato-line-layer">

@@ -67,24 +67,26 @@ type Position = {
 
 export const HIDATO_CONFIG: Record<HidatoDifficulty, HidatoConfig> = {
   normal: {
-    rows: 10,
+    rows: 8,
     cols: 5,
-    hiddenMin: 0.55,
-    hiddenMax: 0.62,
+    hiddenMin: 0.4,
+    hiddenMax: 0.4,
     anchorEvery: 3,
     bonusTimeSeconds: 210,
   },
   hard: {
-    rows: 15,
-    cols: 5,
-    hiddenMin: 0.68,
-    hiddenMax: 0.76,
+    rows: 10,
+    cols: 6,
+    hiddenMin: 0.4,
+    hiddenMax: 0.5,
     anchorEvery: 4,
-    bonusTimeSeconds: 360,
+    bonusTimeSeconds: 270,
   },
 };
 
 const MAX_LOCAL_SOLUTIONS = 2;
+const MAX_RANDOM_PATH_ATTEMPTS = 80;
+const MAX_RANDOM_WALK_RESTARTS = 24;
 
 function cellId(row: number, col: number) {
   return `r${row}c${col}`;
@@ -92,6 +94,15 @@ function cellId(row: number, col: number) {
 
 function randomInt(maxExclusive: number) {
   return Math.floor(Math.random() * maxExclusive);
+}
+
+function shuffle<T>(items: T[]) {
+  const next = [...items];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const randomIndex = randomInt(index + 1);
+    [next[index], next[randomIndex]] = [next[randomIndex], next[index]];
+  }
+  return next;
 }
 
 export function areHidatoNeighbors(a: Pick<HidatoCell, "row" | "col">, b: Pick<HidatoCell, "row" | "col">) {
@@ -157,6 +168,66 @@ function createSerpentinePath(rows: number, cols: number) {
 }
 
 function createRandomHamiltonianPath(rows: number, cols: number): Position[] {
+  const total = rows * cols;
+
+  for (let attempt = 0; attempt < MAX_RANDOM_PATH_ATTEMPTS; attempt += 1) {
+    const start = { row: randomInt(rows), col: randomInt(cols) };
+    const path: Position[] = [start];
+    const visited = new Set([cellId(start.row, start.col)]);
+
+    function onwardDegree(position: Position) {
+      return getNeighborPositions(position, rows, cols)
+        .filter((neighbor) => !visited.has(cellId(neighbor.row, neighbor.col)))
+        .length;
+    }
+
+    let restarted = false;
+
+    while (path.length < total) {
+      const current = path[path.length - 1];
+      const candidates = shuffle(getNeighborPositions(current, rows, cols))
+        .filter((neighbor) => !visited.has(cellId(neighbor.row, neighbor.col)))
+        .sort((a, b) => onwardDegree(a) - onwardDegree(b));
+
+      if (candidates.length === 0) {
+        restarted = true;
+        break;
+      }
+
+      const lowestDegree = onwardDegree(candidates[0]);
+      const bestCandidates = candidates.filter((candidate) => onwardDegree(candidate) === lowestDegree);
+      const next = bestCandidates[randomInt(bestCandidates.length)];
+      visited.add(cellId(next.row, next.col));
+      path.push(next);
+    }
+
+    if (!restarted && path.length === total) {
+      return path;
+    }
+  }
+
+  for (let restart = 0; restart < MAX_RANDOM_WALK_RESTARTS; restart += 1) {
+    const start = { row: randomInt(rows), col: randomInt(cols) };
+    const path: Position[] = [start];
+    const visited = new Set([cellId(start.row, start.col)]);
+
+    while (path.length < total) {
+      const current = path[path.length - 1];
+      const candidates = shuffle(getNeighborPositions(current, rows, cols))
+        .filter((neighbor) => !visited.has(cellId(neighbor.row, neighbor.col)));
+
+      if (candidates.length === 0) break;
+
+      const next = candidates[0];
+      visited.add(cellId(next.row, next.col));
+      path.push(next);
+    }
+
+    if (path.length === total) {
+      return path;
+    }
+  }
+
   return createSerpentinePath(rows, cols);
 }
 
