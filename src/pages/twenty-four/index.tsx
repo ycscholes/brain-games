@@ -244,23 +244,42 @@ export default function TwentyFour() {
   return (
     <View className="twenty-four-page">
       {phase === "start" && (
-        <View className="tf-start">
-          <View className="tf-hero">
-            <Text className="tf-kicker">Calculation</Text>
-            <Text className="tf-title">24 点</Text>
-            <Text className="tf-subtitle">用四个数字和四则运算，在 60 秒里尽可能多地凑出 24。</Text>
+        <View className="tf-start start-screen">
+          <View className="header-section">
+            <View className="logo-icon">
+              <Text className="logo-emoji">24</Text>
+            </View>
+            <Text className="game-title">24 点</Text>
+            <Text className="game-subtitle">用四个数字和四则运算凑出 24</Text>
+            <View className="high-score-badge">
+              <Text className="high-score-label">历史最高</Text>
+              <Text className="high-score-value">{best}</Text>
+            </View>
           </View>
 
-          <View className="tf-best-card">
-            <Text className="tf-best-label">历史最高</Text>
-            <Text className="tf-best-value">{best}</Text>
+          <View className="rules-card">
+            <Text className="section-title">游戏规则</Text>
+            <Text className="rule-item">1. 每轮四张数字牌都必须使用一次。</Text>
+            <Text className="rule-item">2. 可以使用 +、-、×、÷ 和括号。</Text>
+            <Text className="rule-item">3. 数字范围为 1 至 10，初始每题 2 分，每答对 3 题后续每题加 1 分。</Text>
           </View>
 
-          <View className="tf-rules">
-            <Text className="tf-section-title">规则</Text>
-            <Text className="tf-rule">1. 每轮四张数字牌都必须使用一次。</Text>
-            <Text className="tf-rule">2. 可以使用 +、-、×、÷ 和括号。</Text>
-            <Text className="tf-rule">3. 数字范围为 1 至 10，初始每题 2 分，每答对 3 题后续每题加 1 分。</Text>
+          <View className="summary-card">
+            <Text className="section-title">训练提示</Text>
+            <View className="summary-grid summary-grid-three">
+              <View className="summary-item">
+                <Text className="summary-value">{GAME_SECONDS}s</Text>
+                <Text className="summary-label">固定限时</Text>
+              </View>
+              <View className="summary-item">
+                <Text className="summary-value">1-10</Text>
+                <Text className="summary-label">数字范围</Text>
+              </View>
+              <View className="summary-item">
+                <Text className="summary-value">+2</Text>
+                <Text className="summary-label">起始单题</Text>
+              </View>
+            </View>
           </View>
 
           <View className="floating-start-action">

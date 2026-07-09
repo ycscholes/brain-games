@@ -288,48 +288,53 @@ export default function SpatialRotation() {
 
   const renderDifficultyCard = (nextDifficulty: TrainingDifficulty, copy: string) => (
     <View
-      className={`difficulty-card ${difficulty === nextDifficulty ? "difficulty-card-active" : ""}`}
+      className={`summary-item ${difficulty === nextDifficulty ? "summary-item-active" : ""}`}
       onClick={() => setDifficulty(nextDifficulty)}
     >
-      <Text className="difficulty-name">{getTrainingDifficultyLabel(nextDifficulty)}</Text>
-      <Text className="difficulty-copy">{copy}</Text>
+      <Text className="summary-value">{getTrainingDifficultyLabel(nextDifficulty)}</Text>
+      <Text className="summary-label">{copy}</Text>
     </View>
   );
 
   return (
     <View className="spatial-rotation-page">
       {phase === "start" ? (
-        <View className="rotation-start">
-          <View className="rotation-hero">
-            <Text className="hero-kicker">空间推理训练</Text>
-            <Text className="hero-title">旋影辨形</Text>
-            <Text className="hero-copy">观察目标图形，在旋转后的候选里找出同一个形状。</Text>
-            <View className="best-pill">
-              <Text className="best-label">当前难度最高</Text>
-              <Text className="best-value">{best}</Text>
+        <View className="rotation-start start-screen">
+          <View className="header-section">
+            <View className="logo-icon">
+              <Text className="logo-emoji">◇</Text>
+            </View>
+            <Text className="game-title">旋影辨形</Text>
+            <Text className="game-subtitle">在旋转候选里找出同一个形状</Text>
+            <View className="high-score-badge">
+              <Text className="high-score-label">当前难度最高</Text>
+              <Text className="high-score-value">{best}</Text>
             </View>
           </View>
 
-          <View className="info-panel">
-            <Text className="section-title">训练规则</Text>
-            <Text className="rule-line">1. 每局 8 题，目标图形可以旋转但不能镜像。</Text>
-            <Text className="rule-line">2. 选择和目标完全相同的一项。</Text>
-            <Text className="rule-line">3. 快速答对和连续答对会获得额外得分。</Text>
+          <View className="rules-card">
+            <Text className="section-title">游戏规则</Text>
+            <Text className="rule-item">1. 每局 8 题，目标图形可以旋转但不能镜像。</Text>
+            <Text className="rule-item">2. 选择和目标完全相同的一项。</Text>
+            <Text className="rule-item">3. 快速答对和连续答对会获得额外得分。</Text>
           </View>
 
           {!isGauntletPreset && (
-            <View className="info-panel">
+            <View className="summary-card">
               <Text className="section-title">难度</Text>
-              <View className="difficulty-grid">
+              <View className="summary-grid">
                 {renderDifficultyCard("normal", "时间宽松 · 干扰较少")}
                 {renderDifficultyCard("hard", "节奏更快 · 镜像干扰更强")}
               </View>
             </View>
           )}
 
-          <View className="primary-button" onClick={startGame}>
-            <Text className="primary-button-text">开始训练</Text>
+          <View className="floating-start-action">
+            <View className="primary-button" onClick={startGame}>
+              <Text className="primary-button-text">开始训练</Text>
+            </View>
           </View>
+          <View className="floating-start-spacer" />
         </View>
       ) : null}
 

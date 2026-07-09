@@ -284,11 +284,11 @@ export default function NumberOrder() {
 
   const renderDifficultyCard = (difficulty: TrainingDifficulty, copy: string) => (
     <View
-      className={`difficulty-card ${rewardDifficulty === difficulty ? "difficulty-card-active" : ""}`}
+      className={`summary-item ${rewardDifficulty === difficulty ? "summary-item-active" : ""}`}
       onClick={() => setRewardDifficulty(difficulty)}
     >
-      <Text className="difficulty-name">{getTrainingDifficultyLabel(difficulty)}</Text>
-      <Text className="difficulty-copy">{copy}</Text>
+      <Text className="summary-value">{getTrainingDifficultyLabel(difficulty)}</Text>
+      <Text className="summary-label">{copy}</Text>
     </View>
   );
 
@@ -325,35 +325,29 @@ export default function NumberOrder() {
     <View className="number-order-page">
       {phase === "start" ? (
         <View className="start-screen">
-          <View className="hero-panel">
-            <Text className="hero-kicker">路径工作记忆</Text>
-            <Text className="hero-title">星链回响</Text>
-            <Text className="hero-copy">记住星点闪现的路径，按同样顺序连回星链。</Text>
-            <View className="route-preview" aria-hidden>
-              <View className="preview-line preview-line-one" />
-              <View className="preview-line preview-line-two" />
-              <Text className="preview-star preview-star-one">1</Text>
-              <Text className="preview-star preview-star-two">2</Text>
-              <Text className="preview-star preview-star-three">3</Text>
-              <Text className="preview-star preview-star-four">4</Text>
+          <View className="header-section">
+            <View className="logo-icon">
+              <Text className="logo-emoji">1-4</Text>
             </View>
-            <View className="best-pill">
-              <Text className="best-label">当前难度最高</Text>
-              <Text className="best-value">{best}</Text>
+            <Text className="game-title">星链回响</Text>
+            <Text className="game-subtitle">记住星点闪现的路径并按顺序连回</Text>
+            <View className="high-score-badge">
+              <Text className="high-score-label">当前难度最高</Text>
+              <Text className="high-score-value">{best}</Text>
             </View>
           </View>
 
-          <View className="info-panel">
-            <Text className="section-title">训练规则</Text>
-            <Text className="rule-line">1. 观察星点依次闪现的路径。</Text>
-            <Text className="rule-line">2. 回响结束后，按原顺序点亮星链。</Text>
-            <Text className="rule-line">3. 错误后会回放正确路径和本题得分。</Text>
+          <View className="rules-card">
+            <Text className="section-title">游戏规则</Text>
+            <Text className="rule-item">1. 观察星点依次闪现的路径。</Text>
+            <Text className="rule-item">2. 回响结束后，按原顺序点亮星链。</Text>
+            <Text className="rule-item">3. 错误后会回放正确路径和本题得分。</Text>
           </View>
 
           {!isGauntletPreset && (
-          <View className="info-panel">
+          <View className="summary-card">
             <Text className="section-title">难度</Text>
-            <View className="difficulty-grid">
+            <View className="summary-grid">
               {renderDifficultyCard("normal", "3-5 步星链 · 播放更舒缓")}
               {renderDifficultyCard("hard", "4-7 步星链 · 节奏更紧")}
             </View>

@@ -20,10 +20,7 @@ $tf-line: rgba(22, 163, 74, 0.14);
 
 .twenty-four-page {
   min-height: 100vh;
-  background:
-    linear-gradient(135deg, rgba(22, 163, 74, 0.08), transparent 38%),
-    linear-gradient(315deg, rgba(245, 158, 11, 0.1), transparent 34%),
-    $tf-bg;
+  background: $tf-bg;
   color: $tf-ink;
 }
 
@@ -147,7 +144,7 @@ $tf-line: rgba(22, 163, 74, 0.14);
 
 .tf-primary-button {
   margin-top: auto;
-  background: linear-gradient(135deg, $tf-green 0%, $tf-green-dark 100%);
+  background: $tf-green-dark;
   box-shadow: 0 16px 28px rgba(22, 163, 74, 0.26);
 }
 
@@ -369,4 +366,157 @@ $tf-line: rgba(22, 163, 74, 0.14);
 .tf-result-actions {
   width: 100%;
   margin-top: 36px;
+}
+
+.twenty-four-page .start-screen {
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+.twenty-four-page .header-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 32px;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.twenty-four-page .logo-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $tf-green-dark;
+  box-shadow: 0 8px 20px rgba(15, 122, 59, 0.22);
+  margin-bottom: 20px;
+}
+
+.twenty-four-page .logo-emoji {
+  font-size: 44px;
+  line-height: 1;
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.twenty-four-page .game-title {
+  font-size: 40px;
+  font-weight: 800;
+  color: $tf-ink;
+  margin-bottom: 8px;
+}
+
+.twenty-four-page .game-subtitle {
+  font-size: 22px;
+  color: $tf-muted;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.twenty-four-page .high-score-badge {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border-radius: 50px;
+  background: #fef3c7;
+  border: 2px solid rgba(245, 158, 11, 0.72);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.16);
+}
+
+.twenty-four-page .high-score-label {
+  font-size: 18px;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.twenty-four-page .high-score-value {
+  font-size: 32px;
+  color: #b45309;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.twenty-four-page .rules-card,
+.twenty-four-page .summary-card {
+  background-color: $tf-card;
+  border-radius: 24px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.twenty-four-page .rules-card {
+  background-color: #eff6ff;
+}
+
+.twenty-four-page .section-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 12px;
+}
+
+.twenty-four-page .rule-item {
+  display: block;
+  font-size: 22px;
+  line-height: 1.6;
+  color: #475569;
+  font-weight: 500;
+}
+
+.twenty-four-page .rule-item + .rule-item {
+  margin-top: 8px;
+}
+
+.twenty-four-page .summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.twenty-four-page .summary-grid-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.twenty-four-page .summary-item {
+  background-color: #eff6ff;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.twenty-four-page .summary-value {
+  font-size: 30px;
+  font-weight: 800;
+  color: $tf-green-dark;
+  margin-bottom: 6px;
+}
+
+.twenty-four-page .summary-label {
+  font-size: 18px;
+  color: $tf-muted;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.twenty-four-page .floating-start-action {
+  position: fixed;
+  z-index: 20;
+  right: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  left: 24px;
+}
+
+.twenty-four-page .floating-start-spacer {
+  height: 112px;
 }

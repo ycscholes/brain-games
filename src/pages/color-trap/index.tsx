@@ -264,48 +264,53 @@ export default function ColorTrap() {
 
   const renderDifficultyCard = (nextDifficulty: TrainingDifficulty, copy: string) => (
     <View
-      className={`difficulty-card ${difficulty === nextDifficulty ? "difficulty-card-active" : ""}`}
+      className={`summary-item ${difficulty === nextDifficulty ? "summary-item-active" : ""}`}
       onClick={() => setDifficulty(nextDifficulty)}
     >
-      <Text className="difficulty-name">{getTrainingDifficultyLabel(nextDifficulty)}</Text>
-      <Text className="difficulty-copy">{copy}</Text>
+      <Text className="summary-value">{getTrainingDifficultyLabel(nextDifficulty)}</Text>
+      <Text className="summary-label">{copy}</Text>
     </View>
   );
 
   return (
     <View className="color-trap-page">
       {phase === "start" ? (
-        <View className="trap-start">
-          <View className="trap-hero">
-            <Text className="hero-kicker">选择注意训练</Text>
-            <Text className="hero-title">颜色陷阱</Text>
-            <Text className="hero-copy">看清本题要求，在文字含义和字体颜色之间快速切换。</Text>
-            <View className="best-pill">
-              <Text className="best-label">当前难度最高</Text>
-              <Text className="best-value">{best}</Text>
+        <View className="trap-start start-screen">
+          <View className="header-section">
+            <View className="logo-icon">
+              <Text className="logo-emoji">色</Text>
+            </View>
+            <Text className="game-title">颜色陷阱</Text>
+            <Text className="game-subtitle">在文字含义和字体颜色之间快速切换</Text>
+            <View className="high-score-badge">
+              <Text className="high-score-label">当前难度最高</Text>
+              <Text className="high-score-value">{best}</Text>
             </View>
           </View>
 
-          <View className="info-panel">
-            <Text className="section-title">训练规则</Text>
-            <Text className="rule-line">1. 每局 8 题，按提示选择颜色。</Text>
-            <Text className="rule-line">2. “字体颜色”看字的颜色，“文字含义”看字本身。</Text>
-            <Text className="rule-line">3. 快速答对和连续答对会获得额外得分。</Text>
+          <View className="rules-card">
+            <Text className="section-title">游戏规则</Text>
+            <Text className="rule-item">1. 每局 8 题，按提示选择颜色。</Text>
+            <Text className="rule-item">2. “字体颜色”看字的颜色，“文字含义”看字本身。</Text>
+            <Text className="rule-item">3. 快速答对和连续答对会获得额外得分。</Text>
           </View>
 
           {!isGauntletPreset && (
-          <View className="info-panel">
+          <View className="summary-card">
             <Text className="section-title">难度</Text>
-            <View className="difficulty-grid">
+            <View className="summary-grid">
               {renderDifficultyCard("normal", "规则交替 · 节奏舒缓")}
               {renderDifficultyCard("hard", "更多颜色干扰 · 限时更紧")}
             </View>
           </View>
           )}
 
-          <View className="primary-button" onClick={startGame}>
-            <Text className="primary-button-text">开始训练</Text>
+          <View className="floating-start-action">
+            <View className="primary-button" onClick={startGame}>
+              <Text className="primary-button-text">开始训练</Text>
+            </View>
           </View>
+          <View className="floating-start-spacer" />
         </View>
       ) : null}
 

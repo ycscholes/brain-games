@@ -253,11 +253,11 @@ export default function HidatoPage() {
 
   const renderDifficultyCard = (nextDifficulty: TrainingDifficulty) => (
     <View
-      className={`difficulty-card ${difficulty === nextDifficulty ? "difficulty-card-active" : ""}`}
+      className={`summary-item ${difficulty === nextDifficulty ? "summary-item-active" : ""}`}
       onClick={() => setDifficulty(nextDifficulty)}
     >
-      <Text className="difficulty-name">{getTrainingDifficultyLabel(nextDifficulty)}</Text>
-      <Text className="difficulty-copy">{getDifficultyCopy(nextDifficulty)}</Text>
+      <Text className="summary-value">{getTrainingDifficultyLabel(nextDifficulty)}</Text>
+      <Text className="summary-label">{getDifficultyCopy(nextDifficulty)}</Text>
     </View>
   );
 
@@ -287,25 +287,30 @@ export default function HidatoPage() {
   return (
     <View className="hidato-page">
       {phase === "start" ? (
-        <View className="hidato-start">
-          <View className="hidato-hero">
-            <Text className="hero-kicker">希托达 · 逻辑路径</Text>
-            <Text className="hero-title">连数迷阵</Text>
-            <View className="hero-copy">
-              <Text className="hero-copy-line">从 1 出发，按顺序点击相邻格。</Text>
-              <Text className="hero-copy-line">正确路径会自动连线，错误和提示会扣分。</Text>
-              <Text className="hero-copy-line">连接到最大数字 N 即通关。</Text>
+        <View className="hidato-start start-screen">
+          <View className="header-section">
+            <View className="logo-icon">
+              <Text className="logo-emoji">1N</Text>
             </View>
-            <View className="best-pill">
-              <Text className="best-label">当前难度最高</Text>
-              <Text className="best-value">{best}</Text>
+            <Text className="game-title">连数迷阵</Text>
+            <Text className="game-subtitle">从 1 出发，按顺序点击相邻格</Text>
+            <View className="high-score-badge">
+              <Text className="high-score-label">当前难度最高</Text>
+              <Text className="high-score-value">{best}</Text>
             </View>
           </View>
 
+          <View className="rules-card">
+            <Text className="section-title">游戏规则</Text>
+            <Text className="rule-item">1. 从 1 出发，按顺序点击相邻格。</Text>
+            <Text className="rule-item">2. 正确路径会自动连线，错误和提示会扣分。</Text>
+            <Text className="rule-item">3. 连接到最大数字 N 即通关。</Text>
+          </View>
+
           {!isGauntletPreset && (
-            <View className="info-panel">
+            <View className="summary-card">
               <Text className="section-title">难度</Text>
-              <View className="difficulty-grid">
+              <View className="summary-grid">
                 {renderDifficultyCard("normal")}
                 {renderDifficultyCard("hard")}
               </View>
