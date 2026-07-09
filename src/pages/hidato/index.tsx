@@ -291,7 +291,11 @@ export default function HidatoPage() {
           <View className="hidato-hero">
             <Text className="hero-kicker">希托达 · 逻辑路径</Text>
             <Text className="hero-title">连数迷阵</Text>
-            <Text className="hero-copy">从 1 出发，按顺序点击相邻格；正确路径会自动连线，错误和提示会扣分。</Text>
+            <View className="hero-copy">
+              <Text className="hero-copy-line">从 1 出发，按顺序点击相邻格。</Text>
+              <Text className="hero-copy-line">正确路径会自动连线，错误和提示会扣分。</Text>
+              <Text className="hero-copy-line">连接到最大数字 N 即通关。</Text>
+            </View>
             <View className="best-pill">
               <Text className="best-label">当前难度最高</Text>
               <Text className="best-value">{best}</Text>
@@ -358,7 +362,7 @@ export default function HidatoPage() {
                       left: `${segment.left}%`,
                       top: `${segment.top}%`,
                       width: `${segment.width}%`,
-                      transform: `rotate(${segment.angle}deg)`,
+                      transform: `translateY(-50%) rotate(${segment.angle}deg)`,
                     }}
                   />
                 ))}

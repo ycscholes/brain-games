@@ -56,10 +56,18 @@
   display: block;
   max-width: 520px;
   margin-top: 16px;
+}
+
+.hero-copy-line {
+  display: block;
   color: #49645f;
-  font-size: 29px;
-  font-weight: 600;
-  line-height: 1.55;
+  font-size: 28px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.hero-copy-line + .hero-copy-line {
+  margin-top: 6px;
 }
 
 .best-pill {
@@ -300,8 +308,11 @@
 .hidato-board {
   position: relative;
   display: grid;
-  gap: 8px;
+  gap: 0;
   width: 100%;
+  overflow: hidden;
+  border: 2px solid rgba(31, 78, 70, 0.12);
+  border-radius: 22px;
 }
 
 .hidato-line-layer {
@@ -325,8 +336,8 @@
   z-index: auto;
   min-width: 0;
   min-height: 92px;
-  border: 2px solid rgba(31, 78, 70, 0.1);
-  border-radius: 18px;
+  border: 1px solid rgba(31, 78, 70, 0.1);
+  border-radius: 0;
   background: rgba(247, 251, 248, 0.88);
   display: flex;
   align-items: center;

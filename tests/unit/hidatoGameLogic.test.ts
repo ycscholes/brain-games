@@ -89,15 +89,22 @@ describe("hidato game logic", () => {
   });
 
   test("creates center-to-center line segments for clicked values", () => {
-    const puzzle = createHidatoPuzzle("normal");
-    const segments = createHidatoLineSegments(puzzle, [1, 2, 3]);
+    const puzzle = {
+      rows: 2,
+      cols: 2,
+      path: [
+        { id: "r0c0", row: 0, col: 0, value: 1, given: true },
+        { id: "r1c1", row: 1, col: 1, value: 2, given: true },
+      ],
+    };
+    const segments = createHidatoLineSegments(puzzle, [1, 2]);
 
-    expect(segments).toHaveLength(2);
+    expect(segments).toHaveLength(1);
     expect(segments[0]).toMatchObject({ fromValue: 1, toValue: 2 });
-    segments.forEach((segment) => {
-      expect(segment.width).toBeGreaterThan(0);
-      expect(Number.isFinite(segment.angle)).toBe(true);
-    });
+    expect(segments[0].left).toBe(25);
+    expect(segments[0].top).toBe(25);
+    expect(segments[0].width).toBeCloseTo(70.71, 2);
+    expect(segments[0].angle).toBe(45);
   });
 
   test("scores completed games with mistake and hint penalties", () => {
