@@ -430,11 +430,6 @@ export default function Index() {
                       </Text>
                     </View>
 
-                    <View className="game-footer">
-                      <View className="enter-button">
-                        <Text className="enter-button-text">开始游戏</Text>
-                      </View>
-                    </View>
                   </View>
                 ))}
               </View>

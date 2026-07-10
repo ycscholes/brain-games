@@ -144,8 +144,8 @@ $tf-line: rgba(22, 163, 74, 0.14);
 
 .tf-primary-button {
   margin-top: auto;
-  background: $tf-green-dark;
-  box-shadow: 0 16px 28px rgba(22, 163, 74, 0.26);
+  background: var(--brand-primary);
+  box-shadow: var(--shadow-button);
 }
 
 .tf-primary-button-text,
@@ -299,7 +299,7 @@ $tf-line: rgba(22, 163, 74, 0.14);
 }
 
 .tf-submit-button {
-  background: linear-gradient(135deg, $tf-green 0%, $tf-green-dark 100%);
+  background: var(--brand-primary);
 }
 
 .tf-hint-button {

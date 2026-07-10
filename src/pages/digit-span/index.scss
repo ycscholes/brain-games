@@ -335,8 +335,8 @@ $color-warning: #f59e0b;
 
 .primary-button {
   margin-top: auto;
-  background: linear-gradient(90deg, $color-primary 0%, $color-primary-dark 100%);
-  box-shadow: 0 12px 20px rgba(37, 99, 235, 0.22);
+  background: var(--brand-primary);
+  box-shadow: var(--shadow-button);
 }
 
 .secondary-button {
@@ -345,7 +345,7 @@ $color-warning: #f59e0b;
 
 .submit-button {
   grid-column: 1 / -1;
-  background: linear-gradient(90deg, $color-primary 0%, $color-primary-dark 100%);
+  background: var(--brand-primary);
 }
 
 .submit-button-disabled {

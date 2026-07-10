@@ -115,19 +115,16 @@
 .game-card {
   position: relative;
   overflow: hidden;
-  min-height: 316px;
-  padding: 20px 18px 14px;
+  min-height: 250px;
+  padding: 20px 18px;
   border-radius: 18px;
   background: var(--surface-card);
-  border: 2px solid rgba(35, 50, 56, 0.1);
-  box-shadow:
-    0 16px 28px rgba(35, 50, 56, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .game-card::before {
@@ -136,115 +133,25 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 8px;
-  background: #f97316;
+  height: 6px;
+  background: var(--brand-secondary);
+}
+
+.game-card::after {
+  content: "›";
+  position: absolute;
+  top: 18px;
+  right: 16px;
+  color: var(--brand-primary);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .game-card:active {
-  transform: translateY(3px) scale(0.985);
-  border-color: rgba(249, 115, 22, 0.34);
-  box-shadow:
-    0 8px 16px rgba(35, 50, 56, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
-}
-
-.card-memory {
-  background:
-    radial-gradient(circle at 62% 22%, rgba(15, 159, 143, 0.16), transparent 34%),
-    var(--surface-card);
-}
-
-.card-rps {
-  background:
-    radial-gradient(circle at 34% 24%, rgba(255, 155, 112, 0.2), transparent 32%),
-    var(--surface-card);
-}
-
-.card-mental {
-  background:
-    radial-gradient(circle at 40% 28%, rgba(14, 116, 144, 0.16), transparent 34%),
-    var(--surface-card);
-}
-
-.card-twenty-four {
-  background:
-    radial-gradient(circle at 42% 26%, rgba(22, 163, 74, 0.18), transparent 34%),
-    var(--surface-card);
-}
-
-.card-digit {
-  background:
-    radial-gradient(circle at 38% 26%, rgba(15, 159, 143, 0.16), transparent 34%),
-    var(--surface-card);
-}
-
-.card-mot {
-  background:
-    radial-gradient(circle at 42% 24%, rgba(16, 185, 129, 0.18), transparent 34%),
-    var(--surface-card);
-}
-
-.card-pattern {
-  background:
-    radial-gradient(circle at 50% 30%, rgba(250, 204, 21, 0.2), transparent 34%),
-    var(--surface-card);
-}
-
-.card-number-order {
-  background:
-    radial-gradient(circle at 44% 28%, rgba(20, 184, 166, 0.2), transparent 34%),
-    var(--surface-card);
-}
-
-.card-head-count {
-  background:
-    radial-gradient(circle at 52% 28%, rgba(245, 158, 11, 0.2), transparent 34%),
-    var(--surface-card);
-}
-
-.card-word-scramble {
-  background:
-    radial-gradient(circle at 46% 28%, rgba(249, 115, 22, 0.18), transparent 34%),
-    var(--surface-card);
-}
-
-.card-bird-count {
-  background:
-    radial-gradient(circle at 52% 24%, rgba(15, 159, 143, 0.18), transparent 34%),
-    var(--surface-card);
-}
-
-.card-color-trap {
-  background:
-    radial-gradient(circle at 40% 24%, rgba(225, 77, 67, 0.16), transparent 30%),
-    radial-gradient(circle at 76% 18%, rgba(47, 155, 106, 0.14), transparent 28%),
-    var(--surface-card);
-}
-
-.card-spatial-rotation {
-  background:
-    radial-gradient(circle at 38% 22%, rgba(43, 139, 162, 0.18), transparent 32%),
-    radial-gradient(circle at 76% 24%, rgba(245, 184, 79, 0.16), transparent 30%),
-    var(--surface-card);
-}
-
-.card-hidato {
-  background:
-    linear-gradient(135deg, rgba(15, 118, 110, 0.14) 0%, rgba(245, 158, 11, 0.16) 100%),
-    var(--surface-card);
-}
-
-.card-game-gauntlet {
-  background:
-    radial-gradient(circle at 36% 24%, rgba(249, 115, 22, 0.18), transparent 32%),
-    radial-gradient(circle at 78% 18%, rgba(22, 163, 74, 0.14), transparent 30%),
-    var(--surface-card);
-}
-
-.card-pet {
-  background:
-    radial-gradient(circle at 45% 28%, rgba(250, 204, 21, 0.18), transparent 34%),
-    var(--surface-card);
+  transform: scale(0.985);
+  border-color: rgba(31, 78, 121, 0.4);
+  box-shadow: 0 3px 8px rgba(32, 42, 51, 0.1);
 }
 
 .game-icon {
@@ -276,6 +183,7 @@
 
 .game-copy {
   min-width: 0;
+  padding-right: 28px;
   margin-bottom: 10px;
 }
 
@@ -459,97 +367,4 @@
   color: var(--text-muted);
   font-size: 26px;
   font-weight: 500;
-}
-
-.game-footer {
-  margin-top: auto;
-  padding-top: 14px;
-}
-
-.enter-button {
-  width: 100%;
-  min-height: 66px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow:
-    0 10px 18px rgba(35, 50, 56, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.32);
-}
-
-.enter-button::after {
-  content: "›";
-  margin-left: 10px;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 34px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.card-memory .enter-button {
-  background: linear-gradient(90deg, #0f766e 0%, #0f9f8f 100%);
-}
-
-.card-rps .enter-button {
-  background: linear-gradient(90deg, #ff6a5e 0%, #ff9800 100%);
-}
-
-.card-mental .enter-button {
-  background: linear-gradient(90deg, #0e7490 0%, #0f9f8f 100%);
-}
-
-.card-twenty-four .enter-button {
-  background: linear-gradient(90deg, #15803d 0%, #22c55e 100%);
-}
-
-.card-digit .enter-button {
-  background: linear-gradient(90deg, #0f766e 0%, #233238 100%);
-}
-
-.card-mot .enter-button {
-  background: linear-gradient(90deg, #059669 0%, #10b981 100%);
-}
-
-.card-pattern .enter-button {
-  background: linear-gradient(90deg, #a16207 0%, #f97316 100%);
-}
-
-.card-number-order .enter-button {
-  background: linear-gradient(90deg, #0f766e 0%, #233238 100%);
-}
-
-.card-head-count .enter-button {
-  background: linear-gradient(90deg, #b45309 0%, #233238 100%);
-}
-
-.card-word-scramble .enter-button {
-  background: linear-gradient(90deg, #c2410c 0%, #f97316 100%);
-}
-
-.card-bird-count .enter-button {
-  background: linear-gradient(90deg, #0f766e 0%, #22c55e 100%);
-}
-
-.card-color-trap .enter-button {
-  background: linear-gradient(90deg, #e14d43 0%, #2f9b6a 100%);
-}
-
-.card-spatial-rotation .enter-button {
-  background: linear-gradient(90deg, #176378 0%, #f0b84f 100%);
-}
-
-.card-hidato .enter-button {
-  background: linear-gradient(90deg, #0f766e 0%, #f59e0b 100%);
-}
-
-.card-game-gauntlet .enter-button {
-  background: linear-gradient(90deg, #f97316 0%, #16a34a 100%);
-}
-
-.enter-button-text {
-  font-size: 30px;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: 0;
 }

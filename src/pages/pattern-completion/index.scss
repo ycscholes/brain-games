@@ -805,10 +805,8 @@ $color-warning: #d97706;
 }
 
 .primary-button {
-  background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
-  box-shadow:
-    0 6px 14px rgba(234, 88, 12, 0.22),
-    0 14px 28px rgba(234, 88, 12, 0.18);
+  background: var(--brand-primary);
+  box-shadow: var(--shadow-button);
 }
 
 .secondary-button {

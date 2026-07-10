@@ -465,24 +465,24 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  background: linear-gradient(180deg, #d6f7a6 0%, #88c85a 100%);
+  background: var(--brand-primary);
   transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
 }
 
 .adopt-button,
 .confirm-button {
-  background: linear-gradient(180deg, #ffcf62 0%, #f29b38 100%);
+  background: var(--brand-secondary);
 }
 
 .stage-button-icon {
-  color: #294b1f;
+  color: #ffffff;
   font-size: 24px;
   font-weight: 900;
   line-height: 1;
 }
 
 .stage-button-text {
-  color: #294b1f;
+  color: #ffffff;
   font-size: 21px;
   font-weight: 900;
 }
@@ -490,7 +490,7 @@
 .adopt-button .stage-button-icon,
 .confirm-button .stage-button-text,
 .adopt-button .stage-button-text {
-  color: #4a2d18;
+  color: #ffffff;
 }
 
 .button-disabled {
