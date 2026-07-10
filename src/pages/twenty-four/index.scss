@@ -299,7 +299,7 @@ $tf-line: rgba(22, 163, 74, 0.14);
 }
 
 .tf-submit-button {
-  background: var(--brand-primary);
+  background: linear-gradient(135deg, $tf-green 0%, $tf-green-dark 100%);
 }
 
 .tf-hint-button {

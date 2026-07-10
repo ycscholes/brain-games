@@ -181,8 +181,8 @@ $page: #f0fdfa;
 }
 
 .primary-button {
-  background: var(--brand-primary);
-  box-shadow: var(--shadow-button);
+  background: linear-gradient(135deg, $primary 0%, $primary-dark 100%);
+  box-shadow: 0 12px 28px rgba(15, 118, 110, 0.24);
 }
 
 .secondary-button {

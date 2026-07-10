@@ -461,14 +461,17 @@ $color-wrong: #EF4444;
 }
 
 .start-button {
-  background: var(--brand-primary);
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 50%, #0369A1 100%);
   padding: 18px 28px;
   border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-button);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow:
+    0 4px 6px rgba(14, 165, 233, 0.2),
+    0 10px 20px rgba(14, 165, 233, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:active {
     transform: scale(0.98);
@@ -774,8 +777,8 @@ $color-wrong: #EF4444;
 }
 
 .primary-button {
-  background: var(--brand-primary);
-  box-shadow: var(--shadow-button);
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
+  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.35);
 }
 
 .secondary-button {

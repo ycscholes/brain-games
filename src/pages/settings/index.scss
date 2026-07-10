@@ -151,7 +151,7 @@
 }
 
 .primary-action {
-  background: var(--brand-primary);
+  background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
   box-shadow: var(--shadow-button);
 }
 
@@ -174,5 +174,5 @@
 }
 
 .danger-action {
-  background: var(--danger);
+  background: linear-gradient(90deg, #dc2626 0%, #f97316 100%);
 }
