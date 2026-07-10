@@ -14,6 +14,7 @@ import {
   saveAppSettings,
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
+import { applyAudioSettings, playTap } from "../../services/audio/audioFeedbackService";
 import "./index.scss";
 
 interface DashboardSnapshot {
@@ -46,11 +47,15 @@ export default function SettingsPage() {
   useUserDataChange(refresh);
   useCloudSyncStatusChange(refresh);
 
-  const handleToggle = (field: "soundEnabled" | "vibrationEnabled" | "reducedMotion") => {
+  const handleToggle = (field: "soundEnabled" | "musicEnabled" | "vibrationEnabled" | "reducedMotion") => {
     const nextSettings = saveAppSettings({
       [field]: !settings[field],
       privacyAccepted: true,
     });
+    applyAudioSettings(nextSettings);
+    if (field !== "soundEnabled") {
+      playTap();
+    }
     setSettings(nextSettings);
   };
 
@@ -117,9 +122,16 @@ export default function SettingsPage() {
         <View className="setting-row">
           <View>
             <Text className="setting-title">音效反馈</Text>
-            <Text className="setting-desc">为后续统一接入声音和结算提示预留开关。</Text>
+            <Text className="setting-desc">控制点击、答题结果和训练完成提示音。</Text>
           </View>
           <Switch checked={settings.soundEnabled} onChange={() => handleToggle("soundEnabled")} color="#4f46e5" />
+        </View>
+        <View className="setting-row">
+          <View>
+            <Text className="setting-title">背景音乐</Text>
+            <Text className="setting-desc">仅在首页和训练准备阶段播放低音量专注音乐。</Text>
+          </View>
+          <Switch checked={settings.musicEnabled} onChange={() => handleToggle("musicEnabled")} color="#4f46e5" />
         </View>
         <View className="setting-row">
           <View>

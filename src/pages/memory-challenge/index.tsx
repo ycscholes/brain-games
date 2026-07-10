@@ -12,6 +12,8 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playTap } from "../../services/audio/audioFeedbackService";
 import { buildPetDisplayPool } from "../pet/petDisplayPool";
 import {
   addMemoryChallengeRoundScore,
@@ -172,6 +174,7 @@ export default function MemoryChallenge() {
   const presetN: MemoryChallengeN = gauntletPreset?.memoryN === "3" ? 3 : 1;
 
   const [gameState, setGameState] = useState<GameState>("start");
+  useAmbientMusic(gameState === "start");
   const [mode, setMode] = useState<MemoryChallengeMode>(presetMode);
   const [memoryN, setMemoryN] = useState<MemoryChallengeN>(presetN);
   const [score, setScore] = useState(0);
@@ -316,6 +319,7 @@ export default function MemoryChallenge() {
   }, [clearTimers, schedule, startPlaying]);
 
   const startGame = useCallback(async () => {
+    playTap();
     if (isLoadingPets) return;
 
     if (mode !== "pet") {

@@ -51,6 +51,40 @@ view {
   -webkit-tap-highlight-color: transparent;
 }
 
+.audio-pressable,
+.game-card,
+[class*="primary-button"],
+[class*="secondary-button"],
+[class*="start-button"],
+[class*="primary-action"],
+[class*="tool-button"],
+[class*="option"],
+[class*="answer"],
+[class*="node"] {
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+
+.audio-pressable:active,
+.game-card:active,
+[class*="primary-button"]:active,
+[class*="secondary-button"]:active,
+[class*="start-button"]:active,
+[class*="primary-action"]:active,
+[class*="tool-button"]:active,
+[class*="option"]:active,
+[class*="answer"]:active,
+[class*="node"]:active {
+  transform: scale(0.98);
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.14);
+  opacity: 0.92;
+}
+
+.audio-pressable-static,
+.audio-pressable-static:active {
+  transform: none;
+  transition: none;
+}
+
 .floating-start-action {
   position: fixed;
   left: 24px;

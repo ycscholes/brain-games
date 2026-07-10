@@ -13,6 +13,8 @@ import {
   type GameGauntletSession,
 } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playTap } from "../../services/audio/audioFeedbackService";
 import "./index.scss";
 
 type PageStatus = "ready" | "active" | "complete";
@@ -36,6 +38,7 @@ export default function GameGauntlet() {
   const [completedSession, setCompletedSession] = useState<GameGauntletSession | null>(null);
   const [awardedPoints, setAwardedPoints] = useState(0);
   const [status, setStatus] = useState<PageStatus>("ready");
+  useAmbientMusic(status === "ready");
   const pendingNavigationRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAutoEnteredLegKeyRef = useRef("");
 
@@ -47,6 +50,7 @@ export default function GameGauntlet() {
   };
 
   const enterLeg = (nextSession: GameGauntletSession) => {
+    playTap();
     clearPendingNavigation();
     const legIndex = getCurrentLegIndex(nextSession);
     const gameId = nextSession.gameIds[legIndex];
@@ -127,6 +131,7 @@ export default function GameGauntlet() {
   });
 
   const startGauntlet = () => {
+    playTap();
     if (status === "complete") {
       const nextSession = startGameGauntletSession(createGameGauntletSession());
       lastAutoEnteredLegKeyRef.current = "";

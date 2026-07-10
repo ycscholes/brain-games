@@ -10,6 +10,8 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import "./index.scss";
 
 type Phase = "start" | "preview" | "tracking" | "selecting" | "finished";
@@ -159,6 +161,7 @@ export default function MultipleObjectTracking() {
   const trackStartTimeRef = useRef(0);
 
   const [phase, setPhase] = useState<Phase>("start");
+  useAmbientMusic(phase === "start");
   const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [score, setScore] = useState(0);
@@ -359,6 +362,7 @@ export default function MultipleObjectTracking() {
   };
 
   const startGame = () => {
+    playTap();
     setScore(0);
     setIsNewBest(false);
     startRound(INITIAL_TARGET_COUNT[rewardDifficulty], BASE_SPEED + (rewardDifficulty === "hard" ? HARD_SPEED_BONUS : 0));
@@ -430,8 +434,10 @@ export default function MultipleObjectTracking() {
     const targetSet = new Set(targetIds);
     const hitCount = selectedIds.filter((id) => targetSet.has(id)).length;
     const allCorrect = hitCount === targetCount;
+    playTap();
 
     if (allCorrect) {
+      playCorrect();
       const nextScore = score + 1;
       const nextTargetCount = Math.min(MAX_TARGET_COUNT, targetCount + 1);
       const nextSpeed = Number((speed + SPEED_STEP).toFixed(2));
@@ -449,6 +455,8 @@ export default function MultipleObjectTracking() {
     }
 
     setRoundMessage("本轮未能完整锁定全部目标");
+    playWrong();
+    playComplete();
     const awardedPoints = getAwardedPoints("multiple-object-tracking", score, rewardDifficulty);
     if (completeGauntletLegIfNeeded({
       gameId: "multiple-object-tracking",

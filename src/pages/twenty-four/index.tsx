@@ -8,6 +8,8 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import {
   evaluateExpression,
   GAME_SECONDS,
@@ -45,6 +47,7 @@ export default function TwentyFour() {
 
   const [round, setRound] = useState(() => generateRound());
   const [phase, setPhase] = useState<Phase>("start");
+  useAmbientMusic(phase === "start");
   const [tokens, setTokens] = useState<Token[]>([]);
   const [score, setScore] = useState(0);
   const [solvedCount, setSolvedCount] = useState(0);
@@ -95,6 +98,7 @@ export default function TwentyFour() {
 
   const finishGame = useCallback(() => {
     clearTimer();
+    playComplete();
     const finalScore = scoreRef.current;
     const awardedPoints = getAwardedPoints("twenty-four", finalScore, REWARD_DIFFICULTY);
     if (completeGauntletLegIfNeeded({
@@ -148,6 +152,7 @@ export default function TwentyFour() {
   }, [finishGame, phase]);
 
   const startGame = () => {
+    playTap();
     clearTimer();
     setRound(generateRound());
     setTokens([]);
@@ -213,6 +218,7 @@ export default function TwentyFour() {
   };
 
   const submitExpression = () => {
+    playTap();
     if (usedCardIndexes.size !== round.cards.length) {
       setFeedback("需要用完四张牌");
       return;
@@ -226,6 +232,7 @@ export default function TwentyFour() {
 
     const isCorrect = Math.abs(result - 24) < EPSILON;
     if (isCorrect) {
+      playCorrect();
       const roundPoints = getPointsForAttempt(solvedCount, isCorrect, hintUsed);
       if (roundPoints > 0) {
         setScore((current) => current + roundPoints);
@@ -238,6 +245,7 @@ export default function TwentyFour() {
       return;
     }
 
+    playWrong();
     setFeedback(`当前结果 ${Number(result.toFixed(2))}，还不是 24`);
   };
 

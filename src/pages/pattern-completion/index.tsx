@@ -10,6 +10,8 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import {
   generatePatternSession,
   PATTERN_HINTS_PER_SESSION,
@@ -135,6 +137,7 @@ export default function PatternCompletion() {
   const isGauntletPreset = gauntletPreset !== null;
 
   const [phase, setPhase] = useState<Phase>("start");
+  useAmbientMusic(phase === "start");
   const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [session, setSession] = useState<PatternQuestion[]>([]);
@@ -225,6 +228,7 @@ export default function PatternCompletion() {
 
       finishRecordedRef.current = true;
       clearTicker();
+      playComplete();
 
       const settledElapsedMs = Date.now() - startTimeRef.current;
       const awardedPoints = getAwardedPoints("pattern-completion", settledFinalScore, rewardDifficulty);
@@ -274,6 +278,7 @@ export default function PatternCompletion() {
   };
 
   const startGame = () => {
+    playTap();
     clearTicker();
 
     const nextSession = generatePatternSession(rewardDifficulty);
@@ -332,6 +337,8 @@ export default function PatternCompletion() {
     }
 
     const isCorrect = option.id === currentQuestion.answer.id;
+    playTap();
+    isCorrect ? playCorrect() : playWrong();
     const questionElapsedMs = Date.now() - questionStartedAtRef.current;
     const scoreResult = scorePatternQuestion({
       isCorrect,

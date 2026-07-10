@@ -21,7 +21,7 @@
 
 ## 素材和版权
 
-背景音乐使用 KiluaBoy 在 OpenGameArt 发布的 CC0 曲目《Sunset Walk / Ambient / Quiet / Sweet / Loop》。保留来源、许可证、下载日期和转换参数；从 OGG 转为 96kbps MP3，以兼容 iOS 与 Android。轻触、正确、错误和完成音效由项目制作，均为低动态、无语言内容的短提示音。
+背景音乐使用 KiluaBoy 在 OpenGameArt 发布的 CC0 曲目《Sunset Walk / Ambient / Quiet / Sweet / Loop》。保留来源、许可证、下载日期和转换参数；从 OGG 转为 96kbps AAC/M4A，以兼容 iOS 与 Android。轻触、正确、错误和完成音效由项目制作，均为低动态、无语言内容的短提示音。
 
 ## 验收
 

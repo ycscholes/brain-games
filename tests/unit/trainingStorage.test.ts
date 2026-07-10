@@ -141,10 +141,22 @@ describe("trainingStorage", () => {
 
   test("reads and updates app settings", () => {
     expect(readAppSettings().privacyAccepted).toBe(false);
+    expect(readAppSettings().musicEnabled).toBe(true);
 
-    const saved = saveAppSettings({ privacyAccepted: true, reducedMotion: true });
+    const saved = saveAppSettings({ privacyAccepted: true, reducedMotion: true, musicEnabled: false });
     expect(saved.privacyAccepted).toBe(true);
     expect(readAppSettings().reducedMotion).toBe(true);
+    expect(readAppSettings().musicEnabled).toBe(false);
+  });
+
+  test("adds the music setting while reading legacy settings", () => {
+    mockStorage.set("app_settings_v1", JSON.stringify({ version: 1, soundEnabled: false }));
+
+    expect(readAppSettings()).toMatchObject({
+      version: 2,
+      soundEnabled: false,
+      musicEnabled: true,
+    });
   });
 
   test("computes dashboard stats from recent records", () => {

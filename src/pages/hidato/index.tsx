@@ -10,6 +10,8 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import {
   HIDATO_CONFIG,
   applyHidatoCellClick,
@@ -47,6 +49,7 @@ export default function HidatoPage() {
   const isGauntletPreset = gauntletPreset !== null;
 
   const [phase, setPhase] = useState<Phase>("start");
+  useAmbientMusic(phase === "start");
   const [difficulty, setDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [puzzle, setPuzzle] = useState<HidatoPuzzle | null>(null);
@@ -119,6 +122,7 @@ export default function HidatoPage() {
 
     finishedRef.current = true;
     clearTransientTimers();
+    playComplete();
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextScore = scoreHidatoGame({
@@ -166,6 +170,7 @@ export default function HidatoPage() {
   }, [best, clearTransientTimers, difficulty, puzzle]);
 
   const startGame = useCallback(() => {
+    playTap();
     clearTransientTimers();
     const nextPuzzle = createHidatoPuzzle(difficulty);
     const nextState = createInitialClickState();
@@ -218,6 +223,8 @@ export default function HidatoPage() {
     if (!puzzle || phase !== "playing" || finishedRef.current) return;
 
     const result = applyHidatoCellClick(clickState, cell, puzzle.total);
+    playTap();
+    result.correct ? playCorrect() : playWrong();
     setClickState(result.state);
 
     if (!result.correct) {

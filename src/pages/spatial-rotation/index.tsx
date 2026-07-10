@@ -10,6 +10,8 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import {
   SPATIAL_ROTATION_GRID_SIZE,
   SPATIAL_ROTATION_TOTAL_PUZZLES,
@@ -60,6 +62,7 @@ export default function SpatialRotation() {
   const isGauntletPreset = gauntletPreset !== null;
 
   const [phase, setPhase] = useState<Phase>("start");
+  useAmbientMusic(phase === "start");
   const [difficulty, setDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [puzzles, setPuzzles] = useState<SpatialRotationPuzzle[]>([]);
@@ -150,6 +153,7 @@ export default function SpatialRotation() {
 
     finishedRef.current = true;
     clearTimers();
+    playComplete();
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextAwardedPoints = getAwardedPoints("spatial-rotation", finalScore, difficulty);
@@ -204,6 +208,10 @@ export default function SpatialRotation() {
       answerMs: Date.now() - puzzleStartedAtRef.current,
       currentCombo: comboRef.current,
     });
+    if (!timedOut) {
+      playTap();
+      result.correct ? playCorrect() : playWrong();
+    }
     const nextScore = scoreRef.current + result.score;
     const nextCombo = result.correct ? comboRef.current + 1 : 0;
     const nextCorrectPuzzles = correctPuzzlesRef.current + (result.correct ? 1 : 0);
@@ -242,6 +250,7 @@ export default function SpatialRotation() {
   }, [clearTimers, puzzles, schedule, submitAnswer]);
 
   const startGame = () => {
+    playTap();
     clearTimers();
     const nextPuzzles = createSpatialRotationSession(difficulty);
     finishedRef.current = false;

@@ -6,6 +6,14 @@ import { ensureCloudReady } from "../services/user-data/cloud/cloudFunctionsClie
 import remoteAssetManifest from "../../config/remote-assets.json";
 
 const PET_ASSET_BASE_PATH = `assets/${remoteAssetManifest.petAssetVersion}/pets`;
+const AUDIO_ASSET_BASE_PATH = `assets/audio/${remoteAssetManifest.audioAssetVersion}`;
+const AUDIO_ASSET_PATHS = {
+  ambient: `${AUDIO_ASSET_BASE_PATH}/focus-ambient.m4a`,
+  tap: `${AUDIO_ASSET_BASE_PATH}/tap.m4a`,
+  correct: `${AUDIO_ASSET_BASE_PATH}/correct.m4a`,
+  wrong: `${AUDIO_ASSET_BASE_PATH}/wrong.m4a`,
+  complete: `${AUDIO_ASSET_BASE_PATH}/complete.m4a`,
+} as const;
 const PET_SPRITE_PATHS: Record<PetSkin, Record<PetSpriteMood, string>> = {
   cat: {
     idle: `${PET_ASSET_BASE_PATH}/cat-idle.png`,
@@ -98,6 +106,8 @@ export type PetSpriteRemoteAsset = {
   skin: PetSkin;
   mood: PetSpriteMood;
 };
+
+export type AudioAssetId = keyof typeof AUDIO_ASSET_PATHS;
 
 export type RemoteAssetPreloadResult = {
   loaded: number;
@@ -312,6 +322,13 @@ export async function resolvePetSpriteUrl(
   options?: ResolveCloudFileUrlOptions,
 ): Promise<string> {
   return resolveCloudFileUrl(PET_SPRITE_PATHS[skin][mood], options);
+}
+
+export async function resolveAudioAssetUrl(
+  assetId: AudioAssetId,
+  options?: ResolveCloudFileUrlOptions,
+): Promise<string> {
+  return resolveCloudFileUrl(AUDIO_ASSET_PATHS[assetId], options);
 }
 
 export function resolveCachedPetSpriteUrl(skin: PetSkin, mood: PetSpriteMood): string {

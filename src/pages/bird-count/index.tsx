@@ -12,6 +12,8 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import PetSprite from "../pet/components/PetSprite";
 import type { PetSpriteMood, PetSpriteSize } from "../pet/components/PetSprite/types";
 import type { PetSkin } from "../pet/types";
@@ -226,6 +228,7 @@ export default function FarmCount() {
 
   const [mode, setMode] = useState<FarmCountMode>(presetMode);
   const [phase, setPhase] = useState<Phase>("start");
+  useAmbientMusic(phase === "start");
   const [difficulty, setDifficulty] = useState<TrainingDifficulty>(presetDifficulty);
   const [yardDifficulty, setYardDifficulty] = useState<HeadCountDifficulty>(presetDifficulty);
   const [speedDifficulty, setSpeedDifficulty] = useState<HeadCountSpeedDifficulty>(presetYardSpeed);
@@ -364,6 +367,7 @@ export default function FarmCount() {
 
     finishedRef.current = true;
     clearTimers();
+    playComplete();
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextAwardedPoints = getAwardedPoints("bird-count", finalScore, difficulty);
@@ -409,6 +413,7 @@ export default function FarmCount() {
 
     finishedRef.current = true;
     clearTimers();
+    playComplete();
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextRewardDifficulty = getHeadCountRewardDifficulty(yardDifficulty, speedDifficulty);
@@ -541,6 +546,7 @@ export default function FarmCount() {
   };
 
   const startGame = () => {
+    playTap();
     const currentPetDisplayPool = refreshPetSkinPool();
     if (mode === "yard") {
       startYardGame();
@@ -575,6 +581,8 @@ export default function FarmCount() {
       answerMs: Date.now() - answerStartedAtRef.current,
       currentCombo: combo,
     });
+    playTap();
+    result.correct ? playCorrect() : playWrong();
     const nextScore = score + result.score;
     const nextCombo = result.correct ? combo + 1 : 0;
     const nextCorrectQuestions = correctQuestions + (result.correct ? 1 : 0);
@@ -608,6 +616,8 @@ export default function FarmCount() {
       answerMs: Date.now() - answerStartedAtRef.current,
       currentCombo: combo,
     });
+    playTap();
+    result.correct ? playCorrect() : playWrong();
     const nextScore = score + result.score;
     const nextCombo = result.correct ? combo + 1 : 0;
     const nextCorrectQuestions = correctQuestions + (result.correct ? 1 : 0);

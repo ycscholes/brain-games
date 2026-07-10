@@ -11,6 +11,8 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playTap } from "../../services/audio/audioFeedbackService";
 import "./index.scss";
 
 type GameState = "start" | "playing" | "gameover";
@@ -51,6 +53,7 @@ export default function RockPaperScissors() {
   const presetDifficulty = gauntletPreset?.mode === "3" || gauntletPreset?.difficulty === "hard" ? 3 : 1;
 
   const [gameState, setGameState] = useState<GameState>("start");
+  useAmbientMusic(gameState === "start");
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
@@ -146,6 +149,7 @@ export default function RockPaperScissors() {
   };
 
   const startGame = () => {
+    playTap();
     setScore(0);
     setStreak(0);
     setBestStreak(0);

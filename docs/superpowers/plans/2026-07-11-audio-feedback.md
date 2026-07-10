@@ -39,13 +39,13 @@
 ### Task 3: Versioned assets and audit trail
 
 **Files:**
-- Create: `asset-backups/cloudbase-audio/v1/*.mp3`
+- Create: `asset-backups/cloudbase-audio/v1/*.m4a`
 - Create: `asset-backups/cloudbase-audio/README.md`
 - Create: `docs/third-party-audio.md`
 - Create: `scripts/sync-cloudbase-audio.sh`
 - Modify: `package.json`
 
-- [ ] Add one 96kbps background loop and four original short MP3 cues, preserving the source and conversion metadata outside the app bundle.
+- [ ] Add one 96kbps background loop and four original short AAC/M4A cues, preserving the source and conversion metadata outside the app bundle.
 - [ ] Add `audio:check` and `audio:upload`; upload files to `assets/audio/v1/`, requiring the same CloudBase environment variables as image upload.
 - [ ] Record the CC0 source URL, license, file hash and conversion command in the license ledger.
 

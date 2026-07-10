@@ -62,6 +62,7 @@ export interface DashboardStats {
 export interface AppSettings {
   version: number;
   soundEnabled: boolean;
+  musicEnabled: boolean;
   vibrationEnabled: boolean;
   reducedMotion: boolean;
   onboardingCompleted: boolean;
@@ -73,7 +74,7 @@ const TRAINING_STORAGE_KEY = "training_records_v1";
 const SETTINGS_STORAGE_KEY = "app_settings_v1";
 const SCORING_VERSION_KEY = "scoring_version";
 const MAX_RECORDS = 120;
-const SETTINGS_VERSION = 1;
+const SETTINGS_VERSION = 2;
 const SCORING_VERSION = 2;
 export const MAX_POINTS_PER_SESSION = 40;
 export const HARD_MAX_POINTS_PER_SESSION = 60;
@@ -147,6 +148,7 @@ function getDefaultSettings(): AppSettings {
   return {
     version: SETTINGS_VERSION,
     soundEnabled: true,
+    musicEnabled: true,
     vibrationEnabled: true,
     reducedMotion: false,
     onboardingCompleted: false,

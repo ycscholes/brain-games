@@ -20,6 +20,8 @@ import {
 import { readRecommendedGame } from "../../utils/nextRecommendation";
 import { preloadGameAssets, type AssetPreloadProgress } from "../../utils/resourcePreloader";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playTap } from "../../services/audio/audioFeedbackService";
 import { MAX_HUNGER, PetData, PetStorageData } from "../../pages/pet/types";
 import PetSprite from "../pet/components/PetSprite";
 import type { PetSpriteMood } from "../pet/components/PetSprite/types";
@@ -105,6 +107,7 @@ function ensureHomeAssetsPreloaded() {
 
 export default function Index() {
   usePageShare("pages/index/index");
+  useAmbientMusic(true);
 
   const [games, setGames] = useState<GameItem[]>([]);
   const [dashboard, setDashboard] = useState<DashboardView>({
@@ -125,6 +128,7 @@ export default function Index() {
   const homePetMotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const navigateTo = (url: string) => {
+    playTap();
     Taro.navigateTo({ url });
   };
 

@@ -10,6 +10,8 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import {
   createNumberOrderSession,
   getRouteValues,
@@ -39,6 +41,7 @@ export default function NumberOrder() {
   const isGauntletPreset = gauntletPreset !== null;
 
   const [phase, setPhase] = useState<Phase>("start");
+  useAmbientMusic(phase === "start");
   const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [questions, setQuestions] = useState<NumberOrderQuestion[]>([]);
@@ -116,6 +119,7 @@ export default function NumberOrder() {
 
     finishedRef.current = true;
     clearTimers();
+    playComplete();
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextAwardedPoints = getAwardedPoints("number-order", finalScore, rewardDifficulty);
@@ -180,6 +184,7 @@ export default function NumberOrder() {
       tappedIds: nextTappedIds,
       currentCombo: combo,
     });
+    result.allCorrect ? playCorrect() : playWrong();
     const nextScore = score + result.score;
     const nextCombo = result.allCorrect ? combo + 1 : 0;
     const nextBestCombo = Math.max(bestCombo, nextCombo);
@@ -216,6 +221,7 @@ export default function NumberOrder() {
   ]);
 
   const startGame = () => {
+    playTap();
     clearTimers();
     const nextQuestions = createNumberOrderSession(rewardDifficulty);
     finishedRef.current = false;
@@ -268,6 +274,7 @@ export default function NumberOrder() {
       return;
     }
 
+    playTap();
     const nextTappedIds = [...tappedIds, pointId];
 
     if (!isCorrectPathPrefix(currentQuestion, nextTappedIds) || nextTappedIds.length === currentQuestion.answerIds.length) {

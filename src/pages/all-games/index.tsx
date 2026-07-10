@@ -8,6 +8,7 @@ import {
 } from "../../config/gameCatalog";
 import { readTrainingSummary } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
+import { playTap } from "../../services/audio/audioFeedbackService";
 import "./index.scss";
 
 interface GameListItem extends GameCatalogItem {
@@ -41,6 +42,7 @@ export default function AllGames() {
   });
 
   const navigateTo = (url: string) => {
+    playTap();
     Taro.navigateTo({ url });
   };
 

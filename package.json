@@ -21,6 +21,8 @@
     "build:ci": "npm run build:weapp",
     "assets:check": "bash scripts/sync-cloudbase-images.sh --check",
     "assets:upload": "bash scripts/sync-cloudbase-images.sh --upload",
+    "audio:check": "bash scripts/sync-cloudbase-audio.sh --check",
+    "audio:upload": "bash scripts/sync-cloudbase-audio.sh --upload",
     "deploy:cloudfunctions": "bash scripts/deploy-cloudfunctions.sh",
     "dev:weapp": "npm run build:weapp -- --watch",
     "dev:h5": "npm run build:h5 -- --watch",

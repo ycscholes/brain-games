@@ -10,6 +10,8 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import "./index.scss";
 
 type Phase = "start" | "showing" | "input" | "finished";
@@ -37,6 +39,7 @@ export default function DigitSpan() {
   const isGauntletPreset = gauntletPreset !== null;
 
   const [phase, setPhase] = useState<Phase>("start");
+  useAmbientMusic(phase === "start");
   const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [score, setScore] = useState(0);
@@ -78,6 +81,7 @@ export default function DigitSpan() {
   useEffect(() => {
     return () => {
       clearTimers();
+      playComplete();
     };
   }, []);
 
@@ -147,6 +151,7 @@ export default function DigitSpan() {
   }, [rewardDifficulty]);
 
   const startGame = () => {
+    playTap();
     setScore(0);
     setIsNewBest(false);
     startRound(INITIAL_LENGTH[rewardDifficulty]);
@@ -188,12 +193,14 @@ export default function DigitSpan() {
     }
 
     if (inputValue === sequence) {
+      playCorrect();
       const nextScore = roundLength;
       setScore(nextScore);
       startRound(roundLength + 1);
       return;
     }
 
+    playWrong();
     const finalScore = roundLength > INITIAL_LENGTH[rewardDifficulty] ? roundLength - 1 : 0;
     finishGame(finalScore);
   };

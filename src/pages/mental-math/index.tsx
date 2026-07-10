@@ -9,6 +9,8 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playTap } from "../../services/audio/audioFeedbackService";
 import {
   CUSTOM_MATH_STAGE_ID,
   CUSTOM_OPERATION_OPTIONS,
@@ -46,6 +48,7 @@ export default function MentalMath() {
     : DEFAULT_MATH_STAGE_ID;
 
   const [gameState, setGameState] = useState<GameState>("start");
+  useAmbientMusic(gameState === "start");
   const [gameMode, setGameMode] = useState<GameMode>(gauntletPreset?.mode === "death" ? "death" : "timed");
   const [selectedStageId, setSelectedStageId] = useState<MathStageId>(presetStageId);
   const [customConfig, setCustomConfig] = useState(DEFAULT_CUSTOM_MATH_CONFIG);
@@ -260,6 +263,7 @@ useDidShow(() => {
 
 // 开始新游戏
 const startGame = () => {
+  playTap();
   clearAllTimers();
   setTimeLeft(30);
   setCorrectCount(0);

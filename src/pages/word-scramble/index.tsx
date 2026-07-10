@@ -10,6 +10,8 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import {
   createWordScrambleSession,
   scoreWordScrambleQuestion,
@@ -35,6 +37,7 @@ export default function WordScramble() {
   const isGauntletPreset = gauntletPreset !== null;
 
   const [phase, setPhase] = useState<Phase>("start");
+  useAmbientMusic(phase === "start");
   const [difficulty, setDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
   const [questions, setQuestions] = useState<WordScrambleQuestion[]>([]);
@@ -141,6 +144,7 @@ export default function WordScramble() {
 
     finishedRef.current = true;
     clearTimers();
+    playComplete();
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextAwardedPoints = getAwardedPoints("word-scramble", finalScore, difficulty);
@@ -203,6 +207,7 @@ export default function WordScramble() {
   };
 
   const startGame = () => {
+    playTap();
     clearTimers();
     const nextQuestions = createWordScrambleSession(difficulty);
     finishedRef.current = false;
@@ -258,6 +263,10 @@ export default function WordScramble() {
       answerMs: Date.now() - questionStartedAtRef.current,
       currentCombo: comboRef.current,
     });
+    if (!timedOut) {
+      playTap();
+      result.correct ? playCorrect() : playWrong();
+    }
     const nextScore = scoreRef.current + result.score;
     const nextCombo = result.correct ? comboRef.current + 1 : 0;
     const nextCorrectQuestions = correctQuestionsRef.current + (result.correct ? 1 : 0);

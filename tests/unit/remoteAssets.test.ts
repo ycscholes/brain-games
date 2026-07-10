@@ -22,6 +22,7 @@ const CAT_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/cat-idle.p
 const GECKO_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/gecko-idle.png";
 const TURTLE_CUDDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/turtle-cuddle.png";
 const BISCUIT_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/food-biscuit.png";
+const TAP_AUDIO_FILE_ID = "cloud://test-env.test-bucket/assets/audio/v1/tap.m4a";
 const GENERATED_FOOD_IMAGE_IDS = [
   "biscuit",
   "salmon",
@@ -209,6 +210,22 @@ describe("remoteAssets", () => {
     expect(JSON.parse(mockStorage.get(CACHE_KEY) || "{}").assets[CAT_IDLE_FILE_ID]).toEqual({
       permanent: true,
       url: "https://fresh.example/cat-idle.png",
+    });
+  });
+
+  test("resolves the versioned remote tap audio path", async () => {
+    mockGetTempFileURL.mockResolvedValue({
+      fileList: [{ tempFileURL: "https://fresh.example/tap.m4a" }],
+    });
+    mockEnsureCloudReady.mockResolvedValue({
+      getTempFileURL: mockGetTempFileURL,
+    });
+
+    const { resolveAudioAssetUrl } = await import("../../src/config/remoteAssets");
+
+    await expect(resolveAudioAssetUrl("tap")).resolves.toBe("https://fresh.example/tap.m4a");
+    expect(mockGetTempFileURL).toHaveBeenCalledWith({
+      fileList: [{ fileID: TAP_AUDIO_FILE_ID, maxAge: TEMP_URL_MAX_AGE_SECONDS }],
     });
   });
 
