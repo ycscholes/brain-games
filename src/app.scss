@@ -6,29 +6,33 @@ page,
 :root,
 body,
 .taro_page {
-  --bg-page: #f7f5f1;
-  --bg-page-start: #f7f5f1;
-  --bg-page-end: #efede8;
-  --surface-card: #ffffff;
-  --surface-card-strong: #ffffff;
-  --surface-muted: #f2f1ee;
-  --border-soft: #dedbd4;
-  --border-inverse: #e9e6df;
-  --text-primary: #202a33;
-  --text-secondary: #4d5963;
-  --text-muted: #6b7280;
-  --brand-primary: #1f4e79;
-  --brand-primary-dark: #173d60;
-  --brand-secondary: #b7791f;
-  --brand-warm: #b7791f;
+  --bg-page: #f8fafc;
+  --bg-page-start: #fbfbfd;
+  --bg-page-end: #f1f5f9;
+  --surface-card: rgba(255, 255, 255, 0.82);
+  --surface-card-strong: rgba(255, 255, 255, 0.92);
+  --surface-muted: rgba(248, 250, 252, 0.94);
+  --border-soft: rgba(148, 163, 184, 0.16);
+  --border-inverse: rgba(255, 255, 255, 0.84);
+  --text-primary: #111827;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --brand-primary: #4f46e5;
+  --brand-primary-dark: #3730a3;
+  --brand-secondary: #0ea5e9;
+  --brand-warm: #f97316;
   --success: #16a34a;
   --warning: #d97706;
   --danger: #dc2626;
   --radius-card: 24px;
   --radius-control: 20px;
-  --shadow-card: 0 8px 18px rgba(32, 42, 51, 0.08);
-  --shadow-button: 0 6px 12px rgba(31, 78, 121, 0.18);
-  --page-gradient: var(--bg-page);
+  --shadow-card: 0 16px 30px rgba(148, 163, 184, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  --shadow-button: 0 12px 24px rgba(79, 70, 229, 0.24), 0 4px 10px rgba(14, 165, 233, 0.14);
+  --page-gradient:
+    radial-gradient(circle at 84% 6%, rgba(249, 115, 22, 0.14), transparent 24%),
+    radial-gradient(circle at 16% 28%, rgba(79, 70, 229, 0.1), transparent 24%),
+    radial-gradient(circle at 74% 58%, rgba(14, 165, 233, 0.1), transparent 26%),
+    linear-gradient(180deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
 
   min-height: 100vh;
   color: var(--text-primary);
