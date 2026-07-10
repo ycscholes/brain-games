@@ -154,6 +154,105 @@
   box-shadow: 0 3px 8px rgba(32, 42, 51, 0.1);
 }
 
+.card-memory {
+  background:
+    radial-gradient(circle at 62% 22%, rgba(15, 159, 143, 0.16), transparent 34%),
+    var(--surface-card);
+}
+
+.card-rps {
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255, 155, 112, 0.2), transparent 32%),
+    var(--surface-card);
+}
+
+.card-mental {
+  background:
+    radial-gradient(circle at 40% 28%, rgba(14, 116, 144, 0.16), transparent 34%),
+    var(--surface-card);
+}
+
+.card-twenty-four {
+  background:
+    radial-gradient(circle at 42% 26%, rgba(22, 163, 74, 0.18), transparent 34%),
+    var(--surface-card);
+}
+
+.card-digit {
+  background:
+    radial-gradient(circle at 38% 26%, rgba(15, 159, 143, 0.16), transparent 34%),
+    var(--surface-card);
+}
+
+.card-mot {
+  background:
+    radial-gradient(circle at 42% 24%, rgba(16, 185, 129, 0.18), transparent 34%),
+    var(--surface-card);
+}
+
+.card-pattern {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(250, 204, 21, 0.2), transparent 34%),
+    var(--surface-card);
+}
+
+.card-number-order {
+  background:
+    radial-gradient(circle at 44% 28%, rgba(20, 184, 166, 0.2), transparent 34%),
+    var(--surface-card);
+}
+
+.card-head-count {
+  background:
+    radial-gradient(circle at 52% 28%, rgba(245, 158, 11, 0.2), transparent 34%),
+    var(--surface-card);
+}
+
+.card-word-scramble {
+  background:
+    radial-gradient(circle at 46% 28%, rgba(249, 115, 22, 0.18), transparent 34%),
+    var(--surface-card);
+}
+
+.card-bird-count {
+  background:
+    radial-gradient(circle at 52% 24%, rgba(15, 159, 143, 0.18), transparent 34%),
+    var(--surface-card);
+}
+
+.card-color-trap {
+  background:
+    radial-gradient(circle at 40% 24%, rgba(225, 77, 67, 0.16), transparent 30%),
+    radial-gradient(circle at 76% 18%, rgba(47, 155, 106, 0.14), transparent 28%),
+    var(--surface-card);
+}
+
+.card-spatial-rotation {
+  background:
+    radial-gradient(circle at 38% 22%, rgba(43, 139, 162, 0.18), transparent 32%),
+    radial-gradient(circle at 76% 24%, rgba(245, 184, 79, 0.16), transparent 30%),
+    var(--surface-card);
+}
+
+.card-hidato {
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.14) 0%, rgba(245, 158, 11, 0.16) 100%),
+    var(--surface-card);
+}
+
+.card-game-gauntlet {
+  background:
+    radial-gradient(circle at 36% 24%, rgba(249, 115, 22, 0.18), transparent 32%),
+    radial-gradient(circle at 78% 18%, rgba(22, 163, 74, 0.14), transparent 30%),
+    var(--surface-card);
+}
+
+.card-pet {
+  background:
+    radial-gradient(circle at 45% 28%, rgba(250, 204, 21, 0.18), transparent 34%),
+    var(--surface-card);
+}
+
 .game-icon {
   width: 48px;
   height: 48px;
