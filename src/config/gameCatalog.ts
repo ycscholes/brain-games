@@ -167,6 +167,23 @@ export const GAME_CATALOG = [
     gauntletModeWeight: 1,
   },
   {
+    id: "inequality-grid",
+    title: "大小迷阵",
+    badge: "约束",
+    cardClass: "card-inequality-grid",
+    url: "/pages/inequality-grid/index",
+    category: "advanced",
+    duration: "约 1 分钟",
+    skill: "约束推理",
+    level: "标准",
+    isHot: false,
+    showInAllGames: true,
+    canAppearInGauntlet: true,
+    showBestScore: true,
+    recommendationWeight: 1,
+    gauntletModeWeight: 1,
+  },
+  {
     id: "number-order",
     title: "星链回响",
     badge: "记忆",
@@ -297,6 +314,7 @@ export const GAME_TITLE_MAP: Record<TrainingGameId, string> = {
   "color-trap": "颜色陷阱",
   "spatial-rotation": "旋影辨形",
   hidato: "连数迷阵",
+  "inequality-grid": "大小迷阵",
   "game-gauntlet": "游戏大闯关",
 };
 

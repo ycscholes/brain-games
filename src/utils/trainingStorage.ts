@@ -17,6 +17,7 @@ export type TrainingGameId =
   | "color-trap"
   | "spatial-rotation"
   | "hidato"
+  | "inequality-grid"
   | "game-gauntlet"
   | "memory"
   | "rps"
@@ -286,6 +287,7 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "color-trap": 1,
   "spatial-rotation": 1,
   hidato: 1,
+  "inequality-grid": 1,
   "game-gauntlet": 1,
   memory: 1,
   rps: 1,
