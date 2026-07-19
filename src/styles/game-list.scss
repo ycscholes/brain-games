@@ -240,6 +240,13 @@
     var(--surface-card);
 }
 
+.card-code-breaker {
+  background:
+    radial-gradient(circle at 34% 24%, rgba(204, 131, 32, 0.18), transparent 32%),
+    radial-gradient(circle at 78% 22%, rgba(33, 96, 82, 0.15), transparent 30%),
+    var(--surface-card);
+}
+
 .card-game-gauntlet {
   background:
     radial-gradient(circle at 36% 24%, rgba(249, 115, 22, 0.18), transparent 32%),
@@ -439,6 +446,11 @@
 .card-hidato .game-badge {
   background: rgba(15, 118, 110, 0.16);
   color: #0f766e;
+}
+
+.card-code-breaker .game-badge {
+  background: rgba(204, 131, 32, 0.16);
+  color: #945c12;
 }
 
 .card-game-gauntlet .game-badge {
