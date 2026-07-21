@@ -252,6 +252,23 @@ export const GAME_CATALOG = [
     gauntletModeWeight: 2,
   },
   {
+    id: "sumplete-grid",
+    title: "删数求和",
+    badge: "数理",
+    cardClass: "card-sumplete-grid",
+    url: "/pages/sumplete-grid/index",
+    category: "advanced",
+    duration: "约 2 分钟",
+    skill: "约束推理",
+    level: "进阶",
+    isHot: false,
+    showInAllGames: true,
+    canAppearInGauntlet: true,
+    showBestScore: true,
+    recommendationWeight: 1,
+    gauntletModeWeight: 1,
+  },
+  {
     id: GAME_GAUNTLET_ID,
     title: "游戏大闯关",
     badge: "闯关",
@@ -297,6 +314,7 @@ export const GAME_TITLE_MAP: Record<TrainingGameId, string> = {
   "color-trap": "颜色陷阱",
   "spatial-rotation": "旋影辨形",
   hidato: "连数迷阵",
+  "sumplete-grid": "删数求和",
   "game-gauntlet": "游戏大闯关",
 };
 

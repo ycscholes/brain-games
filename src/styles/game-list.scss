@@ -240,6 +240,14 @@
     var(--surface-card);
 }
 
+.card-sumplete-grid {
+  background:
+    radial-gradient(circle at 32% 22%, rgba(20, 184, 166, 0.18), transparent 30%),
+    radial-gradient(circle at 78% 18%, rgba(245, 158, 11, 0.16), transparent 28%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.04), rgba(255, 255, 255, 0)),
+    var(--surface-card);
+}
+
 .card-game-gauntlet {
   background:
     radial-gradient(circle at 36% 24%, rgba(249, 115, 22, 0.18), transparent 32%),
@@ -438,6 +446,11 @@
 
 .card-hidato .game-badge {
   background: rgba(15, 118, 110, 0.16);
+  color: #0f766e;
+}
+
+.card-sumplete-grid .game-badge {
+  background: rgba(20, 184, 166, 0.16);
   color: #0f766e;
 }
 

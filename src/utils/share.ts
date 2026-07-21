@@ -24,6 +24,7 @@ export const SHARE_PAGE_PATHS = [
   "pages/color-trap/index",
   "pages/spatial-rotation/index",
   "pages/hidato/index",
+  "pages/sumplete-grid/index",
   "pages/pet/index",
   "pages/settings/index",
   "pages/training-records/index",
@@ -110,6 +111,10 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/hidato/index": {
     title: "来玩连数迷阵，练逻辑路径推理",
     timelineTitle: "连数迷阵逻辑训练",
+  },
+  "pages/sumplete-grid/index": {
+    title: "来玩删数求和，练数字约束推理",
+    timelineTitle: "删数求和数字逻辑训练",
   },
   "pages/pet/index": {
     title: "来看看我在Cici的脑部锻炼里养的宠物",
