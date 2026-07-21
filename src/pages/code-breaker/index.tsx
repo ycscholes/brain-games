@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text } from "@tarojs/components";
+import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
+import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
+import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { addPointsToPet } from "../../utils/petStorage";
 import {
   getAwardedPoints,
@@ -8,37 +11,53 @@ import {
   recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
-import { useAmbientMusic } from "../../hooks/useAmbientMusic";
-import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import {
-  CODE_BREAKER_TOTAL_PUZZLES,
-  createCodeBreakerSession,
-  formatCode,
-  scoreCodeBreakerPuzzle,
-  type CodeBreakerOption,
-  type CodeBreakerPuzzle,
-  type CodeBreakerResult,
+  calculateCodeBreakerFinalScore,
+  createSecretCode,
+  getCodeBreakerConfig,
+  getCodeBreakerSymbols,
+  scoreCodeBreakerGuess,
+  type CodeBreakerGuessResult,
+  type CodeBreakerSymbol,
 } from "./gameLogic";
 import "./index.scss";
 
-type Phase = "start" | "playing" | "feedback" | "finished";
+type Phase = "start" | "playing" | "finished";
+type GuessSlot = CodeBreakerSymbol | null;
+
+interface GuessHistoryItem {
+  guess: CodeBreakerSymbol[];
+  result: CodeBreakerGuessResult;
+}
 
 const STORAGE_KEY_PREFIX = "code_breaker_best";
-const FEEDBACK_MS = 900;
+
+const SYMBOL_LABELS: Record<CodeBreakerSymbol, string> = {
+  amber: "A",
+  jade: "B",
+  cyan: "C",
+  rose: "D",
+  violet: "E",
+  slate: "F",
+};
 
 function readBestScore(difficulty: TrainingDifficulty) {
   const value = Number(Taro.getStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`) || 0);
   return Number.isFinite(value) ? value : 0;
 }
 
-function renderCodeChips(code: string[], className = "") {
+function emptyGuess(length: number): GuessSlot[] {
+  return Array.from({ length }, () => null);
+}
+
+function renderCodeChip(symbol: CodeBreakerSymbol | null, index: number, hidden = false) {
   return (
-    <View className={`code-chip-row ${className}`}>
-      {code.map((digit, index) => (
-        <Text key={`${digit}-${index}`} className="code-chip">{digit}</Text>
-      ))}
+    <View
+      key={`${symbol ?? "empty"}-${index}`}
+      className={`code-chip ${symbol ? `code-chip-${symbol}` : "code-chip-empty"} ${hidden ? "code-chip-hidden" : ""}`}
+    >
+      <Text className="code-chip-text">{hidden ? "?" : symbol ? SYMBOL_LABELS[symbol] : ""}</Text>
     </View>
   );
 }
@@ -52,40 +71,26 @@ export default function CodeBreaker() {
   useAmbientMusic(phase === "start");
   const [difficulty, setDifficulty] = useState<TrainingDifficulty>(gauntletPreset?.difficulty ?? "normal");
   const [best, setBest] = useState(0);
-  const [puzzles, setPuzzles] = useState<CodeBreakerPuzzle[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [hiddenCode, setHiddenCode] = useState<CodeBreakerSymbol[]>([]);
+  const [currentGuess, setCurrentGuess] = useState<GuessSlot[]>(emptyGuess(getCodeBreakerConfig(difficulty).codeLength));
+  const [history, setHistory] = useState<GuessHistoryItem[]>([]);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [score, setScore] = useState(0);
-  const [combo, setCombo] = useState(0);
-  const [bestCombo, setBestCombo] = useState(0);
-  const [correctPuzzles, setCorrectPuzzles] = useState(0);
-  const [selectedOptionId, setSelectedOptionId] = useState("");
-  const [lastResult, setLastResult] = useState<CodeBreakerResult | null>(null);
   const [awardedPoints, setAwardedPoints] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
+  const [solved, setSolved] = useState(false);
 
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const startedAtRef = useRef(0);
-  const puzzleStartedAtRef = useRef(0);
   const finishedRef = useRef(false);
-  const answeredRef = useRef(false);
   const autoStartedRef = useRef(false);
-  const phaseRef = useRef<Phase>("start");
-  const scoreRef = useRef(0);
-  const comboRef = useRef(0);
-  const bestComboRef = useRef(0);
-  const correctPuzzlesRef = useRef(0);
-  const currentIndexRef = useRef(0);
-  const currentPuzzle = puzzles[currentIndex] ?? null;
+  const hiddenCodeRef = useRef<CodeBreakerSymbol[]>([]);
+  const bestFeedbackRef = useRef({ exact: 0, present: 0 });
+  const difficultyRef = useRef<TrainingDifficulty>(difficulty);
 
-  const clearTimers = useCallback(() => {
-    timersRef.current.forEach((timer) => clearTimeout(timer));
-    timersRef.current = [];
-  }, []);
-
-  const schedule = useCallback((callback: () => void, delay: number) => {
-    const timer = setTimeout(callback, delay);
-    timersRef.current.push(timer);
-  }, []);
+  const config = useMemo(() => getCodeBreakerConfig(difficulty), [difficulty]);
+  const symbols = useMemo(() => getCodeBreakerSymbols(difficulty), [difficulty]);
+  const guessReady = currentGuess.every(Boolean);
+  const remainingGuesses = Math.max(0, config.maxGuesses - history.length);
 
   const refreshBest = useCallback(() => {
     setBest(readBestScore(difficulty));
@@ -100,153 +105,101 @@ export default function CodeBreaker() {
   });
 
   useEffect(() => {
-    refreshBest();
-  }, [refreshBest]);
+    difficultyRef.current = difficulty;
+    if (phase === "start") {
+      setCurrentGuess(emptyGuess(config.codeLength));
+      refreshBest();
+    }
+  }, [config.codeLength, difficulty, phase, refreshBest]);
 
   useEffect(() => {
-    return () => {
-      clearTimers();
-    };
-  }, [clearTimers]);
+    if (phase !== "playing") return undefined;
 
-  useEffect(() => {
-    phaseRef.current = phase;
+    const timer = setInterval(() => {
+      setElapsedSeconds(Math.max(0, Math.floor((Date.now() - startedAtRef.current) / 1000)));
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, [phase]);
 
-  useEffect(() => {
-    scoreRef.current = score;
-  }, [score]);
-
-  useEffect(() => {
-    comboRef.current = combo;
-  }, [combo]);
-
-  useEffect(() => {
-    bestComboRef.current = bestCombo;
-  }, [bestCombo]);
-
-  useEffect(() => {
-    correctPuzzlesRef.current = correctPuzzles;
-  }, [correctPuzzles]);
-
-  useEffect(() => {
-    currentIndexRef.current = currentIndex;
-  }, [currentIndex]);
-
-  const finishGame = useCallback((finalScore: number, finalCorrectPuzzles: number) => {
-    if (finishedRef.current) {
-      return;
-    }
+  const finishGame = useCallback((
+    nextHistory: GuessHistoryItem[],
+    didSolve: boolean,
+    latestResult: CodeBreakerGuessResult,
+  ) => {
+    if (finishedRef.current) return;
 
     finishedRef.current = true;
-    clearTimers();
-    playComplete();
+    didSolve ? playComplete() : playWrong();
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
-    const nextAwardedPoints = getAwardedPoints("code-breaker", finalScore, difficulty);
+    const bestFeedback = {
+      exact: Math.max(bestFeedbackRef.current.exact, latestResult.exact),
+      present: Math.max(bestFeedbackRef.current.present, latestResult.present),
+    };
+    const finalScore = calculateCodeBreakerFinalScore({
+      solved: didSolve,
+      attemptsUsed: nextHistory.length,
+      maxGuesses: config.maxGuesses,
+      elapsedSeconds: durationSeconds,
+      bestExact: bestFeedback.exact,
+      bestPresent: bestFeedback.present,
+    });
+    const nextAwardedPoints = getAwardedPoints("code-breaker", finalScore, difficultyRef.current);
+
     if (completeGauntletLegIfNeeded({
       gameId: "code-breaker",
       score: finalScore,
       awardedPoints: nextAwardedPoints,
       durationSeconds,
-      difficulty,
+      difficulty: difficultyRef.current,
       outcome: "completed",
     })) {
       return;
     }
 
-    addPointsToPet("code-breaker", finalScore, difficulty);
+    addPointsToPet("code-breaker", finalScore, difficultyRef.current);
     recordTrainingSession({
       gameId: "code-breaker",
       score: finalScore,
       awardedPoints: nextAwardedPoints,
       durationSeconds,
-      difficulty,
+      difficulty: difficultyRef.current,
       outcome: "completed",
     });
 
+    setElapsedSeconds(durationSeconds);
+    setScore(finalScore);
     setAwardedPoints(nextAwardedPoints);
-    setCorrectPuzzles(finalCorrectPuzzles);
+    setSolved(didSolve);
     setPhase("finished");
 
     if (finalScore > best) {
-      Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, finalScore);
+      Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficultyRef.current}`, finalScore);
       setBest(finalScore);
       setIsNewBest(true);
     } else {
       setIsNewBest(false);
     }
-  }, [best, clearTimers, difficulty]);
+  }, [best, config.maxGuesses]);
 
-  const beginPuzzle = useCallback((puzzleIndex: number) => {
-    clearTimers();
-    setCurrentIndex(puzzleIndex);
-    setSelectedOptionId("");
-    setLastResult(null);
-    answeredRef.current = false;
-    puzzleStartedAtRef.current = Date.now();
-    setPhase("playing");
-  }, [clearTimers]);
-
-  const submitAnswer = useCallback((option: CodeBreakerOption) => {
-    if (phaseRef.current !== "playing" || !currentPuzzle || answeredRef.current) {
-      return;
-    }
-
-    answeredRef.current = true;
-    clearTimers();
+  const startGame = useCallback(() => {
     playTap();
-
-    const result = scoreCodeBreakerPuzzle({
-      selectedOptionId: option.id,
-      answerOptionId: currentPuzzle.answerOptionId,
-      answerMs: Date.now() - puzzleStartedAtRef.current,
-      currentCombo: comboRef.current,
-    });
-    result.correct ? playCorrect() : playWrong();
-
-    const nextScore = scoreRef.current + result.score;
-    const nextCombo = result.correct ? comboRef.current + 1 : 0;
-    const nextCorrectPuzzles = correctPuzzlesRef.current + (result.correct ? 1 : 0);
-
-    setSelectedOptionId(option.id);
-    setLastResult(result);
-    setScore(nextScore);
-    setCombo(nextCombo);
-    setBestCombo(Math.max(bestComboRef.current, nextCombo));
-    setCorrectPuzzles(nextCorrectPuzzles);
-    setPhase("feedback");
-
-    schedule(() => {
-      if (currentIndexRef.current >= CODE_BREAKER_TOTAL_PUZZLES - 1) {
-        finishGame(nextScore, nextCorrectPuzzles);
-        return;
-      }
-
-      beginPuzzle(currentIndexRef.current + 1);
-    }, FEEDBACK_MS);
-  }, [beginPuzzle, clearTimers, currentPuzzle, finishGame, schedule]);
-
-  const startGame = () => {
-    playTap();
-    clearTimers();
-    const nextPuzzles = createCodeBreakerSession(difficulty);
-    finishedRef.current = false;
+    const nextHiddenCode = createSecretCode(difficulty);
     startedAtRef.current = Date.now();
-    setPuzzles(nextPuzzles);
-    setCurrentIndex(0);
+    finishedRef.current = false;
+    hiddenCodeRef.current = nextHiddenCode;
+    bestFeedbackRef.current = { exact: 0, present: 0 };
+    setHiddenCode(nextHiddenCode);
+    setCurrentGuess(emptyGuess(config.codeLength));
+    setHistory([]);
+    setElapsedSeconds(0);
     setScore(0);
-    setCombo(0);
-    setBestCombo(0);
-    setCorrectPuzzles(0);
-    setSelectedOptionId("");
-    setLastResult(null);
     setAwardedPoints(0);
     setIsNewBest(false);
-    puzzleStartedAtRef.current = Date.now();
-    answeredRef.current = false;
+    setSolved(false);
     setPhase("playing");
-  };
+  }, [config.codeLength, difficulty]);
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
@@ -254,29 +207,63 @@ export default function CodeBreaker() {
     startGame();
   }, [isGauntletPreset, phase, startGame]);
 
-  const backToStart = () => {
-    clearTimers();
-    setPhase("start");
-    setPuzzles([]);
-    setCurrentIndex(0);
-    setScore(0);
-    setCombo(0);
-    setBestCombo(0);
-    setCorrectPuzzles(0);
-    setSelectedOptionId("");
-    setLastResult(null);
-    setAwardedPoints(0);
-    setIsNewBest(false);
-    finishedRef.current = false;
-    refreshBest();
+  const selectSymbol = (symbol: CodeBreakerSymbol) => {
+    if (phase !== "playing") return;
+    playTap();
+    setCurrentGuess((items) => {
+      const nextItems = [...items];
+      const index = nextItems.findIndex((item) => item === null);
+      nextItems[index === -1 ? nextItems.length - 1 : index] = symbol;
+      return nextItems;
+    });
   };
 
-  const accuracyText = useMemo(() => {
-    return `${Math.round((correctPuzzles / CODE_BREAKER_TOTAL_PUZZLES) * 100)}%`;
-  }, [correctPuzzles]);
+  const clearSlot = (index: number) => {
+    if (phase !== "playing") return;
+    playTap();
+    setCurrentGuess((items) => items.map((item, itemIndex) => (itemIndex === index ? null : item)));
+  };
 
-  const answerOption = currentPuzzle?.options.find((option) => option.id === currentPuzzle.answerOptionId);
-  const answerCodeText = answerOption ? formatCode(answerOption.code) : "";
+  const clearGuess = () => {
+    if (phase !== "playing") return;
+    playTap();
+    setCurrentGuess(emptyGuess(config.codeLength));
+  };
+
+  const submitGuess = () => {
+    if (phase !== "playing" || !guessReady || finishedRef.current) return;
+
+    const guess = currentGuess.filter(Boolean) as CodeBreakerSymbol[];
+    const result = scoreCodeBreakerGuess(hiddenCodeRef.current, guess);
+    const nextHistory = [...history, { guess, result }];
+    bestFeedbackRef.current = {
+      exact: Math.max(bestFeedbackRef.current.exact, result.exact),
+      present: Math.max(bestFeedbackRef.current.present, result.present),
+    };
+
+    result.solved ? playCorrect() : playWrong();
+    setHistory(nextHistory);
+    setCurrentGuess(emptyGuess(config.codeLength));
+
+    if (result.solved || nextHistory.length >= config.maxGuesses) {
+      finishGame(nextHistory, result.solved, result);
+    }
+  };
+
+  const backToStart = () => {
+    playTap();
+    finishedRef.current = false;
+    setPhase("start");
+    setHiddenCode([]);
+    setCurrentGuess(emptyGuess(config.codeLength));
+    setHistory([]);
+    setElapsedSeconds(0);
+    setScore(0);
+    setAwardedPoints(0);
+    setIsNewBest(false);
+    setSolved(false);
+    refreshBest();
+  };
 
   const renderDifficultyCard = (nextDifficulty: TrainingDifficulty, copy: string) => (
     <View
@@ -291,13 +278,13 @@ export default function CodeBreaker() {
   return (
     <View className="code-breaker-page">
       {phase === "start" ? (
-        <View className="breaker-start start-screen">
+        <View className="code-breaker-start start-screen">
           <View className="header-section">
-            <View className="logo-icon breaker-logo">
-              <Text className="logo-emoji">码</Text>
+            <View className="logo-icon code-breaker-logo">
+              <Text className="logo-emoji">#</Text>
             </View>
-            <Text className="game-title">密码推理</Text>
-            <Text className="game-subtitle">根据反馈线索，找出唯一正确的数字密码</Text>
+            <Text className="game-title">逻辑破译</Text>
+            <Text className="game-subtitle">用反馈线索推断隐藏的多符号密码</Text>
             <View className="high-score-badge">
               <Text className="high-score-label">当前难度最高</Text>
               <Text className="high-score-value">{best}</Text>
@@ -306,108 +293,121 @@ export default function CodeBreaker() {
 
           <View className="rules-card">
             <Text className="section-title">游戏规则</Text>
-            <Text className="rule-item">1. 每局 8 题，阅读历史猜测和反馈。</Text>
-            <Text className="rule-item">2. “位置正确”代表数字和位置都对，“数字存在”代表数字对但位置错。</Text>
-            <Text className="rule-item">3. 从 4 个候选密码中选出唯一满足全部线索的答案。</Text>
+            <Text className="rule-item">1. 每局有一组隐藏密码，选择符号后提交猜测。</Text>
+            <Text className="rule-item">2. 命中表示符号和位置都正确，错位表示符号存在但位置不对。</Text>
+            <Text className="rule-item">3. 用更少次数、更短时间破译，可获得更高分。</Text>
           </View>
 
           {!isGauntletPreset && (
-          <View className="summary-card">
-            <Text className="section-title">难度</Text>
-            <View className="summary-grid">
-              {renderDifficultyCard("normal", "3 位密码 · 3 条线索")}
-              {renderDifficultyCard("hard", "4 位密码 · 4 条线索")}
+            <View className="summary-card">
+              <Text className="section-title">难度</Text>
+              <View className="summary-grid">
+                {renderDifficultyCard("normal", "不重复 · 8 次机会")}
+                {renderDifficultyCard("hard", "可重复 · 7 次机会")}
+              </View>
             </View>
-          </View>
           )}
 
           <View className="floating-start-action">
             <View className="primary-button" onClick={startGame}>
-              <Text className="primary-button-text">开始推理</Text>
+              <Text className="primary-button-text">开始训练</Text>
             </View>
           </View>
           <View className="floating-start-spacer" />
         </View>
       ) : null}
 
-      {(phase === "playing" || phase === "feedback") && currentPuzzle ? (
-        <View className="breaker-play">
+      {phase === "playing" ? (
+        <View className="code-breaker-play">
           <View className="status-row">
             <View className="status-card">
-              <Text className="status-value">{currentIndex + 1}/{CODE_BREAKER_TOTAL_PUZZLES}</Text>
-              <Text className="status-label">题目</Text>
+              <Text className="status-value">{history.length}/{config.maxGuesses}</Text>
+              <Text className="status-label">已猜</Text>
             </View>
             <View className="status-card">
-              <Text className="status-value">{score}</Text>
-              <Text className="status-label">得分</Text>
+              <Text className="status-value">{remainingGuesses}</Text>
+              <Text className="status-label">剩余</Text>
             </View>
             <View className="status-card">
-              <Text className="status-value">{combo}</Text>
-              <Text className="status-label">连击</Text>
+              <Text className="status-value">{elapsedSeconds}s</Text>
+              <Text className="status-label">用时</Text>
             </View>
           </View>
 
-          <View className="clue-board">
-            <Text className="question-kicker">线索记录</Text>
-            <Text className="board-copy">
-              {currentPuzzle.answerCode.length} 位数字，每条反馈都来自同一个隐藏密码
-            </Text>
-            <View className="clue-list">
-              {currentPuzzle.clues.map((clue) => (
-                <View key={clue.id} className="clue-row">
-                  {renderCodeChips(clue.guess)}
-                  <View className="feedback-track">
-                    <Text className="feedback-pill exact-pill">位置正确 {clue.feedback.exact}</Text>
-                    <Text className="feedback-pill misplaced-pill">数字存在 {clue.feedback.misplaced}</Text>
-                  </View>
+          <View className="hidden-code-panel">
+            <Text className="question-kicker">隐藏密码</Text>
+            <View className="code-row">
+              {hiddenCode.map((symbol, index) => renderCodeChip(symbol, index, true))}
+            </View>
+          </View>
+
+          <View className="guess-panel">
+            <Text className="question-kicker">本次猜测</Text>
+            <View className="code-row">
+              {currentGuess.map((symbol, index) => (
+                <View key={`slot-${index}`} onClick={() => clearSlot(index)}>
+                  {renderCodeChip(symbol, index)}
                 </View>
               ))}
             </View>
           </View>
 
-          <View className="breaker-option-grid">
-            {currentPuzzle.options.map((option) => {
-              const isSelected = selectedOptionId === option.id;
-              const isAnswer = phase === "feedback" && option.id === currentPuzzle.answerOptionId;
-              return (
-                <View
-                  key={option.id}
-                  className={`breaker-option ${isSelected ? "breaker-option-selected" : ""} ${isAnswer ? "breaker-option-answer" : ""}`}
-                  onClick={() => submitAnswer(option)}
-                >
-                  {renderCodeChips(option.code, "option-code")}
-                </View>
-              );
-            })}
+          <View className="symbol-palette">
+            {symbols.map((symbol) => (
+              <View key={symbol} className={`palette-chip code-chip-${symbol}`} onClick={() => selectSymbol(symbol)}>
+                <Text className="palette-chip-text">{SYMBOL_LABELS[symbol]}</Text>
+              </View>
+            ))}
           </View>
 
-          {phase === "feedback" ? (
-            <View className={`feedback-card ${lastResult?.correct ? "feedback-correct" : "feedback-wrong"}`}>
-              <Text className="feedback-title">{lastResult?.correct ? "推理正确" : "正确密码"}</Text>
-              <Text className="feedback-copy">
-                {answerCodeText} · 本题 +{lastResult?.score ?? 0}
-              </Text>
+          <View className="guess-actions">
+            <View className="secondary-button compact-button" onClick={clearGuess}>
+              <Text className="secondary-button-text">清空</Text>
             </View>
-          ) : null}
+            <View className={`primary-button compact-button ${guessReady ? "" : "primary-button-disabled"}`} onClick={submitGuess}>
+              <Text className="primary-button-text">提交</Text>
+            </View>
+          </View>
+
+          <View className="history-list">
+            {history.map((item, index) => (
+              <View key={`guess-${index}`} className="history-item">
+                <Text className="history-index">#{index + 1}</Text>
+                <View className="history-code-row">
+                  {item.guess.map((symbol, chipIndex) => renderCodeChip(symbol, chipIndex))}
+                </View>
+                <View className="feedback-pins">
+                  <Text className="feedback-pin feedback-pin-exact">命中 {item.result.exact}</Text>
+                  <Text className="feedback-pin feedback-pin-present">错位 {item.result.present}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
       ) : null}
 
       {phase === "finished" ? (
-        <View className="breaker-result">
+        <View className="code-breaker-result">
           <View className="result-card">
-            <Text className="result-kicker">训练完成</Text>
+            <Text className="result-kicker">{solved ? "破译完成" : "本局结束"}</Text>
             <Text className="result-score">{score}</Text>
             <Text className="result-copy">
-              密码推理 · {getTrainingDifficultyLabel(difficulty)} {isNewBest ? "· 新最高" : ""}
+              逻辑破译 · {getTrainingDifficultyLabel(difficulty)} {isNewBest ? "· 新最高" : ""}
             </Text>
+            <View className="result-hidden-code">
+              <Text className="question-kicker">本局密码</Text>
+              <View className="code-row">
+                {hiddenCode.map((symbol, index) => renderCodeChip(symbol, index))}
+              </View>
+            </View>
             <View className="result-grid">
               <View className="result-item">
-                <Text className="result-item-value">{accuracyText}</Text>
-                <Text className="result-item-label">正确率</Text>
+                <Text className="result-item-value">{history.length}</Text>
+                <Text className="result-item-label">猜测次数</Text>
               </View>
               <View className="result-item">
-                <Text className="result-item-value">{bestCombo}</Text>
-                <Text className="result-item-label">最佳连击</Text>
+                <Text className="result-item-value">{elapsedSeconds}s</Text>
+                <Text className="result-item-label">用时</Text>
               </View>
               <View className="result-item">
                 <Text className="result-item-value">+{awardedPoints}</Text>

@@ -119,8 +119,8 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
     timelineTitle: "连数迷阵逻辑训练",
   },
   "pages/code-breaker/index": {
-    title: "来玩密码推理，练线索整合和逻辑判断",
-    timelineTitle: "密码推理逻辑训练",
+    title: "来玩逻辑破译，练假设推理和逻辑判断",
+    timelineTitle: "逻辑破译推理训练",
   },
   "pages/inequality-grid/index": {
     title: "来玩大小迷阵，练约束推理",
