@@ -25,6 +25,7 @@ export const SHARE_PAGE_PATHS = [
   "pages/spatial-rotation/index",
   "pages/triad-match/index",
   "pages/hidato/index",
+  "pages/code-breaker/index",
   "pages/pet/index",
   "pages/settings/index",
   "pages/training-records/index",
@@ -115,6 +116,10 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/hidato/index": {
     title: "来玩连数迷阵，练逻辑路径推理",
     timelineTitle: "连数迷阵逻辑训练",
+  },
+  "pages/code-breaker/index": {
+    title: "来玩密码推理，练线索整合和逻辑判断",
+    timelineTitle: "密码推理逻辑训练",
   },
   "pages/pet/index": {
     title: "来看看我在Cici的脑部锻炼里养的宠物",

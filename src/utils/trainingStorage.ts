@@ -18,6 +18,7 @@ export type TrainingGameId =
   | "spatial-rotation"
   | "triad-match"
   | "hidato"
+  | "code-breaker"
   | "game-gauntlet"
   | "memory"
   | "rps"
@@ -288,6 +289,7 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "spatial-rotation": 1,
   "triad-match": 1,
   hidato: 1,
+  "code-breaker": 1,
   "game-gauntlet": 1,
   memory: 1,
   rps: 1,
@@ -567,6 +569,7 @@ export function clearProductData() {
     gameSpecificKeys.push(`spatial_rotation_best_${difficulty}`);
     gameSpecificKeys.push(`triad_match_best_${difficulty}`);
     gameSpecificKeys.push(`hidato_best_${difficulty}`);
+    gameSpecificKeys.push(`code_breaker_best_${difficulty}`);
 
     ["slow", "standard", "fast"].forEach((speedDifficulty) => {
       gameSpecificKeys.push(`head_count_best_${difficulty}_${speedDifficulty}`);

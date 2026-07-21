@@ -18,6 +18,7 @@ export default defineAppConfig({
     'pages/spatial-rotation/index',
     'pages/triad-match/index',
     'pages/hidato/index',
+    'pages/code-breaker/index',
     'pages/pet/index',
     'pages/settings/index',
     'pages/training-records/index'

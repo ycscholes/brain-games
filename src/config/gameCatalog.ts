@@ -184,6 +184,23 @@ export const GAME_CATALOG = [
     gauntletModeWeight: 1,
   },
   {
+    id: "code-breaker",
+    title: "密码推理",
+    badge: "推理",
+    cardClass: "card-code-breaker",
+    url: "/pages/code-breaker/index",
+    category: "advanced",
+    duration: "约 2 分钟",
+    skill: "线索整合",
+    level: "进阶",
+    isHot: false,
+    showInAllGames: true,
+    canAppearInGauntlet: true,
+    showBestScore: true,
+    recommendationWeight: 1,
+    gauntletModeWeight: 1,
+  },
+  {
     id: "number-order",
     title: "星链回响",
     badge: "记忆",
@@ -315,6 +332,7 @@ export const GAME_TITLE_MAP: Record<TrainingGameId, string> = {
   "spatial-rotation": "旋影辨形",
   "triad-match": "特征三连",
   hidato: "连数迷阵",
+  "code-breaker": "密码推理",
   "game-gauntlet": "游戏大闯关",
 };
 
