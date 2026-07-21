@@ -234,6 +234,14 @@
     var(--surface-card);
 }
 
+.card-triad-match {
+  background:
+    radial-gradient(circle at 32% 24%, rgba(226, 109, 92, 0.17), transparent 32%),
+    radial-gradient(circle at 70% 22%, rgba(47, 157, 130, 0.16), transparent 30%),
+    radial-gradient(circle at 52% 68%, rgba(214, 155, 31, 0.14), transparent 34%),
+    var(--surface-card);
+}
+
 .card-hidato {
   background:
     linear-gradient(135deg, rgba(15, 118, 110, 0.14) 0%, rgba(245, 158, 11, 0.16) 100%),
