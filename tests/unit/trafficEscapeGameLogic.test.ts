@@ -1,0 +1,78 @@
+import {
+  applyTrafficEscapeMove,
+  createTrafficEscapeState,
+  getTrafficEscapeHint,
+  getTrafficEscapePuzzlePool,
+  isTrafficEscapeSolved,
+  scoreTrafficEscapeGame,
+} from "../../src/pages/traffic-escape/gameLogic";
+
+describe("traffic-escape game logic", () => {
+  test("provides compact normal and hard parking puzzles", () => {
+    const [normal] = getTrafficEscapePuzzlePool("normal");
+    const [hard] = getTrafficEscapePuzzlePool("hard");
+
+    expect(normal.size).toBe(5);
+    expect(hard.size).toBe(6);
+    expect(normal.vehicles.some((vehicle) => vehicle.isTarget)).toBe(true);
+    expect(hard.vehicles.some((vehicle) => vehicle.isTarget)).toBe(true);
+  });
+
+  test("applies the scripted solution as legal vehicle moves", () => {
+    ["normal", "hard"].forEach((difficulty) => {
+      getTrafficEscapePuzzlePool(difficulty as "normal" | "hard").forEach((puzzle) => {
+        let state = createTrafficEscapeState(puzzle);
+
+        puzzle.solutionMoves.forEach((move) => {
+          const result = applyTrafficEscapeMove(puzzle, state, move);
+          expect(result.moved).toBe(true);
+          state = result.state;
+        });
+
+        expect(isTrafficEscapeSolved(puzzle, state)).toBe(true);
+      });
+    });
+  });
+
+  test("offers a valid next hint before the target can leave", () => {
+    const [puzzle] = getTrafficEscapePuzzlePool("hard");
+    const state = createTrafficEscapeState(puzzle);
+    const hint = getTrafficEscapeHint(puzzle, state);
+    const result = applyTrafficEscapeMove(puzzle, state, hint!);
+
+    expect(hint).not.toBeNull();
+    expect(result.moved).toBe(true);
+    expect(isTrafficEscapeSolved(puzzle, state)).toBe(false);
+  });
+
+  test("scores successful escapes by difficulty, time, moves, and hints", () => {
+    expect(scoreTrafficEscapeGame({
+      difficulty: "normal",
+      elapsedSeconds: 42,
+      moveCount: 6,
+      hintCount: 0,
+      completed: true,
+    })).toBe(40);
+    expect(scoreTrafficEscapeGame({
+      difficulty: "normal",
+      elapsedSeconds: 230,
+      moveCount: 20,
+      hintCount: 2,
+      completed: true,
+    })).toBeLessThan(40);
+    expect(scoreTrafficEscapeGame({
+      difficulty: "hard",
+      elapsedSeconds: 85,
+      moveCount: 12,
+      hintCount: 0,
+      completed: true,
+    })).toBeGreaterThanOrEqual(44);
+    expect(scoreTrafficEscapeGame({
+      difficulty: "hard",
+      elapsedSeconds: 85,
+      moveCount: 12,
+      hintCount: 0,
+      completed: false,
+    })).toBe(0);
+  });
+});
