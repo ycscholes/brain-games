@@ -24,6 +24,7 @@ describe("gameCatalog", () => {
     expect(allGameIds).toContain("triad-match");
     expect(allGameIds).toContain("hidato");
     expect(allGameIds).toContain("code-breaker");
+    expect(allGameIds).toContain("inequality-grid");
     expect(allGameIds).toContain("game-gauntlet");
     expect(allGameIds).not.toContain("head-count");
     expect(allGameIds).not.toContain("dual-task");
@@ -38,6 +39,7 @@ describe("gameCatalog", () => {
     expect(candidateIds).toContain("triad-match");
     expect(candidateIds).toContain("hidato");
     expect(candidateIds).toContain("code-breaker");
+    expect(candidateIds).toContain("inequality-grid");
     expect(candidateIds).not.toContain("game-gauntlet");
     expect(candidateIds).not.toContain("head-count");
     expect(candidateIds).not.toContain("dual-task");

@@ -26,6 +26,7 @@ export const SHARE_PAGE_PATHS = [
   "pages/triad-match/index",
   "pages/hidato/index",
   "pages/code-breaker/index",
+  "pages/inequality-grid/index",
   "pages/pet/index",
   "pages/settings/index",
   "pages/training-records/index",
@@ -120,6 +121,10 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/code-breaker/index": {
     title: "来玩密码推理，练线索整合和逻辑判断",
     timelineTitle: "密码推理逻辑训练",
+  },
+  "pages/inequality-grid/index": {
+    title: "来玩大小迷阵，练约束推理",
+    timelineTitle: "大小迷阵逻辑训练",
   },
   "pages/pet/index": {
     title: "来看看我在Cici的脑部锻炼里养的宠物",

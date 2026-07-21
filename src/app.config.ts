@@ -19,6 +19,7 @@ export default defineAppConfig({
     'pages/triad-match/index',
     'pages/hidato/index',
     'pages/code-breaker/index',
+    'pages/inequality-grid/index',
     'pages/pet/index',
     'pages/settings/index',
     'pages/training-records/index'
