@@ -28,6 +28,7 @@ export const SHARE_PAGE_PATHS = [
   "pages/code-breaker/index",
   "pages/inequality-grid/index",
   "pages/tents-camp/index",
+  "pages/sumplete-grid/index",
   "pages/pet/index",
   "pages/settings/index",
   "pages/training-records/index",
@@ -130,6 +131,10 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/tents-camp/index": {
     title: "来玩帐篷营地，练空间约束推理",
     timelineTitle: "帐篷营地逻辑训练",
+  },
+  "pages/sumplete-grid/index": {
+    title: "来玩删数求和，练数字约束推理",
+    timelineTitle: "删数求和数理训练",
   },
   "pages/pet/index": {
     title: "来看看我在Cici的脑部锻炼里养的宠物",

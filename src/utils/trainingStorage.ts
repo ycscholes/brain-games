@@ -21,6 +21,7 @@ export type TrainingGameId =
   | "code-breaker"
   | "inequality-grid"
   | "tents-camp"
+  | "sumplete-grid"
   | "game-gauntlet"
   | "memory"
   | "rps"
@@ -294,6 +295,7 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "code-breaker": 1,
   "inequality-grid": 1,
   "tents-camp": 1,
+  "sumplete-grid": 1,
   "game-gauntlet": 1,
   memory: 1,
   rps: 1,

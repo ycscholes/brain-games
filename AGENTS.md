@@ -25,6 +25,7 @@ Do not use for: refactoring, writing scripts from scratch, debugging business lo
 - Any new game, game rewrite, scoring change, difficulty change, training record change, or pet reward change must stay aligned with `docs/points-economy.md`.
 - Award pet points only through the shared points pipeline (`getAwardedPoints()` and `addPointsToPet()`); do not hand-roll game-specific multipliers or caps in page components.
 - When changing a game's score range, difficulty mapping, `gameId`, mode format, or reward behavior, update `docs/points-economy.md` and the relevant unit tests in the same task.
+- For lightweight mini-game screening, prefer compact mechanics with multi-step reasoning, memory transformation, planning, adaptive difficulty, or meaningful mode variation. Filter out shallow one-step visual matching and Flanker/arrow-interference/center-target judgment concepts even when they are cheap to build.
 
 ## Image Generation Workflow
 

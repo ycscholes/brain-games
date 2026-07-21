@@ -21,6 +21,7 @@ export default defineAppConfig({
     'pages/code-breaker/index',
     'pages/inequality-grid/index',
     'pages/tents-camp/index',
+    'pages/sumplete-grid/index',
     'pages/pet/index',
     'pages/settings/index',
     'pages/training-records/index'

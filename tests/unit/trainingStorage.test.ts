@@ -266,7 +266,7 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("head-count", 50, "hard")).toBe(60);
     });
 
-    test("word-scramble, bird-count, color-trap, spatial-rotation, triad-match, hidato, code-breaker, inequality-grid, and tents-camp use 1x conversion with difficulty caps", () => {
+    test("word-scramble, bird-count, color-trap, spatial-rotation, triad-match, hidato, code-breaker, inequality-grid, tents-camp, and sumplete-grid use 1x conversion with difficulty caps", () => {
       expect(getAwardedPoints("word-scramble", 32, "normal")).toBe(32);
       expect(getAwardedPoints("word-scramble", 50, "normal")).toBe(40);
       expect(getAwardedPoints("bird-count", 32, "hard")).toBe(48);
@@ -285,6 +285,8 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("inequality-grid", 48, "hard")).toBe(60);
       expect(getAwardedPoints("tents-camp", 36, "normal")).toBe(36);
       expect(getAwardedPoints("tents-camp", 48, "hard")).toBe(60);
+      expect(getAwardedPoints("sumplete-grid", 36, "normal")).toBe(36);
+      expect(getAwardedPoints("sumplete-grid", 50, "hard")).toBe(60);
     });
 
     test("game gauntlet can award the summed child-game points without default caps", () => {
@@ -315,6 +317,7 @@ describe("trainingStorage", () => {
         getAwardedPoints("code-breaker", 34),
         getAwardedPoints("inequality-grid", 34),
         getAwardedPoints("tents-camp", 34),
+        getAwardedPoints("sumplete-grid", 34),
         getAwardedPoints("game-gauntlet", 34),
       ];
 
