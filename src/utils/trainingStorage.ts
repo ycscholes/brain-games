@@ -20,6 +20,7 @@ export type TrainingGameId =
   | "hidato"
   | "code-breaker"
   | "inequality-grid"
+  | "tents-camp"
   | "game-gauntlet"
   | "memory"
   | "rps"
@@ -292,6 +293,7 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   hidato: 1,
   "code-breaker": 1,
   "inequality-grid": 1,
+  "tents-camp": 1,
   "game-gauntlet": 1,
   memory: 1,
   rps: 1,

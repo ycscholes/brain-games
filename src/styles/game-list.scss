@@ -262,6 +262,13 @@
     var(--surface-card);
 }
 
+.card-tents-camp {
+  background:
+    radial-gradient(circle at 36% 24%, rgba(39, 95, 80, 0.18), transparent 32%),
+    radial-gradient(circle at 76% 20%, rgba(202, 133, 33, 0.16), transparent 30%),
+    var(--surface-card);
+}
+
 .card-game-gauntlet {
   background:
     radial-gradient(circle at 36% 24%, rgba(249, 115, 22, 0.18), transparent 32%),
@@ -471,6 +478,11 @@
 .card-inequality-grid .game-badge {
   background: rgba(185, 93, 59, 0.16);
   color: #9a3412;
+}
+
+.card-tents-camp .game-badge {
+  background: rgba(39, 95, 80, 0.16);
+  color: #275f50;
 }
 
 .card-game-gauntlet .game-badge {

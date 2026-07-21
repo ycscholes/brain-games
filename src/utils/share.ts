@@ -27,6 +27,7 @@ export const SHARE_PAGE_PATHS = [
   "pages/hidato/index",
   "pages/code-breaker/index",
   "pages/inequality-grid/index",
+  "pages/tents-camp/index",
   "pages/pet/index",
   "pages/settings/index",
   "pages/training-records/index",
@@ -125,6 +126,10 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/inequality-grid/index": {
     title: "来玩大小迷阵，练约束推理",
     timelineTitle: "大小迷阵逻辑训练",
+  },
+  "pages/tents-camp/index": {
+    title: "来玩帐篷营地，练空间约束推理",
+    timelineTitle: "帐篷营地逻辑训练",
   },
   "pages/pet/index": {
     title: "来看看我在Cici的脑部锻炼里养的宠物",
