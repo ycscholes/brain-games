@@ -2,6 +2,7 @@ import {
   ALL_GAME_ITEMS,
   GAUNTLET_CANDIDATE_GAMES,
   GAME_CATALOG,
+  GAME_CATEGORIES,
   HOT_GAME_IDS,
 } from "../../src/config/gameCatalog";
 
@@ -23,8 +24,8 @@ describe("gameCatalog", () => {
     expect(allGameIds).toContain("spatial-rotation");
     expect(allGameIds).toContain("triad-match");
     expect(allGameIds).toContain("hidato");
-    expect(allGameIds).toContain("code-breaker");
-    expect(allGameIds).toContain("inequality-grid");
+    expect(allGameIds).not.toContain("code-breaker");
+    expect(allGameIds).not.toContain("inequality-grid");
     expect(allGameIds).toContain("tents-camp");
     expect(allGameIds).toContain("sumplete-grid");
     expect(allGameIds).toContain("traffic-escape");
@@ -37,12 +38,12 @@ describe("gameCatalog", () => {
   test("gauntlet candidate pool includes playable single games only", () => {
     const candidateIds = GAUNTLET_CANDIDATE_GAMES.map((game) => game.id);
 
-    expect(candidateIds).toHaveLength(19);
+    expect(candidateIds).toHaveLength(17);
     expect(new Set(candidateIds).size).toBe(candidateIds.length);
     expect(candidateIds).toContain("triad-match");
     expect(candidateIds).toContain("hidato");
-    expect(candidateIds).toContain("code-breaker");
-    expect(candidateIds).toContain("inequality-grid");
+    expect(candidateIds).not.toContain("code-breaker");
+    expect(candidateIds).not.toContain("inequality-grid");
     expect(candidateIds).toContain("tents-camp");
     expect(candidateIds).toContain("sumplete-grid");
     expect(candidateIds).toContain("traffic-escape");
@@ -50,6 +51,21 @@ describe("gameCatalog", () => {
     expect(candidateIds).not.toContain("head-count");
     expect(candidateIds).not.toContain("dual-task");
     expect(candidateIds).not.toContain("signal-sprint");
+  });
+
+  test("groups games by core gameplay mode", () => {
+    expect(GAME_CATEGORIES).toEqual([
+      { id: "math", title: "计算与数理" },
+      { id: "memory", title: "记忆与反应" },
+      { id: "reasoning", title: "推理" },
+      { id: "language", title: "语言" },
+      { id: "challenge", title: "综合挑战" },
+    ]);
+
+    const categories = new Map(GAME_CATALOG.map((game) => [game.id, game.category]));
+    expect(categories.get("pattern-completion")).toBe("reasoning");
+    expect(categories.get("traffic-escape")).toBe("reasoning");
+    expect(categories.get("game-gauntlet")).toBe("challenge");
   });
 
   test("hot games carry double recommendation weight", () => {
