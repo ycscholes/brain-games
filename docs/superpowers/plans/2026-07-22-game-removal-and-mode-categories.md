@@ -128,6 +128,7 @@ Run `git add src/app.config.ts src/utils/share.ts src/styles/game-list.scss src/
 **Files:**
 - Modify: `src/pages/all-games/index.tsx`
 - Modify: `docs/points-economy.md`
+- Modify: `docs/game-candidate-pool.md`
 
 - [ ] **Step 1: Replace stale browsing-copy**
 
@@ -137,9 +138,9 @@ Replace the all-games summary line with:
 <Text className="summary-copy">按计算、记忆、推理、语言与综合挑战浏览训练。</Text>
 ```
 
-- [ ] **Step 2: Remove retired rules from points-economy documentation**
+- [ ] **Step 2: Remove retired-game documentation**
 
-Delete each retired game’s conversion-table row, ID-standard row, and detailed gameplay/reward paragraph. Preserve every remaining scoring rule.
+Delete each retired game’s conversion-table row, ID-standard row, detailed gameplay/reward paragraph, and obsolete candidate-pool selection entry. Preserve every remaining scoring rule and candidate entry.
 
 - [ ] **Step 3: Scan all maintained sources for stale references**
 
@@ -149,7 +150,7 @@ Expected: no output and exit status 1.
 
 - [ ] **Step 4: Commit content alignment**
 
-Run `git add src/pages/all-games/index.tsx docs/points-economy.md && git commit -m "docs: remove retired game reward rules"`.
+Run `git add src/pages/all-games/index.tsx docs/points-economy.md docs/game-candidate-pool.md && git commit -m "docs: remove retired game reward rules"`.
 
 ### Task 5: Verify the integrated removal and regrouping
 
