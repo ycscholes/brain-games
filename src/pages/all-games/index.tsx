@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   ALL_GAME_ITEMS,
   GAME_CATEGORIES,
+  getGameCategoryClass,
   type GameCatalogItem,
 } from "../../config/gameCatalog";
 import { readTrainingSummary } from "../../utils/trainingStorage";
@@ -95,7 +96,7 @@ export default function AllGames() {
 
         <View className="game-category-list">
           {groupedGames.map((category) => (
-            <View key={category.id} className="game-category-section">
+            <View key={category.id} className={`game-category-section ${getGameCategoryClass(category.id)}`}>
               <View className="game-category-header">
                 <Text className="game-category-title">{category.title}</Text>
                 <Text className="game-category-count">{category.games.length} 项</Text>

@@ -15,6 +15,7 @@ import {
   GAME_TITLE_MAP,
   HOT_GAME_ITEMS,
   getGameById,
+  getGameCategoryClass,
   type GameCatalogItem,
 } from "../../config/gameCatalog";
 import { readRecommendedGame } from "../../utils/nextRecommendation";
@@ -401,7 +402,7 @@ export default function Index() {
 
         <View className="game-category-list">
           {groupedGames.map((category) => (
-            <View key={category.id} className="game-category-section">
+            <View key={category.id} className={`game-category-section ${getGameCategoryClass(category.id)}`}>
               <View className="game-category-header">
                 <Text className="game-category-title">{category.title}</Text>
                 <Text className="game-category-count">{category.games.length} 项</Text>
