@@ -248,20 +248,6 @@
     var(--surface-card);
 }
 
-.card-code-breaker {
-  background:
-    radial-gradient(circle at 34% 24%, rgba(47, 107, 79, 0.18), transparent 30%),
-    radial-gradient(circle at 76% 20%, rgba(167, 124, 38, 0.16), transparent 28%),
-    var(--surface-card);
-}
-
-.card-inequality-grid {
-  background:
-    radial-gradient(circle at 32% 24%, rgba(42, 99, 89, 0.18), transparent 32%),
-    radial-gradient(circle at 78% 24%, rgba(185, 93, 59, 0.15), transparent 30%),
-    var(--surface-card);
-}
-
 .card-tents-camp {
   background:
     radial-gradient(circle at 36% 24%, rgba(39, 95, 80, 0.18), transparent 32%),
@@ -483,16 +469,6 @@
 .card-hidato .game-badge {
   background: rgba(15, 118, 110, 0.16);
   color: #0f766e;
-}
-
-.card-code-breaker .game-badge {
-  background: rgba(47, 107, 79, 0.16);
-  color: #2f6b4f;
-}
-
-.card-inequality-grid .game-badge {
-  background: rgba(185, 93, 59, 0.16);
-  color: #9a3412;
 }
 
 .card-tents-camp .game-badge {

@@ -25,8 +25,6 @@ export const SHARE_PAGE_PATHS = [
   "pages/spatial-rotation/index",
   "pages/triad-match/index",
   "pages/hidato/index",
-  "pages/code-breaker/index",
-  "pages/inequality-grid/index",
   "pages/tents-camp/index",
   "pages/sumplete-grid/index",
   "pages/traffic-escape/index",
@@ -120,14 +118,6 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/hidato/index": {
     title: "来玩连数迷阵，练逻辑路径推理",
     timelineTitle: "连数迷阵逻辑训练",
-  },
-  "pages/code-breaker/index": {
-    title: "来玩逻辑破译，练假设推理和逻辑判断",
-    timelineTitle: "逻辑破译推理训练",
-  },
-  "pages/inequality-grid/index": {
-    title: "来玩大小迷阵，练约束推理",
-    timelineTitle: "大小迷阵逻辑训练",
   },
   "pages/tents-camp/index": {
     title: "来玩帐篷营地，练空间约束推理",

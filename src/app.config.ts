@@ -18,8 +18,6 @@ export default defineAppConfig({
     'pages/spatial-rotation/index',
     'pages/triad-match/index',
     'pages/hidato/index',
-    'pages/code-breaker/index',
-    'pages/inequality-grid/index',
     'pages/tents-camp/index',
     'pages/sumplete-grid/index',
     'pages/traffic-escape/index',
