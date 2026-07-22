@@ -93,19 +93,19 @@
 .game-category-reasoning {
   --game-category-accent: #2dac83;
   --game-category-accent-soft: rgba(45, 172, 131, 0.16);
-  --game-category-accent-deep: #1f7a60;
+  --game-category-accent-deep: #1f7058;
 }
 
 .game-category-language {
   --game-category-accent: #d98c13;
   --game-category-accent-soft: rgba(217, 140, 19, 0.16);
-  --game-category-accent-deep: #9c620b;
+  --game-category-accent-deep: #8b5709;
 }
 
 .game-category-challenge {
   --game-category-accent: #e96560;
   --game-category-accent-soft: rgba(233, 101, 96, 0.16);
-  --game-category-accent-deep: #b84f4c;
+  --game-category-accent-deep: #a94643;
 }
 
 .game-category-header {
@@ -132,7 +132,7 @@
   padding: 0 14px;
   border-radius: 999px;
   background: var(--game-category-accent-soft, rgba(15, 159, 143, 0.12));
-  color: var(--game-category-accent, #0f766e);
+  color: var(--game-category-accent-deep, #0f766e);
   font-size: 24px;
   font-weight: 700;
   line-height: 1;
