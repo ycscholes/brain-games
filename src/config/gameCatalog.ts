@@ -29,6 +29,10 @@ export const GAME_CATEGORIES: Array<{ id: GameCategoryId; title: string }> = [
   { id: "challenge", title: "综合挑战" },
 ];
 
+export function getGameCategoryClass(category: GameCategoryId) {
+  return `game-category-${category}`;
+}
+
 export const GAME_GAUNTLET_ID = "game-gauntlet" as const;
 
 export const GAME_CATALOG = [

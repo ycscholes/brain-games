@@ -4,6 +4,7 @@ import {
   GAME_CATALOG,
   GAME_CATEGORIES,
   HOT_GAME_IDS,
+  getGameCategoryClass,
 } from "../../src/config/gameCatalog";
 
 describe("gameCatalog", () => {
@@ -66,6 +67,16 @@ describe("gameCatalog", () => {
     expect(categories.get("pattern-completion")).toBe("reasoning");
     expect(categories.get("traffic-escape")).toBe("reasoning");
     expect(categories.get("game-gauntlet")).toBe("challenge");
+  });
+
+  test("maps every gameplay category to its shared styling class", () => {
+    expect(GAME_CATEGORIES.map((category) => getGameCategoryClass(category.id))).toEqual([
+      "game-category-math",
+      "game-category-memory",
+      "game-category-reasoning",
+      "game-category-language",
+      "game-category-challenge",
+    ]);
   });
 
   test("hot games carry double recommendation weight", () => {
