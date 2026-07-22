@@ -22,6 +22,7 @@ export type TrainingGameId =
   | "inequality-grid"
   | "tents-camp"
   | "sumplete-grid"
+  | "traffic-escape"
   | "game-gauntlet"
   | "memory"
   | "rps"
@@ -296,6 +297,7 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "inequality-grid": 1,
   "tents-camp": 1,
   "sumplete-grid": 1,
+  "traffic-escape": 1,
   "game-gauntlet": 1,
   memory: 1,
   rps: 1,
@@ -576,6 +578,7 @@ export function clearProductData() {
     gameSpecificKeys.push(`triad_match_best_${difficulty}`);
     gameSpecificKeys.push(`hidato_best_${difficulty}`);
     gameSpecificKeys.push(`code_breaker_best_${difficulty}`);
+    gameSpecificKeys.push(`traffic_escape_best_${difficulty}`);
 
     ["slow", "standard", "fast"].forEach((speedDifficulty) => {
       gameSpecificKeys.push(`head_count_best_${difficulty}_${speedDifficulty}`);

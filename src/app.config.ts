@@ -22,6 +22,7 @@ export default defineAppConfig({
     'pages/inequality-grid/index',
     'pages/tents-camp/index',
     'pages/sumplete-grid/index',
+    'pages/traffic-escape/index',
     'pages/pet/index',
     'pages/settings/index',
     'pages/training-records/index'

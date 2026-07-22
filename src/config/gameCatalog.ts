@@ -252,6 +252,23 @@ export const GAME_CATALOG = [
     gauntletModeWeight: 1,
   },
   {
+    id: "traffic-escape",
+    title: "车阵突围",
+    badge: "规划",
+    cardClass: "card-traffic-escape",
+    url: "/pages/traffic-escape/index",
+    category: "advanced",
+    duration: "约 2 分钟",
+    skill: "空间规划",
+    level: "进阶",
+    isHot: false,
+    showInAllGames: true,
+    canAppearInGauntlet: true,
+    showBestScore: true,
+    recommendationWeight: 1,
+    gauntletModeWeight: 1,
+  },
+  {
     id: "number-order",
     title: "星链回响",
     badge: "记忆",
@@ -387,6 +404,7 @@ export const GAME_TITLE_MAP: Record<TrainingGameId, string> = {
   "inequality-grid": "大小迷阵",
   "tents-camp": "帐篷营地",
   "sumplete-grid": "删数求和",
+  "traffic-escape": "车阵突围",
   "game-gauntlet": "游戏大闯关",
 };
 
