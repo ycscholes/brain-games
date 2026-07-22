@@ -70,9 +70,42 @@
 }
 
 .game-category-section {
+  --game-category-accent: var(--brand-secondary);
+  --game-category-accent-soft: rgba(15, 159, 143, 0.14);
+  --game-category-accent-deep: #0f766e;
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.game-category-math {
+  --game-category-accent: #2499d7;
+  --game-category-accent-soft: rgba(36, 153, 215, 0.16);
+  --game-category-accent-deep: #176f9f;
+}
+
+.game-category-memory {
+  --game-category-accent: #8a6ee8;
+  --game-category-accent-soft: rgba(138, 110, 232, 0.16);
+  --game-category-accent-deep: #624bb9;
+}
+
+.game-category-reasoning {
+  --game-category-accent: #2dac83;
+  --game-category-accent-soft: rgba(45, 172, 131, 0.16);
+  --game-category-accent-deep: #1f7a60;
+}
+
+.game-category-language {
+  --game-category-accent: #d98c13;
+  --game-category-accent-soft: rgba(217, 140, 19, 0.16);
+  --game-category-accent-deep: #9c620b;
+}
+
+.game-category-challenge {
+  --game-category-accent: #e96560;
+  --game-category-accent-soft: rgba(233, 101, 96, 0.16);
+  --game-category-accent-deep: #b84f4c;
 }
 
 .game-category-header {
@@ -88,7 +121,7 @@
   font-size: 34px;
   line-height: 1.2;
   font-weight: 800;
-  color: #233238;
+  color: var(--game-category-accent-deep, #233238);
 }
 
 .game-category-count {
@@ -98,8 +131,8 @@
   min-height: 36px;
   padding: 0 14px;
   border-radius: 999px;
-  background: rgba(15, 159, 143, 0.12);
-  color: #0f766e;
+  background: var(--game-category-accent-soft, rgba(15, 159, 143, 0.12));
+  color: var(--game-category-accent, #0f766e);
   font-size: 24px;
   font-weight: 700;
   line-height: 1;
@@ -118,7 +151,9 @@
   min-height: 250px;
   padding: 20px 18px;
   border-radius: 18px;
-  background: var(--surface-card);
+  background:
+    radial-gradient(circle at 86% 10%, var(--game-category-accent-soft, rgba(15, 159, 143, 0.14)), transparent 38%),
+    var(--game-card-background, var(--surface-card));
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-card);
   display: flex;
@@ -134,7 +169,7 @@
   left: 0;
   right: 0;
   height: 6px;
-  background: var(--brand-secondary);
+  background: var(--game-category-accent, var(--brand-secondary));
 }
 
 .game-card::after {
@@ -155,87 +190,87 @@
 }
 
 .card-memory {
-  background:
+  --game-card-background:
     radial-gradient(circle at 62% 22%, rgba(15, 159, 143, 0.16), transparent 34%),
     var(--surface-card);
 }
 
 .card-rps {
-  background:
+  --game-card-background:
     radial-gradient(circle at 34% 24%, rgba(255, 155, 112, 0.2), transparent 32%),
     var(--surface-card);
 }
 
 .card-mental {
-  background:
+  --game-card-background:
     radial-gradient(circle at 40% 28%, rgba(14, 116, 144, 0.16), transparent 34%),
     var(--surface-card);
 }
 
 .card-twenty-four {
-  background:
+  --game-card-background:
     radial-gradient(circle at 42% 26%, rgba(22, 163, 74, 0.18), transparent 34%),
     var(--surface-card);
 }
 
 .card-digit {
-  background:
+  --game-card-background:
     radial-gradient(circle at 38% 26%, rgba(15, 159, 143, 0.16), transparent 34%),
     var(--surface-card);
 }
 
 .card-mot {
-  background:
+  --game-card-background:
     radial-gradient(circle at 42% 24%, rgba(16, 185, 129, 0.18), transparent 34%),
     var(--surface-card);
 }
 
 .card-pattern {
-  background:
+  --game-card-background:
     radial-gradient(circle at 50% 30%, rgba(250, 204, 21, 0.2), transparent 34%),
     var(--surface-card);
 }
 
 .card-number-order {
-  background:
+  --game-card-background:
     radial-gradient(circle at 44% 28%, rgba(20, 184, 166, 0.2), transparent 34%),
     var(--surface-card);
 }
 
 .card-head-count {
-  background:
+  --game-card-background:
     radial-gradient(circle at 52% 28%, rgba(245, 158, 11, 0.2), transparent 34%),
     var(--surface-card);
 }
 
 .card-word-scramble {
-  background:
+  --game-card-background:
     radial-gradient(circle at 46% 28%, rgba(249, 115, 22, 0.18), transparent 34%),
     var(--surface-card);
 }
 
 .card-bird-count {
-  background:
+  --game-card-background:
     radial-gradient(circle at 52% 24%, rgba(15, 159, 143, 0.18), transparent 34%),
     var(--surface-card);
 }
 
 .card-color-trap {
-  background:
+  --game-card-background:
     radial-gradient(circle at 40% 24%, rgba(225, 77, 67, 0.16), transparent 30%),
     radial-gradient(circle at 76% 18%, rgba(47, 155, 106, 0.14), transparent 28%),
     var(--surface-card);
 }
 
 .card-spatial-rotation {
-  background:
+  --game-card-background:
     radial-gradient(circle at 38% 22%, rgba(43, 139, 162, 0.18), transparent 32%),
     radial-gradient(circle at 76% 24%, rgba(245, 184, 79, 0.16), transparent 30%),
     var(--surface-card);
 }
 
 .card-triad-match {
-  background:
+  --game-card-background:
     radial-gradient(circle at 32% 24%, rgba(226, 109, 92, 0.17), transparent 32%),
     radial-gradient(circle at 70% 22%, rgba(47, 157, 130, 0.16), transparent 30%),
     radial-gradient(circle at 52% 68%, rgba(214, 155, 31, 0.14), transparent 34%),
@@ -243,20 +278,20 @@
 }
 
 .card-hidato {
-  background:
+  --game-card-background:
     linear-gradient(135deg, rgba(15, 118, 110, 0.14) 0%, rgba(245, 158, 11, 0.16) 100%),
     var(--surface-card);
 }
 
 .card-tents-camp {
-  background:
+  --game-card-background:
     radial-gradient(circle at 36% 24%, rgba(39, 95, 80, 0.18), transparent 32%),
     radial-gradient(circle at 76% 20%, rgba(202, 133, 33, 0.16), transparent 30%),
     var(--surface-card);
 }
 
 .card-sumplete-grid {
-  background:
+  --game-card-background:
     radial-gradient(circle at 32% 22%, rgba(20, 184, 166, 0.18), transparent 30%),
     radial-gradient(circle at 78% 18%, rgba(245, 158, 11, 0.16), transparent 28%),
     linear-gradient(135deg, rgba(15, 23, 42, 0.04), rgba(255, 255, 255, 0)),
@@ -264,21 +299,21 @@
 }
 
 .card-traffic-escape {
-  background:
+  --game-card-background:
     radial-gradient(circle at 22% 26%, rgba(45, 212, 191, 0.18), transparent 32%),
     radial-gradient(circle at 78% 20%, rgba(249, 115, 22, 0.2), transparent 28%),
     var(--surface-card);
 }
 
 .card-game-gauntlet {
-  background:
+  --game-card-background:
     radial-gradient(circle at 36% 24%, rgba(249, 115, 22, 0.18), transparent 32%),
     radial-gradient(circle at 78% 18%, rgba(22, 163, 74, 0.14), transparent 30%),
     var(--surface-card);
 }
 
 .card-pet {
-  background:
+  --game-card-background:
     radial-gradient(circle at 45% 28%, rgba(250, 204, 21, 0.18), transparent 34%),
     var(--surface-card);
 }
