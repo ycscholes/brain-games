@@ -90,7 +90,7 @@ export default function AllGames() {
 
         <View className="all-games-summary">
           <Text className="summary-title">{ALL_GAME_ITEMS.length} 项训练</Text>
-          <Text className="summary-copy">热门、记忆、专注与综合闯关都在这里。</Text>
+          <Text className="summary-copy">按计算、记忆、推理、语言与综合挑战浏览训练。</Text>
         </View>
 
         <View className="game-category-list">
