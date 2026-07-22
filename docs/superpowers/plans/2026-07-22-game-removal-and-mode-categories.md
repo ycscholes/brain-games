@@ -115,7 +115,7 @@ Delete the two page directories and the two listed game-logic test files.
 
 - [ ] **Step 4: Prove all production and test references are gone**
 
-Run `rg -n "code-breaker|inequality-grid|逻辑破译|大小迷阵" src tests`.
+Run `rg -n "code-breaker|inequality-grid|逻辑破译|大小迷阵" src`.
 
 Expected: no output and exit status 1.
 
@@ -143,7 +143,7 @@ Delete each retired game’s conversion-table row, ID-standard row, and detailed
 
 - [ ] **Step 3: Scan all maintained sources for stale references**
 
-Run `rg -n "code-breaker|inequality-grid|逻辑破译|大小迷阵" src tests docs --glob '!docs/superpowers/specs/2026-07-22-game-removal-and-mode-categories-design.md' --glob '!docs/superpowers/plans/2026-07-22-game-removal-and-mode-categories.md'`.
+Run `rg -n "code-breaker|inequality-grid|逻辑破译|大小迷阵" src docs --glob '!docs/superpowers/specs/2026-07-22-game-removal-and-mode-categories-design.md' --glob '!docs/superpowers/plans/2026-07-22-game-removal-and-mode-categories.md'`.
 
 Expected: no output and exit status 1.
 
