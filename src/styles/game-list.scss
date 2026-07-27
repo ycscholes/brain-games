@@ -240,6 +240,12 @@
     var(--surface-card);
 }
 
+.card-loop-line {
+  background:
+    linear-gradient(135deg, rgba(13, 148, 136, 0.16) 0%, rgba(245, 158, 11, 0.15) 100%),
+    var(--surface-card);
+}
+
 .card-game-gauntlet {
   background:
     radial-gradient(circle at 36% 24%, rgba(249, 115, 22, 0.18), transparent 32%),
@@ -438,6 +444,11 @@
 
 .card-hidato .game-badge {
   background: rgba(15, 118, 110, 0.16);
+  color: #0f766e;
+}
+
+.card-loop-line .game-badge {
+  background: rgba(13, 148, 136, 0.16);
   color: #0f766e;
 }
 

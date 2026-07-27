@@ -31,9 +31,10 @@ describe("gameCatalog", () => {
   test("gauntlet candidate pool includes playable single games only", () => {
     const candidateIds = GAUNTLET_CANDIDATE_GAMES.map((game) => game.id);
 
-    expect(candidateIds).toHaveLength(13);
+    expect(candidateIds).toHaveLength(14);
     expect(new Set(candidateIds).size).toBe(candidateIds.length);
     expect(candidateIds).toContain("hidato");
+    expect(candidateIds).toContain("loop-line");
     expect(candidateIds).not.toContain("game-gauntlet");
     expect(candidateIds).not.toContain("head-count");
     expect(candidateIds).not.toContain("dual-task");
