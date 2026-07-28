@@ -44,6 +44,7 @@ import {
   type HeadCountQuestionResult,
   type HeadCountSpeedDifficulty,
 } from "../head-count/gameLogic";
+import { useTimerQueue } from "./useTimerQueue";
 import "./index.scss";
 
 type FarmCountMode = "speed" | "yard";
@@ -258,7 +259,7 @@ export default function FarmCount() {
   const [isNewBest, setIsNewBest] = useState(false);
   const [loadProgress, setLoadProgress] = useState({ loaded: 0, total: 0 });
 
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const { clear: clearTimers, schedule } = useTimerQueue();
   const startedAtRef = useRef(0);
   const answerStartedAtRef = useRef(0);
   const finishedRef = useRef(false);
@@ -276,16 +277,6 @@ export default function FarmCount() {
       ? displayCount
       : 0;
   const movingPets = Array.from({ length: yardEvent?.delta ?? 0 }, (_, index) => index);
-
-  const clearTimers = useCallback(() => {
-    timersRef.current.forEach((timer) => clearTimeout(timer));
-    timersRef.current = [];
-  }, []);
-
-  const schedule = useCallback((callback: () => void, delay: number) => {
-    const timer = setTimeout(callback, delay);
-    timersRef.current.push(timer);
-  }, []);
 
   const refreshPetSkinPool = useCallback(() => {
     const next = getPrioritizedPetDisplayPool();
@@ -316,12 +307,6 @@ export default function FarmCount() {
   useEffect(() => {
     refreshBest();
   }, [refreshBest]);
-
-  useEffect(() => {
-    return () => {
-      clearTimers();
-    };
-  }, [clearTimers]);
 
   const resetRoundState = useCallback(() => {
     setCurrentIndex(0);
