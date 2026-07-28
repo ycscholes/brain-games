@@ -184,4 +184,16 @@ describe("bird-count game logic", () => {
       score: 0,
     });
   });
+
+  test("keeps the speed-mode session and wrong-answer scoring invariant", () => {
+    (["normal", "hard"] as const).forEach((difficulty) => {
+      expect(createBirdCountSession(difficulty)).toHaveLength(BIRD_COUNT_TOTAL_QUESTIONS);
+    });
+    expect(scoreBirdCountQuestion({
+      selectedAnswer: 2,
+      correctAnswer: 3,
+      answerMs: 1,
+      currentCombo: 99,
+    })).toMatchObject({ correct: false, score: 0 });
+  });
 });
