@@ -18,6 +18,7 @@ Cici的脑部锻炼是一个基于 Taro 和 React 的微信小程序脑力训练
 | 帐篷营地 | 约束推理 | `/pages/tents-camp/index` | — |
 | 删数求和 | 约束推理 | `/pages/sumplete-grid/index` | — |
 | 车阵突围 | 空间规划 | `/pages/traffic-escape/index` | — |
+| 网络回路 | 网络规划 | `/pages/netwalk/index` | — |
 | 星链回响 | 路径工作记忆 | `/pages/number-order/index` | [游戏说明](src/pages/number-order/README.md) |
 | 奇趣记忆 | N-Back 图形记忆 | `/pages/memory-challenge/index` | [游戏说明](src/pages/memory-challenge/README.md) |
 | 追踪任务 | 多目标视觉追踪 | `/pages/multiple-object-tracking/index` | [游戏说明](src/pages/multiple-object-tracking/README.md) |
