@@ -310,6 +310,14 @@
     var(--surface-card);
 }
 
+.card-netwalk {
+  --game-card-background:
+    radial-gradient(circle at 24% 24%, rgba(44, 201, 192, 0.2), transparent 32%),
+    radial-gradient(circle at 78% 20%, rgba(242, 179, 47, 0.18), transparent 28%),
+    linear-gradient(135deg, rgba(5, 37, 52, 0.08), rgba(255, 255, 255, 0)),
+    var(--surface-card);
+}
+
 .card-game-gauntlet {
   --game-card-background:
     radial-gradient(circle at 36% 24%, rgba(249, 115, 22, 0.18), transparent 32%),
@@ -524,6 +532,11 @@
 .card-traffic-escape .game-badge {
   background: rgba(249, 115, 22, 0.16);
   color: #c2410c;
+}
+
+.card-netwalk .game-badge {
+  background: rgba(29, 166, 158, 0.16);
+  color: #10756f;
 }
 
 .card-game-gauntlet .game-badge {

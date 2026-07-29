@@ -198,6 +198,7 @@ describe("trainingStorage", () => {
     mockStorage.set("hidato_best_hard", "48");
     mockStorage.set("code_breaker_best_normal", "38");
     mockStorage.set("traffic_escape_best_hard", "48");
+    mockStorage.set("netwalk_best_normal", "40");
     mockStorage.set("game_gauntlet_session_v1", JSON.stringify({ id: "gauntlet_1" }));
     mockStorage.set("memory_highscore_shape_M1", JSON.stringify({ score: 42 }));
     mockStorage.set("memory_highscore_calculation_M4", JSON.stringify({ score: 128 }));
@@ -267,7 +268,7 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("head-count", 50, "hard")).toBe(60);
     });
 
-    test("word-scramble, bird-count, color-trap, spatial-rotation, triad-match, hidato, tents-camp, sumplete-grid, and traffic-escape use 1x conversion with difficulty caps", () => {
+    test("word-scramble, bird-count, color-trap, spatial-rotation, triad-match, hidato, tents-camp, sumplete-grid, traffic-escape, and netwalk use 1x conversion with difficulty caps", () => {
       expect(getAwardedPoints("word-scramble", 32, "normal")).toBe(32);
       expect(getAwardedPoints("word-scramble", 50, "normal")).toBe(40);
       expect(getAwardedPoints("bird-count", 32, "hard")).toBe(48);
@@ -286,6 +287,8 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("sumplete-grid", 50, "hard")).toBe(60);
       expect(getAwardedPoints("traffic-escape", 40, "normal")).toBe(40);
       expect(getAwardedPoints("traffic-escape", 50, "hard")).toBe(60);
+      expect(getAwardedPoints("netwalk", 40, "normal")).toBe(40);
+      expect(getAwardedPoints("netwalk", 50, "hard")).toBe(60);
     });
 
     test("game gauntlet can award the summed child-game points without default caps", () => {
@@ -316,6 +319,7 @@ describe("trainingStorage", () => {
         getAwardedPoints("tents-camp", 34),
         getAwardedPoints("sumplete-grid", 34),
         getAwardedPoints("traffic-escape", 34),
+        getAwardedPoints("netwalk", 34),
         getAwardedPoints("game-gauntlet", 34),
       ];
 

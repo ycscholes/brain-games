@@ -1,0 +1,305 @@
+.netwalk-page {
+  min-height: 100vh;
+  padding: 28px 24px 56px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 10% 4%, rgba(51, 198, 191, 0.14), transparent 30%),
+    radial-gradient(circle at 92% 8%, rgba(247, 183, 49, 0.16), transparent 26%),
+    #07141f;
+  color: #edf8fb;
+}
+
+.netwalk-start,
+.netwalk-play,
+.netwalk-finish {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.netwalk-hero,
+.netwalk-panel,
+.netwalk-hud,
+.netwalk-feedback-card,
+.netwalk-board-shell,
+.netwalk-controls-card,
+.netwalk-finish-panel {
+  border: 2px solid rgba(177, 226, 234, 0.13);
+  border-radius: 28px;
+  background: rgba(9, 28, 40, 0.92);
+  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.netwalk-hero {
+  position: relative;
+  min-height: 258px;
+  padding: 35px 30px;
+  overflow: hidden;
+  box-sizing: border-box;
+  background:
+    linear-gradient(135deg, rgba(10, 49, 66, 0.96), rgba(8, 24, 37, 0.98)),
+    #0a2433;
+}
+
+.netwalk-orbit {
+  position: absolute;
+  width: 370px;
+  height: 370px;
+  border: 2px solid rgba(60, 215, 202, 0.2);
+  border-radius: 50%;
+}
+
+.netwalk-orbit-one { right: -130px; bottom: -214px; }
+.netwalk-orbit-two { right: -70px; bottom: -274px; border-color: rgba(248, 189, 58, 0.17); }
+
+.netwalk-hero-server {
+  position: absolute;
+  right: 46px;
+  top: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 94px;
+  height: 94px;
+  border: 12px solid rgba(248, 189, 58, 0.18);
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: #f4af32;
+  box-shadow: 0 0 0 18px rgba(248, 189, 58, 0.08), 0 0 40px rgba(248, 189, 58, 0.35);
+  color: #fff4d6;
+  font-size: 50px;
+  line-height: 1;
+}
+
+.netwalk-kicker,
+.netwalk-title,
+.netwalk-subtitle,
+.netwalk-best-pill { position: relative; z-index: 1; }
+
+.netwalk-kicker {
+  display: block;
+  color: #64dfd1;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 3px;
+}
+
+.netwalk-title {
+  display: block;
+  margin-top: 13px;
+  color: #fff;
+  font-size: 58px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.netwalk-subtitle {
+  display: block;
+  margin-top: 14px;
+  color: #bdd5db;
+  font-size: 27px;
+  font-weight: 700;
+}
+
+.netwalk-best-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  margin-top: 19px;
+  padding: 0 18px;
+  border: 1px solid rgba(248, 189, 58, 0.48);
+  border-radius: 999px;
+  background: rgba(248, 189, 58, 0.1);
+}
+
+.netwalk-best-label,
+.netwalk-best-value { font-size: 22px; font-weight: 900; }
+.netwalk-best-label { color: #ffe5a0; }
+.netwalk-best-value { color: #fff; font-size: 30px; }
+
+.netwalk-panel,
+.netwalk-feedback-card,
+.netwalk-controls-card { padding: 26px; }
+.netwalk-rule-panel { background: rgba(11, 52, 61, 0.86); }
+.netwalk-section-title,
+.netwalk-rule,
+.netwalk-difficulty-name,
+.netwalk-difficulty-copy { display: block; }
+.netwalk-section-title { color: #fff; font-size: 31px; font-weight: 900; }
+.netwalk-rule { margin-top: 13px; color: #c5dce1; font-size: 25px; font-weight: 650; line-height: 1.5; }
+
+.netwalk-difficulty-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 17px;
+}
+
+.netwalk-difficulty-card {
+  min-height: 126px;
+  padding: 18px;
+  border: 2px solid rgba(181, 224, 230, 0.13);
+  border-radius: 20px;
+  box-sizing: border-box;
+  background: #102d3b;
+}
+
+.netwalk-difficulty-card-active {
+  border-color: #51d2c5;
+  background: #104653;
+  box-shadow: 0 10px 20px rgba(43, 204, 190, 0.12);
+}
+
+.netwalk-difficulty-name { color: #fff; font-size: 29px; font-weight: 900; }
+.netwalk-difficulty-copy { margin-top: 9px; color: #a7cbd0; font-size: 22px; font-weight: 700; line-height: 1.35; }
+
+.netwalk-floating-start {
+  position: fixed;
+  z-index: 20;
+  right: 24px;
+  bottom: calc(26px + env(safe-area-inset-bottom));
+  left: 24px;
+}
+
+.netwalk-floating-spacer { height: 112px; }
+
+.netwalk-primary-button,
+.netwalk-secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 74px;
+  border-radius: 20px;
+  box-sizing: border-box;
+}
+
+.netwalk-primary-button {
+  background: linear-gradient(135deg, #d99724, #f0b537);
+  box-shadow: 0 14px 26px rgba(240, 181, 55, 0.24);
+}
+
+.netwalk-primary-button-text,
+.netwalk-secondary-button-text { font-size: 28px; font-weight: 900; }
+.netwalk-primary-button-text { color: #192631; }
+
+.netwalk-hud {
+  display: flex;
+  justify-content: space-around;
+  padding: 17px 14px;
+}
+
+.netwalk-hud-label,
+.netwalk-hud-value { display: block; text-align: center; }
+.netwalk-hud-label { color: #91b9c2; font-size: 21px; font-weight: 800; }
+.netwalk-hud-value { margin-top: 4px; color: #fff; font-size: 29px; font-weight: 900; }
+.netwalk-hud-divider { width: 1px; background: rgba(205, 236, 240, 0.18); }
+
+.netwalk-feedback-card { border-radius: 22px; padding: 19px 22px; }
+.netwalk-feedback-title { display: block; color: #63ddd0; font-size: 25px; font-weight: 900; }
+.netwalk-feedback-copy { display: block; margin-top: 7px; color: #c5dce1; font-size: 23px; font-weight: 650; line-height: 1.4; }
+
+.netwalk-board-shell {
+  padding: 19px;
+  background:
+    linear-gradient(rgba(66, 205, 195, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(66, 205, 195, 0.035) 1px, transparent 1px),
+    #071c29;
+  background-size: 26px 26px;
+}
+
+.netwalk-board {
+  display: grid;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 2px solid rgba(128, 205, 210, 0.18);
+  border-radius: 22px;
+  background: rgba(8, 31, 43, 0.8);
+}
+
+.netwalk-board-caption {
+  display: block;
+  margin-top: 13px;
+  color: #83afb8;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.netwalk-tile {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(120, 195, 202, 0.08);
+  background: rgba(13, 52, 67, 0.34);
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.netwalk-tile:active { transform: scale(0.93); }
+.netwalk-tile-server { background: rgba(133, 91, 15, 0.16); }
+
+.netwalk-arm {
+  position: absolute;
+  z-index: 1;
+  background: #1a5266;
+  box-shadow: inset 0 0 0 2px rgba(132, 203, 208, 0.11);
+  transition: background 180ms ease, box-shadow 180ms ease;
+}
+
+.netwalk-arm-up,
+.netwalk-arm-down { left: 46%; width: 8%; height: 50%; }
+.netwalk-arm-left,
+.netwalk-arm-right { top: 46%; width: 50%; height: 8%; }
+.netwalk-arm-up { top: 0; }
+.netwalk-arm-down { bottom: 0; }
+.netwalk-arm-left { left: 0; }
+.netwalk-arm-right { right: 0; }
+
+.netwalk-node-core {
+  position: absolute;
+  z-index: 3;
+  top: 35%;
+  left: 35%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30%;
+  height: 30%;
+  border: 2px solid #33768a;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: #123d4f;
+  color: #a6e5e3;
+}
+
+.netwalk-node-mark { font-size: 23px; font-weight: 900; line-height: 1; }
+
+.netwalk-tile-powered { background: rgba(33, 118, 126, 0.48); }
+.netwalk-tile-powered .netwalk-arm { background: #45d7cc; box-shadow: 0 0 10px rgba(69, 215, 204, 0.55); }
+.netwalk-tile-powered .netwalk-node-core { border-color: #75eee4; background: #237a7f; color: #e8ffff; box-shadow: 0 0 18px rgba(69, 215, 204, 0.42); }
+.netwalk-tile-server .netwalk-node-core { border-color: #ffe3a0; background: #e6a72d; color: #fff8df; box-shadow: 0 0 24px rgba(241, 183, 55, 0.72); }
+
+.netwalk-controls-card { text-align: center; }
+.netwalk-controls-title { display: block; color: #fff; font-size: 27px; font-weight: 900; }
+.netwalk-controls-copy { display: block; margin-top: 8px; color: #a8c8ce; font-size: 22px; font-weight: 650; }
+.netwalk-secondary-button { margin-top: 20px; border: 2px solid rgba(95, 220, 210, 0.4); background: rgba(30, 105, 111, 0.4); }
+.netwalk-secondary-button-text { color: #9af2ea; }
+
+.netwalk-finish { min-height: calc(100vh - 84px); justify-content: center; }
+.netwalk-finish-panel { padding: 44px 30px; text-align: center; background: linear-gradient(145deg, #0b3440, #0a1f30); }
+.netwalk-finish-title { display: block; margin-top: 18px; color: #fff; font-size: 46px; font-weight: 900; }
+.netwalk-finish-score { display: block; margin-top: 20px; color: #f5bb43; font-size: 92px; font-weight: 900; line-height: 1; text-shadow: 0 0 28px rgba(245, 187, 67, 0.25); }
+.netwalk-finish-copy { display: block; margin-top: 18px; color: #bcd7dc; font-size: 23px; font-weight: 700; line-height: 1.5; }
+.netwalk-finish-actions { display: flex; flex-direction: column; gap: 14px; margin-top: 30px; }
+.netwalk-finish-actions .netwalk-secondary-button { margin-top: 0; }
+
+@media (max-width: 370px) {
+  .netwalk-page { padding-right: 18px; padding-left: 18px; }
+  .netwalk-title { font-size: 50px; }
+  .netwalk-hero-server { right: 28px; width: 78px; height: 78px; }
+  .netwalk-rule { font-size: 22px; }
+}

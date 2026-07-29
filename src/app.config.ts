@@ -21,6 +21,7 @@ export default defineAppConfig({
     'pages/tents-camp/index',
     'pages/sumplete-grid/index',
     'pages/traffic-escape/index',
+    'pages/netwalk/index',
     'pages/pet/index',
     'pages/settings/index',
     'pages/training-records/index'

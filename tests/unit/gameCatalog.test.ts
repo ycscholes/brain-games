@@ -30,6 +30,7 @@ describe("gameCatalog", () => {
     expect(allGameIds).toContain("tents-camp");
     expect(allGameIds).toContain("sumplete-grid");
     expect(allGameIds).toContain("traffic-escape");
+    expect(allGameIds).toContain("netwalk");
     expect(allGameIds).toContain("game-gauntlet");
     expect(allGameIds).not.toContain("head-count");
     expect(allGameIds).not.toContain("dual-task");
@@ -39,7 +40,7 @@ describe("gameCatalog", () => {
   test("gauntlet candidate pool includes playable single games only", () => {
     const candidateIds = GAUNTLET_CANDIDATE_GAMES.map((game) => game.id);
 
-    expect(candidateIds).toHaveLength(17);
+    expect(candidateIds).toHaveLength(18);
     expect(new Set(candidateIds).size).toBe(candidateIds.length);
     expect(candidateIds).toContain("triad-match");
     expect(candidateIds).toContain("hidato");
@@ -48,6 +49,7 @@ describe("gameCatalog", () => {
     expect(candidateIds).toContain("tents-camp");
     expect(candidateIds).toContain("sumplete-grid");
     expect(candidateIds).toContain("traffic-escape");
+    expect(candidateIds).toContain("netwalk");
     expect(candidateIds).not.toContain("game-gauntlet");
     expect(candidateIds).not.toContain("head-count");
     expect(candidateIds).not.toContain("dual-task");
@@ -66,6 +68,7 @@ describe("gameCatalog", () => {
     const categories = new Map(GAME_CATALOG.map((game) => [game.id, game.category]));
     expect(categories.get("pattern-completion")).toBe("reasoning");
     expect(categories.get("traffic-escape")).toBe("reasoning");
+    expect(categories.get("netwalk")).toBe("reasoning");
     expect(categories.get("game-gauntlet")).toBe("challenge");
   });
 
