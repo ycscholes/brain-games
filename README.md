@@ -11,13 +11,21 @@ Cici的脑部锻炼是一个基于 Taro 和 React 的微信小程序脑力训练
 | 数字广度记忆 | 短时数字记忆 | `/pages/digit-span/index` | [游戏说明](src/pages/digit-span/README.md) |
 | 24 点 | 算术组合 | `/pages/twenty-four/index` | [游戏说明](src/pages/twenty-four/README.md) |
 | 逆向猜拳 | 抑制控制与反应 | `/pages/rock-paper-scissors/index` | [游戏说明](src/pages/rock-paper-scissors/README.md) |
+| 颜色陷阱 | 选择注意 | `/pages/color-trap/index` | — |
+| 旋影辨形 | 空间推理 | `/pages/spatial-rotation/index` | — |
+| 特征三连 | 多属性归纳 | `/pages/triad-match/index` | — |
+| 连数迷阵 | 逻辑路径 | `/pages/hidato/index` | — |
+| 帐篷营地 | 约束推理 | `/pages/tents-camp/index` | — |
+| 删数求和 | 约束推理 | `/pages/sumplete-grid/index` | — |
+| 车阵突围 | 空间规划 | `/pages/traffic-escape/index` | — |
 | 星链回响 | 路径工作记忆 | `/pages/number-order/index` | [游戏说明](src/pages/number-order/README.md) |
-| 奇趣图形记忆 | N-Back 图形记忆 | `/pages/memory-challenge/index` | [游戏说明](src/pages/memory-challenge/README.md) |
+| 奇趣记忆 | N-Back 图形记忆 | `/pages/memory-challenge/index` | [游戏说明](src/pages/memory-challenge/README.md) |
 | 追踪任务 | 多目标视觉追踪 | `/pages/multiple-object-tracking/index` | [游戏说明](src/pages/multiple-object-tracking/README.md) |
 | 农场清点 | 选择性计数与动态计数 | `/pages/bird-count/index` | [游戏说明](src/pages/bird-count/README.md) |
 | 词语拼盘 | 语言重组与词义匹配 | `/pages/word-scramble/index` | [游戏说明](src/pages/word-scramble/README.md) |
+| 游戏大闯关 | 综合训练 | `/pages/game-gauntlet/index` | — |
 
-`词语拼盘` 当前未在首页展示，但页面、训练记录和积分管线仍然可用。`/pages/head-count/index` 是农场清点中“农场进出”模式的[兼容路由](src/pages/head-count/README.md)。
+`/pages/head-count/index` 是农场清点中“农场进出”模式的[兼容路由](src/pages/head-count/README.md)，不作为独立公开目录游戏列出。
 
 ## 核心系统
 

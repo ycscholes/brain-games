@@ -115,4 +115,15 @@ describe("head-count game logic", () => {
       score: 0,
     });
   });
+
+  test("keeps the yard-mode session and correct-answer scoring invariant", () => {
+    expect(createHeadCountSession("normal", "slow")).toHaveLength(HEAD_COUNT_TOTAL_QUESTIONS);
+    expect(createHeadCountSession("hard", "fast")).toHaveLength(HEAD_COUNT_TOTAL_QUESTIONS);
+    expect(scoreHeadCountQuestion({
+      selectedAnswer: 4,
+      correctAnswer: 4,
+      answerMs: 2600,
+      currentCombo: 0,
+    })).toMatchObject({ correct: true, score: 3 });
+  });
 });

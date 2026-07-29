@@ -291,7 +291,7 @@ test("README lists every public catalog game", () => {
   const readme = fs.readFileSync(path.resolve(process.cwd(), "README.md"), "utf8");
   ALL_GAME_ITEMS.forEach((game) => {
     expect(readme).toContain(`| ${game.title} |`);
-    expect(readme).toContain(`| ${game.url} |`);
+    expect(readme).toContain(`| \`${game.url}\` |`);
   });
 });
 ```

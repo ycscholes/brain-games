@@ -1,5 +1,5 @@
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text } from "@tarojs/components";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { resolvePetSpriteUrl } from "../../config/remoteAssets";
 import { resolveCustomPetSpriteUrl } from "../../services/custom-pet/customPetService";
@@ -14,10 +14,9 @@ import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../u
 import { usePageShare } from "../../utils/share";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
-import PetSprite from "../pet/components/PetSprite";
-import type { PetSpriteMood, PetSpriteSize } from "../pet/components/PetSprite/types";
+import type { PetSpriteMood } from "../pet/components/PetSprite/types";
 import type { PetSkin } from "../pet/types";
-import { getPetAssetKey, type PetAssetRef } from "../pet/petAssets";
+import { getPetAssetKey } from "../pet/petAssets";
 import {
   buildPetDisplayPool,
   getPetDisplayNameForSkin,
@@ -39,11 +38,14 @@ import {
   HEAD_COUNT_TOTAL_QUESTIONS,
   scoreHeadCountQuestion,
   type HeadCountDifficulty,
-  type HeadCountEvent,
   type HeadCountQuestion,
   type HeadCountQuestionResult,
   type HeadCountSpeedDifficulty,
 } from "../head-count/gameLogic";
+import { useTimerQueue } from "./useTimerQueue";
+import FarmCountStartPanel from "./components/FarmCountStartPanel";
+import FarmCountPlayArea from "./components/FarmCountPlayArea";
+import FarmCountResult from "./components/FarmCountResult";
 import "./index.scss";
 
 type FarmCountMode = "speed" | "yard";
@@ -94,10 +96,6 @@ function getPrioritizedPetDisplayPool() {
   return buildPetDisplayPool(syncPetData({ markChanged: false }));
 }
 
-function getPetDisplayItemForIndex(petDisplayPool: PetDisplayItem[], index: number) {
-  return petDisplayPool[index % petDisplayPool.length];
-}
-
 function getPetDisplayItemById(
   petDisplayPool: PetDisplayItem[],
   displayId: string,
@@ -118,42 +116,6 @@ async function resolveDisplayPetSpriteUrl(item: PetDisplayItem, mood: PetSpriteM
   return item.assetRef.kind === "custom"
     ? resolveCustomPetSpriteUrl(item.assetRef.customAssetId, mood)
     : resolvePetSpriteUrl(item.skin, mood);
-}
-
-function formatYardEvent(event: HeadCountEvent | null) {
-  if (!event) return "观察围栏数量变化";
-  return event.direction === "enter" ? `进入 ${event.delta} 只` : `离开 ${event.delta} 只`;
-}
-
-function getYardCountText(phase: Phase, displayCount: number, answer: number) {
-  if (phase === "ready") return `${displayCount}`;
-  if (phase === "feedback") return `${answer}`;
-  if (phase === "answering") return "?";
-  return "清点中";
-}
-
-function CountPetSprite({
-  skin,
-  mood = "idle",
-  size = "sm",
-  className = "",
-  assetRef,
-}: {
-  skin: PetSkin;
-  assetRef?: PetAssetRef;
-  mood?: PetSpriteMood;
-  size?: PetSpriteSize;
-  className?: string;
-}) {
-  return (
-    <PetSprite
-      skin={skin}
-      assetRef={assetRef}
-      mood={mood}
-      size={size}
-      className={`count-pet-sprite ${className}`}
-    />
-  );
 }
 
 function preloadImage(url: string) {
@@ -258,7 +220,7 @@ export default function FarmCount() {
   const [isNewBest, setIsNewBest] = useState(false);
   const [loadProgress, setLoadProgress] = useState({ loaded: 0, total: 0 });
 
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const { clear: clearTimers, schedule } = useTimerQueue();
   const startedAtRef = useRef(0);
   const answerStartedAtRef = useRef(0);
   const finishedRef = useRef(false);
@@ -276,16 +238,6 @@ export default function FarmCount() {
       ? displayCount
       : 0;
   const movingPets = Array.from({ length: yardEvent?.delta ?? 0 }, (_, index) => index);
-
-  const clearTimers = useCallback(() => {
-    timersRef.current.forEach((timer) => clearTimeout(timer));
-    timersRef.current = [];
-  }, []);
-
-  const schedule = useCallback((callback: () => void, delay: number) => {
-    const timer = setTimeout(callback, delay);
-    timersRef.current.push(timer);
-  }, []);
 
   const refreshPetSkinPool = useCallback(() => {
     const next = getPrioritizedPetDisplayPool();
@@ -316,12 +268,6 @@ export default function FarmCount() {
   useEffect(() => {
     refreshBest();
   }, [refreshBest]);
-
-  useEffect(() => {
-    return () => {
-      clearTimers();
-    };
-  }, [clearTimers]);
 
   const resetRoundState = useCallback(() => {
     setCurrentIndex(0);
@@ -653,408 +599,75 @@ export default function FarmCount() {
     return `${Math.round((correctQuestions / totalQuestions) * 100)}%`;
   }, [correctQuestions, totalQuestions]);
 
-  const renderSpeedDifficultyCard = (nextDifficulty: TrainingDifficulty, copy: string) => (
-    <View
-      className={`summary-item ${difficulty === nextDifficulty ? "summary-item-active" : ""}`}
-      onClick={() => setDifficulty(nextDifficulty)}
-    >
-      <Text className="summary-value">{getTrainingDifficultyLabel(nextDifficulty)}</Text>
-      <Text className="summary-label">{copy}</Text>
-    </View>
-  );
-
-  const renderYardDifficultyCard = (nextDifficulty: HeadCountDifficulty, copy: string) => (
-    <View
-      className={`summary-item ${yardDifficulty === nextDifficulty ? "summary-item-active" : ""}`}
-      onClick={() => setYardDifficulty(nextDifficulty)}
-    >
-      <Text className="summary-value">{getTrainingDifficultyLabel(nextDifficulty)}</Text>
-      <Text className="summary-label">{copy}</Text>
-    </View>
-  );
-
-  const renderSpeedCard = (nextSpeedDifficulty: HeadCountSpeedDifficulty, copy: string) => (
-    <View
-      className={`summary-item ${speedDifficulty === nextSpeedDifficulty ? "summary-item-active" : ""}`}
-      onClick={() => setSpeedDifficulty(nextSpeedDifficulty)}
-    >
-      <Text className="summary-value">{HEAD_COUNT_SPEED_LABELS[nextSpeedDifficulty]}</Text>
-      <Text className="summary-label">{copy}</Text>
-    </View>
-  );
-
   const modeTitle = mode === "yard" ? "农场进出" : "宠物速数";
   const currentOptions = mode === "yard" ? yardQuestion?.options ?? [] : speedQuestion?.options ?? [];
   const currentAnswer = mode === "yard" ? yardQuestion?.answer : speedQuestion?.answer;
-  const lastResult = mode === "yard" ? lastYardResult : lastSpeedResult;
-  const speedTargetPetItem = speedQuestion
-    ? getPetDisplayItemForQuestionPet(
-        petDisplayPool,
-        speedQuestion.targetPetKey,
-        speedQuestion.targetSkin,
-      )
-    : null;
   const speedTargetPetName = speedQuestion
-    ? speedTargetPetItem?.name ?? getPetDisplayNameForSkin(petDisplayPool, speedQuestion.targetSkin)
+    ? getPetDisplayItemForQuestionPet(petDisplayPool, speedQuestion.targetPetKey, speedQuestion.targetSkin)?.name ??
+      getPetDisplayNameForSkin(petDisplayPool, speedQuestion.targetSkin)
     : "宠物";
 
   return (
     <View className="farm-count-page">
       {phase === "start" ? (
-        <View className="farm-start start-screen">
-          <View className="header-section">
-            <View className="logo-icon">
-              <Text className="logo-emoji">数</Text>
-            </View>
-            <Text className="game-title">农场清点</Text>
-            <Text className="game-subtitle">观察宠物，完成速数或进出清点</Text>
-            <View className="high-score-badge">
-              <Text className="high-score-label">当前设置最高</Text>
-              <Text className="high-score-value">{best}</Text>
-            </View>
-          </View>
-
-          {!isGauntletPreset && (
-          <View className="summary-card">
-            <Text className="section-title">游戏模式</Text>
-            <View className="summary-grid">
-              <View
-                className={`summary-item ${mode === "speed" ? "summary-item-active" : ""}`}
-                onClick={() => switchMode("speed")}
-              >
-                <Text className="summary-value">宠物速数</Text>
-                <Text className="summary-label">快速滚过一群宠物，只数指定宠物。</Text>
-              </View>
-              <View
-                className={`summary-item ${mode === "yard" ? "summary-item-active" : ""}`}
-                onClick={() => switchMode("yard")}
-              >
-                <Text className="summary-value">农场进出</Text>
-                <Text className="summary-label">观察宠物进出围栏，清点最后数量。</Text>
-              </View>
-            </View>
-          </View>
-          )}
-
-          {!isGauntletPreset && (
-            <>
-              <View className="rules-card">
-                <Text className="section-title">游戏规则</Text>
-                {mode === "yard" ? (
-                  <>
-                    <Text className="rule-item">1. 每局 8 题，先记住围栏里的初始宠物数。</Text>
-                    <Text className="rule-item">2. 宠物进出时不再显示总数，需要在心里清点。</Text>
-                    <Text className="rule-item">3. 事件结束后从 4 个选项中选择剩余数量。</Text>
-                  </>
-                ) : (
-                  <>
-                    <Text className="rule-item">1. 每局 8 题，先看本题要数哪种宠物。</Text>
-                    <Text className="rule-item">2. 宠物经过农场时，只统计目标宠物。</Text>
-                    <Text className="rule-item">3. 速度会逐题提升，快速正确和连击有额外分。</Text>
-                  </>
-                )}
-              </View>
-
-              <View className="summary-card">
-                <Text className="section-title">{mode === "yard" ? "事件难度" : "难度"}</Text>
-                <View className="summary-grid">
-                  {mode === "yard" ? (
-                    <>
-                      {renderYardDifficultyCard("normal", "3-4 段事件 · 节奏清晰")}
-                      {renderYardDifficultyCard("hard", "4-6 段事件 · 数量变化更大")}
-                    </>
-                  ) : (
-                <>
-                  {renderSpeedDifficultyCard("normal", "8-15 只宠物")}
-                  {renderSpeedDifficultyCard("hard", "14-21 只宠物")}
-                </>
-                  )}
-                </View>
-              </View>
-            </>
-          )}
-
-          {!isGauntletPreset && mode === "yard" ? (
-            <View className="summary-card">
-              <Text className="section-title">出入速度</Text>
-              <View className="summary-grid summary-grid-three">
-                {renderSpeedCard("slow", "舒缓进出")}
-                {renderSpeedCard("standard", "标准节奏")}
-                {renderSpeedCard("fast", "快速切换")}
-              </View>
-            </View>
-          ) : null}
-
-          <View className="floating-start-action">
-            <View className="primary-button" onClick={startGame}>
-              <Text className="primary-button-text">开始训练</Text>
-            </View>
-          </View>
-          <View className="floating-start-spacer" />
-        </View>
+        <FarmCountStartPanel
+          mode={mode}
+          difficulty={difficulty}
+          yardDifficulty={yardDifficulty}
+          speedDifficulty={speedDifficulty}
+          best={best}
+          isGauntletPreset={isGauntletPreset}
+          onModeChange={switchMode}
+          onDifficultyChange={setDifficulty}
+          onYardDifficultyChange={setYardDifficulty}
+          onSpeedDifficultyChange={setSpeedDifficulty}
+          onStart={startGame}
+        />
       ) : null}
 
       {phase !== "start" && phase !== "finished" ? (
-        <View className="farm-play">
-          <View className="status-row">
-            <View className="status-card">
-              <Text className="status-value">{currentIndex + 1}/{totalQuestions}</Text>
-              <Text className="status-label">题目</Text>
-            </View>
-            <View className="status-card">
-              <Text className="status-value">{score}</Text>
-              <Text className="status-label">得分</Text>
-            </View>
-            <View className="status-card">
-              <Text className="status-value">{combo}</Text>
-              <Text className="status-label">连击</Text>
-            </View>
-          </View>
+        <FarmCountPlayArea
+          mode={mode}
+          phase={phase}
+          currentIndex={currentIndex}
+          totalQuestions={totalQuestions}
+          score={score}
+          combo={combo}
+          speedQuestion={speedQuestion}
+          yardQuestion={yardQuestion}
+          yardEvent={yardEvent}
+          eventIndex={eventIndex}
+          displayCount={displayCount}
+          staticPetCount={staticPetCount}
+          movingPets={movingPets}
+          speedDifficulty={speedDifficulty}
+          selectedAnswer={selectedAnswer}
+          currentOptions={currentOptions}
+          currentAnswer={currentAnswer}
+          lastSpeedResult={lastSpeedResult}
+          lastYardResult={lastYardResult}
+          petDisplayPool={petDisplayPool}
+          speedTargetPetName={speedTargetPetName}
+          loadProgress={loadProgress}
+          onAnswer={handleAnswer}
+        />
 
-          {mode === "yard" && yardQuestion ? (
-            <>
-              <View className="prompt-card">
-                <Text className="prompt-title">
-                  {phase === "ready"
-                    ? "记住初始数量"
-                    : phase === "playing-event"
-                      ? formatYardEvent(yardEvent)
-                      : phase === "answering"
-                        ? "现在还剩几只"
-                        : lastYardResult?.correct
-                          ? "回答正确"
-                          : "正确数量"}
-                </Text>
-                <Text className="prompt-copy">
-                  {phase === "feedback"
-                    ? `正确答案 ${yardQuestion.answer} · 本题 +${lastYardResult?.score ?? 0}`
-                    : "在心里更新数量，不需要点击"}
-                </Text>
-              </View>
-
-              <View className={`farm-pen farm-pen-${phase}`}>
-                <View className="farm-gate farm-gate-left">
-                  <Text className="farm-gate-label">入口</Text>
-                </View>
-                <View className="farm-yard">
-                  <Text className="yard-title">
-                    {phase === "ready" ? "初始数量" : phase === "feedback" ? "正确数量" : "围栏数量"}
-                  </Text>
-                  <Text className={`yard-count ${phase === "playing-event" ? "yard-count-hidden" : ""}`}>
-                    {getYardCountText(phase, displayCount, yardQuestion.answer)}
-                  </Text>
-                  <View className="yard-pet-row">
-                    {Array.from({ length: Math.min(staticPetCount, 10) }, (_, index) => {
-                      const petItem = getPetDisplayItemForIndex(petDisplayPool, index);
-                      return (
-                        <View key={`yard-pet-${index}`} className="yard-pet-token">
-                          <CountPetSprite
-                            skin={petItem.skin}
-                            assetRef={petItem.assetRef}
-                            size="xxs"
-                            className="yard-pet-sprite"
-                          />
-                        </View>
-                      );
-                    })}
-                  </View>
-                  {phase === "playing-event" && yardEvent ? (
-                    <View className={`moving-yard-layer moving-yard-layer-${yardEvent.direction}`}>
-                      {movingPets.map((petIndex) => {
-                        const petItem = getPetDisplayItemForIndex(petDisplayPool, eventIndex + petIndex);
-                        return (
-                          <View
-                            key={`event-${eventIndex}-${petIndex}`}
-                            className={`moving-yard-pet moving-yard-pet-${yardEvent.direction} moving-yard-pet-speed-${speedDifficulty}`}
-                            style={{
-                              top: `${30 + petIndex * 17}%`,
-                              animationDelay: `${petIndex * 70}ms`,
-                            }}
-                          >
-                            <CountPetSprite
-                              skin={petItem.skin}
-                              assetRef={petItem.assetRef}
-                              size="xs"
-                              className="moving-yard-pet-sprite"
-                            />
-                          </View>
-                        );
-                      })}
-                    </View>
-                  ) : null}
-                </View>
-                <View className="farm-gate farm-gate-right">
-                  <Text className="farm-gate-label">出口</Text>
-                </View>
-              </View>
-            </>
-          ) : null}
-
-          {mode === "speed" && speedQuestion ? (
-            <View className={`farm-scene farm-scene-${phase}`}>
-              <View className="target-banner">
-                <View className="target-pet">
-                  <CountPetSprite
-                    skin={speedQuestion.targetSkin}
-                    assetRef={speedTargetPetItem?.assetRef}
-                    size="sm"
-                    className="target-pet-sprite"
-                  />
-                </View>
-                <View className="target-copy">
-                  <Text className="farm-prompt">
-                    {phase === "loading"
-                      ? "准备中"
-                      : phase === "ready"
-                      ? "准备观察目标"
-                      : phase === "watching"
-                        ? `只数${speedTargetPetName}`
-                        : phase === "replay"
-                          ? "正确顺序"
-                        : phase === "answering"
-                          ? `${speedTargetPetName}有几只`
-                          : lastSpeedResult?.correct
-                            ? "回答正确"
-                            : "正确数量"}
-                  </Text>
-                  <Text className="target-meta">
-                    {phase === "loading"
-                      ? `资源检查 ${loadProgress.loaded}/${loadProgress.total || "..."}`
-                      : `目标：${speedTargetPetName}`}
-                  </Text>
-                </View>
-              </View>
-              {phase === "loading" ? (
-                <View className="scroll-viewport scroll-viewport-loading">
-                  <View className="scroll-world scroll-world-paused" />
-                  <View className="speed-loading-inline">
-                    <View className="speed-loading-dot" />
-                    <Text className="speed-loading-inline-text">准备宠物图片</Text>
-                  </View>
-                </View>
-              ) : phase === "watching" || phase === "replay" ? (
-                <View className="scroll-viewport">
-                  <View
-                    className="scroll-world"
-                    style={{ animationDuration: `${speedQuestion.scrollMs}ms` }}
-                  >
-                    <View className="scroll-pet-layer">
-                      {speedQuestion.pets.map((pet) => {
-                        const petItem = getPetDisplayItemForQuestionPet(
-                          petDisplayPool,
-                          pet.petKey,
-                          pet.skin,
-                        );
-                        return (
-                          <View
-                            key={pet.id}
-                            className={`pet-count-token pet-count-${pet.size} ${pet.mirror ? "pet-count-mirror" : ""} ${pet.petKey === speedQuestion.targetPetKey ? "pet-count-target" : ""}`}
-                            style={{
-                              left: `${pet.x}%`,
-                              top: `${pet.y}%`,
-                              animationDelay: `${pet.delayMs}ms`,
-                              "--pet-count-scale": pet.scale,
-                            } as CSSProperties}
-                          >
-                            <CountPetSprite
-                              skin={pet.skin}
-                              assetRef={petItem.assetRef}
-                              mood={pet.mood}
-                              size="xs"
-                              className="pet-count-sprite"
-                            />
-                            {phase === "replay" && pet.targetOrder ? (
-                              <Text className="pet-count-order">{pet.targetOrder}</Text>
-                            ) : null}
-                          </View>
-                        );
-                      })}
-                    </View>
-                  </View>
-                </View>
-              ) : (
-                <View className="scroll-viewport scroll-viewport-empty">
-                  {phase === "answering" ? (
-                    <Text className="hidden-count">?</Text>
-                  ) : (
-                    <CountPetSprite
-                      skin={speedQuestion.targetSkin}
-                      assetRef={speedTargetPetItem?.assetRef}
-                      size="lg"
-                      className="hidden-count-pet"
-                    />
-                  )}
-                </View>
-              )}
-            </View>
-          ) : null}
-
-          {phase === "answering" || phase === "feedback" ? (
-            <View className="option-grid">
-              {currentOptions.map((option) => {
-                const isSelected = selectedAnswer === option;
-                const isAnswer = phase === "feedback" && option === currentAnswer;
-                const isWrong = phase === "feedback" && isSelected && option !== currentAnswer;
-                return (
-                  <View
-                    key={option}
-                    className={`option-card ${isAnswer ? "option-card-correct" : ""} ${isWrong ? "option-card-wrong" : ""}`}
-                    onClick={() => handleAnswer(option)}
-                  >
-                    <Text className="option-text">{option}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          ) : null}
-
-          {phase === "feedback" ? (
-            <View className={`feedback-card ${lastResult?.correct ? "feedback-correct" : "feedback-wrong"}`}>
-              <Text className="feedback-title">{lastResult?.correct ? "计数准确" : "正确答案"}</Text>
-              <Text className="feedback-copy">
-                {mode === "yard"
-                  ? `围栏里 ${yardQuestion?.answer ?? 0} 只 · 本题 +${lastYardResult?.score ?? 0}`
-                  : `${speedTargetPetName} ${speedQuestion?.answer ?? 0} 只 · 本题 +${lastSpeedResult?.score ?? 0}`}
-              </Text>
-            </View>
-          ) : null}
-        </View>
       ) : null}
 
       {phase === "finished" ? (
-        <View className="farm-result">
-          <View className="result-card">
-            <Text className="result-kicker">{isNewBest ? "刷新最高分" : "训练完成"}</Text>
-            <Text className="result-score">{score}</Text>
-            <Text className="result-copy">
-              {modeTitle} · {mode === "yard"
-                ? `${getTrainingDifficultyLabel(yardDifficulty)} · ${HEAD_COUNT_SPEED_LABELS[speedDifficulty]} · 积分${getTrainingDifficultyLabel(rewardDifficulty)}`
-                : getTrainingDifficultyLabel(difficulty)}
-            </Text>
-            <View className="result-grid">
-              <View className="result-item">
-                <Text className="result-item-value">{accuracyText}</Text>
-                <Text className="result-item-label">正确率</Text>
-              </View>
-              <View className="result-item">
-                <Text className="result-item-value">{bestCombo}</Text>
-                <Text className="result-item-label">最佳连击</Text>
-              </View>
-              <View className="result-item">
-                <Text className="result-item-value">+{awardedPoints}</Text>
-                <Text className="result-item-label">宠物积分</Text>
-              </View>
-            </View>
-            <View className="result-actions">
-              <View className="secondary-button" onClick={backToStart}>
-                <Text className="secondary-button-text">返回设置</Text>
-              </View>
-              <View className="primary-button" onClick={startGame}>
-                <Text className="primary-button-text">再练一局</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+        <FarmCountResult
+          score={score}
+          modeTitle={modeTitle}
+          difficultyLabel={mode === "yard"
+            ? `${getTrainingDifficultyLabel(yardDifficulty)} · ${HEAD_COUNT_SPEED_LABELS[speedDifficulty]} · 积分${getTrainingDifficultyLabel(rewardDifficulty)}`
+            : getTrainingDifficultyLabel(difficulty)}
+          accuracyText={accuracyText}
+          bestCombo={bestCombo}
+          awardedPoints={awardedPoints}
+          isNewBest={isNewBest}
+          onBack={backToStart}
+          onRestart={startGame}
+        />
       ) : null}
     </View>
   );

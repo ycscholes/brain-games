@@ -13,6 +13,7 @@ import { completeGauntletLegIfNeeded, isGameGauntletRun, readGameGauntletModePre
 import { usePageShare } from "../../utils/share";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playTap } from "../../services/audio/audioFeedbackService";
+import { readRockPaperScissorsHighScore, type RockPaperScissorsHighScore } from "./highScoreStorage";
 import "./index.scss";
 
 type GameState = "start" | "playing" | "gameover";
@@ -41,11 +42,6 @@ const OUTCOME_CONFIG: Record<OutcomeType, { emoji: string; name: string; color: 
   lose: { emoji: "↓", name: "输", color: "#D94B58", prompt: "故意选会被电脑克制的手势" },
 };
 
-interface HighScoreRecord {
-  score: number;
-  achievedAt: string;
-}
-
 export default function RockPaperScissors() {
   usePageShare("pages/rock-paper-scissors/index");
   const gauntletPreset = readGameGauntletModePreset();
@@ -71,11 +67,10 @@ export default function RockPaperScissors() {
 
   const getHighScoreKey = () => `rps_highscore_D${difficulty}`;
 
-  const getCurrentHighScore = (): HighScoreRecord | null => {
+  const getCurrentHighScore = (): RockPaperScissorsHighScore | null => {
     const key = getHighScoreKey();
     const record = Taro.getStorageSync(key);
-    if (record) return JSON.parse(record) as HighScoreRecord;
-    return null;
+    return readRockPaperScissorsHighScore(record);
   };
 
   const updateHighScore = (newScore: number) => {
@@ -83,7 +78,7 @@ export default function RockPaperScissors() {
     const currentRecord = getCurrentHighScore();
 
     if (!currentRecord || newScore > currentRecord.score) {
-      const newRecord: HighScoreRecord = {
+      const newRecord: RockPaperScissorsHighScore = {
         score: newScore,
         achievedAt: new Date().toISOString(),
       };
