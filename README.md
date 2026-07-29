@@ -13,7 +13,6 @@ Cici的脑部锻炼是一个基于 Taro 和 React 的微信小程序脑力训练
 | 逆向猜拳 | 抑制控制与反应 | `/pages/rock-paper-scissors/index` | [游戏说明](src/pages/rock-paper-scissors/README.md) |
 | 颜色陷阱 | 选择注意 | `/pages/color-trap/index` | — |
 | 旋影辨形 | 空间推理 | `/pages/spatial-rotation/index` | — |
-| 特征三连 | 多属性归纳 | `/pages/triad-match/index` | — |
 | 连数迷阵 | 逻辑路径 | `/pages/hidato/index` | — |
 | 帐篷营地 | 约束推理 | `/pages/tents-camp/index` | — |
 | 删数求和 | 约束推理 | `/pages/sumplete-grid/index` | — |

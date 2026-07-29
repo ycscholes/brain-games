@@ -21,6 +21,7 @@ import {
   createInitialClickState,
   scoreHidatoGame,
   type HidatoCell,
+  type HidatoBoardBounds,
   type HidatoClickState,
   type HidatoPuzzle,
 } from "./gameLogic";
@@ -60,6 +61,7 @@ export default function HidatoPage() {
   const [feedback, setFeedback] = useState("从 1 开始，沿相邻格连接到终点。");
   const [hintValue, setHintValue] = useState<number | null>(null);
   const [lastWrongCellId, setLastWrongCellId] = useState<string | null>(null);
+  const [boardBounds, setBoardBounds] = useState<HidatoBoardBounds | null>(null);
 
   const startedAtRef = useRef(0);
   const finishedRef = useRef(false);
@@ -69,8 +71,8 @@ export default function HidatoPage() {
 
   const clickedValueSet = useMemo(() => new Set(clickState.clickedValues), [clickState.clickedValues]);
   const lineSegments = useMemo(() => puzzle
-    ? createHidatoLineSegments(puzzle, clickState.clickedValues)
-    : [], [clickState.clickedValues, puzzle]);
+    ? createHidatoLineSegments(puzzle, clickState.clickedValues, boardBounds ?? undefined)
+    : [], [boardBounds, clickState.clickedValues, puzzle]);
   const progressPercent = puzzle
     ? Math.round((clickState.clickedValues.length / puzzle.total) * 100)
     : 0;
@@ -116,6 +118,22 @@ export default function HidatoPage() {
       duration: 220,
     }).catch(() => undefined);
   }, [clickState.nextValue, phase]);
+
+  useEffect(() => {
+    if (phase !== "playing" || !puzzle) return undefined;
+
+    const timer = setTimeout(() => {
+      Taro.createSelectorQuery()
+        .select(".hidato-board")
+        .boundingClientRect((rect) => {
+          if (!rect || Array.isArray(rect) || rect.width <= 0 || rect.height <= 0) return;
+          setBoardBounds({ width: rect.width, height: rect.height });
+        })
+        .exec();
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [difficulty, phase, puzzle]);
 
   const finishGame = useCallback((nextState: HidatoClickState) => {
     if (!puzzle || finishedRef.current) return;
@@ -371,9 +389,9 @@ export default function HidatoPage() {
                     key={`${segment.fromValue}-${segment.toValue}`}
                     className="hidato-line-segment"
                     style={{
-                      left: `${segment.left}%`,
-                      top: `${segment.top}%`,
-                      width: `${segment.width}%`,
+                      left: `${segment.left}px`,
+                      top: `${segment.top}px`,
+                      width: `${segment.width}px`,
                       transform: `translateY(-50%) rotate(${segment.angle}deg)`,
                     }}
                   />

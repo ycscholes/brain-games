@@ -22,11 +22,11 @@ export interface GameCatalogItem {
 }
 
 export const GAME_CATEGORIES: Array<{ id: GameCategoryId; title: string }> = [
+  { id: "challenge", title: "综合挑战" },
   { id: "math", title: "计算与数理" },
   { id: "memory", title: "记忆与反应" },
   { id: "reasoning", title: "推理" },
   { id: "language", title: "语言" },
-  { id: "challenge", title: "综合挑战" },
 ];
 
 export function getGameCategoryClass(category: GameCategoryId) {
@@ -156,23 +156,6 @@ export const GAME_CATALOG = [
     gauntletModeWeight: 1,
   },
   {
-    id: "triad-match",
-    title: "特征三连",
-    badge: "推理",
-    cardClass: "card-triad-match",
-    url: "/pages/triad-match/index",
-    category: "reasoning",
-    duration: "约 2 分钟",
-    skill: "多属性归纳",
-    level: "标准",
-    isHot: false,
-    showInAllGames: true,
-    canAppearInGauntlet: true,
-    showBestScore: true,
-    recommendationWeight: 1,
-    gauntletModeWeight: 1,
-  },
-  {
     id: "hidato",
     title: "连数迷阵",
     badge: "希托达",
@@ -212,7 +195,7 @@ export const GAME_CATALOG = [
     badge: "数理",
     cardClass: "card-sumplete-grid",
     url: "/pages/sumplete-grid/index",
-    category: "reasoning",
+    category: "math",
     duration: "约 2 分钟",
     skill: "约束推理",
     level: "进阶",
@@ -365,7 +348,19 @@ export const HOT_GAME_IDS = GAME_CATALOG
   .filter((game) => game.isHot)
   .map((game) => game.id);
 
-export const ALL_GAME_ITEMS = GAME_CATALOG.filter((game) => game.showInAllGames);
+const GAME_LIST_PRIORITIES: Partial<Record<TrainingGameId, number>> = {
+  "memory-challenge": 0,
+  "bird-count": 1,
+  "rock-paper-scissors": 2,
+  hidato: 0,
+  "tents-camp": 1,
+};
+
+export const ALL_GAME_ITEMS = GAME_CATALOG
+  .filter((game) => game.showInAllGames)
+  .sort((left, right) => (
+    (GAME_LIST_PRIORITIES[left.id] ?? 100) - (GAME_LIST_PRIORITIES[right.id] ?? 100)
+  ));
 export const HOT_GAME_ITEMS = GAME_CATALOG.filter((game) => game.isHot);
 export const GAUNTLET_CANDIDATE_GAMES = GAME_CATALOG.filter((game) => game.canAppearInGauntlet);
 
@@ -387,7 +382,6 @@ export const GAME_TITLE_MAP: Record<TrainingGameId, string> = {
   "bird-count": "农场清点",
   "color-trap": "颜色陷阱",
   "spatial-rotation": "旋影辨形",
-  "triad-match": "特征三连",
   hidato: "连数迷阵",
   "tents-camp": "帐篷营地",
   "sumplete-grid": "删数求和",

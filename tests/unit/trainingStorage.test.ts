@@ -268,7 +268,7 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("head-count", 50, "hard")).toBe(60);
     });
 
-    test("word-scramble, bird-count, color-trap, spatial-rotation, triad-match, hidato, tents-camp, sumplete-grid, traffic-escape, and netwalk use 1x conversion with difficulty caps", () => {
+    test("word-scramble, bird-count, color-trap, spatial-rotation, hidato, tents-camp, sumplete-grid, traffic-escape, and netwalk use 1x conversion with difficulty caps", () => {
       expect(getAwardedPoints("word-scramble", 32, "normal")).toBe(32);
       expect(getAwardedPoints("word-scramble", 50, "normal")).toBe(40);
       expect(getAwardedPoints("bird-count", 32, "hard")).toBe(48);
@@ -277,8 +277,6 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("color-trap", 50, "hard")).toBe(60);
       expect(getAwardedPoints("spatial-rotation", 36, "normal")).toBe(36);
       expect(getAwardedPoints("spatial-rotation", 48, "hard")).toBe(60);
-      expect(getAwardedPoints("triad-match", 34, "normal")).toBe(34);
-      expect(getAwardedPoints("triad-match", 48, "hard")).toBe(60);
       expect(getAwardedPoints("hidato", 40, "normal")).toBe(40);
       expect(getAwardedPoints("hidato", 50, "hard")).toBe(60);
       expect(getAwardedPoints("tents-camp", 36, "normal")).toBe(36);
@@ -314,7 +312,6 @@ describe("trainingStorage", () => {
         getAwardedPoints("bird-count", 34),
         getAwardedPoints("color-trap", 34),
         getAwardedPoints("spatial-rotation", 34),
-        getAwardedPoints("triad-match", 34),
         getAwardedPoints("hidato", 34),
         getAwardedPoints("tents-camp", 34),
         getAwardedPoints("sumplete-grid", 34),

@@ -107,6 +107,23 @@ describe("hidato game logic", () => {
     expect(segments[0].angle).toBe(45);
   });
 
+  test("uses the measured rectangle centers when board cells are not square", () => {
+    const puzzle = {
+      rows: 2,
+      cols: 2,
+      path: [
+        { id: "r0c0", row: 0, col: 0, value: 1, given: true },
+        { id: "r1c1", row: 1, col: 1, value: 2, given: true },
+      ],
+    };
+
+    const segments = createHidatoLineSegments(puzzle, [1, 2], { width: 200, height: 80 });
+
+    expect(segments[0]).toMatchObject({ left: 50, top: 20 });
+    expect(segments[0].width).toBeCloseTo(107.7, 1);
+    expect(segments[0].angle).toBeCloseTo(21.8, 1);
+  });
+
   test("scores completed games with mistake and hint penalties", () => {
     const cleanNormal = scoreHidatoGame({
       difficulty: "normal",

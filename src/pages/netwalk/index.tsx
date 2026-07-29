@@ -211,11 +211,11 @@ export default function Netwalk() {
 
   const difficultyCard = (value: TrainingDifficulty) => (
     <View
-      className={`netwalk-difficulty-card ${difficulty === value ? "netwalk-difficulty-card-active" : ""}`}
+      className={`summary-item netwalk-difficulty-card ${difficulty === value ? "summary-item-active netwalk-difficulty-card-active" : ""}`}
       onClick={() => setDifficulty(value)}
     >
-      <Text className="netwalk-difficulty-name">{getTrainingDifficultyLabel(value)}</Text>
-      <Text className="netwalk-difficulty-copy">{getDifficultyCopy(value)}</Text>
+      <Text className="summary-value netwalk-difficulty-name">{getTrainingDifficultyLabel(value)}</Text>
+      <Text className="summary-label netwalk-difficulty-copy">{getDifficultyCopy(value)}</Text>
     </View>
   );
 
@@ -223,42 +223,42 @@ export default function Netwalk() {
     <View className="netwalk-page">
       {phase === "start" ? (
         <View className="netwalk-start start-screen">
-          <View className="netwalk-hero">
+          <View className="header-section netwalk-hero">
             <View className="netwalk-orbit netwalk-orbit-one" />
             <View className="netwalk-orbit netwalk-orbit-two" />
             <View className="netwalk-hero-server"><Text>●</Text></View>
-            <Text className="netwalk-kicker">NETWORK REASONING</Text>
-            <Text className="netwalk-title">网络回路</Text>
-            <Text className="netwalk-subtitle">旋转线路，让每个终端接回核心</Text>
-            <View className="netwalk-best-pill">
-              <Text className="netwalk-best-label">当前难度最高</Text>
-              <Text className="netwalk-best-value">{best}</Text>
+            <View className="logo-icon netwalk-kicker"><Text className="logo-emoji">⌘</Text></View>
+            <Text className="game-title netwalk-title">网络回路</Text>
+            <Text className="game-subtitle netwalk-subtitle">旋转线路，让每个终端接回核心</Text>
+            <View className="high-score-badge netwalk-best-pill">
+              <Text className="high-score-label netwalk-best-label">当前难度最高</Text>
+              <Text className="high-score-value netwalk-best-value">{best}</Text>
             </View>
           </View>
 
-          <View className="netwalk-panel netwalk-rule-panel">
-            <Text className="netwalk-section-title">怎么玩</Text>
-            <Text className="netwalk-rule">1. 点击蓝色线路节点，每次顺时针旋转 90°。</Text>
-            <Text className="netwalk-rule">2. 接口必须两边同时对齐，才能点亮一条线路。</Text>
-            <Text className="netwalk-rule">3. 全部节点接回琥珀服务器即通关；少旋转、少提示得分更高。</Text>
+          <View className="rules-card netwalk-panel netwalk-rule-panel">
+            <Text className="section-title netwalk-section-title">游戏规则</Text>
+            <Text className="rule-item netwalk-rule">1. 点击蓝色线路节点，每次顺时针旋转 90°。</Text>
+            <Text className="rule-item netwalk-rule">2. 接口必须两边同时对齐，才能点亮一条线路。</Text>
+            <Text className="rule-item netwalk-rule">3. 全部节点接回琥珀服务器即通关；少旋转、少提示得分更高。</Text>
           </View>
 
           {!isGauntletPreset ? (
-            <View className="netwalk-panel">
-              <Text className="netwalk-section-title">选择网络规模</Text>
-              <View className="netwalk-difficulty-grid">
+            <View className="summary-card netwalk-panel">
+              <Text className="section-title netwalk-section-title">选择网络规模</Text>
+              <View className="summary-grid netwalk-difficulty-grid">
                 {difficultyCard("normal")}
                 {difficultyCard("hard")}
               </View>
             </View>
           ) : null}
 
-          <View className="netwalk-floating-start">
-            <View className="netwalk-primary-button" onClick={startGame}>
-              <Text className="netwalk-primary-button-text">接通网络</Text>
+          <View className="floating-start-action netwalk-floating-start">
+            <View className="primary-button netwalk-primary-button" onClick={startGame}>
+              <Text className="primary-button-text netwalk-primary-button-text">接通网络</Text>
             </View>
           </View>
-          <View className="netwalk-floating-spacer" />
+          <View className="floating-start-spacer netwalk-floating-spacer" />
         </View>
       ) : null}
 

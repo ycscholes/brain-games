@@ -16,7 +16,6 @@ export default defineAppConfig({
     'pages/bird-count/index',
     'pages/color-trap/index',
     'pages/spatial-rotation/index',
-    'pages/triad-match/index',
     'pages/hidato/index',
     'pages/tents-camp/index',
     'pages/sumplete-grid/index',

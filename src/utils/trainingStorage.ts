@@ -16,7 +16,6 @@ export type TrainingGameId =
   | "bird-count"
   | "color-trap"
   | "spatial-rotation"
-  | "triad-match"
   | "hidato"
   | "tents-camp"
   | "sumplete-grid"
@@ -290,7 +289,6 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "bird-count": 1,
   "color-trap": 1,
   "spatial-rotation": 1,
-  "triad-match": 1,
   hidato: 1,
   "tents-camp": 1,
   "sumplete-grid": 1,

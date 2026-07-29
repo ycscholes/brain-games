@@ -52,6 +52,11 @@ export interface HidatoLineSegment {
   angle: number;
 }
 
+export interface HidatoBoardBounds {
+  width: number;
+  height: number;
+}
+
 export interface HidatoScoreInput {
   difficulty: HidatoDifficulty;
   completed: boolean;
@@ -415,7 +420,11 @@ export function applyHidatoHint(state: HidatoClickState): HidatoClickState {
   };
 }
 
-export function createHidatoLineSegments(puzzle: Pick<HidatoPuzzle, "path" | "rows" | "cols">, clickedValues: number[]) {
+export function createHidatoLineSegments(
+  puzzle: Pick<HidatoPuzzle, "path" | "rows" | "cols">,
+  clickedValues: number[],
+  bounds: HidatoBoardBounds = { width: 100, height: 100 },
+) {
   const clickedSet = new Set(clickedValues);
   const byValue = valueToCellMap(puzzle.path);
   const segments: HidatoLineSegment[] = [];
@@ -426,19 +435,21 @@ export function createHidatoLineSegments(puzzle: Pick<HidatoPuzzle, "path" | "ro
     const toCell = byValue.get(value);
     if (!fromCell || !toCell) continue;
 
-    const fromX = fromCell.col + 0.5;
-    const fromY = fromCell.row + 0.5;
-    const toX = toCell.col + 0.5;
-    const toY = toCell.row + 0.5;
+    const cellWidth = bounds.width / puzzle.cols;
+    const cellHeight = bounds.height / puzzle.rows;
+    const fromX = (fromCell.col + 0.5) * cellWidth;
+    const fromY = (fromCell.row + 0.5) * cellHeight;
+    const toX = (toCell.col + 0.5) * cellWidth;
+    const toY = (toCell.row + 0.5) * cellHeight;
     const deltaX = toX - fromX;
     const deltaY = toY - fromY;
 
     segments.push({
       fromValue: value - 1,
       toValue: value,
-      left: (fromX / puzzle.cols) * 100,
-      top: (fromY / puzzle.rows) * 100,
-      width: (Math.sqrt(deltaX * deltaX + deltaY * deltaY) / puzzle.cols) * 100,
+      left: fromX,
+      top: fromY,
+      width: Math.sqrt(deltaX * deltaX + deltaY * deltaY),
       angle: Math.atan2(deltaY, deltaX) * 180 / Math.PI,
     });
   }

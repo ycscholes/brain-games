@@ -23,7 +23,6 @@ export const SHARE_PAGE_PATHS = [
   "pages/bird-count/index",
   "pages/color-trap/index",
   "pages/spatial-rotation/index",
-  "pages/triad-match/index",
   "pages/hidato/index",
   "pages/tents-camp/index",
   "pages/sumplete-grid/index",
@@ -111,10 +110,6 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/spatial-rotation/index": {
     title: "来玩旋影辨形，练空间推理",
     timelineTitle: "旋影辨形空间训练",
-  },
-  "pages/triad-match/index": {
-    title: "来玩特征三连，练多属性推理",
-    timelineTitle: "特征三连推理训练",
   },
   "pages/hidato/index": {
     title: "来玩连数迷阵，练逻辑路径推理",

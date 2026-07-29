@@ -19,11 +19,11 @@ describe("gameCatalog", () => {
     ]);
   });
 
-  test("all games includes gauntlet but excludes removed or redirect entries", () => {
+  test("all games includes the requested games in category-first order and excludes retired entries", () => {
     const allGameIds = ALL_GAME_ITEMS.map((game) => game.id);
 
     expect(allGameIds).toContain("spatial-rotation");
-    expect(allGameIds).toContain("triad-match");
+    expect(allGameIds).not.toContain("triad-match");
     expect(allGameIds).toContain("hidato");
     expect(allGameIds).not.toContain("code-breaker");
     expect(allGameIds).not.toContain("inequality-grid");
@@ -35,14 +35,25 @@ describe("gameCatalog", () => {
     expect(allGameIds).not.toContain("head-count");
     expect(allGameIds).not.toContain("dual-task");
     expect(allGameIds).not.toContain("signal-sprint");
+
+    const idsFor = (category: string) => ALL_GAME_ITEMS
+      .filter((game) => game.category === category)
+      .map((game) => game.id);
+
+    expect(idsFor("memory").slice(0, 3)).toEqual([
+      "memory-challenge",
+      "bird-count",
+      "rock-paper-scissors",
+    ]);
+    expect(idsFor("reasoning").slice(0, 2)).toEqual(["hidato", "tents-camp"]);
   });
 
   test("gauntlet candidate pool includes playable single games only", () => {
     const candidateIds = GAUNTLET_CANDIDATE_GAMES.map((game) => game.id);
 
-    expect(candidateIds).toHaveLength(18);
+    expect(candidateIds).toHaveLength(17);
     expect(new Set(candidateIds).size).toBe(candidateIds.length);
-    expect(candidateIds).toContain("triad-match");
+    expect(candidateIds).not.toContain("triad-match");
     expect(candidateIds).toContain("hidato");
     expect(candidateIds).not.toContain("code-breaker");
     expect(candidateIds).not.toContain("inequality-grid");
@@ -58,15 +69,16 @@ describe("gameCatalog", () => {
 
   test("groups games by core gameplay mode", () => {
     expect(GAME_CATEGORIES).toEqual([
+      { id: "challenge", title: "综合挑战" },
       { id: "math", title: "计算与数理" },
       { id: "memory", title: "记忆与反应" },
       { id: "reasoning", title: "推理" },
       { id: "language", title: "语言" },
-      { id: "challenge", title: "综合挑战" },
     ]);
 
     const categories = new Map(GAME_CATALOG.map((game) => [game.id, game.category]));
     expect(categories.get("pattern-completion")).toBe("reasoning");
+    expect(categories.get("sumplete-grid")).toBe("math");
     expect(categories.get("traffic-escape")).toBe("reasoning");
     expect(categories.get("netwalk")).toBe("reasoning");
     expect(categories.get("game-gauntlet")).toBe("challenge");
@@ -74,11 +86,11 @@ describe("gameCatalog", () => {
 
   test("maps every gameplay category to its shared styling class", () => {
     expect(GAME_CATEGORIES.map((category) => getGameCategoryClass(category.id))).toEqual([
+      "game-category-challenge",
       "game-category-math",
       "game-category-memory",
       "game-category-reasoning",
       "game-category-language",
-      "game-category-challenge",
     ]);
   });
 

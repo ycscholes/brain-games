@@ -220,11 +220,11 @@ export default function TrafficEscape() {
 
   const difficultyCard = (value: TrainingDifficulty) => (
     <View
-      className={`traffic-difficulty-card ${difficulty === value ? "traffic-difficulty-card-active" : ""}`}
+      className={`summary-item traffic-difficulty-card ${difficulty === value ? "summary-item-active traffic-difficulty-card-active" : ""}`}
       onClick={() => setDifficulty(value)}
     >
-      <Text className="traffic-difficulty-name">{getTrainingDifficultyLabel(value)}</Text>
-      <Text className="traffic-difficulty-copy">{getDifficultyCopy(value)}</Text>
+      <Text className="summary-value traffic-difficulty-name">{getTrainingDifficultyLabel(value)}</Text>
+      <Text className="summary-label traffic-difficulty-copy">{getDifficultyCopy(value)}</Text>
     </View>
   );
 
@@ -247,41 +247,41 @@ export default function TrafficEscape() {
     <View className="traffic-escape-page">
       {phase === "start" ? (
         <View className="traffic-start start-screen">
-          <View className="traffic-hero">
+          <View className="header-section traffic-hero">
             <View className="traffic-hero-road traffic-hero-road-a" />
             <View className="traffic-hero-road traffic-hero-road-b" />
-            <Text className="traffic-kicker">SPATIAL ROUTE</Text>
-            <Text className="traffic-title">车阵突围</Text>
-            <Text className="traffic-subtitle">调度车流，为红车打开出口</Text>
-            <View className="traffic-best-pill">
-              <Text className="traffic-best-label">当前难度最高</Text>
-              <Text className="traffic-best-value">{best}</Text>
+            <View className="logo-icon traffic-kicker"><Text className="logo-emoji">🚗</Text></View>
+            <Text className="game-title traffic-title">车阵突围</Text>
+            <Text className="game-subtitle traffic-subtitle">调度车流，为红车打开出口</Text>
+            <View className="high-score-badge traffic-best-pill">
+              <Text className="high-score-label traffic-best-label">当前难度最高</Text>
+              <Text className="high-score-value traffic-best-value">{best}</Text>
             </View>
           </View>
 
-          <View className="traffic-panel traffic-rule-panel">
-            <Text className="traffic-section-title">怎么玩</Text>
-            <Text className="traffic-rule">1. 车辆只能沿朝向直线移动，不能转弯。</Text>
-            <Text className="traffic-rule">2. 点选车辆后，用方向键腾出红车前方道路。</Text>
-            <Text className="traffic-rule">3. 红车抵达右侧出口即通关；少移动、少提示得分更高。</Text>
+          <View className="rules-card traffic-panel traffic-rule-panel">
+            <Text className="section-title traffic-section-title">游戏规则</Text>
+            <Text className="rule-item traffic-rule">1. 车辆只能沿朝向直线移动，不能转弯。</Text>
+            <Text className="rule-item traffic-rule">2. 点选车辆后，用方向键腾出红车前方道路。</Text>
+            <Text className="rule-item traffic-rule">3. 红车抵达右侧出口即通关；少移动、少提示得分更高。</Text>
           </View>
 
           {!isGauntletPreset ? (
-            <View className="traffic-panel">
-              <Text className="traffic-section-title">选择路线难度</Text>
-              <View className="traffic-difficulty-grid">
+            <View className="summary-card traffic-panel">
+              <Text className="section-title traffic-section-title">选择路线难度</Text>
+              <View className="summary-grid traffic-difficulty-grid">
                 {difficultyCard("normal")}
                 {difficultyCard("hard")}
               </View>
             </View>
           ) : null}
 
-          <View className="traffic-floating-start">
-            <View className="traffic-primary-button" onClick={startGame}>
-              <Text className="traffic-primary-button-text">开始调度</Text>
+          <View className="floating-start-action traffic-floating-start">
+            <View className="primary-button traffic-primary-button" onClick={startGame}>
+              <Text className="primary-button-text traffic-primary-button-text">开始调度</Text>
             </View>
           </View>
-          <View className="traffic-floating-spacer" />
+          <View className="floating-start-spacer traffic-floating-spacer" />
         </View>
       ) : null}
 
