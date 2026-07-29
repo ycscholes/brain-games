@@ -28,6 +28,7 @@ export const SHARE_PAGE_PATHS = [
   "pages/tents-camp/index",
   "pages/sumplete-grid/index",
   "pages/traffic-escape/index",
+  "pages/netwalk/index",
   "pages/pet/index",
   "pages/settings/index",
   "pages/training-records/index",
@@ -130,6 +131,10 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/traffic-escape/index": {
     title: "来玩车阵突围，练空间规划",
     timelineTitle: "车阵突围空间规划训练",
+  },
+  "pages/netwalk/index": {
+    title: "来玩网络回路，练连通规划",
+    timelineTitle: "网络回路空间推理训练",
   },
   "pages/pet/index": {
     title: "来看看我在Cici的脑部锻炼里养的宠物",
