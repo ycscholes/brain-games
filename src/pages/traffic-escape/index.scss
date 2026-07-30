@@ -202,6 +202,77 @@
 .traffic-move-button-text { font-size: 28px; font-weight: 900; }
 .traffic-primary-button-text { color: #fff; }
 
+/* Shared light start-screen treatment; gameplay keeps the road-control theme below. */
+.traffic-escape-page .traffic-start.start-screen {
+  min-height: calc(100vh - 84px);
+  max-height: calc(100vh - 84px);
+  margin: -28px -24px -56px;
+  padding: 34px 24px calc(150px + env(safe-area-inset-bottom));
+  gap: 18px;
+  overflow-y: auto;
+  background: #f8fafc;
+}
+
+.traffic-escape-page .traffic-start .traffic-hero {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+}
+
+.traffic-escape-page .traffic-start .traffic-hero-road { display: none; }
+.traffic-escape-page .traffic-start .traffic-kicker {
+  display: flex;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  box-shadow: 0 10px 22px rgba(239, 68, 68, 0.22);
+}
+.traffic-escape-page .traffic-start .traffic-kicker .logo-emoji { font-size: 38px; letter-spacing: 0; }
+.traffic-escape-page .traffic-start .traffic-title { margin: 0; color: #1e293b; font-size: 40px; letter-spacing: 0; }
+.traffic-escape-page .traffic-start .traffic-subtitle { margin-top: 8px; color: #64748b; font-size: 22px; font-weight: 500; }
+.traffic-escape-page .traffic-start .traffic-best-pill {
+  justify-content: center;
+  min-height: 48px;
+  margin-top: 16px;
+  border-color: #fed7aa;
+  background: #fff7ed;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.12);
+}
+.traffic-escape-page .traffic-start .traffic-best-label { color: #9a3412; font-size: 18px; }
+.traffic-escape-page .traffic-start .traffic-best-value { color: #c2410c; font-size: 32px; }
+.traffic-escape-page .traffic-start .traffic-panel {
+  padding: 24px;
+  border: 0;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+.traffic-escape-page .traffic-start .traffic-rule-panel { background: #fff7ed; }
+.traffic-escape-page .traffic-start .traffic-section-title { color: #475569; font-size: 26px; font-weight: 700; }
+.traffic-escape-page .traffic-start .traffic-rule { margin-top: 8px; color: #475569; font-size: 22px; font-weight: 500; }
+.traffic-escape-page .traffic-start .traffic-difficulty-grid { margin-top: 12px; gap: 12px; }
+.traffic-escape-page .traffic-start .traffic-difficulty-card {
+  min-height: 104px;
+  padding: 16px 10px;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  background: #fff7ed;
+}
+.traffic-escape-page .traffic-start .traffic-difficulty-card-active { border-color: rgba(234, 88, 12, 0.6); background: #ffedd5; box-shadow: 0 10px 22px rgba(234, 88, 12, 0.14); }
+.traffic-escape-page .traffic-start .traffic-difficulty-name { color: #c2410c; font-size: 28px; }
+.traffic-escape-page .traffic-start .traffic-difficulty-copy { color: #64748b; font-size: 18px; }
+.traffic-escape-page .traffic-start .traffic-floating-start { right: 24px; bottom: calc(26px + env(safe-area-inset-bottom)); left: 24px; }
+.traffic-escape-page .traffic-start .traffic-primary-button { min-height: 74px; border-radius: 18px; background: linear-gradient(135deg, #f97316, #ef4444); }
+.traffic-escape-page .traffic-start .traffic-floating-spacer { display: none; }
+
 .traffic-hud {
   display: flex;
   justify-content: space-around;

@@ -176,13 +176,148 @@ function moveVehicleOneStep(
   return isVehiclePlacementValid(puzzle, nextVehicles) ? nextVehicles : null;
 }
 
+const DIFFICULTY_REQUIREMENTS = {
+  normal: { size: 5, vehicleCount: 6, minimumSolutionMoves: 3, scrambleMoves: 16, attempts: 80 },
+  hard: { size: 6, vehicleCount: 8, minimumSolutionMoves: 4, scrambleMoves: 28, attempts: 120 },
+} as const;
+
+function createSeededRandom(seed: number) {
+  let value = seed >>> 0;
+  return () => {
+    value = (value * 1664525 + 1013904223) >>> 0;
+    return value / 0x1_0000_0000;
+  };
+}
+
+function getTrafficEscapeStateKey(state: TrafficEscapeState) {
+  return [...state.vehicles]
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((vehicle) => `${vehicle.id}:${vehicle.row}:${vehicle.col}`)
+    .join("|");
+}
+
+function getTrafficEscapeLegalMoves(puzzle: TrafficEscapePuzzle, state: TrafficEscapeState) {
+  const moves: TrafficEscapeMove[] = [];
+  state.vehicles.forEach((vehicle) => {
+    for (const direction of [-1, 1]) {
+      for (let distance = 1; distance < puzzle.size; distance += 1) {
+        const move = { vehicleId: vehicle.id, delta: direction * distance };
+        if (applyTrafficEscapeMove(puzzle, state, move).moved) moves.push(move);
+      }
+    }
+  });
+  return moves;
+}
+
+export function solveTrafficEscapePuzzle(puzzle: TrafficEscapePuzzle, initialState: TrafficEscapeState) {
+  const queue: Array<{ state: TrafficEscapeState; moves: TrafficEscapeMove[] }> = [{ state: initialState, moves: [] }];
+  const visited = new Set([getTrafficEscapeStateKey(initialState)]);
+  const maxVisitedStates = 30_000;
+
+  for (let cursor = 0; cursor < queue.length && visited.size <= maxVisitedStates; cursor += 1) {
+    const current = queue[cursor];
+    if (isTrafficEscapeSolved(puzzle, current.state)) return current.moves;
+
+    getTrafficEscapeLegalMoves(puzzle, current.state).forEach((move) => {
+      const result = applyTrafficEscapeMove(puzzle, current.state, move);
+      const key = getTrafficEscapeStateKey(result.state);
+      if (result.moved && !visited.has(key)) {
+        visited.add(key);
+        queue.push({ state: result.state, moves: [...current.moves, move] });
+      }
+    });
+  }
+
+  return null;
+}
+
+function createSolvedTrafficLayout(difficulty: TrafficEscapeDifficulty): TrafficEscapePuzzle {
+  const hard = difficulty === "hard";
+  const size = hard ? 6 : 5;
+  const exitRow = 2;
+  const vehicles: TrafficVehicle[] = [
+    { id: "target", row: exitRow, col: size - 2, length: 2, orientation: "horizontal", color: "target", isTarget: true },
+    { id: "blocker", row: 0, col: 2, length: 2, orientation: "vertical", color: "cyan" },
+    { id: "vehicle-1", row: 0, col: 0, length: 2, orientation: "horizontal", color: "amber" },
+    { id: "vehicle-2", row: 1, col: 0, length: 2, orientation: "horizontal", color: "violet" },
+    { id: "vehicle-3", row: 3, col: 0, length: hard ? 3 : 2, orientation: "horizontal", color: "lime" },
+    { id: "vehicle-4", row: 4, col: hard ? 0 : 1, length: 2, orientation: "horizontal", color: "coral" },
+  ];
+
+  if (hard) {
+    vehicles.push(
+      { id: "vehicle-5", row: 0, col: 3, length: 3, orientation: "vertical", color: "amber" },
+      { id: "vehicle-6", row: 5, col: 0, length: 3, orientation: "horizontal", color: "violet" },
+    );
+  }
+
+  return { id: "traffic-escape-solved", size, exitRow, vehicles, solutionMoves: [] };
+}
+
+function hasBlockedExit(puzzle: TrafficEscapePuzzle, state: TrafficEscapeState) {
+  const target = state.vehicles.find((vehicle) => vehicle.isTarget);
+  if (!target || target.col >= puzzle.size - target.length) return false;
+  return state.vehicles.some((vehicle) => !vehicle.isTarget && getVehicleCells(vehicle).some((cell) => (
+    cell.row === puzzle.exitRow && cell.col > target.col + target.length - 1
+  )));
+}
+
+function createTrafficEscapeCandidate(
+  difficulty: TrafficEscapeDifficulty,
+  random: () => number,
+  attempt: number,
+) {
+  const layout = createSolvedTrafficLayout(difficulty);
+  const requirements = DIFFICULTY_REQUIREMENTS[difficulty];
+  const reversedVehicles = layout.vehicles.map(cloneVehicle);
+  const target = reversedVehicles.find((vehicle) => vehicle.id === "target");
+  const blocker = reversedVehicles.find((vehicle) => vehicle.id === "blocker");
+  const upperGate = reversedVehicles.find((vehicle) => vehicle.id === "vehicle-1");
+  if (!target || !blocker || !upperGate) return null;
+  target.col = 0;
+  blocker.row = layout.exitRow - 1;
+  upperGate.col = 1;
+  if (!isVehiclePlacementValid(layout, reversedVehicles)) return null;
+  let state: TrafficEscapeState = { vehicles: reversedVehicles, moveCount: 0 };
+
+  for (let moveIndex = 0; moveIndex < requirements.scrambleMoves; moveIndex += 1) {
+    const legalMoves = getTrafficEscapeLegalMoves(layout, state).filter((move) => move.vehicleId !== "target");
+    if (legalMoves.length === 0) break;
+    const preferredMoves = moveIndex % 3 === 0
+      ? legalMoves.filter((move) => move.vehicleId !== "blocker")
+      : legalMoves;
+    const movesToChoose = preferredMoves.length > 0 ? preferredMoves : legalMoves;
+    const result = applyTrafficEscapeMove(layout, state, movesToChoose[Math.floor(random() * movesToChoose.length)]);
+    if (result.moved && hasBlockedExit(layout, result.state)) state = result.state;
+  }
+
+  if (!hasBlockedExit(layout, state)) return null;
+  return {
+    ...layout,
+    id: `traffic-escape-${difficulty}-${attempt}`,
+    vehicles: state.vehicles.map(cloneVehicle),
+  };
+}
+
 export function getTrafficEscapePuzzlePool(difficulty: TrafficEscapeDifficulty) {
   return difficulty === "hard" ? HARD_PUZZLES : NORMAL_PUZZLES;
 }
 
 export function createTrafficEscapePuzzle(difficulty: TrafficEscapeDifficulty, seed = Date.now()) {
-  const pool = getTrafficEscapePuzzlePool(difficulty);
-  return pool[Math.abs(seed) % pool.length] ?? pool[0];
+  const random = createSeededRandom(seed);
+  const requirements = DIFFICULTY_REQUIREMENTS[difficulty];
+
+  for (let attempt = 0; attempt < requirements.attempts; attempt += 1) {
+    const candidate = createTrafficEscapeCandidate(difficulty, random, attempt);
+    if (!candidate) continue;
+    const solutionMoves = solveTrafficEscapePuzzle(candidate, createTrafficEscapeState(candidate));
+    if (solutionMoves && solutionMoves.length >= requirements.minimumSolutionMoves) {
+      return { ...candidate, solutionMoves };
+    }
+  }
+
+  const fallback = getTrafficEscapePuzzlePool(difficulty)[Math.abs(seed) % getTrafficEscapePuzzlePool(difficulty).length];
+  return { ...fallback, vehicles: fallback.vehicles.map(cloneVehicle), solutionMoves: [...fallback.solutionMoves] };
 }
 
 export function createTrafficEscapeState(puzzle: TrafficEscapePuzzle): TrafficEscapeState {
@@ -227,7 +362,7 @@ export function isTrafficEscapeSolved(puzzle: TrafficEscapePuzzle, state: Traffi
 }
 
 export function getTrafficEscapeHint(puzzle: TrafficEscapePuzzle, state: TrafficEscapeState) {
-  return puzzle.solutionMoves.find((move) => applyTrafficEscapeMove(puzzle, state, move).moved) ?? null;
+  return solveTrafficEscapePuzzle(puzzle, state)?.[0] ?? null;
 }
 
 export function scoreTrafficEscapeGame(params: {

@@ -1,10 +1,12 @@
 import {
   applyTrafficEscapeMove,
   createTrafficEscapeState,
+  createTrafficEscapePuzzle,
   getTrafficEscapeHint,
   getTrafficEscapePuzzlePool,
   isTrafficEscapeSolved,
   scoreTrafficEscapeGame,
+  solveTrafficEscapePuzzle,
 } from "../../src/pages/traffic-escape/gameLogic";
 
 describe("traffic-escape game logic", () => {
@@ -16,6 +18,17 @@ describe("traffic-escape game logic", () => {
     expect(hard.size).toBe(6);
     expect(normal.vehicles.some((vehicle) => vehicle.isTarget)).toBe(true);
     expect(hard.vehicles.some((vehicle) => vehicle.isTarget)).toBe(true);
+  });
+
+  test("generates solvable puzzles with difficulty-specific depth and density", () => {
+    (["normal", "hard"] as const).forEach((difficulty) => {
+      const puzzle = createTrafficEscapePuzzle(difficulty, difficulty === "normal" ? 17 : 29);
+      const solution = solveTrafficEscapePuzzle(puzzle, createTrafficEscapeState(puzzle));
+
+      expect(solution).not.toBeNull();
+      expect(puzzle.vehicles.length).toBeGreaterThanOrEqual(difficulty === "hard" ? 8 : 6);
+      expect(solution!.length).toBeGreaterThanOrEqual(difficulty === "hard" ? 4 : 3);
+    });
   });
 
   test("applies the scripted solution as legal vehicle moves", () => {
@@ -43,6 +56,19 @@ describe("traffic-escape game logic", () => {
     expect(hint).not.toBeNull();
     expect(result.moved).toBe(true);
     expect(isTrafficEscapeSolved(puzzle, state)).toBe(false);
+  });
+
+  test("re-solves from a deviated generated board when giving a hint", () => {
+    const puzzle = createTrafficEscapePuzzle("hard", 43);
+    const initialState = createTrafficEscapeState(puzzle);
+    const firstMove = solveTrafficEscapePuzzle(puzzle, initialState)?.[0];
+
+    expect(firstMove).toBeDefined();
+    const movedState = applyTrafficEscapeMove(puzzle, initialState, firstMove!).state;
+    const hint = getTrafficEscapeHint(puzzle, movedState);
+
+    expect(hint).not.toBeNull();
+    expect(applyTrafficEscapeMove(puzzle, movedState, hint!).moved).toBe(true);
   });
 
   test("scores successful escapes by difficulty, time, moves, and hints", () => {

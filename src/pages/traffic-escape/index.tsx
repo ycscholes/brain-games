@@ -36,7 +36,7 @@ function readBestScore(difficulty: TrainingDifficulty) {
 }
 
 function getDifficultyCopy(difficulty: TrainingDifficulty) {
-  return difficulty === "hard" ? "6×6 · 多一步调度" : "5×5 · 快速破局";
+  return difficulty === "hard" ? "6×6 · 八车密集车阵" : "5×5 · 至少三步破局";
 }
 
 export default function TrafficEscape() {

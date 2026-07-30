@@ -274,12 +274,6 @@
     var(--surface-card);
 }
 
-.card-hidato {
-  --game-card-background:
-    linear-gradient(135deg, rgba(15, 118, 110, 0.14) 0%, rgba(245, 158, 11, 0.16) 100%),
-    var(--surface-card);
-}
-
 .card-tents-camp {
   --game-card-background:
     radial-gradient(circle at 36% 24%, rgba(39, 95, 80, 0.18), transparent 32%),
@@ -504,11 +498,6 @@
 .card-spatial-rotation .game-badge {
   background: rgba(43, 139, 162, 0.16);
   color: #176378;
-}
-
-.card-hidato .game-badge {
-  background: rgba(15, 118, 110, 0.16);
-  color: #0f766e;
 }
 
 .card-tents-camp .game-badge {
