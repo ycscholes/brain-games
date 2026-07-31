@@ -246,7 +246,7 @@ export const GAME_CATALOG = [
     badge: "回路",
     cardClass: "card-loop-line",
     url: "/pages/loop-line/index",
-    category: "advanced",
+    category: "reasoning",
     duration: "约 3 分钟",
     skill: "约束推理",
     level: "进阶",

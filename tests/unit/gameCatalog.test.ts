@@ -111,7 +111,7 @@ describe("gameCatalog", () => {
     expect(categories.get("sumplete-grid")).toBe("math");
     expect(categories.get("traffic-escape")).toBe("reasoning");
     expect(categories.get("netwalk")).toBe("reasoning");
-    expect(categories.get("loop-line")).toBe("advanced");
+    expect(categories.get("loop-line")).toBe("reasoning");
     expect(categories.get("game-gauntlet")).toBe("challenge");
   });
 
