@@ -4,7 +4,7 @@
 
 **Goal:** 使首页按全部游戏页的排序展示卡片，并展示指定的四项推理游戏。
 
-**Architecture:** `ALL_GAME_ITEMS` 继续作为唯一的公开目录排序结果。新增首页分组配置，以游戏 ID 表达需要展示的类别及上限；首页从 `ALL_GAME_ITEMS` 过滤该配置，确保组内顺序与全部游戏一致，同时保留 `isHot` 对推荐权重的既有含义。
+**Architecture:** `ALL_GAME_ITEMS` 继续作为唯一的公开目录排序结果。补齐推理游戏的排序优先级，使网络回路位于车阵突围之前；新增首页分组配置，以游戏 ID 表达需要展示的类别及上限，首页从 `ALL_GAME_ITEMS` 过滤该配置，确保组内顺序与全部游戏一致，同时保留 `isHot` 对推荐权重的既有含义。
 
 **Tech Stack:** TypeScript、React、Taro、Jest。
 
@@ -30,6 +30,8 @@ test("defines home groups from the all-games ordering with four reasoning games"
 });
 ```
 
+同时断言 `ALL_GAME_ITEMS` 的推理组前四项为 `hidato`、`tents-camp`、`netwalk`、`traffic-escape`。
+
 - [ ] **Step 2: 确认测试因缺少首页分组配置而失败**
 
 运行：`npm test -- --runInBand tests/unit/gameCatalog.test.ts`
@@ -45,7 +47,7 @@ test("defines home groups from the all-games ordering with four reasoning games"
 
 - [ ] **Step 1: 添加首页分组类型和配置**
 
-在 `ALL_GAME_ITEMS` 之后添加：
+将 `GAME_LIST_PRIORITIES` 补齐为网络回路优先于车阵突围，随后在 `ALL_GAME_ITEMS` 之后添加：
 
 ```ts
 export interface HomeGameGroup {
