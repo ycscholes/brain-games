@@ -21,6 +21,7 @@ export default defineAppConfig({
     'pages/sumplete-grid/index',
     'pages/traffic-escape/index',
     'pages/netwalk/index',
+    'pages/loop-line/index',
     'pages/pet/index',
     'pages/settings/index',
     'pages/training-records/index'

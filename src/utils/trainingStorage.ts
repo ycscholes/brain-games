@@ -21,6 +21,7 @@ export type TrainingGameId =
   | "sumplete-grid"
   | "traffic-escape"
   | "netwalk"
+  | "loop-line"
   | "game-gauntlet"
   | "memory"
   | "rps"
@@ -294,6 +295,7 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "sumplete-grid": 1,
   "traffic-escape": 1,
   netwalk: 1,
+  "loop-line": 1,
   "game-gauntlet": 1,
   memory: 1,
   rps: 1,
@@ -576,6 +578,7 @@ export function clearProductData() {
     gameSpecificKeys.push(`code_breaker_best_${difficulty}`);
     gameSpecificKeys.push(`traffic_escape_best_${difficulty}`);
     gameSpecificKeys.push(`netwalk_best_${difficulty}`);
+    gameSpecificKeys.push(`loop_line_best_${difficulty}`);
 
     ["slow", "standard", "fast"].forEach((speedDifficulty) => {
       gameSpecificKeys.push(`head_count_best_${difficulty}_${speedDifficulty}`);

@@ -28,6 +28,7 @@ export const SHARE_PAGE_PATHS = [
   "pages/sumplete-grid/index",
   "pages/traffic-escape/index",
   "pages/netwalk/index",
+  "pages/loop-line/index",
   "pages/pet/index",
   "pages/settings/index",
   "pages/training-records/index",
@@ -130,6 +131,10 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/netwalk/index": {
     title: "来玩网络回路，练连通规划",
     timelineTitle: "网络回路空间推理训练",
+  },
+  "pages/loop-line/index": {
+    title: "来玩环线谜踪，练约束推理",
+    timelineTitle: "环线谜踪逻辑训练",
   },
   "pages/pet/index": {
     title: "来看看我在Cici的脑部锻炼里养的宠物",
