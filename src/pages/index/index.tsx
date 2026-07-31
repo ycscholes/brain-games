@@ -13,7 +13,7 @@ import {
   GAME_CATEGORIES,
   GAME_GAUNTLET_ID,
   GAME_TITLE_MAP,
-  HOT_GAME_ITEMS,
+  HOME_GAME_ITEMS,
   getGameById,
   getGameCategoryClass,
   type GameCatalogItem,
@@ -148,7 +148,7 @@ export default function Index() {
     setPetData(nextPetData);
 
     setDashboard(readDashboardStats());
-    const nextGames = HOT_GAME_ITEMS.map((game) => {
+    const nextGames = HOME_GAME_ITEMS.map((game) => {
       const summary = readTrainingSummary(game.id);
       return {
         ...game,

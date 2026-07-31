@@ -3,6 +3,8 @@ import {
   GAUNTLET_CANDIDATE_GAMES,
   GAME_CATALOG,
   GAME_CATEGORIES,
+  HOME_GAME_GROUPS,
+  HOME_GAME_ITEMS,
   HOT_GAME_IDS,
   getGameCategoryClass,
 } from "../../src/config/gameCatalog";
@@ -45,7 +47,33 @@ describe("gameCatalog", () => {
       "bird-count",
       "rock-paper-scissors",
     ]);
-    expect(idsFor("reasoning").slice(0, 2)).toEqual(["hidato", "tents-camp"]);
+    expect(idsFor("reasoning").slice(0, 4)).toEqual([
+      "hidato",
+      "tents-camp",
+      "netwalk",
+      "traffic-escape",
+    ]);
+  });
+
+  test("defines home groups from the all-games ordering with four reasoning games", () => {
+    expect(HOME_GAME_GROUPS.map((group) => group.id)).toEqual(["math", "memory", "reasoning"]);
+    expect(HOME_GAME_GROUPS.find((group) => group.id === "reasoning")?.gameIds).toEqual([
+      "hidato",
+      "tents-camp",
+      "netwalk",
+      "traffic-escape",
+    ]);
+
+    const idsFor = (category: string) => HOME_GAME_ITEMS
+      .filter((game) => game.category === category)
+      .map((game) => game.id);
+
+    expect(idsFor("reasoning")).toEqual([
+      "hidato",
+      "tents-camp",
+      "netwalk",
+      "traffic-escape",
+    ]);
   });
 
   test("gauntlet candidate pool includes playable single games only", () => {

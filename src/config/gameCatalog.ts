@@ -354,6 +354,8 @@ const GAME_LIST_PRIORITIES: Partial<Record<TrainingGameId, number>> = {
   "rock-paper-scissors": 2,
   hidato: 0,
   "tents-camp": 1,
+  netwalk: 2,
+  "traffic-escape": 3,
 };
 
 export const ALL_GAME_ITEMS = GAME_CATALOG
@@ -361,6 +363,24 @@ export const ALL_GAME_ITEMS = GAME_CATALOG
   .sort((left, right) => (
     (GAME_LIST_PRIORITIES[left.id] ?? 100) - (GAME_LIST_PRIORITIES[right.id] ?? 100)
   ));
+
+export interface HomeGameGroup {
+  id: GameCategoryId;
+  gameIds: TrainingGameId[];
+}
+
+export const HOME_GAME_GROUPS: HomeGameGroup[] = [
+  { id: "math", gameIds: ["mental-math", "twenty-four"] },
+  {
+    id: "memory",
+    gameIds: ["digit-span", "rock-paper-scissors", "memory-challenge", "bird-count"],
+  },
+  { id: "reasoning", gameIds: ["hidato", "tents-camp", "netwalk", "traffic-escape"] },
+];
+
+const HOME_GAME_IDS = new Set(HOME_GAME_GROUPS.flatMap((group) => group.gameIds));
+export const HOME_GAME_ITEMS = ALL_GAME_ITEMS.filter((game) => HOME_GAME_IDS.has(game.id));
+
 export const HOT_GAME_ITEMS = GAME_CATALOG.filter((game) => game.isHot);
 export const GAUNTLET_CANDIDATE_GAMES = GAME_CATALOG.filter((game) => game.canAppearInGauntlet);
 
