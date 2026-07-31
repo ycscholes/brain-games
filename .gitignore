@@ -8,7 +8,8 @@ node_modules/
 .swc
 .superpowers/
 .worktrees/
-.codegraph/
+.codegraph/*
+!.codegraph/.gitignore
 *.local
 
 # Local environment and cloud credentials
