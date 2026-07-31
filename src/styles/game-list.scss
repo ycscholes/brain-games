@@ -311,12 +311,6 @@
     var(--surface-card);
 }
 
-.card-loop-line {
-  background:
-    linear-gradient(135deg, rgba(13, 148, 136, 0.16) 0%, rgba(245, 158, 11, 0.15) 100%),
-    var(--surface-card);
-}
-
 .card-pet {
   --game-card-background:
     radial-gradient(circle at 45% 28%, rgba(250, 204, 21, 0.18), transparent 34%),
@@ -524,11 +518,6 @@
 .card-netwalk .game-badge {
   background: rgba(29, 166, 158, 0.16);
   color: #10756f;
-}
-
-.card-loop-line .game-badge {
-  background: rgba(13, 148, 136, 0.16);
-  color: #0f766e;
 }
 
 .card-game-gauntlet .game-badge {

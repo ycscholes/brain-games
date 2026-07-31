@@ -48,21 +48,23 @@ describe("gameCatalog", () => {
       "bird-count",
       "rock-paper-scissors",
     ]);
-    expect(idsFor("reasoning").slice(0, 4)).toEqual([
+    expect(idsFor("reasoning").slice(0, 5)).toEqual([
       "hidato",
       "tents-camp",
-      "netwalk",
+      "loop-line",
       "traffic-escape",
+      "netwalk",
     ]);
   });
 
-  test("defines home groups from the all-games ordering with four reasoning games", () => {
+  test("defines home groups from the all-games ordering with five reasoning games", () => {
     expect(HOME_GAME_GROUPS.map((group) => group.id)).toEqual(["math", "memory", "reasoning"]);
     expect(HOME_GAME_GROUPS.find((group) => group.id === "reasoning")?.gameIds).toEqual([
       "hidato",
       "tents-camp",
-      "netwalk",
+      "loop-line",
       "traffic-escape",
+      "netwalk",
     ]);
 
     const idsFor = (category: string) => HOME_GAME_ITEMS
@@ -72,8 +74,9 @@ describe("gameCatalog", () => {
     expect(idsFor("reasoning")).toEqual([
       "hidato",
       "tents-camp",
-      "netwalk",
+      "loop-line",
       "traffic-escape",
+      "netwalk",
     ]);
   });
 

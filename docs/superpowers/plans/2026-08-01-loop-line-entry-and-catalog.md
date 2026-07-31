@@ -16,7 +16,7 @@
 - Modify: `tests/unit/gameCatalog.test.ts:37-44`
 - Modify: `src/config/gameCatalog.ts:368-376`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 expect(idsFor("reasoning").slice(0, 5)).toEqual([
@@ -24,16 +24,16 @@ expect(idsFor("reasoning").slice(0, 5)).toEqual([
 ]);
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npm test -- tests/unit/gameCatalog.test.ts`  
 Expected: FAIL because netwalk currently precedes loop-line.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Set catalogue priorities to `hidato: 0`, `tents-camp: 1`, `loop-line: 2`, `traffic-escape: 3`, and `netwalk: 4`.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npm test -- tests/unit/gameCatalog.test.ts`  
 Expected: PASS.
@@ -44,15 +44,15 @@ Expected: PASS.
 - Modify: `src/pages/loop-line/index.tsx:181-221`
 - Modify: `src/pages/loop-line/index.scss:1-58`
 
-- [ ] **Step 1: Replace the start markup**
+- [x] **Step 1: Replace the start markup**
 
 Use `start-screen`, `header-section`, `rules-card`, `summary-card`, `floating-start-action`, and `floating-start-spacer`. Retain title, best score, three rules, difficulty selection, and gauntlet auto-start behavior.
 
-- [ ] **Step 2: Apply start-only SCSS**
+- [x] **Step 2: Apply start-only SCSS**
 
 Replace the dark hero, radar, rule card, and start-button styling with light start-state styles. Do not change `.loop-line-play`, `.loop-line-board`, or `.loop-line-finished` visuals.
 
-- [ ] **Step 3: Verify start-state contracts**
+- [x] **Step 3: Verify start-state contracts**
 
 Run: `npm run typecheck`  
 Expected: PASS with existing `startGame`, `difficulty`, `best`, and `isGauntletPreset` usage retained.
@@ -62,14 +62,14 @@ Expected: PASS with existing `startGame`, `difficulty`, `best`, and `isGauntletP
 **Files:**
 - Modify: `src/styles/game-list.scss:314-318,529-532`
 
-- [ ] **Step 1: Remove loop-line overrides**
+- [x] **Step 1: Remove loop-line overrides**
 
 Delete `.card-loop-line` background and badge-color overrides so shared card styling applies.
 
-- [ ] **Step 2: Run full verification**
+- [x] **Step 2: Run full verification**
 
 Run: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build:weapp`, `npm run secrets:check`, and `git diff --check`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 Stage only this plan, test, catalog, loop-line page, and shared card style; commit as `fix: align loop line entry and catalog`.

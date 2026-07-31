@@ -371,8 +371,9 @@ const GAME_LIST_PRIORITIES: Partial<Record<TrainingGameId, number>> = {
   "rock-paper-scissors": 2,
   hidato: 0,
   "tents-camp": 1,
-  netwalk: 2,
+  "loop-line": 2,
   "traffic-escape": 3,
+  netwalk: 4,
 };
 
 export const ALL_GAME_ITEMS = GAME_CATALOG
@@ -392,7 +393,7 @@ export const HOME_GAME_GROUPS: HomeGameGroup[] = [
     id: "memory",
     gameIds: ["digit-span", "rock-paper-scissors", "memory-challenge", "bird-count"],
   },
-  { id: "reasoning", gameIds: ["hidato", "tents-camp", "netwalk", "traffic-escape"] },
+  { id: "reasoning", gameIds: ["hidato", "tents-camp", "loop-line", "traffic-escape", "netwalk"] },
 ];
 
 const HOME_GAME_IDS = new Set(HOME_GAME_GROUPS.flatMap((group) => group.gameIds));

@@ -234,27 +234,29 @@ export default function LoopLinePage() {
     <View className="loop-line-page">
       {phase === "start" ? (
         <View className="loop-line-start start-screen">
-          <View className="loop-line-hero">
-            <View className="loop-line-radar loop-line-radar-a" />
-            <View className="loop-line-radar loop-line-radar-b" />
-            <Text className="loop-line-kicker">TRACE THE CIRCUIT</Text>
+          <View className="header-section">
+            <View className="loop-line-logo-icon">
+              <Text className="loop-line-logo-emoji">○</Text>
+            </View>
             <Text className="loop-line-title">环线谜踪</Text>
-            <Text className="loop-line-subtitle">读懂数字，画出唯一不断开的发光路线</Text>
+            <Text className="loop-line-subtitle">读懂数字，画出唯一不断开的闭环</Text>
             <View className="loop-line-best-pill">
-              <Text>当前难度最高</Text>
+              <Text className="loop-line-best-label">当前难度最高</Text>
               <Text className="loop-line-best-value">{best}</Text>
             </View>
           </View>
 
-          <View className="loop-line-rules-card rules-card">
-            <Text className="loop-line-section-title">三条路线法则</Text>
-            <Text className="loop-line-rule-item">01 · 数字表示它四边经过的线段数量</Text>
-            <Text className="loop-line-rule-item">02 · 每个交点只能经过 0 或 2 段线</Text>
-            <Text className="loop-line-rule-item">03 · 所有亮线必须组成唯一闭环</Text>
+          <View className="rules-card">
+            <Text className="loop-line-section-title">游戏规则</Text>
+            <Text className="loop-line-rule-item">1. 数字表示它四边经过的线段数量。</Text>
+            <Text className="loop-line-rule-item">2. 每个交点只能经过 0 或 2 段线。</Text>
+            <Text className="loop-line-rule-item">3. 所有线段最后必须组成唯一闭环。</Text>
           </View>
 
           {!isGauntletPreset ? (
-            <View className="loop-line-difficulty-row">
+            <View className="summary-card">
+              <Text className="loop-line-section-title">选择难度</Text>
+              <View className="loop-line-difficulty-row">
               {(["normal", "hard"] as TrainingDifficulty[]).map((value) => (
                 <View
                   key={value}
@@ -265,12 +267,16 @@ export default function LoopLinePage() {
                   <Text className="loop-line-difficulty-copy">{getDifficultyCopy(value)}</Text>
                 </View>
               ))}
+              </View>
             </View>
           ) : null}
 
-          <View className="loop-line-start-button floating-start-action audio-pressable" onClick={startGame}>
-            <Text className="loop-line-start-button-text">绘制路线</Text>
+          <View className="floating-start-action">
+            <View className="loop-line-start-button audio-pressable" onClick={startGame}>
+              <Text className="loop-line-start-button-text">开始挑战</Text>
+            </View>
           </View>
+          <View className="floating-start-spacer" />
         </View>
       ) : null}
 
