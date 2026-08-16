@@ -22,7 +22,7 @@ export interface StickerRewardClaimInput {
 }
 
 export type StickerRewardClaimResult =
-  | { awardedPoints: number; remainingClaims: number }
+  | { awardedPoints: typeof STICKER_REWARD_POINTS; remainingClaims: number }
   | { awardedPoints: 0; reason: "duplicate" | "daily-limit" | "invalid-post" };
 
 function getChinaDayKey(now: Date) {

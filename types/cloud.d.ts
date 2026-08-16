@@ -29,8 +29,25 @@ declare interface MiniProgramCloudFunctionApi {
   }>;
 }
 
+declare interface OfficialAccountPublishOptions {
+  title: string;
+  content?: string;
+  tags?: string[];
+  images?: string[];
+  recommendPath?: string;
+  recommendTitle?: string;
+  success?: (result: { status?: string; postUrl?: string }) => void;
+  fail?: () => void;
+  complete?: () => void;
+}
+
+declare interface MiniProgramShareApi {
+  shareToOfficialAccount(options: OfficialAccountPublishOptions): void;
+}
+
 declare const wx:
   | {
       cloud?: MiniProgramCloudFunctionApi;
+      shareToOfficialAccount?: MiniProgramShareApi["shareToOfficialAccount"];
     }
   | undefined;
