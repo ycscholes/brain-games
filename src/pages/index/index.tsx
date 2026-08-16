@@ -26,6 +26,7 @@ import { playTap } from "../../services/audio/audioFeedbackService";
 import { MAX_HUNGER, PetData, PetStorageData } from "../../pages/pet/types";
 import PetSprite from "../pet/components/PetSprite";
 import type { PetSpriteMood } from "../pet/components/PetSprite/types";
+import OfficialAccountPublishFeed from "../../components/stickers/OfficialAccountPublishFeed";
 import "./index.scss";
 
 interface DashboardView {
@@ -386,6 +387,8 @@ export default function Index() {
             </View>
           </View>
         </View>
+
+        <OfficialAccountPublishFeed />
 
         {gauntletGame ? (
           <View className="gauntlet-entry" onClick={() => navigateTo(gauntletGame.url)}>
