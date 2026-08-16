@@ -1,6 +1,10 @@
 import { CLOUD_SCHEMA_VERSION } from "../../../config/cloud";
 import { readPetData, savePetData } from "../../../utils/petStorage";
 import {
+  readStickerRewardLedger,
+  saveStickerRewardLedger,
+} from "../../../utils/stickerRewards";
+import {
   readAppSettings,
   readTrainingRecords,
   saveAppSettings,
@@ -51,6 +55,7 @@ export const userDataLocalRepository = {
       trainingRecords: readTrainingRecords(),
       petData: readPetData(),
       appSettings: readAppSettings(),
+      stickerRewardLedger: readStickerRewardLedger(),
     };
   },
 
@@ -58,6 +63,7 @@ export const userDataLocalRepository = {
     saveTrainingRecords(snapshot.trainingRecords, { markChanged: false });
     savePetData(snapshot.petData, { markChanged: false });
     saveAppSettings(snapshot.appSettings, { markChanged: false, replace: true });
+    saveStickerRewardLedger(snapshot.stickerRewardLedger ?? { claims: [] });
     saveCloudSyncMeta({ userCreatedAt: snapshot.createdAt || null });
   },
 
@@ -68,6 +74,7 @@ export const userDataLocalRepository = {
       trainingRecords: snapshot.trainingRecords,
       petData: snapshot.petData,
       appSettings: snapshot.appSettings,
+      stickerRewardLedger: snapshot.stickerRewardLedger ?? { claims: [] },
     });
   },
 

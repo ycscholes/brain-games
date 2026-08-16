@@ -1,5 +1,6 @@
 import type { PetStorageData } from "../../pages/pet/types";
 import type { AppSettings, TrainingRecord } from "../../utils/trainingStorage";
+import type { StickerRewardLedger } from "../../utils/stickerRewards";
 
 export interface UserCloudSnapshot {
   schemaVersion: number;
@@ -10,6 +11,7 @@ export interface UserCloudSnapshot {
   trainingRecords: TrainingRecord[];
   petData: PetStorageData;
   appSettings: AppSettings;
+  stickerRewardLedger: StickerRewardLedger;
 }
 
 export type UserSnapshotComparable = Omit<UserCloudSnapshot, "updatedAt" | "openid" | "source">;

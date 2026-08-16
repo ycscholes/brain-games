@@ -297,6 +297,7 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   netwalk: 1,
   "loop-line": 1,
   "game-gauntlet": 1,
+  "sticker-publish": 1,
   memory: 1,
   rps: 1,
   mot: 3,

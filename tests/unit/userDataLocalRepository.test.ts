@@ -42,6 +42,7 @@ function createCloudSnapshot(createdAt: string): UserCloudSnapshot {
       privacyAccepted: false,
       updatedAt: "2026-06-29T09:00:00.000Z",
     },
+    stickerRewardLedger: { claims: [] },
   };
 }
 
