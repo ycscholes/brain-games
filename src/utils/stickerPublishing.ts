@@ -1,6 +1,8 @@
+import Taro from "@tarojs/taro";
 import { claimStickerReward, type StickerRewardClaimResult } from "./stickerRewards";
 
 export const STICKER_TOPIC = "Cici脑力训练打卡";
+const UNSUPPORTED_STICKER_PLATFORMS = new Set(["devtools", "windows", "mac", "harmony", "harmonyos"]);
 
 export interface StickerPublishInput {
   gameTitle: string;
@@ -46,12 +48,28 @@ export function createStickerPublishPayload({ gameTitle, score, pagePath }: Omit
   };
 }
 
+export function isOfficialAccountStickerPlatformSupported(platform?: string) {
+  return !platform || !UNSUPPORTED_STICKER_PLATFORMS.has(platform.toLowerCase());
+}
+
+export function isOfficialAccountStickerRuntimeSupported() {
+  if (process.env.TARO_ENV !== "weapp") {
+    return false;
+  }
+
+  try {
+    return isOfficialAccountStickerPlatformSupported(Taro.getSystemInfoSync().platform);
+  } catch {
+    return true;
+  }
+}
+
 export function canShareCompletedGameResult({ completed, isGauntlet }: { completed: boolean; isGauntlet: boolean }) {
   return completed && !isGauntlet;
 }
 
 export function publishGameResultSticker(input: StickerPublishInput): StickerPublishResult {
-  if (process.env.TARO_ENV !== "weapp" || typeof wx === "undefined" || typeof wx.shareToOfficialAccount !== "function") {
+  if (!isOfficialAccountStickerRuntimeSupported() || typeof wx === "undefined" || typeof wx.shareToOfficialAccount !== "function") {
     return { status: "unsupported" };
   }
 

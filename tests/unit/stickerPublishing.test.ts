@@ -1,5 +1,6 @@
 const mockStorage = new Map<string, string>();
 const shareToOfficialAccount = jest.fn();
+let mockPlatform: string | undefined;
 
 jest.mock("@tarojs/taro", () => ({
   __esModule: true,
@@ -9,6 +10,7 @@ jest.mock("@tarojs/taro", () => ({
     setStorageSync: jest.fn((key: string, value: string) => {
       mockStorage.set(key, value);
     }),
+    getSystemInfoSync: jest.fn(() => ({ platform: mockPlatform })),
   },
 }));
 
@@ -16,6 +18,7 @@ import {
   canShareCompletedGameResult,
   createStickerPublishPayload,
   getOfficialAccountPublishFeedProps,
+  isOfficialAccountStickerPlatformSupported,
   publishGameResultSticker,
 } from "../../src/utils/stickerPublishing";
 import { readPetData } from "../../src/utils/petStorage";
@@ -27,6 +30,7 @@ describe("sticker publishing", () => {
 
   beforeEach(() => {
     mockStorage.clear();
+    mockPlatform = undefined;
     shareToOfficialAccount.mockReset();
     (globalThis as { wx?: { shareToOfficialAccount: typeof shareToOfficialAccount } }).wx = {
       shareToOfficialAccount,
@@ -62,6 +66,27 @@ describe("sticker publishing", () => {
     })).toEqual({ status: "unsupported" });
     expect(shareToOfficialAccount).not.toHaveBeenCalled();
     expect(readPetData().balance).toBe(0);
+  });
+
+  test("does not offer official-account publishing on unsupported desktop and devtool platforms", () => {
+    expect(isOfficialAccountStickerPlatformSupported("devtools")).toBe(false);
+    expect(isOfficialAccountStickerPlatformSupported("windows")).toBe(false);
+    expect(isOfficialAccountStickerPlatformSupported("mac")).toBe(false);
+    expect(isOfficialAccountStickerPlatformSupported("harmony")).toBe(false);
+    expect(isOfficialAccountStickerPlatformSupported("ios")).toBe(true);
+    expect(isOfficialAccountStickerPlatformSupported("android")).toBe(true);
+  });
+
+  test("does not invoke the native API in developer tools", () => {
+    process.env.TARO_ENV = "weapp";
+    mockPlatform = "devtools";
+
+    expect(publishGameResultSticker({
+      gameTitle: "速算挑战",
+      score: 18,
+      pagePath: "pages/mental-math/index",
+    })).toEqual({ status: "unsupported" });
+    expect(shareToOfficialAccount).not.toHaveBeenCalled();
   });
 
   test("awards only after the native success callback has a postUrl", () => {

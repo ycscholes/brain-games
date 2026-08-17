@@ -2,6 +2,7 @@ import { Text, View } from "@tarojs/components";
 import { useState } from "react";
 import {
   canShareCompletedGameResult,
+  isOfficialAccountStickerRuntimeSupported,
   publishGameResultSticker,
   type StickerPublishResult,
 } from "../../utils/stickerPublishing";
@@ -45,7 +46,7 @@ export default function StickerShareButton({
   const [isPublishing, setIsPublishing] = useState(false);
   const [feedback, setFeedback] = useState("");
 
-  if (process.env.TARO_ENV !== "weapp" || !canShareCompletedGameResult({ completed: true, isGauntlet })) {
+  if (!isOfficialAccountStickerRuntimeSupported() || !canShareCompletedGameResult({ completed: true, isGauntlet })) {
     return null;
   }
 
