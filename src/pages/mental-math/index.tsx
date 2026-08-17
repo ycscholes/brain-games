@@ -9,6 +9,7 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playTap } from "../../services/audio/audioFeedbackService";
 import {
@@ -609,6 +610,12 @@ return (
         </View>
 
         <View className="result-actions">
+          <StickerShareButton
+            gameTitle="速算挑战"
+            score={correctCount}
+            pagePath="pages/mental-math/index"
+            isGauntlet={isGauntletPreset}
+          />
           <View className="primary-button" onClick={startGame}>
             <Text className="button-text">再来一局</Text>
           </View>

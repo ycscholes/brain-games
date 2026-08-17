@@ -19,6 +19,8 @@ import {
   publishGameResultSticker,
 } from "../../src/utils/stickerPublishing";
 import { readPetData } from "../../src/utils/petStorage";
+import fs from "node:fs";
+import path from "node:path";
 
 describe("sticker publishing", () => {
   const originalTaroEnv = process.env.TARO_ENV;
@@ -87,6 +89,13 @@ describe("sticker publishing", () => {
   test("hides the result sharing action inside a gauntlet leg", () => {
     expect(canShareCompletedGameResult({ completed: true, isGauntlet: false })).toBe(true);
     expect(canShareCompletedGameResult({ completed: true, isGauntlet: true })).toBe(false);
+  });
+
+  test("renders the score share action on the speed-math result screen", () => {
+    const source = fs.readFileSync(path.resolve(__dirname, "../../src/pages/mental-math/index.tsx"), "utf8");
+
+    expect(source).toContain('import StickerShareButton from "../../components/stickers/StickerShareButton"');
+    expect(source).toContain('<StickerShareButton');
   });
 
   test("uses one configured topic and homepage return link for the native feed", () => {
