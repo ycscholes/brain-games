@@ -4,6 +4,7 @@ import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { addPointsToPet } from "../../utils/petStorage";
 import { usePageShare } from "../../utils/share";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
 import {
   getAwardedPoints,
   getTrainingDifficultyLabel,
@@ -351,6 +352,7 @@ export default function LoopLinePage() {
             <View><Text className="loop-line-result-value">+{awardedPoints}</Text><Text className="loop-line-result-label">宠物积分</Text></View>
           </View>
           {isNewBest ? <Text className="loop-line-new-best">新的最高分</Text> : null}
+          <StickerShareButton gameTitle="环线谜踪" score={finalScore} pagePath="pages/loop-line/index" isGauntlet={isGauntletPreset} />
           <View className="loop-line-start-button floating-start-action audio-pressable" onClick={restart}><Text className="loop-line-start-button-text">再来一局</Text></View>
         </View>
       ) : null}

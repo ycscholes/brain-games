@@ -37,7 +37,7 @@ declare interface OfficialAccountPublishOptions {
   recommendPath?: string;
   recommendTitle?: string;
   success?: (result: { status?: string; postUrl?: string }) => void;
-  fail?: () => void;
+  fail?: (error: { errMsg?: string }) => void;
   complete?: () => void;
 }
 

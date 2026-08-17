@@ -10,6 +10,7 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import "./index.scss";
@@ -351,6 +352,7 @@ export default function DigitSpan() {
       </View>
 
       <View className="result-actions">
+        <StickerShareButton gameTitle="数字广度记忆" score={score} pagePath="pages/digit-span/index" isGauntlet={isGauntletPreset} />
         <View className="primary-button" onClick={startGame}>
           <Text className="button-text">再来一局</Text>
         </View>

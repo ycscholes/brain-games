@@ -1,4 +1,5 @@
 import { View, Text } from "@tarojs/components";
+import StickerShareButton from "../../../components/stickers/StickerShareButton";
 
 type FarmCountResultProps = {
   score: number;
@@ -8,6 +9,7 @@ type FarmCountResultProps = {
   bestCombo: number;
   awardedPoints: number;
   isNewBest: boolean;
+  isGauntlet: boolean;
   onBack: () => void;
   onRestart: () => void;
 };
@@ -20,6 +22,7 @@ export default function FarmCountResult({
   bestCombo,
   awardedPoints,
   isNewBest,
+  isGauntlet,
   onBack,
   onRestart,
 }: FarmCountResultProps) {
@@ -44,6 +47,7 @@ export default function FarmCountResult({
           </View>
         </View>
         <View className="result-actions">
+          <StickerShareButton gameTitle="农场清点" score={score} pagePath="pages/bird-count/index" isGauntlet={isGauntlet} />
           <View className="secondary-button" onClick={onBack}>
             <Text className="secondary-button-text">返回设置</Text>
           </View>

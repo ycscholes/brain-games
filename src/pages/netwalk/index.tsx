@@ -10,6 +10,7 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playComplete, playCorrect, playTap } from "../../services/audio/audioFeedbackService";
 import {
@@ -300,6 +301,7 @@ export default function Netwalk() {
             <Text className="netwalk-finish-score">{finalScore}</Text>
             <Text className="netwalk-finish-copy">获得 {awardedPoints} 宠物积分 · 旋转 {networkState?.moveCount ?? 0} 次 · 提示 {hintCount} 次</Text>
             <View className="netwalk-finish-actions">
+              <StickerShareButton gameTitle="网络回路" score={finalScore} pagePath="pages/netwalk/index" isGauntlet={isGauntletPreset} />
               <View className="netwalk-primary-button" onClick={startGame}><Text className="netwalk-primary-button-text">再接一张网络</Text></View>
               <View className="netwalk-secondary-button" onClick={() => setPhase("start")}><Text className="netwalk-secondary-button-text">返回难度选择</Text></View>
             </View>

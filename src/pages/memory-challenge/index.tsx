@@ -12,6 +12,7 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playTap } from "../../services/audio/audioFeedbackService";
 import { buildPetDisplayPool } from "../pet/petDisplayPool";
@@ -696,6 +697,7 @@ export default function MemoryChallenge() {
           </View>
 
           <View className="result-actions">
+            <StickerShareButton gameTitle="奇趣记忆" score={score} pagePath="pages/memory-challenge/index" isGauntlet={isGauntletPreset} />
             <View className="primary-button" onClick={startGame}>
               <Text className="button-text">再来一局</Text>
             </View>

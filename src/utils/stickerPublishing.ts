@@ -20,11 +20,20 @@ export interface StickerPublishPayload {
 export type StickerPublishResult =
   | { status: "opened" }
   | { status: "unsupported" }
-  | { status: "failed" }
+  | { status: "cancelled" }
+  | { status: "failed"; message?: string }
   | { status: "published"; reward: StickerRewardClaimResult };
 
 function toMiniProgramPath(pagePath: string) {
   return pagePath.startsWith("/") ? pagePath : `/${pagePath}`;
+}
+
+function getPublishFailure(error: { errMsg?: string } | undefined): StickerPublishResult {
+  const message = typeof error?.errMsg === "string" ? error.errMsg : "";
+  if (/cancel|cancell?ed|用户主动退出/i.test(message)) {
+    return { status: "cancelled" };
+  }
+  return message ? { status: "failed", message } : { status: "failed" };
 }
 
 export function createStickerPublishPayload({ gameTitle, score, pagePath }: Omit<StickerPublishInput, "onResult">): StickerPublishPayload {
@@ -64,8 +73,8 @@ export function publishGameResultSticker(input: StickerPublishInput): StickerPub
           reward,
         });
       },
-      fail: () => {
-        input.onResult?.({ status: "failed" });
+      fail: (error) => {
+        input.onResult?.(getPublishFailure(error));
       },
     });
   } catch {

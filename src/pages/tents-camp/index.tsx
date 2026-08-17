@@ -12,6 +12,7 @@ import {
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
 import {
   TENTS_CAMP_TOTAL_PUZZLES,
   coordKey,
@@ -428,6 +429,7 @@ export default function TentsCamp() {
               </View>
             </View>
             <View className="result-actions">
+              <StickerShareButton gameTitle="帐篷营地" score={score} pagePath="pages/tents-camp/index" isGauntlet={isGauntletPreset} />
               <View className="secondary-button" onClick={backToStart}>
                 <Text className="secondary-button-text">返回设置</Text>
               </View>

@@ -25,7 +25,13 @@ function getFeedback(result: StickerPublishResult) {
     return "发表成功，这篇贴图已领取过奖励";
   }
   if (result.status === "failed") {
-    return "未完成发表，请稍后再试";
+    if (/permission|auth/i.test(result.message ?? "")) {
+      return "贴图发表权限暂不可用，请确认小程序已开通该能力";
+    }
+    return result.message ? `贴图发表失败：${result.message}` : "未完成发表，请稍后再试";
+  }
+  if (result.status === "cancelled") {
+    return "已取消发表，未发放积分";
   }
   return "当前微信版本暂不支持贴图发表";
 }

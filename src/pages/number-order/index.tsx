@@ -10,6 +10,7 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import {
@@ -508,6 +509,7 @@ export default function NumberOrder() {
           <View className="primary-button" onClick={startGame}>
             <Text className="primary-button-text">再玩一局</Text>
           </View>
+          <StickerShareButton gameTitle="星链回响" score={score} pagePath="pages/number-order/index" isGauntlet={isGauntletPreset} />
           <View className="secondary-button" onClick={backToStart}>
             <Text className="secondary-button-text">返回设置</Text>
           </View>

@@ -86,16 +86,78 @@ describe("sticker publishing", () => {
     expect(readPetData().balance).toBe(30);
   });
 
+  test("treats an editor cancellation as a distinct non-error result", () => {
+    process.env.TARO_ENV = "weapp";
+    const onResult = jest.fn();
+
+    publishGameResultSticker({
+      gameTitle: "速算挑战",
+      score: 18,
+      pagePath: "pages/mental-math/index",
+      onResult,
+    });
+    const options = shareToOfficialAccount.mock.calls[0][0] as {
+      fail: (error: { errMsg?: string }) => void;
+    };
+    options.fail({ errMsg: "shareToOfficialAccount:fail cancel" });
+
+    expect(onResult).toHaveBeenCalledWith({ status: "cancelled" });
+    expect(readPetData().balance).toBe(0);
+  });
+
+  test("preserves an actionable native publishing failure", () => {
+    process.env.TARO_ENV = "weapp";
+    const onResult = jest.fn();
+
+    publishGameResultSticker({
+      gameTitle: "速算挑战",
+      score: 18,
+      pagePath: "pages/mental-math/index",
+      onResult,
+    });
+    const options = shareToOfficialAccount.mock.calls[0][0] as {
+      fail: (error: { errMsg?: string }) => void;
+    };
+    options.fail({ errMsg: "shareToOfficialAccount:fail no permission" });
+
+    expect(onResult).toHaveBeenCalledWith({
+      status: "failed",
+      message: "shareToOfficialAccount:fail no permission",
+    });
+  });
+
   test("hides the result sharing action inside a gauntlet leg", () => {
     expect(canShareCompletedGameResult({ completed: true, isGauntlet: false })).toBe(true);
     expect(canShareCompletedGameResult({ completed: true, isGauntlet: true })).toBe(false);
   });
 
-  test("renders the score share action on the speed-math result screen", () => {
-    const source = fs.readFileSync(path.resolve(__dirname, "../../src/pages/mental-math/index.tsx"), "utf8");
+  test("renders the score share action on every ordinary game result screen", () => {
+    const pageFiles = [
+      "mental-math/index.tsx",
+      "pattern-completion/index.tsx",
+      "digit-span/index.tsx",
+      "twenty-four/index.tsx",
+      "rock-paper-scissors/index.tsx",
+      "color-trap/index.tsx",
+      "spatial-rotation/index.tsx",
+      "hidato/index.tsx",
+      "tents-camp/index.tsx",
+      "sumplete-grid/index.tsx",
+      "traffic-escape/index.tsx",
+      "netwalk/index.tsx",
+      "loop-line/index.tsx",
+      "number-order/index.tsx",
+      "memory-challenge/index.tsx",
+      "multiple-object-tracking/index.tsx",
+      "word-scramble/index.tsx",
+      "bird-count/components/FarmCountResult.tsx",
+    ];
 
-    expect(source).toContain('import StickerShareButton from "../../components/stickers/StickerShareButton"');
-    expect(source).toContain('<StickerShareButton');
+    for (const pageFile of pageFiles) {
+      const source = fs.readFileSync(path.resolve(__dirname, "../../src/pages", pageFile), "utf8");
+      expect(source).toContain("StickerShareButton");
+      expect(source).toContain("<StickerShareButton");
+    }
   });
 
   test("uses one configured topic and homepage return link for the native feed", () => {

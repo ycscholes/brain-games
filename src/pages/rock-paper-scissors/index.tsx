@@ -11,6 +11,7 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playTap } from "../../services/audio/audioFeedbackService";
 import { readRockPaperScissorsHighScore, type RockPaperScissorsHighScore } from "./highScoreStorage";
@@ -437,6 +438,7 @@ export default function RockPaperScissors() {
           </View>
 
           <View className="result-actions">
+            <StickerShareButton gameTitle="石头剪刀布" score={score} pagePath="pages/rock-paper-scissors/index" isGauntlet={isGauntletPreset} />
             <View className="primary-button" onClick={startGame}>
               <Text className="button-text">再来一局</Text>
             </View>

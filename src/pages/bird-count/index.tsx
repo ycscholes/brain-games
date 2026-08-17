@@ -665,6 +665,7 @@ export default function FarmCount() {
           bestCombo={bestCombo}
           awardedPoints={awardedPoints}
           isNewBest={isNewBest}
+          isGauntlet={isGauntletPreset}
           onBack={backToStart}
           onRestart={startGame}
         />

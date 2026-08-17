@@ -10,6 +10,7 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import {
@@ -419,6 +420,7 @@ export default function SpatialRotation() {
               </View>
             </View>
             <View className="result-actions">
+              <StickerShareButton gameTitle="空间旋转" score={score} pagePath="pages/spatial-rotation/index" isGauntlet={isGauntletPreset} />
               <View className="secondary-button" onClick={backToStart}>
                 <Text className="secondary-button-text">返回设置</Text>
               </View>

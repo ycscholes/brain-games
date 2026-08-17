@@ -10,6 +10,7 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import {
@@ -581,6 +582,7 @@ export default function PatternCompletion() {
           </View>
 
           <View className="result-actions">
+            <StickerShareButton gameTitle="找规律" score={finalScore} pagePath="pages/pattern-completion/index" isGauntlet={isGauntletPreset} />
             <View className="primary-button" onClick={startGame}>
               <Text className="button-text">再来一局</Text>
             </View>

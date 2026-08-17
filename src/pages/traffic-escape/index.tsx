@@ -10,6 +10,7 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import {
@@ -340,6 +341,7 @@ export default function TrafficEscape() {
             <Text className="traffic-finish-score">{finalScore}</Text>
             <Text className="traffic-finish-copy">获得 {awardedPoints} 宠物积分 · 调度 {trafficState?.moveCount ?? 0} 次 · 提示 {hintCount} 次</Text>
             <View className="traffic-finish-actions">
+              <StickerShareButton gameTitle="车阵突围" score={finalScore} pagePath="pages/traffic-escape/index" isGauntlet={isGauntletPreset} />
               <View className="traffic-primary-button" onClick={startGame}>
                 <Text className="traffic-primary-button-text">再闯一条路线</Text>
               </View>

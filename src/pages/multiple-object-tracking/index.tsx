@@ -10,6 +10,7 @@ import {
 } from "../../utils/trainingStorage";
 import { completeGauntletLegIfNeeded, isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import "./index.scss";
@@ -653,6 +654,7 @@ export default function MultipleObjectTracking() {
           </View>
 
           <View className="result-actions">
+            <StickerShareButton gameTitle="追踪任务" score={score} pagePath="pages/multiple-object-tracking/index" isGauntlet={isGauntletPreset} />
             <View className="primary-button" onClick={startGame}>
               <Text className="button-text">再来一局</Text>
             </View>
