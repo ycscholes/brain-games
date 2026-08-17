@@ -1,11 +1,13 @@
 import { Text, View } from "@tarojs/components";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import StickerScorePoster from "./StickerScorePoster";
 import {
   canShareCompletedGameResult,
   isOfficialAccountStickerRuntimeSupported,
   publishGameResultSticker,
   type StickerPublishResult,
 } from "../../utils/stickerPublishing";
+import { exportStickerScorePoster } from "../../utils/stickerScorePoster";
 import "./index.scss";
 
 interface StickerShareButtonProps {
@@ -45,22 +47,36 @@ export default function StickerShareButton({
 }: StickerShareButtonProps) {
   const [isPublishing, setIsPublishing] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const canvasIdRef = useRef("sticker-score-poster");
 
   if (!isOfficialAccountStickerRuntimeSupported() || !canShareCompletedGameResult({ completed: true, isGauntlet })) {
     return null;
   }
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (isPublishing) {
       return;
     }
 
     setIsPublishing(true);
     setFeedback("");
+    let imagePath: string | undefined;
+
+    try {
+      imagePath = await exportStickerScorePoster({
+        canvasId: canvasIdRef.current,
+        gameTitle,
+        score,
+      });
+    } catch {
+      // The native editor can still accept the score text without an image.
+    }
+
     const result = publishGameResultSticker({
       gameTitle,
       score,
       pagePath,
+      imagePath,
       onResult: (publishResult) => {
         setIsPublishing(false);
         setFeedback(getFeedback(publishResult));
@@ -75,8 +91,9 @@ export default function StickerShareButton({
 
   return (
     <View className="sticker-share-wrap">
+      <StickerScorePoster canvasId={canvasIdRef.current} />
       <View className="sticker-share-button" onClick={handlePublish}>
-        <Text className="sticker-share-button-text">{isPublishing ? "正在打开发表页…" : "晒出本局成绩"}</Text>
+        <Text className="sticker-share-button-text">{isPublishing ? "正在生成成绩海报…" : "晒出本局成绩"}</Text>
         <Text className="sticker-share-button-reward">发表成功可得 30 积分（每日 3 次）</Text>
       </View>
       {feedback ? <Text className="sticker-share-feedback">{feedback}</Text> : null}

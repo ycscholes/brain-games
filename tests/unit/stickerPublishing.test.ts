@@ -56,6 +56,17 @@ describe("sticker publishing", () => {
     });
   });
 
+  test("includes an exported score poster when one is available", () => {
+    expect(createStickerPublishPayload({
+      gameTitle: "速算挑战",
+      score: 18,
+      pagePath: "pages/mental-math/index",
+      imagePath: "wxfile://score-poster.png",
+    })).toMatchObject({
+      images: ["wxfile://score-poster.png"],
+    });
+  });
+
   test("does not invoke the native API or award points outside a mini program", () => {
     process.env.TARO_ENV = "h5";
 
@@ -183,6 +194,16 @@ describe("sticker publishing", () => {
       expect(source).toContain("StickerShareButton");
       expect(source).toContain("<StickerShareButton");
     }
+  });
+
+  test("generates a score poster before opening the native publishing page", () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, "../../src/components/stickers/StickerShareButton.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("StickerScorePoster");
+    expect(source).toContain("exportStickerScorePoster");
   });
 
   test("uses one configured topic and homepage return link for the native feed", () => {

@@ -8,6 +8,7 @@ export interface StickerPublishInput {
   gameTitle: string;
   score: number;
   pagePath: string;
+  imagePath?: string;
   onResult?: (result: StickerPublishResult) => void;
 }
 
@@ -15,6 +16,7 @@ export interface StickerPublishPayload {
   title: string;
   content: string;
   tags: string[];
+  images?: string[];
   recommendPath: string;
   recommendTitle: string;
 }
@@ -38,11 +40,12 @@ function getPublishFailure(error: { errMsg?: string } | undefined): StickerPubli
   return message ? { status: "failed", message } : { status: "failed" };
 }
 
-export function createStickerPublishPayload({ gameTitle, score, pagePath }: Omit<StickerPublishInput, "onResult">): StickerPublishPayload {
+export function createStickerPublishPayload({ gameTitle, score, pagePath, imagePath }: Omit<StickerPublishInput, "onResult">): StickerPublishPayload {
   return {
     title: `我在${gameTitle}拿到 ${score} 分`,
     content: `完成一局${gameTitle}，来和我一起每天练一点脑力吧！`,
     tags: [STICKER_TOPIC],
+    ...(imagePath ? { images: [imagePath] } : {}),
     recommendPath: toMiniProgramPath(pagePath),
     recommendTitle: `${gameTitle} · Cici的脑部锻炼`,
   };

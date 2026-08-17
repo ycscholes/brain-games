@@ -2,6 +2,14 @@
   width: 100%;
 }
 
+.sticker-score-poster-canvas {
+  position: fixed;
+  top: -1200px;
+  left: -900px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .sticker-feed-section {
   margin-bottom: 20px;
   padding: 24px 20px 18px;
