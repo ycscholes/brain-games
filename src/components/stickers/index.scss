@@ -11,23 +11,10 @@
   box-shadow: var(--shadow-card);
 }
 
-.sticker-feed-heading {
-  margin-bottom: 16px;
-}
-
-.sticker-feed-title,
-.sticker-feed-copy,
 .sticker-feed-feedback {
   display: block;
 }
 
-.sticker-feed-title {
-  color: var(--text-primary);
-  font-size: 32px;
-  font-weight: 850;
-}
-
-.sticker-feed-copy,
 .sticker-feed-feedback {
   margin-top: 6px;
   color: var(--text-muted);

@@ -205,7 +205,7 @@ describe("gameGauntlet", () => {
     expect(readGameGauntletSession("session_1")?.results).toEqual([]);
   });
 
-  test("saves a matching leg result so the gauntlet can advance to the second game", () => {
+  test("returns to the session route so the gauntlet can automatically enter the second game", () => {
     mockStorage.set("game_gauntlet_session_v1", JSON.stringify({
       id: "session_1",
       gameIds: ["bird-count", "memory-challenge", "mental-math"],
@@ -233,8 +233,10 @@ describe("gameGauntlet", () => {
     const nextSession = readGameGauntletSession("session_1");
 
     expect(completed).toBe(true);
-    expect(Taro.navigateBack).toHaveBeenCalledWith({ delta: 1 });
-    expect(Taro.redirectTo).not.toHaveBeenCalled();
+    expect(Taro.redirectTo).toHaveBeenCalledWith({
+      url: "/pages/game-gauntlet/index?sessionId=session_1",
+    });
+    expect(Taro.navigateBack).not.toHaveBeenCalled();
     expect(nextSession?.currentLegIndex).toBe(1);
     expect(nextSession?.results[0]).toMatchObject({
       gameId: "bird-count",

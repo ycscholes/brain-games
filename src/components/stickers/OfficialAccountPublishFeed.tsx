@@ -42,10 +42,6 @@ export default function OfficialAccountPublishFeed() {
 
   return (
     <View className="sticker-feed-section">
-      <View className="sticker-feed-heading">
-        <Text className="sticker-feed-title">训练打卡</Text>
-        <Text className="sticker-feed-copy">记录一局训练，和更多同好交流</Text>
-      </View>
       {nativeFeed}
       {feedback ? <Text className="sticker-feed-feedback">{feedback}</Text> : null}
     </View>

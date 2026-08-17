@@ -393,7 +393,6 @@ export default function Index() {
         {gauntletGame ? (
           <View className="gauntlet-entry" onClick={() => navigateTo(gauntletGame.url)}>
             <View className="gauntlet-entry-copy">
-              <Text className="gauntlet-entry-kicker">固定入口</Text>
               <Text className="gauntlet-entry-title">游戏大闯关</Text>
               <Text className="gauntlet-entry-meta">随机 3 局 · 本轮难度预览 · 退出重新开始</Text>
             </View>
