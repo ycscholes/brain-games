@@ -8,6 +8,7 @@ export interface StaffPlacementLevel { id: string; chapterId: "music-island-a"; 
 export interface StaffSlot { id: string; note: string; kind: StaffSlotKind; x: number; y: number; width: number; height: number; }
 export type StaffDropSlot = StaffSlot;
 export interface StaffPoint { x: number; y: number; }
+export interface StaffBounds { left: number; top: number; }
 export interface StaffTouchEvent { detail?: { x?: number; y?: number }; touches?: Array<{ clientX?: number; clientY?: number; pageX?: number; pageY?: number; x?: number; y?: number }>; changedTouches?: Array<{ clientX?: number; clientY?: number; pageX?: number; pageY?: number; x?: number; y?: number }>; }
 export interface MusicTheoryScoreInput { difficulty: TrainingDifficulty; quizCorrectCount: number; placementCorrectCount: number; hintCount: number; elapsedSeconds: number; completed: boolean; }
 
@@ -51,6 +52,10 @@ export function getStaffPointFromTouchEvent(event: StaffTouchEvent): StaffPoint 
   const x = event.detail?.x;
   const y = event.detail?.y;
   return typeof x === "number" && typeof y === "number" ? { x, y } : null;
+}
+
+export function toStaffLocalPoint(point: StaffPoint, bounds: StaffBounds): StaffPoint {
+  return { x: point.x - bounds.left, y: point.y - bounds.top };
 }
 
 export function selectMusicTheoryQuestions(difficulty: TrainingDifficulty, seed = "") {

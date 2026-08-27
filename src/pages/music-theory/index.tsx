@@ -8,7 +8,7 @@ import { playComplete, playCorrect, playTap, playWrong } from "../../services/au
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
-import { createStaffPlacementLevels, evaluateMusicTheoryScore, evaluateStaffPlacement, getAllStaffSlots, getStaffPointFromTouchEvent, resolveStaffDrop, selectMusicTheoryQuestions, type MusicTheoryPhase, type StaffPoint, type StaffSlot, type StaffTouchEvent } from "./gameLogic";
+import { createStaffPlacementLevels, evaluateMusicTheoryScore, evaluateStaffPlacement, getAllStaffSlots, getStaffPointFromTouchEvent, resolveStaffDrop, selectMusicTheoryQuestions, toStaffLocalPoint, type MusicTheoryPhase, type StaffBounds, type StaffPoint, type StaffSlot, type StaffTouchEvent } from "./gameLogic";
 import "./index.scss";
 
 type PagePhase = "start" | "playing" | "finished";
@@ -30,6 +30,7 @@ export default function MusicTheory() {
   const [hintCount, setHintCount] = useState(0);
   const [chosenNote, setChosenNote] = useState<string | null>(null);
   const [dragPoint, setDragPoint] = useState<StaffPoint | null>(null);
+  const [staffBounds, setStaffBounds] = useState<StaffBounds | null>(null);
   const [feedback, setFeedback] = useState("准备好就出发吧！");
   const [score, setScore] = useState(0);
   const [awarded, setAwarded] = useState(0);
@@ -60,14 +61,52 @@ export default function MusicTheory() {
 
   useEffect(() => { if (isGauntlet && pagePhase === "start") startGame(); }, [isGauntlet, pagePhase, startGame]);
 
+  useEffect(() => {
+    if (pagePhase !== "playing" || phase !== "staff-placement") {
+      setStaffBounds(null);
+      return undefined;
+    }
+
+    setStaffBounds(null);
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      Taro.createSelectorQuery()
+        .select(".staff")
+        .boundingClientRect((rect) => {
+          if (cancelled) return;
+          if (!rect || Array.isArray(rect) || rect.width <= 0 || rect.height <= 0) {
+            setStaffBounds(null);
+            setFeedback("五线谱正在准备中，请稍后再试。🌟");
+            return;
+          }
+          setStaffBounds({ left: rect.left, top: rect.top });
+        })
+        .exec();
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [index, pagePhase, phase]);
+
   const answerQuiz = (option: number) => { if (selected !== null) return; const question = questions[index]; const correct = option === question.correctOptionIndex; setSelected(option); setFeedback(question.explanation); if (correct) { playCorrect(); setQuizCorrect((value) => value + 1); } else playWrong(); };
   const nextQuiz = () => { playTap(); if (index === questions.length - 1) { setPhase("staff-placement"); setIndex(0); setSelected(null); setFeedback("把音符送到五线谱上吧！"); } else { setIndex((value) => value + 1); setSelected(null); setFeedback("继续探索下一个知识点！"); } };
   const place = (slotId: string) => { const level = levels[index]; if (!chosenNote) { setFeedback("先点选一张音符卡，再点五线谱位置。"); return; } const result = evaluateStaffPlacement(chosenNote, slotId, level.targetNote, level.targetSlotId); if (result.correct) { playCorrect(); setPlacementCorrect((value) => value + 1); setFeedback(`${level.targetNote} 正确！${level.explanation}`); setChosenNote(null); if (index === levels.length - 1) finishGame(); else { setIndex((value) => value + 1); setFeedback(`${level.targetNote} 正确！继续下一颗星星。`); } } else { playWrong(); setFeedback(result.reason === "wrong-note" ? `这个音符不是 ${level.targetNote}，再试试看。` : `还差一点：${level.targetNote} 要放在正确的线或间。`); } };
+  const getStaffLocalPoint = (event: StaffTouchEvent) => {
+    const point = getStaffPointFromTouchEvent(event);
+    if (!point) return null;
+    if (!staffBounds) {
+      setFeedback("五线谱正在准备中，请稍后再试。🌟");
+      return null;
+    }
+    return toStaffLocalPoint(point, staffBounds);
+  };
   const handleDrop = (point: StaffPoint) => { const slot = resolveStaffDrop(getAllStaffSlots(), point); if (slot) place(slot); };
-  const handleStaffClick = (event: StaffTouchEvent) => { const point = getStaffPointFromTouchEvent(event); if (point) handleDrop(point); };
-  const handleNoteTouchStart = (note: string, event: StaffTouchEvent) => { setChosenNote(note); setDragPoint(getStaffPointFromTouchEvent(event)); };
-  const handleNoteTouchMove = (event: StaffTouchEvent) => { const point = getStaffPointFromTouchEvent(event); if (point) setDragPoint(point); };
-  const handleNoteTouchEnd = (event: StaffTouchEvent) => { const point = getStaffPointFromTouchEvent(event) ?? dragPoint; if (point) handleDrop(point); setDragPoint(null); };
+  const handleStaffClick = (event: StaffTouchEvent) => { const point = getStaffLocalPoint(event); if (point) handleDrop(point); };
+  const handleNoteTouchStart = (note: string, event: StaffTouchEvent) => { setChosenNote(note); setDragPoint(getStaffLocalPoint(event)); };
+  const handleNoteTouchMove = (event: StaffTouchEvent) => { const point = getStaffLocalPoint(event); if (point) setDragPoint(point); };
+  const handleNoteTouchEnd = (event: StaffTouchEvent) => { const point = getStaffLocalPoint(event) ?? dragPoint; if (point) handleDrop(point); setDragPoint(null); };
   const currentLevel = levels[index];
   const staffSlots: StaffSlot[] = currentLevel ? getAllStaffSlots() : [];
 

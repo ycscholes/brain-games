@@ -4,6 +4,7 @@ import {
   getAllStaffSlots,
   getStaffSlotForNote,
   getStaffPointFromTouchEvent,
+  toStaffLocalPoint,
   resolveStaffDrop,
   selectMusicTheoryQuestions,
   evaluateMusicTheoryScore,
@@ -51,6 +52,12 @@ describe("music theory game logic", () => {
     expect(getStaffPointFromTouchEvent({ touches: [], changedTouches: [{ clientX: 33, clientY: 44 }] })).toEqual({ x: 33, y: 44 });
     expect(getStaffPointFromTouchEvent({ detail: { x: 55, y: 66 } })).toEqual({ x: 55, y: 66 });
     expect(getStaffPointFromTouchEvent({})).toBeNull();
+  });
+
+  it("converts page coordinates to staff-local coordinates before resolving a slot", () => {
+    const point = toStaffLocalPoint({ x: 220, y: 150 }, { left: 100, top: 50 });
+    expect(point).toEqual({ x: 120, y: 100 });
+    expect(resolveStaffDrop(getAllStaffSlots(), point)).toBe("staff-e4");
   });
 
   it("creates four unique placement levels and scores completed play", () => {
