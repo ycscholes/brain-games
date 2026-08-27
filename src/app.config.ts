@@ -20,6 +20,7 @@ export default defineAppConfig({
     'pages/tents-camp/index',
     'pages/sumplete-grid/index',
     'pages/traffic-escape/index',
+    'pages/music-theory/index',
     'pages/netwalk/index',
     'pages/loop-line/index',
     'pages/pet/index',

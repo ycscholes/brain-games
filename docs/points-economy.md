@@ -223,6 +223,10 @@ export const HOURS_AFTER_ZERO_BEFORE_DEATH = 24;
 
 ## 4. 测试验证
 
+### 音符小探险（music-theory）
+
+固定 8 道乐理选择题加 4 道高音谱号识谱题，普通游戏分最高 40、困难最高 50；提示每次扣 2 分。游戏使用 1.0x 转换率，所有宠物积分、训练记录与闯关结算均通过共享管线处理，普通/困难宠物积分沿用 40/60 封顶。
+
 ### 4.1 积分获取测试
 
 测试文件：`tests/unit/trainingStorage.test.ts`

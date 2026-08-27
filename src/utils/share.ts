@@ -27,6 +27,7 @@ export const SHARE_PAGE_PATHS = [
   "pages/tents-camp/index",
   "pages/sumplete-grid/index",
   "pages/traffic-escape/index",
+  "pages/music-theory/index",
   "pages/netwalk/index",
   "pages/loop-line/index",
   "pages/pet/index",
@@ -127,6 +128,10 @@ export const SHARE_PAGE_CONTENT: Record<SharePagePath, SharePageContent> = {
   "pages/traffic-escape/index": {
     title: "来玩车阵突围，练空间规划",
     timelineTitle: "车阵突围空间规划训练",
+  },
+  "pages/music-theory/index": {
+    title: "来玩音符小探险，认识节拍和五线谱",
+    timelineTitle: "音符小探险乐理训练",
   },
   "pages/netwalk/index": {
     title: "来玩网络回路，练连通规划",

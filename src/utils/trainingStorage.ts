@@ -20,6 +20,7 @@ export type TrainingGameId =
   | "tents-camp"
   | "sumplete-grid"
   | "traffic-escape"
+  | "music-theory"
   | "netwalk"
   | "loop-line"
   | "game-gauntlet"
@@ -294,6 +295,7 @@ const TRAINING_POINT_RATES: Record<string, number> = {
   "tents-camp": 1,
   "sumplete-grid": 1,
   "traffic-escape": 1,
+  "music-theory": 1,
   netwalk: 1,
   "loop-line": 1,
   "game-gauntlet": 1,

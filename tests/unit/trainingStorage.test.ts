@@ -285,6 +285,8 @@ describe("trainingStorage", () => {
       expect(getAwardedPoints("sumplete-grid", 50, "hard")).toBe(60);
       expect(getAwardedPoints("traffic-escape", 40, "normal")).toBe(40);
       expect(getAwardedPoints("traffic-escape", 50, "hard")).toBe(60);
+      expect(getAwardedPoints("music-theory", 40, "normal")).toBe(40);
+      expect(getAwardedPoints("music-theory", 50, "hard")).toBe(60);
       expect(getAwardedPoints("netwalk", 40, "normal")).toBe(40);
       expect(getAwardedPoints("netwalk", 50, "hard")).toBe(60);
     });
