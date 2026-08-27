@@ -8,6 +8,7 @@ export interface StaffPlacementLevel { id: string; chapterId: "music-island-a"; 
 export interface StaffSlot { id: string; note: string; kind: StaffSlotKind; x: number; y: number; width: number; height: number; }
 export type StaffDropSlot = StaffSlot;
 export interface StaffPoint { x: number; y: number; }
+export interface StaffTouchEvent { detail?: { x?: number; y?: number }; touches?: Array<{ clientX?: number; clientY?: number; pageX?: number; pageY?: number; x?: number; y?: number }>; changedTouches?: Array<{ clientX?: number; clientY?: number; pageX?: number; pageY?: number; x?: number; y?: number }>; }
 export interface MusicTheoryScoreInput { difficulty: TrainingDifficulty; quizCorrectCount: number; placementCorrectCount: number; hintCount: number; elapsedSeconds: number; completed: boolean; }
 
 const QUESTIONS: Array<Omit<MusicTheoryQuestion, "difficulty">> = [
@@ -28,6 +29,28 @@ export function getStaffSlotForNote(note: string): StaffSlot {
   const index = NOTE_NAMES.indexOf(note);
   if (index < 0) throw new Error(`Unsupported treble note: ${note}`);
   return { id: `staff-${note.toLowerCase()}`, note, kind: kindForIndex(index), x: 24, y: 80 + index * 8, width: 192, height: 16 };
+}
+
+export function getAllStaffSlots(): StaffSlot[] {
+  return NOTE_NAMES.map(getStaffSlotForNote);
+}
+
+export function evaluateStaffPlacement(chosenNote: string, slotId: string, targetNote: string, targetSlotId: string): { correct: boolean; reason?: "wrong-note" | "wrong-slot" } {
+  if (slotId !== targetSlotId) return { correct: false, reason: "wrong-slot" };
+  if (chosenNote !== targetNote) return { correct: false, reason: "wrong-note" };
+  return { correct: true };
+}
+
+export function getStaffPointFromTouchEvent(event: StaffTouchEvent): StaffPoint | null {
+  const touch = event.touches?.[0] ?? event.changedTouches?.[0];
+  if (touch) {
+    const x = touch.clientX ?? touch.pageX ?? touch.x;
+    const y = touch.clientY ?? touch.pageY ?? touch.y;
+    if (typeof x === "number" && typeof y === "number") return { x, y };
+  }
+  const x = event.detail?.x;
+  const y = event.detail?.y;
+  return typeof x === "number" && typeof y === "number" ? { x, y } : null;
 }
 
 export function selectMusicTheoryQuestions(difficulty: TrainingDifficulty, seed = "") {
