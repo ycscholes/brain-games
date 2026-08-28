@@ -77,6 +77,13 @@ export function resolveStaffDrop(slots: StaffDropSlot[], point: StaffPoint): str
   return slots.find((slot) => point.x >= slot.x && point.x <= slot.x + slot.width && point.y >= slot.y - slot.height / 2 && point.y <= slot.y + slot.height / 2)?.id ?? null;
 }
 
+export type StaffDropState = { kind: "slot"; slotId: string } | { kind: "outside" };
+
+export function getStaffDropState(slots: StaffDropSlot[], point: StaffPoint): StaffDropState {
+  const slotId = resolveStaffDrop(slots, point);
+  return slotId ? { kind: "slot", slotId } : { kind: "outside" };
+}
+
 export function evaluateMusicTheoryScore(input: MusicTheoryScoreInput) {
   if (!input.completed) return 0;
   const quiz = Math.min(8, Math.max(0, input.quizCorrectCount)) * 3;

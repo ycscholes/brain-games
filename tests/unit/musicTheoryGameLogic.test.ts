@@ -2,6 +2,7 @@ import {
   createStaffPlacementLevels,
   evaluateStaffPlacement,
   getAllStaffSlots,
+  getStaffDropState,
   getStaffSlotForNote,
   getStaffPointFromTouchEvent,
   toStaffLocalPoint,
@@ -45,6 +46,11 @@ describe("music theory game logic", () => {
       expect(resolveStaffDrop([slot], { x: slot.x + 1, y: slot.y })).toBe(slot.id);
     }
     expect(resolveStaffDrop(getAllStaffSlots(), { x: 400, y: 400 })).toBeNull();
+  });
+
+  it("distinguishes a valid staff slot from a release outside the staff", () => {
+    expect(getStaffDropState(getAllStaffSlots(), { x: 100, y: 100 })).toEqual({ kind: "slot", slotId: "staff-e4" });
+    expect(getStaffDropState(getAllStaffSlots(), { x: 400, y: 400 })).toEqual({ kind: "outside" });
   });
 
   it("reads the latest touch coordinate from touches or changedTouches", () => {
