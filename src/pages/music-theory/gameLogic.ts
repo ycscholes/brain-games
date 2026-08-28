@@ -8,7 +8,8 @@ export interface StaffPlacementLevel { id: string; chapterId: "music-island-a"; 
 export interface StaffSlot { id: string; note: string; kind: StaffSlotKind; x: number; y: number; width: number; height: number; }
 export type StaffDropSlot = StaffSlot;
 export interface StaffPoint { x: number; y: number; }
-export interface StaffBounds { left: number; top: number; }
+export interface StaffBounds { left: number; top: number; width?: number; height?: number; }
+export interface StaffSize { width: number; height: number; }
 export interface StaffTouchEvent { detail?: { x?: number; y?: number }; touches?: Array<{ clientX?: number; clientY?: number; pageX?: number; pageY?: number; x?: number; y?: number }>; changedTouches?: Array<{ clientX?: number; clientY?: number; pageX?: number; pageY?: number; x?: number; y?: number }>; }
 export interface MusicTheoryScoreInput { difficulty: TrainingDifficulty; quizCorrectCount: number; placementCorrectCount: number; hintCount: number; elapsedSeconds: number; completed: boolean; }
 
@@ -34,6 +35,23 @@ export function getStaffSlotForNote(note: string): StaffSlot {
 
 export function getAllStaffSlots(): StaffSlot[] {
   return NOTE_NAMES.map(getStaffSlotForNote);
+}
+
+export function createVisibleStaffSlots(size: StaffSize): StaffSlot[] {
+  const scale = size.height / 230;
+  const bottomLine = 104 * scale;
+  const halfStep = 8 * scale;
+  const left = Math.round(size.width * 0.28);
+  const width = Math.max(80, size.width - left - Math.round(size.width * 0.08));
+  return NOTE_NAMES.map((note, index) => ({
+    id: `staff-${note.toLowerCase()}`,
+    note,
+    kind: kindForIndex(index),
+    x: left,
+    y: bottomLine - (index - 2) * halfStep,
+    width,
+    height: Math.max(24, halfStep * 2),
+  }));
 }
 
 export function evaluateStaffPlacement(chosenNote: string, slotId: string, targetNote: string, targetSlotId: string): { correct: boolean; reason?: "wrong-note" | "wrong-slot" } {

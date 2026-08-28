@@ -8,7 +8,7 @@ import { playComplete, playCorrect, playTap, playWrong } from "../../services/au
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
-import { createStaffPlacementLevels, evaluateMusicTheoryScore, evaluateStaffPlacement, getAllStaffSlots, getStaffDropState, getStaffPointFromTouchEvent, selectMusicTheoryQuestions, toStaffLocalPoint, type MusicTheoryPhase, type StaffBounds, type StaffPoint, type StaffSlot, type StaffTouchEvent } from "./gameLogic";
+import { createStaffPlacementLevels, createVisibleStaffSlots, evaluateMusicTheoryScore, evaluateStaffPlacement, getStaffDropState, getStaffPointFromTouchEvent, selectMusicTheoryQuestions, toStaffLocalPoint, type MusicTheoryPhase, type StaffBounds, type StaffPoint, type StaffSlot, type StaffTouchEvent } from "./gameLogic";
 import "./index.scss";
 
 type PagePhase = "start" | "playing" | "finished";
@@ -80,7 +80,7 @@ export default function MusicTheory() {
             setFeedback("五线谱正在准备中，请稍后再试。🌟");
             return;
           }
-          setStaffBounds({ left: rect.left, top: rect.top });
+          setStaffBounds({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
         })
         .exec();
     }, 0);
@@ -103,15 +103,15 @@ export default function MusicTheory() {
     }
     return toStaffLocalPoint(point, staffBounds);
   };
-  const handleDrop = (point: StaffPoint) => { const state = getStaffDropState(getAllStaffSlots(), point); if (state.kind === "outside") { setPlacementReaction("error"); setFeedback("放谱上"); setTimeout(() => setPlacementReaction(null), 420); return; } place(state.slotId); };
+  const handleDrop = (point: StaffPoint) => { const slots = staffBounds?.width && staffBounds.height ? createVisibleStaffSlots({ width: staffBounds.width, height: staffBounds.height }) : []; const state = getStaffDropState(slots, point); if (state.kind === "outside") { setPlacementReaction("error"); setFeedback("放谱上"); setTimeout(() => setPlacementReaction(null), 420); return; } place(state.slotId); };
   const handleStaffClick = (event: StaffTouchEvent) => { const point = getStaffLocalPoint(event); if (point) handleDrop(point); };
   const handleNoteTouchStart = (note: string, event: StaffTouchEvent) => { setChosenNote(note); setDragPoint(getStaffLocalPoint(event)); };
   const handleNoteTouchMove = (event: StaffTouchEvent) => { const point = getStaffLocalPoint(event); if (point) setDragPoint(point); };
   const handleNoteTouchEnd = (event: StaffTouchEvent) => { const point = getStaffLocalPoint(event) ?? dragPoint; if (point) handleDrop(point); setDragPoint(null); };
   const currentLevel = levels[index];
-  const staffSlots: StaffSlot[] = currentLevel ? getAllStaffSlots() : [];
+  const staffSlots: StaffSlot[] = currentLevel && staffBounds?.width && staffBounds.height ? createVisibleStaffSlots({ width: staffBounds.width, height: staffBounds.height }) : [];
 
-  return <View className="music-theory-page">
+  return <View className="music-theory-page" onTouchMove={(event) => { if (chosenNote) handleNoteTouchMove(event); }} onTouchEnd={(event) => { if (chosenNote && dragPoint) handleNoteTouchEnd(event); }}>
     {pagePhase === "start" && <View className="music-start"><Text className="music-kicker">🎵 音乐岛</Text><Text className="music-title">音符探险</Text><Text className="music-subtitle">选一选 · 放一放</Text><View className="music-card"><Text>8 张卡 · 4 次放</Text><Text>C4 – G5</Text></View><View className="music-difficulty"><View className={difficulty === "normal" ? "active" : ""} onClick={() => setDifficulty("normal")}><Text>普通</Text></View><View className={difficulty === "hard" ? "active" : ""} onClick={() => setDifficulty("hard")}><Text>困难</Text></View></View><View className="music-button" onClick={startGame}><Text>出发 ✨</Text></View></View>}
     {pagePhase === "playing" && <View className="music-play"><View className="music-top"><Text>{phase === "quiz" ? "🎵 选一选" : "🎼 放一放"}</Text><Text>{index + 1} / {phase === "quiz" ? 8 : 4}</Text></View>{phase === "quiz" && questions[index] && <View className="music-card question-card"><Text className="topic">{questions[index].topic === "rhythm" ? "🥁" : questions[index].topic === "note" ? "🎵" : questions[index].topic === "scale" ? "🌈" : "🎼"}</Text><Text className="question">{questions[index].prompt}</Text>{questions[index].options.map((option, optionIndex) => <View key={option} className={`option ${selected === optionIndex ? (optionIndex === questions[index].correctOptionIndex ? "correct" : "wrong") : ""}`} onClick={() => answerQuiz(optionIndex)}><Text>{option}</Text></View>)}<Text className="feedback">{feedback}</Text>{selected !== null && <View className="music-button" onClick={nextQuiz}><Text>{index === 7 ? "去放音符" : "下一张"}</Text></View>}</View>}{phase === "staff-placement" && currentLevel && <View className={`music-card staff-card ${placementReaction ?? ""}`}><Text className="question">放 {currentLevel.targetNote}</Text><View className="staff" onClick={handleStaffClick} onTouchEnd={handleStaffClick}><Text className="clef">𝄞</Text>{[0,1,2,3,4].map((line) => <View key={line} className="staff-line" style={{ top: `${40 + line * 16}px` }} />)}{staffSlots.map((slot) => <View key={slot.id} className={`staff-target ${chosenNote && slot.id === currentLevel.targetSlotId ? "highlight" : ""}`} style={{ top: `${slot.y - 80}px` }} />)}{dragPoint && chosenNote && <Text className="drag-ghost" style={{ left: `${dragPoint.x - 18}px`, top: `${dragPoint.y - 22}px` }}>♪</Text>}{placementReaction === "success" && <Text className="success-stars">✦ ✧ ✦</Text>}</View><View className="note-cards">{currentLevel.candidateNotes.map((note) => <View key={note} className={`note-card ${chosenNote === note ? "selected" : ""}`} onClick={() => { playTap(); setChosenNote(note); setFeedback("放这里"); }} onTouchStart={(event) => handleNoteTouchStart(note, event)} onTouchMove={handleNoteTouchMove} onTouchEnd={handleNoteTouchEnd}><Text>♪ {note}</Text></View>)}</View><Text className="feedback">{feedback}</Text><View className="hint" onClick={() => { setHintCount((value) => value + 1); setFeedback("看亮点"); }}><Text>提示 💡</Text></View></View>}</View>}
     {pagePhase === "finished" && <View className="music-finish"><Text className="music-kicker">🌈 完成</Text><Text className="music-title">太棒啦！</Text><Text className="final-score">{score} 分</Text><Text>+{awarded} 积分</Text><StickerShareButton gameTitle="音符小探险" score={score} pagePath="pages/music-theory/index" isGauntlet={isGauntlet} /><View className="music-button" onClick={startGame}><Text>再来一次</Text></View></View>}

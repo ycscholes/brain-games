@@ -1,5 +1,6 @@
 import {
   createStaffPlacementLevels,
+  createVisibleStaffSlots,
   evaluateStaffPlacement,
   getAllStaffSlots,
   getStaffDropState,
@@ -23,6 +24,13 @@ describe("music theory game logic", () => {
     expect(getStaffSlotForNote("C4")).toMatchObject({ kind: "ledger-line" });
     expect(getStaffSlotForNote("E4")).toMatchObject({ id: "staff-e4", kind: "line" });
     expect(getStaffSlotForNote("G5")).toMatchObject({ kind: "above-space" });
+  });
+
+  it("maps visible treble-staff slots to the same lines and spaces children see", () => {
+    const slots = createVisibleStaffSlots({ width: 320, height: 230 });
+    expect(slots.find((slot) => slot.note === "E4")?.y).toBe(104);
+    expect(slots.find((slot) => slot.note === "C4")?.y).toBe(120);
+    expect(slots.find((slot) => slot.note === "G5")?.y).toBe(32);
   });
 
   it("resolves a drop by rectangle and rejects the staff exterior", () => {
