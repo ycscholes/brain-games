@@ -11,6 +11,7 @@ import shape08 from "../assets/shapes/shape_08.svg";
 import shape09 from "../assets/shapes/shape_09.svg";
 import shape10 from "../assets/shapes/shape_10.svg";
 import { resolveAllRemoteAssetUrls } from "../config/remoteAssets";
+import { shouldPreloadImageWithGetImageInfo } from "./imagePreload";
 
 export interface AssetPreloadProgress {
   loaded: number;
@@ -38,7 +39,7 @@ const LOCAL_GAME_IMAGES = [
 ];
 
 function preloadImage(url: string) {
-  if (!url) {
+  if (!url || !shouldPreloadImageWithGetImageInfo(url)) {
     return Promise.resolve(false);
   }
 

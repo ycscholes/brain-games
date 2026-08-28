@@ -18,6 +18,7 @@ import {
   canShareCompletedGameResult,
   createStickerPublishPayload,
   getOfficialAccountPublishFeedProps,
+  isOfficialAccountPublishFeedSupported,
   isOfficialAccountStickerPlatformSupported,
   publishGameResultSticker,
 } from "../../src/utils/stickerPublishing";
@@ -98,6 +99,13 @@ describe("sticker publishing", () => {
       pagePath: "pages/mental-math/index",
     })).toEqual({ status: "unsupported" });
     expect(shareToOfficialAccount).not.toHaveBeenCalled();
+  });
+
+  test("does not render the native feed in developer tools", () => {
+    process.env.TARO_ENV = "weapp";
+    mockPlatform = "devtools";
+
+    expect(isOfficialAccountPublishFeedSupported()).toBe(false);
   });
 
   test("awards only after the native success callback has a postUrl", () => {

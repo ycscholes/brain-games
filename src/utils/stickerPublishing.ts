@@ -67,6 +67,10 @@ export function isOfficialAccountStickerRuntimeSupported() {
   }
 }
 
+export function isOfficialAccountPublishFeedSupported() {
+  return isOfficialAccountStickerRuntimeSupported();
+}
+
 export function canShareCompletedGameResult({ completed, isGauntlet }: { completed: boolean; isGauntlet: boolean }) {
   return completed && !isGauntlet;
 }

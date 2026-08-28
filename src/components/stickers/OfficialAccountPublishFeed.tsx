@@ -1,7 +1,10 @@
 import { Text, View } from "@tarojs/components";
 import { createElement, useState } from "react";
 import { claimStickerReward } from "../../utils/stickerRewards";
-import { getOfficialAccountPublishFeedProps } from "../../utils/stickerPublishing";
+import {
+  getOfficialAccountPublishFeedProps,
+  isOfficialAccountPublishFeedSupported,
+} from "../../utils/stickerPublishing";
 
 interface NativeStickerEvent {
   detail?: {
@@ -12,7 +15,7 @@ interface NativeStickerEvent {
 export default function OfficialAccountPublishFeed() {
   const [feedback, setFeedback] = useState("");
 
-  if (process.env.TARO_ENV !== "weapp") {
+  if (!isOfficialAccountPublishFeedSupported()) {
     return null;
   }
 
