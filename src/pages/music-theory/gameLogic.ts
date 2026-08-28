@@ -14,14 +14,14 @@ export interface StaffTouchEvent { detail?: { x?: number; y?: number }; touches?
 export interface MusicTheoryScoreInput { difficulty: TrainingDifficulty; quizCorrectCount: number; placementCorrectCount: number; hintCount: number; elapsedSeconds: number; completed: boolean; }
 
 const QUESTIONS: Array<Omit<MusicTheoryQuestion, "difficulty">> = [
-  { id: "rhythm-quarter", topic: "rhythm", prompt: "在 4/4 拍中，四分音符通常数几拍？", options: ["1 拍", "2 拍", "4 拍", "半拍"], correctOptionIndex: 0, explanation: "四分音符通常占一拍。" },
-  { id: "rhythm-bar", topic: "rhythm", prompt: "4/4 拍的一小节一共有几拍？", options: ["2 拍", "3 拍", "4 拍", "8 拍"], correctOptionIndex: 2, explanation: "4/4 拍表示每小节有四拍。" },
-  { id: "note-names", topic: "note", prompt: "音乐里的基本音名有哪七个字母？", options: ["A 到 G", "A 到 H", "C 到 I", "D 到 J"], correctOptionIndex: 0, explanation: "基本音名按 A、B、C、D、E、F、G 循环。" },
-  { id: "note-c-scale", topic: "note", prompt: "C 大调向上走的第一个音序列是？", options: ["C-D-E-F-G", "C-E-G-B-D", "G-F-E-D-C", "C-D-F-A-C"], correctOptionIndex: 0, explanation: "C 大调上行从 C 依次经过 D、E、F、G。" },
-  { id: "scale-seven", topic: "scale", prompt: "C 到下一个 C 的大调音阶有几个不同音名？", options: ["5 个", "6 个", "7 个", "8 个"], correctOptionIndex: 2, explanation: "C 大调包含 C、D、E、F、G、A、B 七个不同音名。" },
-  { id: "scale-down", topic: "scale", prompt: "音阶从高音走向低音，叫做什么？", options: ["上行", "下行", "跳拍", "延长"], correctOptionIndex: 1, explanation: "从高到低是下行，从低到高是上行。" },
-  { id: "staff-clef", topic: "staff", prompt: "高音谱号主要帮助我们读哪一组较高的音？", options: ["较高音区", "只有鼓声", "只有休止符", "歌词"], correctOptionIndex: 0, explanation: "高音谱号帮助我们定位较高音区的音符。" },
-  { id: "staff-lines", topic: "staff", prompt: "五线谱由什么组成？", options: ["五条线和四个间", "四条线和五个间", "七条线", "一条线"], correctOptionIndex: 0, explanation: "五线谱有五条线，线与线之间形成四个间。" },
+  { id: "rhythm-quarter", topic: "rhythm", prompt: "♩  =  ?", options: ["👏", "👏👏", "👏👏👏👏", "◐"], correctOptionIndex: 0, explanation: "对了" },
+  { id: "rhythm-bar", topic: "rhythm", prompt: "4 / 4", options: ["👏👏", "👏👏👏", "👏👏👏👏", "👏 × 8"], correctOptionIndex: 2, explanation: "对了" },
+  { id: "note-names", topic: "note", prompt: "🎵  A  B  C  D  E  F  G", options: ["A — G", "A — H", "C — I", "D — J"], correctOptionIndex: 0, explanation: "对了" },
+  { id: "note-c-scale", topic: "note", prompt: "C  ⬆", options: ["C D E F G", "C E G B D", "G F E D C", "C D F A C"], correctOptionIndex: 0, explanation: "对了" },
+  { id: "scale-seven", topic: "scale", prompt: "🎵  C  →  C", options: ["5", "6", "7", "8"], correctOptionIndex: 2, explanation: "对了" },
+  { id: "scale-down", topic: "scale", prompt: "🎵  ⬇", options: ["⬆", "⬇", "↔", "⏸"], correctOptionIndex: 1, explanation: "对了" },
+  { id: "staff-clef", topic: "staff", prompt: "𝄞  🎵", options: ["🎵", "🥁", "⏸", "📝"], correctOptionIndex: 0, explanation: "对了" },
+  { id: "staff-lines", topic: "staff", prompt: "━━━━━", options: ["5 — 4", "4 — 5", "7", "1"], correctOptionIndex: 0, explanation: "对了" },
 ];
 
 const NOTE_NAMES = ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5", "D5", "E5", "F5", "G5"];
