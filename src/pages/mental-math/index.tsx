@@ -21,6 +21,7 @@ import {
   MATH_STAGES,
   generateMathOptions,
   generateMathProblem,
+  getTimedMentalMathScore,
   getCustomMathProfile,
   getMathStage,
   type CustomMathOperation,
@@ -60,11 +61,13 @@ export default function MentalMath() {
   const [currentProblem, setCurrentProblem] = useState<MathProblem | null>(null);
   const [options, setOptions] = useState<number[]>([]);
   const [correctCount, setCorrectCount] = useState(0);
+  const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">("none");
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const correctCountRef = useRef(0);
+  const scoreRef = useRef(0);
   const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoStartedRef = useRef(false);
   const selectedStage = useMemo(() => getMathStage(selectedStageId), [selectedStageId]);
@@ -77,6 +80,10 @@ export default function MentalMath() {
   useEffect(() => {
     correctCountRef.current = correctCount;
   }, [correctCount]);
+
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
 
   // Clear all pending timers
   const clearAllTimers = () => {
@@ -268,6 +275,9 @@ const startGame = () => {
   clearAllTimers();
   setTimeLeft(30);
   setCorrectCount(0);
+  correctCountRef.current = 0;
+  setScore(0);
+  scoreRef.current = 0;
   setSelectedAnswer(null);
   setFeedback("none");
   nextProblem();
@@ -320,6 +330,11 @@ const handleSelect = (answer: number) => {
     // Correct answer
     setFeedback("correct");
     setCorrectCount((c) => c + 1);
+    setScore((currentScore) => {
+      const nextScore = getTimedMentalMathScore(currentScore, true);
+      scoreRef.current = nextScore;
+      return nextScore;
+    });
 
     feedbackTimerRef.current = setTimeout(() => {
       nextProblem();
@@ -333,6 +348,11 @@ const handleSelect = (answer: number) => {
         handleGameOver();
       }, 500);
     } else {
+      setScore((currentScore) => {
+        const nextScore = getTimedMentalMathScore(currentScore, false);
+        scoreRef.current = nextScore;
+        return nextScore;
+      });
       // In timed mode: continue to next problem
       feedbackTimerRef.current = setTimeout(() => {
         nextProblem();
@@ -344,12 +364,12 @@ const handleSelect = (answer: number) => {
 // 游戏结束
 const handleGameOver = () => {
   clearAllTimers();
-  const finalCorrectCount = correctCountRef.current;
-  const effectiveScore = getEffectiveScoreForPoints(finalCorrectCount);
+  const finalScore = gameMode === "timed" ? scoreRef.current : correctCountRef.current;
+  const effectiveScore = getEffectiveScoreForPoints(finalScore);
   const awardedPoints = getAwardedPoints("mental-math", effectiveScore, rewardDifficulty);
   if (completeGauntletLegIfNeeded({
     gameId: "mental-math",
-    score: finalCorrectCount,
+    score: finalScore,
     awardedPoints,
     mode: getTrainingModeRecord(),
     difficulty: rewardDifficulty,
@@ -358,18 +378,18 @@ const handleGameOver = () => {
     return;
   }
 
-  Taro.setStorageSync("mental_math_last_score", finalCorrectCount);
+  Taro.setStorageSync("mental_math_last_score", finalScore);
   addPointsToPet("mental-math", effectiveScore, rewardDifficulty);
   recordTrainingSession({
     gameId: "mental-math",
-    score: finalCorrectCount,
+    score: finalScore,
     awardedPoints,
     mode: getTrainingModeRecord(),
     difficulty: rewardDifficulty,
     outcome: "completed",
   });
   setGameState("gameover");
-  updateHighScore(finalCorrectCount);
+  updateHighScore(finalScore);
 };
 
 // 获取选项样式
@@ -549,7 +569,7 @@ return (
             <View className="top-bar-icon top-bar-icon-trophy">
               <Text className="top-bar-icon-text">✅</Text>
             </View>
-            <Text className="top-bar-text">{correctCount} 题</Text>
+            <Text className="top-bar-text">{gameMode === "timed" ? `${score} 分` : `${correctCount} 题`}</Text>
           </View>
         </View>
 
@@ -593,26 +613,26 @@ return (
       <View className="result-screen">
         <View className="result-card">
           <Text className="result-title">本局成绩</Text>
-          <Text className="result-score">{correctCount}</Text>
+          <Text className="result-score">{score}</Text>
           <Text className="result-desc">
-            答对 {correctCount} 题 · {selectedStage.name} · {selectedStageShortName}
+            {gameMode === "timed" ? `得分 ${score} 分 · 答对 ${correctCount} 题` : `答对 ${correctCount} 题`} · {selectedStage.name} · {selectedStageShortName}
           </Text>
           <Text className="result-desc">
             {gameMode === "timed" ? "限时模式" : "闯关模式"} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
           </Text>
           <Text className="result-desc">
-            获得 {getAwardedPoints("mental-math", getEffectiveScoreForPoints(correctCount), rewardDifficulty)} 积分
+            获得 {getAwardedPoints("mental-math", getEffectiveScoreForPoints(score), rewardDifficulty)} 积分
             </Text>
           <Text className="result-desc">
             历史最高 {getHighScore()}
-            {isNewRecord && correctCount > 0 ? <Text className="result-highlight">，刷新纪录</Text> : null}
+            {isNewRecord && score > 0 ? <Text className="result-highlight">，刷新纪录</Text> : null}
           </Text>
         </View>
 
         <View className="result-actions">
           <StickerShareButton
             gameTitle="速算挑战"
-            score={correctCount}
+            score={score}
             pagePath="pages/mental-math/index"
             isGauntlet={isGauntletPreset}
           />

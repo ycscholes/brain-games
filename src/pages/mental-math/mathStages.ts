@@ -145,6 +145,10 @@ export function getMathStage(stageId: MathStageId) {
   return MATH_STAGES.find((stage) => stage.id === stageId) || MATH_STAGES[0];
 }
 
+export function getTimedMentalMathScore(currentScore: number, isCorrect: boolean): number {
+  return Math.max(0, currentScore + (isCorrect ? 1 : -1));
+}
+
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }

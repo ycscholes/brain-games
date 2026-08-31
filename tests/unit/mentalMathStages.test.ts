@@ -3,6 +3,7 @@ import {
   MATH_STAGES,
   generateMathOptions,
   generateMathProblem,
+  getTimedMentalMathScore,
   getCustomMathProfile,
   getMathStage,
   type CustomMathConfig,
@@ -20,6 +21,12 @@ function getNumbers(question: string) {
 }
 
 describe("mental math stage generation", () => {
+  test("timed mode adds one for correct answers and subtracts one for wrong answers without going below zero", () => {
+    expect(getTimedMentalMathScore(0, true)).toBe(1);
+    expect(getTimedMentalMathScore(3, false)).toBe(2);
+    expect(getTimedMentalMathScore(0, false)).toBe(0);
+  });
+
   test("defines fixed content stages plus custom training with mapped point difficulty", () => {
     expect(MATH_STAGES.map((stage) => stage.id)).toEqual([
       "G1A",
