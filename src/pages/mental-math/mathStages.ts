@@ -3,7 +3,7 @@ import type { TrainingDifficulty } from "../../utils/trainingStorage";
 export type MathStageId = "G1A" | "G1B" | "G2_ADD" | "G2_MUL" | "G3_ADD" | "G4_MIXED_100" | "CUSTOM";
 export type MathOperation = "add" | "subtract" | "multiply" | "divide" | "mixed";
 export type CustomMathOperation = Exclude<MathOperation, "mixed">;
-export type CustomMathRangeId = "within10" | "within100" | "within10000" | "unlimited";
+export type CustomMathRangeId = "within10" | "within20" | "within100" | "within10000" | "unlimited";
 
 export interface MathProblem {
   question: string;
@@ -49,6 +49,7 @@ export const CUSTOM_OPERATION_OPTIONS: Array<{ id: CustomMathOperation | "all"; 
 
 export const CUSTOM_RANGE_OPTIONS: Array<{ id: CustomMathRangeId; label: string; max: number; coefficient: number }> = [
   { id: "within10", label: "10 以内", max: 10, coefficient: 1 },
+  { id: "within20", label: "20 以内", max: 20, coefficient: 1.1 },
   { id: "within100", label: "100 以内", max: 100, coefficient: 1.2 },
   { id: "within10000", label: "10000 以内", max: 10000, coefficient: 1.5 },
   { id: "unlimited", label: "不限制", max: 999999, coefficient: 2 },
@@ -117,8 +118,8 @@ export const MATH_STAGES: MathStage[] = [
   {
     id: CUSTOM_MATH_STAGE_ID,
     name: "自定义训练",
-    shortName: "自选范围与运算",
-    summary: "自选加减乘除和数字范围",
+    shortName: "灵活定制训练",
+    summary: "自由组合运算与范围，按需定制训练",
     rangeLabel: "自定义",
     operationsLabel: "自定义",
     difficulty: "normal",
@@ -163,7 +164,7 @@ function uniqueOperations(operations: CustomMathOperation[]): CustomMathOperatio
 }
 
 function getCustomRange(rangeId: CustomMathRangeId) {
-  return CUSTOM_RANGE_OPTIONS.find((range) => range.id === rangeId) || CUSTOM_RANGE_OPTIONS[1];
+  return CUSTOM_RANGE_OPTIONS.find((range) => range.id === rangeId) || CUSTOM_RANGE_OPTIONS[2];
 }
 
 function formatCoefficient(coefficient: number) {

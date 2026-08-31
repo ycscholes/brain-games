@@ -21,6 +21,25 @@ function getNumbers(question: string) {
 }
 
 describe("mental math stage generation", () => {
+  test("supports a within-20 custom range with a proportional coefficient", () => {
+    const range = CUSTOM_RANGE_OPTIONS.find((item) => item.id === "within20");
+    expect(range).toEqual({ id: "within20", label: "20 以内", max: 20, coefficient: 1.1 });
+    expect(getCustomMathProfile({ operations: ["add"], rangeId: "within20" })).toMatchObject({
+      coefficient: 1.1,
+      difficulty: "normal",
+      rangeKey: "within20",
+    });
+
+    sampleProblems("CUSTOM", 100, { operations: ["add", "subtract"], rangeId: "within20" }).forEach((problem) => {
+      expect(problem.answer).toBeGreaterThanOrEqual(0);
+      expect(problem.answer).toBeLessThanOrEqual(20);
+      getNumbers(problem.question).forEach((value) => {
+        expect(value).toBeGreaterThanOrEqual(0);
+        expect(value).toBeLessThanOrEqual(20);
+      });
+    });
+  });
+
   test("timed mode adds one for correct answers and subtracts one for wrong answers without going below zero", () => {
     expect(getTimedMentalMathScore(0, true)).toBe(1);
     expect(getTimedMentalMathScore(3, false)).toBe(2);
@@ -43,6 +62,10 @@ describe("mental math stage generation", () => {
     expect(getMathStage("G2_MUL").difficulty).toBe("normal");
     expect(getMathStage("G3_ADD").difficulty).toBe("hard");
     expect(getMathStage("G4_MIXED_100").difficulty).toBe("hard");
+    expect(getMathStage("CUSTOM")).toMatchObject({
+      shortName: "灵活定制训练",
+      summary: "自由组合运算与范围，按需定制训练",
+    });
   });
 
   test("uses updated content labels and removes multi-digit multiplication/division", () => {
