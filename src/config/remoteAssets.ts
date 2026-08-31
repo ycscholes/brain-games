@@ -14,6 +14,18 @@ const AUDIO_ASSET_PATHS = {
   wrong: `${AUDIO_ASSET_BASE_PATH}/wrong.m4a`,
   complete: `${AUDIO_ASSET_BASE_PATH}/complete.m4a`,
 } as const;
+
+export const TRAFFIC_VEHICLE_COLORS = ["target", "amber", "cyan", "violet", "lime", "coral"] as const;
+export type TrafficVehicleColor = (typeof TRAFFIC_VEHICLE_COLORS)[number];
+
+const TRAFFIC_VEHICLE_PATHS: Record<TrafficVehicleColor, string> = {
+  target: "assets/games/traffic-escape/vehicle-target.png",
+  amber: "assets/games/traffic-escape/vehicle-amber.png",
+  cyan: "assets/games/traffic-escape/vehicle-cyan.png",
+  violet: "assets/games/traffic-escape/vehicle-violet.png",
+  lime: "assets/games/traffic-escape/vehicle-lime.png",
+  coral: "assets/games/traffic-escape/vehicle-coral.png",
+};
 const PET_SPRITE_PATHS: Record<PetSkin, Record<PetSpriteMood, string>> = {
   cat: {
     idle: `${PET_ASSET_BASE_PATH}/cat-idle.png`,
@@ -329,6 +341,14 @@ export async function resolveAudioAssetUrl(
   options?: ResolveCloudFileUrlOptions,
 ): Promise<string> {
   return resolveCloudFileUrl(AUDIO_ASSET_PATHS[assetId], options);
+}
+
+export async function resolveTrafficVehicleUrl(
+  color: string,
+  options?: ResolveCloudFileUrlOptions,
+): Promise<string> {
+  const path = TRAFFIC_VEHICLE_PATHS[color as TrafficVehicleColor];
+  return path ? resolveCloudFileUrl(path, options) : "";
 }
 
 export function resolveCachedPetSpriteUrl(skin: PetSkin, mood: PetSpriteMood): string {
