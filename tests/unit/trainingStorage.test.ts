@@ -18,6 +18,7 @@ import {
   getAwardedPoints,
   readAppSettings,
   readDashboardStats,
+  readRecommendationSessionCount,
   readTrainingRecords,
   readTrainingSummary,
   recordTrainingSession,
@@ -56,6 +57,28 @@ describe("trainingStorage", () => {
     expect(summary.best).toBe(18);
     expect(summary.recent).toBe(18);
     expect(summary.totalSessions).toBe(2);
+  });
+
+  test("keeps the recommendation session count advancing after retaining 120 records", () => {
+    const records = Array.from({ length: 120 }, (_, index) => ({
+      id: `record_${index}`,
+      gameId: "mental-math" as const,
+      score: 1,
+      awardedPoints: 1,
+      playedAt: new Date(2026, 3, 7, 9, index).toISOString(),
+      outcome: "completed" as const,
+    }));
+    mockStorage.set("training_records_v1", JSON.stringify(records));
+
+    recordTrainingSession({
+      gameId: "digit-span",
+      score: 1,
+      awardedPoints: 1,
+      outcome: "completed",
+    });
+
+    expect(readTrainingRecords()).toHaveLength(120);
+    expect(readRecommendationSessionCount()).toBe(121);
   });
 
   test("accepts records with and without difficulty", () => {

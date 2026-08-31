@@ -4,6 +4,7 @@ import {
   type GameCatalogItem,
 } from "../config/gameCatalog";
 import {
+  readRecommendationSessionCount,
   readTrainingRecords,
   type TrainingGameId,
   type TrainingRecord,
@@ -56,8 +57,9 @@ function getSingleGameSlotIndex(recommendationRound: number) {
 export function recommendNextWeightedGame(
   records: TrainingRecord[],
   games: GameCatalogItem[] = GAME_CATALOG,
+  recommendationSessionCount = records.length,
 ): TrainingGameId {
-  const recommendationRound = records.length + 1;
+  const recommendationRound = recommendationSessionCount + 1;
   if (recommendationRound % GAUNTLET_RECOMMENDATION_INTERVAL === 0) {
     return GAME_GAUNTLET_ID;
   }
@@ -78,5 +80,9 @@ export function recommendNextWeightedGame(
 }
 
 export function readRecommendedGame() {
-  return recommendNextWeightedGame(readTrainingRecords());
+  return recommendNextWeightedGame(
+    readTrainingRecords(),
+    GAME_CATALOG,
+    readRecommendationSessionCount(),
+  );
 }

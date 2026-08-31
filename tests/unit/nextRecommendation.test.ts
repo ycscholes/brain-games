@@ -77,4 +77,10 @@ describe("nextRecommendation", () => {
 
     expect(recommendNextWeightedGame(records)).toBe(recommendNextWeightedGame(records));
   });
+
+  test("continues advancing after the retained training history reaches its limit", () => {
+    const retainedRecords = buildRecords(120);
+    expect(recommendNextWeightedGame(retainedRecords, GAME_CATALOG, 120))
+      .not.toBe(recommendNextWeightedGame(retainedRecords, GAME_CATALOG, 121));
+  });
 });

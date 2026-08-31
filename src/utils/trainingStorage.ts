@@ -73,6 +73,7 @@ export interface AppSettings {
   reducedMotion: boolean;
   onboardingCompleted: boolean;
   privacyAccepted: boolean;
+  recommendationSessionCount: number;
   updatedAt: string;
 }
 
@@ -159,6 +160,7 @@ function getDefaultSettings(): AppSettings {
     reducedMotion: false,
     onboardingCompleted: false,
     privacyAccepted: false,
+    recommendationSessionCount: 0,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -426,8 +428,16 @@ export function recordTrainingSession(record: Omit<TrainingRecord, "id" | "playe
   };
 
   const existing = readTrainingRecords();
+  const settings = readAppSettings();
+  const recommendationSessionCount = Math.max(settings.recommendationSessionCount, existing.length) + 1;
   saveTrainingRecords([nextRecord, ...existing]);
+  saveAppSettings({ recommendationSessionCount }, { markChanged: false });
   return nextRecord;
+}
+
+export function readRecommendationSessionCount() {
+  const settings = readAppSettings();
+  return Math.max(settings.recommendationSessionCount, readTrainingRecords().length);
 }
 
 export function readTrainingSummary(gameId: TrainingGameId): TrainingSummary {
