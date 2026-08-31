@@ -446,10 +446,10 @@ return (
                   </Text>
                 </View>
                 <Text className="stage-short-name">
-                  {stage.id === CUSTOM_MATH_STAGE_ID ? `${stage.shortName} · ${customProfile.summary}` : stage.shortName}
+                  {stage.id === CUSTOM_MATH_STAGE_ID ? `${stage.shortName}: ${customProfile.summary}` : stage.shortName}
                 </Text>
                 <Text className="stage-desc">
-                  {stage.id === CUSTOM_MATH_STAGE_ID ? `${stage.summary} · 积分系数 x${customProfile.coefficient}` : stage.summary}
+                  {stage.summary}
                 </Text>
               </View>
             ))}

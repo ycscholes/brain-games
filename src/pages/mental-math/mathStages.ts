@@ -118,8 +118,8 @@ export const MATH_STAGES: MathStage[] = [
   {
     id: CUSTOM_MATH_STAGE_ID,
     name: "自定义训练",
-    shortName: "灵活定制训练",
-    summary: "自由组合运算与范围，按需定制训练",
+    shortName: "当前",
+    summary: "自选范围与运算",
     rangeLabel: "自定义",
     operationsLabel: "自定义",
     difficulty: "normal",

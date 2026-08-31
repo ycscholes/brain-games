@@ -63,8 +63,8 @@ describe("mental math stage generation", () => {
     expect(getMathStage("G3_ADD").difficulty).toBe("hard");
     expect(getMathStage("G4_MIXED_100").difficulty).toBe("hard");
     expect(getMathStage("CUSTOM")).toMatchObject({
-      shortName: "灵活定制训练",
-      summary: "自由组合运算与范围，按需定制训练",
+      shortName: "当前",
+      summary: "自选范围与运算",
     });
   });
 
