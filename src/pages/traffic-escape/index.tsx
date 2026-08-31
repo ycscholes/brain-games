@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Text, View } from "@tarojs/components";
+import { Image, Text, View } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
+import {
+  resolveTrafficVehicleUrl,
+  TRAFFIC_VEHICLE_COLORS,
+  type TrafficVehicleColor,
+} from "../../config/remoteAssets";
 import { addPointsToPet } from "../../utils/petStorage";
 import {
   getAwardedPoints,
@@ -58,6 +63,7 @@ export default function TrafficEscape() {
   const [finalScore, setFinalScore] = useState(0);
   const [awardedPoints, setAwardedPoints] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
+  const [vehicleImageUrls, setVehicleImageUrls] = useState<Partial<Record<TrafficVehicleColor, string>>>({});
   const startedAtRef = useRef(0);
   const completedRef = useRef(false);
   const autoStartedRef = useRef(false);
@@ -72,6 +78,21 @@ export default function TrafficEscape() {
   useEffect(() => {
     refreshBest();
   }, [refreshBest]);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all(
+      TRAFFIC_VEHICLE_COLORS.map((color) => resolveTrafficVehicleUrl(color).then((url) => [color, url] as const)),
+    ).then((entries) => {
+      if (!active) return;
+      setVehicleImageUrls(Object.fromEntries(entries.filter(([, url]) => Boolean(url))));
+    }).catch(() => {
+      if (active) setVehicleImageUrls({});
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (phase !== "playing") return undefined;
@@ -197,10 +218,11 @@ export default function TrafficEscape() {
     const isSelected = vehicle.id === selectedVehicleId;
     const isHinted = hintMove?.vehicleId === vehicle.id;
     const isHorizontal = vehicle.orientation === "horizontal";
+    const vehicleImageUrl = vehicleImageUrls[vehicle.color as TrafficVehicleColor];
     return (
       <View
         key={vehicle.id}
-        className={`traffic-vehicle traffic-vehicle-${vehicle.color} ${isHorizontal ? "traffic-vehicle-horizontal" : "traffic-vehicle-vertical"} ${isSelected ? "traffic-vehicle-selected" : ""} ${isHinted ? "traffic-vehicle-hinted" : ""}`}
+        className={`traffic-vehicle traffic-vehicle-${vehicle.color} ${isHorizontal ? "traffic-vehicle-horizontal" : "traffic-vehicle-vertical"} ${vehicleImageUrl ? "traffic-vehicle-has-image" : ""} ${isSelected ? "traffic-vehicle-selected" : ""} ${isHinted ? "traffic-vehicle-hinted" : ""}`}
         style={{
           gridColumn: `${vehicle.col + 1} / span ${isHorizontal ? vehicle.length : 1}`,
           gridRow: `${vehicle.row + 1} / span ${isHorizontal ? 1 : vehicle.length}`,
@@ -212,6 +234,14 @@ export default function TrafficEscape() {
           setFeedback(`${vehicle.isTarget ? "红车" : "已选车辆"}可向${vehicle.orientation === "horizontal" ? "左或右" : "上或下"}移动。`);
         }}
       >
+        {vehicleImageUrl ? (
+          <Image
+            className={`traffic-vehicle-image ${isHorizontal ? "traffic-vehicle-image-horizontal" : "traffic-vehicle-image-vertical"}`}
+            src={vehicleImageUrl}
+            mode="aspectFit"
+            onError={() => setVehicleImageUrls((current) => ({ ...current, [vehicle.color]: "" }))}
+          />
+        ) : null}
         <View className="traffic-vehicle-window" />
         <View className="traffic-vehicle-window" />
         {vehicle.isTarget ? <Text className="traffic-vehicle-mark">出</Text> : null}

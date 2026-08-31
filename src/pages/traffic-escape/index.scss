@@ -353,6 +353,17 @@
 .traffic-vehicle-hinted { animation: traffic-pulse 760ms ease-in-out infinite alternate; }
 .traffic-vehicle-window { width: 15px; height: 18px; border-radius: 5px; background: rgba(235, 250, 255, 0.75); }
 .traffic-vehicle-mark { position: absolute; right: 8px; bottom: 5px; color: #fff; font-size: 18px; font-weight: 900; }
+.traffic-vehicle-image {
+  position: absolute;
+  z-index: 1;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  pointer-events: none;
+}
+.traffic-vehicle-image-horizontal { transform: rotate(0deg); }
+.traffic-vehicle-image-vertical { transform: rotate(90deg); }
+.traffic-vehicle-has-image .traffic-vehicle-window { opacity: 0; }
+.traffic-vehicle-has-image .traffic-vehicle-mark { z-index: 2; }
 
 .traffic-controls-card { background: #102a3d; }
 .traffic-controls-label { display: block; color: #c4d7e4; font-size: 23px; font-weight: 800; text-align: center; }
