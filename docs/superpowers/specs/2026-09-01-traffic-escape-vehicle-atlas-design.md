@@ -29,3 +29,10 @@
 - 两格、三格竖车分别完整占据 `1:2`、`1:3` 的格子范围，车身不变形。
 - 棋盘中的车辆不再显示渐变底色或 CSS 伪车身；选中和提示状态仍可见、拖动/点击范围不变。
 - 资源检查、相关单元测试、全量测试、类型检查、lint、微信构建、密钥检查和差异检查通过；上传后确认 CloudBase 中仅由图集 URL 驱动页面加载。
+
+## 2026-09-01 实施记录
+
+- 图集由 `scripts/create-traffic-vehicle-atlas.py` 从既有六张 PNG 裁切透明边缘后生成；输出为透明 `3072 × 853` PNG，六个图块的 alpha 通道均非空。其本地路径为 `asset-backups/cloudbase-images/games/traffic-escape/vehicle-atlas.png`。
+- 已通过 `npm run assets:check`、`npm test -- --runInBand`（47 suites / 366 tests）、`npm run typecheck`、`npm run lint`、`npm run build:weapp`、`npm run secrets:check` 与 `git diff --check`。
+- 已执行 `npm run assets:upload`；随后以 `tcb storage list assets/games/traffic-escape/` 确认 CloudBase 存在 `assets/games/traffic-escape/vehicle-atlas.png`，大小为 2605.07 KB。
+- 微信开发者工具已能读取项目首页，但自动化输入通道在进入车阵突围前连续返回无可用窗口，故本次未将模拟器中的横竖比例、选中态和远程加载画面记为已验证；需要在该输入通道恢复后补做一次实机/开发者工具检查。
