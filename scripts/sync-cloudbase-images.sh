@@ -6,6 +6,38 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKUP_DIR="$ROOT_DIR/asset-backups/cloudbase-images"
 ASSET_MANIFEST="$ROOT_DIR/config/remote-assets.json"
 CLOUD_DIR="${CLOUDBASE_IMAGE_CLOUD_DIR:-assets}"
+
+load_cloud_env_from_file() {
+  local env_file="$1"
+  local line key value
+
+  [[ -f "$env_file" ]] || return 0
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" =~ ^[[:space:]]*(export[[:space:]]+)?(TARO_CLOUD_ENV_ID|CLOUD_ENV_ID)[[:space:]]*=(.*)$ ]]; then
+      key="${BASH_REMATCH[2]}"
+      value="${BASH_REMATCH[3]}"
+      value="${value#${value%%[![:space:]]*}}"
+      value="${value%${value##*[![:space:]]}}"
+      value="${value#\"}"
+      value="${value%\"}"
+      value="${value#'}"
+      value="${value%'}"
+
+      if [[ -n "$value" && -z "${!key+x}" ]]; then
+        printf -v "$key" '%s' "$value"
+        export "$key"
+      fi
+    fi
+  done < "$env_file"
+}
+
+# Match the project's production build fallback order. Existing shell values
+# remain untouched because local files are only used for unset variables.
+load_cloud_env_from_file "$ROOT_DIR/.env.production.local"
+load_cloud_env_from_file "$ROOT_DIR/.env.local"
+load_cloud_env_from_file "$ROOT_DIR/.env.production"
+load_cloud_env_from_file "$ROOT_DIR/.env"
 ENV_ID="${TARO_CLOUD_ENV_ID:-${CLOUD_ENV_ID:-}}"
 PET_ASSET_VERSION="$(
   node -e 'const manifest = require(process.argv[1]); process.stdout.write(manifest.petAssetVersion)' "$ASSET_MANIFEST"
