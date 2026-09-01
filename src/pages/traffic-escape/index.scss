@@ -321,7 +321,6 @@
 }
 
 .traffic-cell {
-  border: 1px solid rgba(224, 247, 255, 0.13);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.06));
 }
 
@@ -338,7 +337,7 @@
   transition: transform 160ms ease, filter 160ms ease, outline-color 160ms ease;
 }
 
-.traffic-vehicle-selected { outline: 4px solid #5eead4; outline-offset: 2px; transform: scale(1.035); }
+.traffic-vehicle-selected { outline: 4px solid #5eead4; outline-offset: 2px; }
 .traffic-vehicle-hinted { animation: traffic-pulse 760ms ease-in-out infinite alternate; }
 .traffic-vehicle:not(.traffic-vehicle-has-atlas) { border: 2px dashed rgba(224, 247, 255, 0.74); border-radius: 12px; }
 .traffic-vehicle-window { display: none; }
@@ -355,6 +354,8 @@
 }
 .traffic-vehicle-atlas-horizontal { width: 100%; height: 100%; }
 .traffic-vehicle-atlas-vertical { top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(90deg); }
+.traffic-vehicle-atlas-selected { transform: scale(1.035); transform-origin: center; }
+.traffic-vehicle-atlas-vertical.traffic-vehicle-atlas-selected { transform: translate(-50%, -50%) rotate(90deg) scale(1.035); }
 .traffic-vehicle-atlas-vertical.traffic-vehicle-atlas-two-cell { width: 200%; height: 50%; }
 .traffic-vehicle-atlas-vertical.traffic-vehicle-atlas-three-cell { width: 300%; height: 33.3333%; }
 .traffic-vehicle-has-atlas .traffic-vehicle-mark { z-index: 3; }

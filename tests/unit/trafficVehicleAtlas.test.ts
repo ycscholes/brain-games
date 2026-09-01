@@ -26,6 +26,12 @@ describe("getTrafficVehicleAtlasSlot", () => {
     );
   });
 
+  test("marks only the atlas viewport as selected", () => {
+    expect(getTrafficVehicleAtlasClassName("compact-van", 2, "horizontal", true)).toBe(
+      "traffic-vehicle-atlas-two-cell traffic-vehicle-atlas-column-1 traffic-vehicle-atlas-horizontal traffic-vehicle-atlas-selected",
+    );
+  });
+
   test("creates a rotated three-cell viewport class for a vertical vehicle", () => {
     expect(getTrafficVehicleAtlasClassName("box-truck", 3, "vertical")).toBe(
       "traffic-vehicle-atlas-three-cell traffic-vehicle-atlas-column-1 traffic-vehicle-atlas-vertical",

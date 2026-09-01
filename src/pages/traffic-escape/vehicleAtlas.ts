@@ -42,12 +42,14 @@ export function getTrafficVehicleAtlasClassName(
   appearance: TrafficVehicleAppearance,
   length: 2 | 3,
   orientation: TrafficVehicleOrientation,
+  selected = false,
 ): string {
   const slot = getTrafficVehicleAtlasSlot(appearance, length);
   return [
     `traffic-vehicle-atlas-${slot.row}`,
     `traffic-vehicle-atlas-column-${slot.column}`,
     `traffic-vehicle-atlas-${orientation}`,
+    ...(selected ? ["traffic-vehicle-atlas-selected"] : []),
   ].join(" ");
 }
 

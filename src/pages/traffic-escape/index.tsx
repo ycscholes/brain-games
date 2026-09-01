@@ -219,6 +219,7 @@ export default function TrafficEscape() {
       vehicleAppearance,
       vehicle.length,
       vehicle.orientation,
+      isSelected,
     );
     const atlasCropStyle = getTrafficVehicleAtlasCropStyle(vehicleAppearance, vehicle.length, vehicleAtlasUrl);
     return (
