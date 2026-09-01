@@ -19,6 +19,10 @@ export type TrafficVehicleAtlasCropStyle = {
   backgroundSize: "300% auto";
 };
 
+export type TrafficVehicleAtlasMaskStyle = TrafficVehicleAtlasCropStyle & {
+  filter: "brightness(0)";
+};
+
 type TrafficVehicleAtlasSlotDefinition = TrafficVehicleAtlasSlot & {
   length: 2 | 3;
 };
@@ -77,5 +81,16 @@ export function getTrafficVehicleAtlasCropStyle(
     backgroundPosition: `${slot.column * 50}% ${slot.row === "three-cell" ? "100%" : "0%"}`,
     backgroundRepeat: "no-repeat",
     backgroundSize: "300% auto",
+  };
+}
+
+export function getTrafficVehicleAtlasMaskStyle(
+  appearance: TrafficVehicleAppearance,
+  length: 2 | 3,
+  imageUrl: string,
+): TrafficVehicleAtlasMaskStyle {
+  return {
+    ...getTrafficVehicleAtlasCropStyle(appearance, length, imageUrl),
+    filter: "brightness(0)",
   };
 }

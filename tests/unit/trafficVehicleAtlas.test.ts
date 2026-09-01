@@ -1,6 +1,7 @@
 import {
   getTrafficVehicleAtlasClassName,
   getTrafficVehicleAtlasCropStyle,
+  getTrafficVehicleAtlasMaskStyle,
   getTrafficVehicleAtlasSlot,
 } from "../../src/pages/traffic-escape/vehicleAtlas";
 
@@ -44,6 +45,16 @@ describe("getTrafficVehicleAtlasSlot", () => {
       backgroundPosition: "50% 100%",
       backgroundRepeat: "no-repeat",
       backgroundSize: "300% auto",
+    });
+  });
+
+  test("uses the same crop coordinates for the grid-hiding vehicle mask", () => {
+    expect(getTrafficVehicleAtlasMaskStyle("box-truck", 3, "https://cdn.example/vehicle-atlas-v4.png")).toEqual({
+      backgroundImage: "url(https://cdn.example/vehicle-atlas-v4.png)",
+      backgroundPosition: "50% 100%",
+      backgroundRepeat: "no-repeat",
+      backgroundSize: "300% auto",
+      filter: "brightness(0)",
     });
   });
 });

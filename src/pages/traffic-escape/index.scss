@@ -346,6 +346,16 @@
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-size: 300% auto;
+}
+.traffic-vehicle-atlas-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
   z-index: 1;
   overflow: hidden;
   pointer-events: none;

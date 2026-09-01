@@ -26,7 +26,11 @@ import {
   type TrafficEscapeState,
   type TrafficVehicle,
 } from "./gameLogic";
-import { getTrafficVehicleAtlasClassName, getTrafficVehicleAtlasCropStyle } from "./vehicleAtlas";
+import {
+  getTrafficVehicleAtlasClassName,
+  getTrafficVehicleAtlasCropStyle,
+  getTrafficVehicleAtlasMaskStyle,
+} from "./vehicleAtlas";
 import "./index.scss";
 
 type Phase = "start" | "playing" | "finished";
@@ -222,6 +226,7 @@ export default function TrafficEscape() {
       isSelected,
     );
     const atlasCropStyle = getTrafficVehicleAtlasCropStyle(vehicleAppearance, vehicle.length, vehicleAtlasUrl);
+    const atlasMaskStyle = getTrafficVehicleAtlasMaskStyle(vehicleAppearance, vehicle.length, vehicleAtlasUrl);
     return (
       <View
         key={vehicle.id}
@@ -237,6 +242,12 @@ export default function TrafficEscape() {
           setFeedback(`${vehicle.isTarget ? "红车" : "已选车辆"}可向${vehicle.orientation === "horizontal" ? "左或右" : "上或下"}移动。`);
         }}
       >
+        {vehicleAtlasUrl ? (
+          <View
+            className={`traffic-vehicle-atlas-mask ${atlasClassName}`}
+            style={atlasMaskStyle}
+          />
+        ) : null}
         {vehicleAtlasUrl ? (
           <View
             className={`traffic-vehicle-atlas-viewport ${atlasClassName}`}
