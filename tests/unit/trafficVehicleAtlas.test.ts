@@ -1,4 +1,4 @@
-import { getTrafficVehicleAtlasSlot } from "../../src/pages/traffic-escape/vehicleAtlas";
+import { getTrafficVehicleAtlasClassName, getTrafficVehicleAtlasSlot } from "../../src/pages/traffic-escape/vehicleAtlas";
 
 describe("getTrafficVehicleAtlasSlot", () => {
   test.each([
@@ -14,5 +14,17 @@ describe("getTrafficVehicleAtlasSlot", () => {
 
   test("rejects an appearance with the wrong length", () => {
     expect(() => getTrafficVehicleAtlasSlot("city-bus", 2)).toThrow("does not belong to a 2-cell vehicle");
+  });
+
+  test("creates an unscaled horizontal viewport class for a two-cell vehicle", () => {
+    expect(getTrafficVehicleAtlasClassName("compact-van", 2, "horizontal")).toBe(
+      "traffic-vehicle-atlas-two-cell traffic-vehicle-atlas-column-1 traffic-vehicle-atlas-horizontal",
+    );
+  });
+
+  test("creates a rotated three-cell viewport class for a vertical vehicle", () => {
+    expect(getTrafficVehicleAtlasClassName("box-truck", 3, "vertical")).toBe(
+      "traffic-vehicle-atlas-three-cell traffic-vehicle-atlas-column-1 traffic-vehicle-atlas-vertical",
+    );
   });
 });

@@ -1,4 +1,4 @@
-import type { TrafficVehicleAppearance } from "./gameLogic";
+import type { TrafficVehicleAppearance, TrafficVehicleOrientation } from "./gameLogic";
 
 export type TrafficVehicleAtlasRow = "two-cell" | "three-cell";
 
@@ -29,4 +29,17 @@ export function getTrafficVehicleAtlasSlot(
     throw new Error(`${appearance} does not belong to a ${length}-cell vehicle`);
   }
   return { column: slot.column, row: slot.row };
+}
+
+export function getTrafficVehicleAtlasClassName(
+  appearance: TrafficVehicleAppearance,
+  length: 2 | 3,
+  orientation: TrafficVehicleOrientation,
+): string {
+  const slot = getTrafficVehicleAtlasSlot(appearance, length);
+  return [
+    `traffic-vehicle-atlas-${slot.row}`,
+    `traffic-vehicle-atlas-column-${slot.column}`,
+    `traffic-vehicle-atlas-${orientation}`,
+  ].join(" ");
 }

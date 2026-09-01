@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Image, Text, View } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
-import {
-  resolveTrafficVehicleUrl,
-} from "../../config/remoteAssets";
+import { resolveTrafficVehicleAtlasUrl } from "../../config/remoteAssets";
 import { addPointsToPet } from "../../utils/petStorage";
 import {
   getAwardedPoints,
@@ -27,9 +25,8 @@ import {
   type TrafficEscapePuzzle,
   type TrafficEscapeState,
   type TrafficVehicle,
-  TRAFFIC_VEHICLE_APPEARANCE_LIST,
-  type TrafficVehicleAppearance,
 } from "./gameLogic";
+import { getTrafficVehicleAtlasClassName } from "./vehicleAtlas";
 import "./index.scss";
 
 type Phase = "start" | "playing" | "finished";
@@ -63,7 +60,7 @@ export default function TrafficEscape() {
   const [finalScore, setFinalScore] = useState(0);
   const [awardedPoints, setAwardedPoints] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
-  const [vehicleImageUrls, setVehicleImageUrls] = useState<Partial<Record<TrafficVehicleAppearance, string>>>({});
+  const [vehicleAtlasUrl, setVehicleAtlasUrl] = useState("");
   const startedAtRef = useRef(0);
   const completedRef = useRef(false);
   const autoStartedRef = useRef(false);
@@ -81,14 +78,13 @@ export default function TrafficEscape() {
 
   useEffect(() => {
     let active = true;
-    void Promise.all(
-      TRAFFIC_VEHICLE_APPEARANCE_LIST.map((appearance) => resolveTrafficVehicleUrl(appearance).then((url) => [appearance, url] as const)),
-    ).then((entries) => {
-      if (!active) return;
-      setVehicleImageUrls(Object.fromEntries(entries.filter(([, url]) => Boolean(url))));
-    }).catch(() => {
-      if (active) setVehicleImageUrls({});
-    });
+    void resolveTrafficVehicleAtlasUrl()
+      .then((url) => {
+        if (active) setVehicleAtlasUrl(url);
+      })
+      .catch(() => {
+        if (active) setVehicleAtlasUrl("");
+      });
     return () => {
       active = false;
     };
@@ -219,11 +215,15 @@ export default function TrafficEscape() {
     const isHinted = hintMove?.vehicleId === vehicle.id;
     const isHorizontal = vehicle.orientation === "horizontal";
     const vehicleAppearance = vehicle.appearance ?? "sport";
-    const vehicleImageUrl = vehicleImageUrls[vehicleAppearance];
+    const atlasClassName = getTrafficVehicleAtlasClassName(
+      vehicleAppearance,
+      vehicle.length,
+      vehicle.orientation,
+    );
     return (
       <View
         key={vehicle.id}
-        className={`traffic-vehicle traffic-vehicle-${vehicle.color} ${isHorizontal ? "traffic-vehicle-horizontal" : "traffic-vehicle-vertical"} ${vehicleImageUrl ? "traffic-vehicle-has-image" : ""} ${isSelected ? "traffic-vehicle-selected" : ""} ${isHinted ? "traffic-vehicle-hinted" : ""}`}
+        className={`traffic-vehicle ${vehicleAtlasUrl ? "traffic-vehicle-has-atlas" : ""} ${isSelected ? "traffic-vehicle-selected" : ""} ${isHinted ? "traffic-vehicle-hinted" : ""}`}
         style={{
           gridColumn: `${vehicle.col + 1} / span ${isHorizontal ? vehicle.length : 1}`,
           gridRow: `${vehicle.row + 1} / span ${isHorizontal ? 1 : vehicle.length}`,
@@ -235,13 +235,15 @@ export default function TrafficEscape() {
           setFeedback(`${vehicle.isTarget ? "红车" : "已选车辆"}可向${vehicle.orientation === "horizontal" ? "左或右" : "上或下"}移动。`);
         }}
       >
-        {vehicleImageUrl ? (
-          <Image
-            className={`traffic-vehicle-image ${isHorizontal ? "traffic-vehicle-image-horizontal" : "traffic-vehicle-image-vertical"}`}
-            src={vehicleImageUrl}
-            mode="aspectFit"
-            onError={() => setVehicleImageUrls((current) => ({ ...current, [vehicleAppearance]: "" }))}
-          />
+        {vehicleAtlasUrl ? (
+          <View className={`traffic-vehicle-atlas-viewport ${atlasClassName}`}>
+            <Image
+              className="traffic-vehicle-atlas-image"
+              src={vehicleAtlasUrl}
+              mode="widthFix"
+              onError={() => setVehicleAtlasUrl("")}
+            />
+          </View>
         ) : null}
         <View className="traffic-vehicle-window" />
         <View className="traffic-vehicle-window" />
