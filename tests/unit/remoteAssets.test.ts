@@ -23,9 +23,7 @@ const GECKO_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/gecko-id
 const TURTLE_CUDDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/turtle-cuddle.png";
 const BISCUIT_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/food-biscuit.png";
 const TAP_AUDIO_FILE_ID = "cloud://test-env.test-bucket/assets/audio/v1/tap.m4a";
-const TRAFFIC_SPORT_FILE_ID = "cloud://test-env.test-bucket/assets/games/traffic-escape/vehicle-target.png";
-const TRAFFIC_COMPACT_VAN_FILE_ID = "cloud://test-env.test-bucket/assets/games/traffic-escape/vehicle-compact-van.png";
-const TRAFFIC_CITY_BUS_FILE_ID = "cloud://test-env.test-bucket/assets/games/traffic-escape/vehicle-city-bus.png";
+const TRAFFIC_ATLAS_FILE_ID = "cloud://test-env.test-bucket/assets/games/traffic-escape/vehicle-atlas.png";
 const GENERATED_FOOD_IMAGE_IDS = [
   "biscuit",
   "salmon",
@@ -77,42 +75,19 @@ describe("remoteAssets", () => {
     jest.useRealTimers();
   });
 
-  test("resolves the existing sport appearance to its CloudBase image", async () => {
+  test("resolves the traffic vehicle atlas with one CloudBase request", async () => {
     mockGetTempFileURL.mockResolvedValue({
-      fileList: [{ tempFileURL: "https://fresh.example/vehicle-target.png" }],
+      fileList: [{ tempFileURL: "https://fresh.example/vehicle-atlas.png" }],
     });
     mockEnsureCloudReady.mockResolvedValue({ getTempFileURL: mockGetTempFileURL });
 
-    const { resolveTrafficVehicleUrl } = await import("../../src/config/remoteAssets");
+    const { resolveTrafficVehicleAtlasUrl } = await import("../../src/config/remoteAssets");
 
-    await expect(resolveTrafficVehicleUrl("sport")).resolves.toBe("https://fresh.example/vehicle-target.png");
+    await expect(resolveTrafficVehicleAtlasUrl()).resolves.toBe("https://fresh.example/vehicle-atlas.png");
+    expect(mockGetTempFileURL).toHaveBeenCalledTimes(1);
     expect(mockGetTempFileURL).toHaveBeenCalledWith({
-      fileList: [{ fileID: TRAFFIC_SPORT_FILE_ID, maxAge: TEMP_URL_MAX_AGE_SECONDS }],
+      fileList: [{ fileID: TRAFFIC_ATLAS_FILE_ID, maxAge: TEMP_URL_MAX_AGE_SECONDS }],
     });
-  });
-
-  test("resolves traffic vehicle appearances to their CloudBase images", async () => {
-    mockGetTempFileURL
-      .mockResolvedValueOnce({ fileList: [{ tempFileURL: "https://fresh.example/vehicle-compact-van.png" }] })
-      .mockResolvedValueOnce({ fileList: [{ tempFileURL: "https://fresh.example/vehicle-city-bus.png" }] });
-    mockEnsureCloudReady.mockResolvedValue({ getTempFileURL: mockGetTempFileURL });
-
-    const { resolveTrafficVehicleUrl } = await import("../../src/config/remoteAssets");
-
-    await expect(resolveTrafficVehicleUrl("compact-van")).resolves.toContain("vehicle-compact-van.png");
-    await expect(resolveTrafficVehicleUrl("city-bus")).resolves.toContain("vehicle-city-bus.png");
-    expect(mockGetTempFileURL).toHaveBeenNthCalledWith(1, {
-      fileList: [{ fileID: TRAFFIC_COMPACT_VAN_FILE_ID, maxAge: TEMP_URL_MAX_AGE_SECONDS }],
-    });
-    expect(mockGetTempFileURL).toHaveBeenNthCalledWith(2, {
-      fileList: [{ fileID: TRAFFIC_CITY_BUS_FILE_ID, maxAge: TEMP_URL_MAX_AGE_SECONDS }],
-    });
-  });
-
-  test("returns an empty URL for an unknown traffic vehicle color", async () => {
-    const { resolveTrafficVehicleUrl } = await import("../../src/config/remoteAssets");
-
-    await expect(resolveTrafficVehicleUrl("unknown")).resolves.toBe("");
   });
 
   test("uses a permanent local pet image cache without requesting cloud URL", async () => {
