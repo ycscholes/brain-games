@@ -2,6 +2,7 @@
 set -euo pipefail
 
 MODE="${1:---check}"
+REQUESTED_FILE="${2:-}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKUP_DIR="$ROOT_DIR/asset-backups/cloudbase-images"
 ASSET_MANIFEST="$ROOT_DIR/config/remote-assets.json"
@@ -116,6 +117,18 @@ check_assets() {
   printf 'Asset backup check passed: %s\n' "$BACKUP_DIR"
 }
 
+upload_file() {
+  local local_file="$1"
+  local relative_path="${local_file#$BACKUP_DIR/}"
+  local cloud_path="$CLOUD_DIR/$relative_path"
+
+  if [[ "$relative_path" == pets/* ]]; then
+    cloud_path="$CLOUD_DIR/$PET_ASSET_VERSION/$relative_path"
+  fi
+
+  tcb storage upload "$local_file" "$cloud_path"
+}
+
 upload_assets() {
   check_assets
 
@@ -131,16 +144,32 @@ upload_assets() {
 
   tcb env use "$ENV_ID" >/dev/null
 
-  while IFS= read -r local_file; do
-    relative_path="${local_file#$BACKUP_DIR/}"
-    cloud_path="$CLOUD_DIR/$relative_path"
-    if [[ "$relative_path" == pets/* ]]; then
-      cloud_path="$CLOUD_DIR/$PET_ASSET_VERSION/$relative_path"
-    fi
-    tcb storage upload "$local_file" "$cloud_path"
-  done < <(find "$BACKUP_DIR" -type f ! -name 'README.md' | sort)
+  if [[ -n "$REQUESTED_FILE" ]]; then
+    case "$REQUESTED_FILE" in
+      /*|..|../*|*/..|*/../*)
+        printf 'Upload file must be a relative path inside %s.\n' "$BACKUP_DIR" >&2
+        return 1
+        ;;
+    esac
 
-  printf 'Uploaded pet assets to CloudBase storage path: %s/%s/pets\n' "$CLOUD_DIR" "$PET_ASSET_VERSION"
+    local_file="$BACKUP_DIR/$REQUESTED_FILE"
+    if [[ ! -f "$local_file" ]]; then
+      printf 'Upload file not found: %s\n' "$local_file" >&2
+      return 1
+    fi
+
+    upload_file "$local_file"
+  else
+    while IFS= read -r local_file; do
+      upload_file "$local_file"
+    done < <(find "$BACKUP_DIR" -type f ! -name 'README.md' | sort)
+  fi
+
+  if [[ -n "$REQUESTED_FILE" ]]; then
+    printf 'Uploaded asset to CloudBase storage path: %s\n' "$REQUESTED_FILE"
+  else
+    printf 'Uploaded pet assets to CloudBase storage path: %s/%s/pets\n' "$CLOUD_DIR" "$PET_ASSET_VERSION"
+  fi
 }
 
 case "$MODE" in
@@ -151,7 +180,7 @@ case "$MODE" in
     upload_assets
     ;;
   *)
-    printf 'Usage: %s [--check|--upload]\n' "$0" >&2
+    printf 'Usage: %s [--check|--upload [relative-file]]\n' "$0" >&2
     exit 2
     ;;
 esac
