@@ -15,7 +15,7 @@ const AUDIO_ASSET_PATHS = {
   complete: `${AUDIO_ASSET_BASE_PATH}/complete.m4a`,
 } as const;
 
-const TRAFFIC_VEHICLE_ATLAS_PATH = "assets/games/traffic-escape/vehicle-atlas.png";
+const TRAFFIC_VEHICLE_ATLAS_PATH = `assets/games/traffic-escape/${remoteAssetManifest.trafficVehicleAssetVersion}/vehicle-atlas.png`;
 const PET_SPRITE_PATHS: Record<PetSkin, Record<PetSpriteMood, string>> = {
   cat: {
     idle: `${PET_ASSET_BASE_PATH}/cat-idle.png`,

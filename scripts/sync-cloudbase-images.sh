@@ -43,6 +43,9 @@ ENV_ID="${TARO_CLOUD_ENV_ID:-${CLOUD_ENV_ID:-}}"
 PET_ASSET_VERSION="$(
   node -e 'const manifest = require(process.argv[1]); process.stdout.write(manifest.petAssetVersion)' "$ASSET_MANIFEST"
 )"
+TRAFFIC_VEHICLE_ASSET_VERSION="$(
+  node -e 'const manifest = require(process.argv[1]); process.stdout.write(manifest.trafficVehicleAssetVersion)' "$ASSET_MANIFEST"
+)"
 
 required_files=(
   "pets/cat-idle.png"
@@ -103,6 +106,11 @@ check_assets() {
     return 1
   fi
 
+  if [[ ! "$TRAFFIC_VEHICLE_ASSET_VERSION" =~ ^v[0-9]+$ ]]; then
+    printf 'Invalid traffic vehicle asset version in %s: %s\n' "$ASSET_MANIFEST" "$TRAFFIC_VEHICLE_ASSET_VERSION" >&2
+    return 1
+  fi
+
   for file in "${required_files[@]}"; do
     if [[ ! -s "$BACKUP_DIR/$file" ]]; then
       printf 'Missing asset backup: %s\n' "$BACKUP_DIR/$file" >&2
@@ -124,6 +132,8 @@ upload_file() {
 
   if [[ "$relative_path" == pets/* ]]; then
     cloud_path="$CLOUD_DIR/$PET_ASSET_VERSION/$relative_path"
+  elif [[ "$relative_path" == games/traffic-escape/* ]]; then
+    cloud_path="$CLOUD_DIR/games/traffic-escape/$TRAFFIC_VEHICLE_ASSET_VERSION/${relative_path#games/traffic-escape/}"
   fi
 
   tcb storage upload "$local_file" "$cloud_path"
