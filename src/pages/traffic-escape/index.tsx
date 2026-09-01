@@ -3,8 +3,6 @@ import { Image, Text, View } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import {
   resolveTrafficVehicleUrl,
-  TRAFFIC_VEHICLE_COLORS,
-  type TrafficVehicleColor,
 } from "../../config/remoteAssets";
 import { addPointsToPet } from "../../utils/petStorage";
 import {
@@ -29,6 +27,8 @@ import {
   type TrafficEscapePuzzle,
   type TrafficEscapeState,
   type TrafficVehicle,
+  TRAFFIC_VEHICLE_APPEARANCE_LIST,
+  type TrafficVehicleAppearance,
 } from "./gameLogic";
 import "./index.scss";
 
@@ -42,7 +42,7 @@ function readBestScore(difficulty: TrainingDifficulty) {
 }
 
 function getDifficultyCopy(difficulty: TrainingDifficulty) {
-  return difficulty === "hard" ? "6×6 · 八车密集车阵" : "5×5 · 至少三步破局";
+  return difficulty === "hard" ? "6×6 · 八车密集车阵" : "6×6 · 六种车型破局";
 }
 
 export default function TrafficEscape() {
@@ -63,7 +63,7 @@ export default function TrafficEscape() {
   const [finalScore, setFinalScore] = useState(0);
   const [awardedPoints, setAwardedPoints] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
-  const [vehicleImageUrls, setVehicleImageUrls] = useState<Partial<Record<TrafficVehicleColor, string>>>({});
+  const [vehicleImageUrls, setVehicleImageUrls] = useState<Partial<Record<TrafficVehicleAppearance, string>>>({});
   const startedAtRef = useRef(0);
   const completedRef = useRef(false);
   const autoStartedRef = useRef(false);
@@ -82,7 +82,7 @@ export default function TrafficEscape() {
   useEffect(() => {
     let active = true;
     void Promise.all(
-      TRAFFIC_VEHICLE_COLORS.map((color) => resolveTrafficVehicleUrl(color).then((url) => [color, url] as const)),
+      TRAFFIC_VEHICLE_APPEARANCE_LIST.map((appearance) => resolveTrafficVehicleUrl(appearance).then((url) => [appearance, url] as const)),
     ).then((entries) => {
       if (!active) return;
       setVehicleImageUrls(Object.fromEntries(entries.filter(([, url]) => Boolean(url))));
@@ -218,7 +218,8 @@ export default function TrafficEscape() {
     const isSelected = vehicle.id === selectedVehicleId;
     const isHinted = hintMove?.vehicleId === vehicle.id;
     const isHorizontal = vehicle.orientation === "horizontal";
-    const vehicleImageUrl = vehicleImageUrls[vehicle.color as TrafficVehicleColor];
+    const vehicleAppearance = vehicle.appearance ?? "sport";
+    const vehicleImageUrl = vehicleImageUrls[vehicleAppearance];
     return (
       <View
         key={vehicle.id}
@@ -239,7 +240,7 @@ export default function TrafficEscape() {
             className={`traffic-vehicle-image ${isHorizontal ? "traffic-vehicle-image-horizontal" : "traffic-vehicle-image-vertical"}`}
             src={vehicleImageUrl}
             mode="aspectFit"
-            onError={() => setVehicleImageUrls((current) => ({ ...current, [vehicle.color]: "" }))}
+            onError={() => setVehicleImageUrls((current) => ({ ...current, [vehicleAppearance]: "" }))}
           />
         ) : null}
         <View className="traffic-vehicle-window" />

@@ -8,6 +8,11 @@ export const TRAFFIC_VEHICLE_APPEARANCES = {
   3: ["city-bus", "box-truck", "stretch-sedan"],
 } as const;
 
+export const TRAFFIC_VEHICLE_APPEARANCE_LIST = [
+  ...TRAFFIC_VEHICLE_APPEARANCES[2],
+  ...TRAFFIC_VEHICLE_APPEARANCES[3],
+] as const;
+
 export type TrafficVehicleAppearance = (typeof TRAFFIC_VEHICLE_APPEARANCES)[2][number]
   | (typeof TRAFFIC_VEHICLE_APPEARANCES)[3][number];
 
@@ -147,6 +152,44 @@ function cloneVehicle(vehicle: TrafficVehicle): TrafficVehicle {
   return { ...vehicle };
 }
 
+function shuffleTrafficVehicleAppearances<T>(items: readonly T[], random: () => number) {
+  const shuffled = [...items];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const nextIndex = Math.floor(random() * (index + 1));
+    [shuffled[index], shuffled[nextIndex]] = [shuffled[nextIndex], shuffled[index]];
+  }
+  return shuffled;
+}
+
+export function assignTrafficVehicleAppearances(
+  vehicles: TrafficVehicle[],
+  random: () => number,
+): TrafficVehicle[] {
+  const assigned = vehicles.map(cloneVehicle);
+
+  ([2, 3] as const).forEach((length) => {
+    const matchingVehicles = assigned.filter((vehicle) => vehicle.length === length);
+    const appearances = TRAFFIC_VEHICLE_APPEARANCES[length];
+    const target = matchingVehicles.find((vehicle) => vehicle.isTarget);
+    const nonTargetVehicles = matchingVehicles.filter((vehicle) => !vehicle.isTarget);
+
+    if (target) target.appearance = "sport";
+
+    const initialAppearances = length === 2 && target
+      ? shuffleTrafficVehicleAppearances(appearances.filter((appearance) => appearance !== "sport"), random)
+      : shuffleTrafficVehicleAppearances(appearances, random);
+    const initiallyAssigned = target ? 1 : 0;
+
+    nonTargetVehicles.forEach((vehicle, index) => {
+      vehicle.appearance = index < appearances.length - initiallyAssigned
+        ? initialAppearances[index]
+        : appearances[Math.floor(random() * appearances.length)];
+    });
+  });
+
+  return assigned;
+}
+
 function getVehicleCells(vehicle: TrafficVehicle) {
   return Array.from({ length: vehicle.length }, (_, index) => ({
     row: vehicle.row + (vehicle.orientation === "vertical" ? index : 0),
@@ -186,7 +229,7 @@ function moveVehicleOneStep(
 }
 
 const DIFFICULTY_REQUIREMENTS = {
-  normal: { size: 5, vehicleCount: 6, minimumSolutionMoves: 3, scrambleMoves: 16, attempts: 80 },
+  normal: { size: 6, vehicleCount: 6, minimumSolutionMoves: 3, scrambleMoves: 16, attempts: 80 },
   hard: { size: 6, vehicleCount: 8, minimumSolutionMoves: 4, scrambleMoves: 28, attempts: 120 },
 } as const;
 
@@ -240,25 +283,19 @@ export function solveTrafficEscapePuzzle(puzzle: TrafficEscapePuzzle, initialSta
   return null;
 }
 
-function createSolvedTrafficLayout(difficulty: TrafficEscapeDifficulty): TrafficEscapePuzzle {
-  const hard = difficulty === "hard";
-  const size = hard ? 6 : 5;
+function createSolvedTrafficLayout(): TrafficEscapePuzzle {
+  const size = 6;
   const exitRow = 2;
   const vehicles: TrafficVehicle[] = [
     { id: "target", row: exitRow, col: size - 2, length: 2, orientation: "horizontal", color: "target", isTarget: true },
     { id: "blocker", row: 0, col: 2, length: 2, orientation: "vertical", color: "cyan" },
     { id: "vehicle-1", row: 0, col: 0, length: 2, orientation: "horizontal", color: "amber" },
     { id: "vehicle-2", row: 1, col: 0, length: 2, orientation: "horizontal", color: "violet" },
-    { id: "vehicle-3", row: 3, col: 0, length: hard ? 3 : 2, orientation: "horizontal", color: "lime" },
-    { id: "vehicle-4", row: 4, col: hard ? 0 : 1, length: 2, orientation: "horizontal", color: "coral" },
+    { id: "vehicle-3", row: 3, col: 0, length: 3, orientation: "horizontal", color: "lime" },
+    { id: "vehicle-4", row: 4, col: 0, length: 2, orientation: "horizontal", color: "coral" },
+    { id: "vehicle-5", row: 0, col: 3, length: 3, orientation: "vertical", color: "amber" },
+    { id: "vehicle-6", row: 5, col: 0, length: 3, orientation: "horizontal", color: "violet" },
   ];
-
-  if (hard) {
-    vehicles.push(
-      { id: "vehicle-5", row: 0, col: 3, length: 3, orientation: "vertical", color: "amber" },
-      { id: "vehicle-6", row: 5, col: 0, length: 3, orientation: "horizontal", color: "violet" },
-    );
-  }
 
   return { id: "traffic-escape-solved", size, exitRow, vehicles, solutionMoves: [] };
 }
@@ -276,7 +313,7 @@ function createTrafficEscapeCandidate(
   random: () => number,
   attempt: number,
 ) {
-  const layout = createSolvedTrafficLayout(difficulty);
+  const layout = createSolvedTrafficLayout();
   const requirements = DIFFICULTY_REQUIREMENTS[difficulty];
   const reversedVehicles = layout.vehicles.map(cloneVehicle);
   const target = reversedVehicles.find((vehicle) => vehicle.id === "target");
@@ -304,12 +341,17 @@ function createTrafficEscapeCandidate(
   return {
     ...layout,
     id: `traffic-escape-${difficulty}-${attempt}`,
-    vehicles: state.vehicles.map(cloneVehicle),
+    vehicles: assignTrafficVehicleAppearances(state.vehicles, random),
   };
 }
 
 export function getTrafficEscapePuzzlePool(difficulty: TrafficEscapeDifficulty) {
-  return difficulty === "hard" ? HARD_PUZZLES : NORMAL_PUZZLES;
+  const puzzles = difficulty === "hard" ? HARD_PUZZLES : NORMAL_PUZZLES;
+  return puzzles.map((puzzle, index) => ({
+    ...puzzle,
+    vehicles: assignTrafficVehicleAppearances(puzzle.vehicles, createSeededRandom(index + 1)),
+    solutionMoves: [...puzzle.solutionMoves],
+  }));
 }
 
 export function createTrafficEscapePuzzle(difficulty: TrafficEscapeDifficulty, seed = Date.now()) {
@@ -326,7 +368,11 @@ export function createTrafficEscapePuzzle(difficulty: TrafficEscapeDifficulty, s
   }
 
   const fallback = getTrafficEscapePuzzlePool(difficulty)[Math.abs(seed) % getTrafficEscapePuzzlePool(difficulty).length];
-  return { ...fallback, vehicles: fallback.vehicles.map(cloneVehicle), solutionMoves: [...fallback.solutionMoves] };
+  return {
+    ...fallback,
+    vehicles: assignTrafficVehicleAppearances(fallback.vehicles, createSeededRandom(seed)),
+    solutionMoves: [...fallback.solutionMoves],
+  };
 }
 
 export function createTrafficEscapeState(puzzle: TrafficEscapePuzzle): TrafficEscapeState {

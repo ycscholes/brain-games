@@ -1,5 +1,6 @@
 import {
   applyTrafficEscapeMove,
+  assignTrafficVehicleAppearances,
   createTrafficEscapeState,
   createTrafficEscapePuzzle,
   getTrafficEscapeHint,
@@ -7,14 +8,15 @@ import {
   isTrafficEscapeSolved,
   scoreTrafficEscapeGame,
   solveTrafficEscapePuzzle,
+  TRAFFIC_VEHICLE_APPEARANCES,
 } from "../../src/pages/traffic-escape/gameLogic";
 
 describe("traffic-escape game logic", () => {
   test("provides compact normal and hard parking puzzles", () => {
-    const [normal] = getTrafficEscapePuzzlePool("normal");
-    const [hard] = getTrafficEscapePuzzlePool("hard");
+    const normal = createTrafficEscapePuzzle("normal", 17);
+    const hard = createTrafficEscapePuzzle("hard", 29);
 
-    expect(normal.size).toBe(5);
+    expect(normal.size).toBe(6);
     expect(hard.size).toBe(6);
     expect(normal.vehicles.some((vehicle) => vehicle.isTarget)).toBe(true);
     expect(hard.vehicles.some((vehicle) => vehicle.isTarget)).toBe(true);
@@ -28,6 +30,41 @@ describe("traffic-escape game logic", () => {
       expect(solution).not.toBeNull();
       expect(puzzle.vehicles.length).toBeGreaterThanOrEqual(difficulty === "hard" ? 8 : 6);
       expect(solution!.length).toBeGreaterThanOrEqual(difficulty === "hard" ? 4 : 3);
+    });
+  });
+
+  test("assigns every two-cell and three-cell appearance before repeating", () => {
+    const vehicles = [
+      { id: "target", row: 0, col: 0, length: 2 as const, orientation: "horizontal" as const, color: "target" as const, isTarget: true },
+      { id: "short-1", row: 1, col: 0, length: 2 as const, orientation: "horizontal" as const, color: "amber" as const },
+      { id: "short-2", row: 2, col: 0, length: 2 as const, orientation: "horizontal" as const, color: "cyan" as const },
+      { id: "long-1", row: 3, col: 0, length: 3 as const, orientation: "horizontal" as const, color: "violet" as const },
+      { id: "long-2", row: 4, col: 0, length: 3 as const, orientation: "horizontal" as const, color: "lime" as const },
+      { id: "long-3", row: 5, col: 0, length: 3 as const, orientation: "horizontal" as const, color: "coral" as const },
+      { id: "short-repeat", row: 6, col: 0, length: 2 as const, orientation: "horizontal" as const, color: "amber" as const },
+    ];
+
+    const assigned = assignTrafficVehicleAppearances(vehicles, () => 0.4);
+    const twoCellAppearances = assigned.filter((vehicle) => vehicle.length === 2).map((vehicle) => vehicle.appearance);
+    const threeCellAppearances = assigned.filter((vehicle) => vehicle.length === 3).map((vehicle) => vehicle.appearance);
+
+    expect(new Set(twoCellAppearances.slice(0, 3))).toEqual(new Set(TRAFFIC_VEHICLE_APPEARANCES[2]));
+    expect(new Set(threeCellAppearances)).toEqual(new Set(TRAFFIC_VEHICLE_APPEARANCES[3]));
+    expect(TRAFFIC_VEHICLE_APPEARANCES[2]).toContain(twoCellAppearances[3]);
+  });
+
+  test("generates every vehicle form in each difficulty", () => {
+    (["normal", "hard"] as const).forEach((difficulty) => {
+      const puzzle = createTrafficEscapePuzzle(difficulty, difficulty === "normal" ? 17 : 29);
+      const twoCellAppearances = puzzle.vehicles
+        .filter((vehicle) => vehicle.length === 2)
+        .map((vehicle) => vehicle.appearance);
+      const threeCellAppearances = puzzle.vehicles
+        .filter((vehicle) => vehicle.length === 3)
+        .map((vehicle) => vehicle.appearance);
+
+      expect(new Set(twoCellAppearances)).toEqual(new Set(TRAFFIC_VEHICLE_APPEARANCES[2]));
+      expect(new Set(threeCellAppearances)).toEqual(new Set(TRAFFIC_VEHICLE_APPEARANCES[3]));
     });
   });
 
