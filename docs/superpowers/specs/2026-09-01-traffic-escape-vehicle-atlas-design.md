@@ -32,7 +32,7 @@
 
 ## 2026-09-01 实施记录
 
-- 图集由 `scripts/create-traffic-vehicle-atlas.py` 从既有六张 PNG 裁切透明边缘后生成；输出为透明 `3072 × 853` PNG，六个图块的 alpha 通道均非空。其本地路径为 `asset-backups/cloudbase-images/games/traffic-escape/vehicle-atlas.png`。
+- 图集以现有六种车辆为视觉参考，仅重新生成第二排中间三格卡车后合成；输出为透明 `3072 × 853` PNG，六个图块的 alpha 通道均非空，第二排中间车辆为自然约 `3:1` 比例且未做横向拉伸。其本地路径为 `asset-backups/cloudbase-images/games/traffic-escape/vehicle-atlas.png`。运行时仅保留并使用这一张图集，旧的独立车辆 PNG 已清理。
 - 已通过 `npm run assets:check`、`npm test -- --runInBand`（47 suites / 366 tests）、`npm run typecheck`、`npm run lint`、`npm run build:weapp`、`npm run secrets:check` 与 `git diff --check`。
 - 已执行 `npm run assets:upload`，并在货车长度修正后单独重新上传图集；随后以 `tcb storage list assets/games/traffic-escape/` 确认 CloudBase 存在 `assets/games/traffic-escape/vehicle-atlas.png`，最新大小为 2768.81 KB。
 - 微信开发者工具已能读取项目首页，但自动化输入通道在进入车阵突围前连续返回无可用窗口，故本次未将模拟器中的横竖比例、选中态和远程加载画面记为已验证；需要在该输入通道恢复后补做一次实机/开发者工具检查。
