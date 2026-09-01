@@ -7,6 +7,13 @@ export type TrafficVehicleAtlasSlot = {
   row: TrafficVehicleAtlasRow;
 };
 
+export type TrafficVehicleAtlasCropStyle = {
+  backgroundImage: string;
+  backgroundPosition: string;
+  backgroundRepeat: "no-repeat";
+  backgroundSize: "300% auto";
+};
+
 type TrafficVehicleAtlasSlotDefinition = TrafficVehicleAtlasSlot & {
   length: 2 | 3;
 };
@@ -42,4 +49,18 @@ export function getTrafficVehicleAtlasClassName(
     `traffic-vehicle-atlas-column-${slot.column}`,
     `traffic-vehicle-atlas-${orientation}`,
   ].join(" ");
+}
+
+export function getTrafficVehicleAtlasCropStyle(
+  appearance: TrafficVehicleAppearance,
+  length: 2 | 3,
+  imageUrl: string,
+): TrafficVehicleAtlasCropStyle {
+  const slot = getTrafficVehicleAtlasSlot(appearance, length);
+  return {
+    backgroundImage: `url(${imageUrl})`,
+    backgroundPosition: `${slot.column * 50}% ${slot.row === "three-cell" ? "100%" : "0%"}`,
+    backgroundRepeat: "no-repeat",
+    backgroundSize: "300% auto",
+  };
 }

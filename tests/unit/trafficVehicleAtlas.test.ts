@@ -1,4 +1,8 @@
-import { getTrafficVehicleAtlasClassName, getTrafficVehicleAtlasSlot } from "../../src/pages/traffic-escape/vehicleAtlas";
+import {
+  getTrafficVehicleAtlasClassName,
+  getTrafficVehicleAtlasCropStyle,
+  getTrafficVehicleAtlasSlot,
+} from "../../src/pages/traffic-escape/vehicleAtlas";
 
 describe("getTrafficVehicleAtlasSlot", () => {
   test.each([
@@ -26,5 +30,14 @@ describe("getTrafficVehicleAtlasSlot", () => {
     expect(getTrafficVehicleAtlasClassName("box-truck", 3, "vertical")).toBe(
       "traffic-vehicle-atlas-three-cell traffic-vehicle-atlas-column-1 traffic-vehicle-atlas-vertical",
     );
+  });
+
+  test("uses explicit atlas coordinates for the regenerated middle truck", () => {
+    expect(getTrafficVehicleAtlasCropStyle("box-truck", 3, "https://cdn.example/vehicle-atlas-v2.png")).toEqual({
+      backgroundImage: "url(https://cdn.example/vehicle-atlas-v2.png)",
+      backgroundPosition: "50% 100%",
+      backgroundRepeat: "no-repeat",
+      backgroundSize: "300% auto",
+    });
   });
 });

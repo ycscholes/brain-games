@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Image, Text, View } from "@tarojs/components";
+import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { resolveTrafficVehicleAtlasUrl } from "../../config/remoteAssets";
 import { addPointsToPet } from "../../utils/petStorage";
@@ -26,7 +26,7 @@ import {
   type TrafficEscapeState,
   type TrafficVehicle,
 } from "./gameLogic";
-import { getTrafficVehicleAtlasClassName } from "./vehicleAtlas";
+import { getTrafficVehicleAtlasClassName, getTrafficVehicleAtlasCropStyle } from "./vehicleAtlas";
 import "./index.scss";
 
 type Phase = "start" | "playing" | "finished";
@@ -220,6 +220,7 @@ export default function TrafficEscape() {
       vehicle.length,
       vehicle.orientation,
     );
+    const atlasCropStyle = getTrafficVehicleAtlasCropStyle(vehicleAppearance, vehicle.length, vehicleAtlasUrl);
     return (
       <View
         key={vehicle.id}
@@ -236,14 +237,10 @@ export default function TrafficEscape() {
         }}
       >
         {vehicleAtlasUrl ? (
-          <View className={`traffic-vehicle-atlas-viewport ${atlasClassName}`}>
-            <Image
-              className="traffic-vehicle-atlas-image"
-              src={vehicleAtlasUrl}
-              mode="widthFix"
-              onError={() => setVehicleAtlasUrl("")}
-            />
-          </View>
+          <View
+            className={`traffic-vehicle-atlas-viewport ${atlasClassName}`}
+            style={atlasCropStyle}
+          />
         ) : null}
         <View className="traffic-vehicle-window" />
         <View className="traffic-vehicle-window" />
@@ -349,6 +346,7 @@ export default function TrafficEscape() {
               {Array.from({ length: puzzle.size * puzzle.size }, (_, index) => (
                 <View className="traffic-cell" key={index} />
               ))}
+              <View className="traffic-board-grid-overlay" />
               {visibleVehicles.map(renderVehicle)}
             </View>
           </View>
