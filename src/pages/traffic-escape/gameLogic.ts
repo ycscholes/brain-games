@@ -3,6 +3,14 @@ import type { TrainingDifficulty } from "../../utils/trainingStorage";
 export type TrafficEscapeDifficulty = TrainingDifficulty;
 export type TrafficVehicleOrientation = "horizontal" | "vertical";
 
+export const TRAFFIC_VEHICLE_APPEARANCES = {
+  2: ["sport", "compact-van", "city-taxi"],
+  3: ["city-bus", "box-truck", "stretch-sedan"],
+} as const;
+
+export type TrafficVehicleAppearance = (typeof TRAFFIC_VEHICLE_APPEARANCES)[2][number]
+  | (typeof TRAFFIC_VEHICLE_APPEARANCES)[3][number];
+
 export interface TrafficVehicle {
   id: string;
   row: number;
@@ -10,6 +18,7 @@ export interface TrafficVehicle {
   length: 2 | 3;
   orientation: TrafficVehicleOrientation;
   color: "target" | "amber" | "cyan" | "violet" | "lime" | "coral";
+  appearance?: TrafficVehicleAppearance;
   isTarget?: boolean;
 }
 

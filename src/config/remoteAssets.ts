@@ -1,6 +1,7 @@
 import Taro from "@tarojs/taro";
 import type { PetSkin } from "../pages/pet/types";
 import type { PetSpriteMood } from "../pages/pet/components/PetSprite/types";
+import type { TrafficVehicleAppearance } from "../pages/traffic-escape/gameLogic";
 import { CLOUD_ENV_ID } from "./cloud";
 import { ensureCloudReady } from "../services/user-data/cloud/cloudFunctionsClient";
 import remoteAssetManifest from "../../config/remote-assets.json";
@@ -15,16 +16,13 @@ const AUDIO_ASSET_PATHS = {
   complete: `${AUDIO_ASSET_BASE_PATH}/complete.m4a`,
 } as const;
 
-export const TRAFFIC_VEHICLE_COLORS = ["target", "amber", "cyan", "violet", "lime", "coral"] as const;
-export type TrafficVehicleColor = (typeof TRAFFIC_VEHICLE_COLORS)[number];
-
-const TRAFFIC_VEHICLE_PATHS: Record<TrafficVehicleColor, string> = {
-  target: "assets/games/traffic-escape/vehicle-target.png",
-  amber: "assets/games/traffic-escape/vehicle-amber.png",
-  cyan: "assets/games/traffic-escape/vehicle-cyan.png",
-  violet: "assets/games/traffic-escape/vehicle-violet.png",
-  lime: "assets/games/traffic-escape/vehicle-lime.png",
-  coral: "assets/games/traffic-escape/vehicle-coral.png",
+const TRAFFIC_VEHICLE_PATHS: Record<TrafficVehicleAppearance, string> = {
+  sport: "assets/games/traffic-escape/vehicle-target.png",
+  "compact-van": "assets/games/traffic-escape/vehicle-compact-van.png",
+  "city-taxi": "assets/games/traffic-escape/vehicle-city-taxi.png",
+  "city-bus": "assets/games/traffic-escape/vehicle-city-bus.png",
+  "box-truck": "assets/games/traffic-escape/vehicle-box-truck.png",
+  "stretch-sedan": "assets/games/traffic-escape/vehicle-stretch-sedan.png",
 };
 const PET_SPRITE_PATHS: Record<PetSkin, Record<PetSpriteMood, string>> = {
   cat: {
@@ -344,10 +342,10 @@ export async function resolveAudioAssetUrl(
 }
 
 export async function resolveTrafficVehicleUrl(
-  color: string,
+  appearance: string,
   options?: ResolveCloudFileUrlOptions,
 ): Promise<string> {
-  const path = TRAFFIC_VEHICLE_PATHS[color as TrafficVehicleColor];
+  const path = TRAFFIC_VEHICLE_PATHS[appearance as TrafficVehicleAppearance];
   return path ? resolveCloudFileUrl(path, options) : "";
 }
 
