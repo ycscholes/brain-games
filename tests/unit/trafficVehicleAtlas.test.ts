@@ -42,16 +42,21 @@ describe("getTrafficVehicleAtlasSlot", () => {
   test("uses explicit atlas coordinates for the regenerated middle truck", () => {
     expect(getTrafficVehicleAtlasCropStyle("box-truck", 3, "https://cdn.example/vehicle-atlas-v2.png")).toEqual({
       backgroundImage: "url(https://cdn.example/vehicle-atlas-v2.png)",
-      backgroundPosition: "50% 100%",
+      backgroundPosition: "calc(50% + 0.0000%) calc(100% + 0.0000%)",
       backgroundRepeat: "no-repeat",
       backgroundSize: "300% auto",
     });
   });
 
+  test("centers regenerated content using its measured visible bounds", () => {
+    expect(getTrafficVehicleAtlasCropStyle("sport", 2, "https://cdn.example/vehicle-atlas-v5.png").backgroundPosition)
+      .toBe("calc(0% - 0.0244%) calc(0% + 0.0000%)");
+  });
+
   test("uses the same crop coordinates for the grid-hiding vehicle mask", () => {
     expect(getTrafficVehicleAtlasMaskStyle("box-truck", 3, "https://cdn.example/vehicle-atlas-v4.png")).toEqual({
       backgroundImage: "url(https://cdn.example/vehicle-atlas-v4.png)",
-      backgroundPosition: "50% 100%",
+      backgroundPosition: "calc(50% + 0.0000%) calc(100% + 0.0000%)",
       backgroundRepeat: "no-repeat",
       backgroundSize: "300% auto",
       filter: "brightness(0)",

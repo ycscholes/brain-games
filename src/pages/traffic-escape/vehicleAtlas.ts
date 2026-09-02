@@ -76,9 +76,20 @@ export function getTrafficVehicleAtlasCropStyle(
   imageUrl: string,
 ): TrafficVehicleAtlasCropStyle {
   const slot = getTrafficVehicleAtlasSlot(appearance, length);
+  const visibleCenterX = (slot.visibleBounds.left + slot.visibleBounds.right) / 2;
+  const visibleCenterY = (slot.visibleBounds.top + slot.visibleBounds.bottom) / 2;
+  const slotCenterX = slot.width / 2;
+  const slotCenterY = slot.height / 2;
+  const backgroundWidthFreeSpace = 2;
+  const backgroundHeightFreeSpace = 3 * length * (853 / 3072) - 1;
+  const xCorrection = ((visibleCenterX - slotCenterX) / slot.width / backgroundWidthFreeSpace) * 100;
+  const yCorrection = ((visibleCenterY - slotCenterY) / slot.height / backgroundHeightFreeSpace) * 100;
+  const formatCorrection = (value: number) => `${value >= 0 ? "+" : "-"} ${Math.abs(value).toFixed(4)}%`;
+  const baseX = slot.column * 50;
+  const baseY = slot.row === "three-cell" ? 100 : 0;
   return {
     backgroundImage: `url(${imageUrl})`,
-    backgroundPosition: `${slot.column * 50}% ${slot.row === "three-cell" ? "100%" : "0%"}`,
+    backgroundPosition: `calc(${baseX}% ${formatCorrection(xCorrection)}) calc(${baseY}% ${formatCorrection(yCorrection)})`,
     backgroundRepeat: "no-repeat",
     backgroundSize: "300% auto",
   };
