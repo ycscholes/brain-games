@@ -83,7 +83,9 @@ export function getTrafficVehicleAtlasCropStyle(
   const backgroundWidthFreeSpace = 2;
   const backgroundHeightFreeSpace = 3 * length * (853 / 3072) - 1;
   const xCorrection = ((visibleCenterX - slotCenterX) / slot.width / backgroundWidthFreeSpace) * 100;
-  const yCorrection = ((visibleCenterY - slotCenterY) / slot.height / backgroundHeightFreeSpace) * 100;
+  const measuredYCorrection = ((visibleCenterY - slotCenterY) / slot.height / backgroundHeightFreeSpace) * 100;
+  const opticalThreeCellYOffset = length === 3 ? -5 : 0;
+  const yCorrection = measuredYCorrection + opticalThreeCellYOffset;
   const formatCorrection = (value: number) => `${value >= 0 ? "+" : "-"} ${Math.abs(value).toFixed(4)}%`;
   const baseX = slot.column * 50;
   const baseY = slot.row === "three-cell" ? 100 : 0;
