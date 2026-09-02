@@ -286,30 +286,6 @@
   padding: 17px 14px;
 }
 
-.traffic-hud-back {
-  display: flex;
-  min-width: 112px;
-  min-height: 58px;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  border-radius: 16px;
-  background: rgba(94, 234, 212, 0.12);
-}
-
-.traffic-hud-back-icon {
-  color: #5eead4;
-  font-size: 38px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.traffic-hud-back-text {
-  color: #d5f9f2;
-  font-size: 19px;
-  font-weight: 800;
-}
-
 .traffic-hud-label,
 .traffic-hud-value { display: block; text-align: center; }
 .traffic-hud-label { color: #8eafbf; font-size: 21px; font-weight: 800; }

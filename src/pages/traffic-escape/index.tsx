@@ -31,7 +31,6 @@ import {
   getTrafficVehicleAtlasCropStyle,
   getTrafficVehicleAtlasMaskStyle,
 } from "./vehicleAtlas";
-import { createTrafficEscapeInterruption } from "./navigation";
 import "./index.scss";
 
 type Phase = "start" | "playing" | "finished";
@@ -207,48 +206,6 @@ export default function TrafficEscape() {
     applyMove(nextHint, true);
   };
 
-  const backToStart = useCallback(() => {
-    if (phase === "playing") {
-      const interruption = createTrafficEscapeInterruption({
-        difficulty,
-        elapsedSeconds,
-        moveCount: trafficState?.moveCount ?? 0,
-        hintCount,
-      });
-      const awardedPoints = getAwardedPoints("traffic-escape", interruption.score, difficulty);
-      if (completeGauntletLegIfNeeded({
-        gameId: "traffic-escape",
-        score: interruption.score,
-        awardedPoints,
-        durationSeconds: interruption.durationSeconds,
-        difficulty,
-        outcome: interruption.outcome,
-      })) {
-        return;
-      }
-
-      addPointsToPet("traffic-escape", interruption.score, difficulty);
-      recordTrainingSession({
-        gameId: "traffic-escape",
-        score: interruption.score,
-        awardedPoints,
-        durationSeconds: interruption.durationSeconds,
-        difficulty,
-        outcome: interruption.outcome,
-      });
-    }
-
-    completedRef.current = true;
-    setPhase("start");
-    setPuzzle(null);
-    setTrafficState(null);
-    setSelectedVehicleId("");
-    setHintMove(null);
-    setHintCount(0);
-    setElapsedSeconds(0);
-    setFeedback("先点一辆车，再选择移动方向。");
-  }, [difficulty, elapsedSeconds, hintCount, phase, trafficState?.moveCount]);
-
   const selectedVehicle = trafficState?.vehicles.find((vehicle) => vehicle.id === selectedVehicleId) ?? null;
   const visibleVehicles = trafficState?.vehicles ?? [];
   const selectedDirectionCopy = selectedVehicle?.orientation === "vertical" ? "上 / 下" : "左 / 右";
@@ -374,10 +331,6 @@ export default function TrafficEscape() {
       {phase === "playing" && puzzle && trafficState ? (
         <View className="traffic-play">
           <View className="traffic-hud">
-            <View className="traffic-hud-back" onClick={backToStart} aria-label="返回车阵突围首页">
-              <Text className="traffic-hud-back-icon">‹</Text>
-              <Text className="traffic-hud-back-text">返回首页</Text>
-            </View>
             <View>
               <Text className="traffic-hud-label">出口倒计时</Text>
               <Text className="traffic-hud-value">{elapsedSeconds}s</Text>
