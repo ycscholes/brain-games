@@ -7,12 +7,12 @@ import {
 
 describe("getTrafficVehicleAtlasSlot", () => {
   test.each([
-    ["sport", 2, { column: 0, row: "two-cell", x: 0, y: 0, width: 1024, height: 512, visibleBounds: { left: 50, top: 20, right: 973, bottom: 492 } }],
-    ["compact-van", 2, { column: 1, row: "two-cell", x: 1024, y: 0, width: 1024, height: 512, visibleBounds: { left: 67, top: 20, right: 957, bottom: 492 } }],
-    ["city-taxi", 2, { column: 2, row: "two-cell", x: 2048, y: 0, width: 1024, height: 512, visibleBounds: { left: 20, top: 52, right: 1004, bottom: 460 } }],
-    ["city-bus", 3, { column: 0, row: "three-cell", x: 0, y: 512, width: 1024, height: 341, visibleBounds: { left: 30, top: 20, right: 994, bottom: 321 } }],
-    ["box-truck", 3, { column: 1, row: "three-cell", x: 1024, y: 512, width: 1024, height: 341, visibleBounds: { left: 20, top: 28, right: 1004, bottom: 312 } }],
-    ["stretch-sedan", 3, { column: 2, row: "three-cell", x: 2048, y: 512, width: 1024, height: 341, visibleBounds: { left: 20, top: 24, right: 1004, bottom: 317 } }],
+    ["sport", 2, { column: 0, row: "two-cell", x: 0, y: 0, width: 1024, height: 512, visibleBounds: { left: 49, top: 20, right: 974, bottom: 492 } }],
+    ["compact-van", 2, { column: 1, row: "two-cell", x: 1024, y: 0, width: 1024, height: 512, visibleBounds: { left: 63, top: 20, right: 961, bottom: 492 } }],
+    ["city-taxi", 2, { column: 2, row: "two-cell", x: 2048, y: 0, width: 1024, height: 512, visibleBounds: { left: 20, top: 51, right: 1004, bottom: 461 } }],
+    ["city-bus", 3, { column: 0, row: "three-cell", x: 0, y: 512, width: 1024, height: 341, visibleBounds: { left: 27, top: 20, right: 996, bottom: 321 } }],
+    ["box-truck", 3, { column: 1, row: "three-cell", x: 1024, y: 512, width: 1024, height: 341, visibleBounds: { left: 20, top: 33, right: 1004, bottom: 308 } }],
+    ["stretch-sedan", 3, { column: 2, row: "three-cell", x: 2048, y: 512, width: 1024, height: 341, visibleBounds: { left: 20, top: 24, right: 1004, bottom: 316 } }],
   ] as const)("maps %s", (appearance, length, expected) => {
     expect(getTrafficVehicleAtlasSlot(appearance, length)).toEqual(expected);
   });

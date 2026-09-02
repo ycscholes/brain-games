@@ -28,12 +28,12 @@ type TrafficVehicleAtlasSlotDefinition = TrafficVehicleAtlasSlot & {
 };
 
 const TRAFFIC_VEHICLE_ATLAS_SLOTS: Record<TrafficVehicleAppearance, TrafficVehicleAtlasSlotDefinition> = {
-  sport: { column: 0, row: "two-cell", x: 0, y: 0, width: 1024, height: 512, visibleBounds: { left: 50, top: 20, right: 973, bottom: 492 }, length: 2 },
-  "compact-van": { column: 1, row: "two-cell", x: 1024, y: 0, width: 1024, height: 512, visibleBounds: { left: 67, top: 20, right: 957, bottom: 492 }, length: 2 },
-  "city-taxi": { column: 2, row: "two-cell", x: 2048, y: 0, width: 1024, height: 512, visibleBounds: { left: 20, top: 52, right: 1004, bottom: 460 }, length: 2 },
-  "city-bus": { column: 0, row: "three-cell", x: 0, y: 512, width: 1024, height: 341, visibleBounds: { left: 30, top: 20, right: 994, bottom: 321 }, length: 3 },
-  "box-truck": { column: 1, row: "three-cell", x: 1024, y: 512, width: 1024, height: 341, visibleBounds: { left: 20, top: 28, right: 1004, bottom: 312 }, length: 3 },
-  "stretch-sedan": { column: 2, row: "three-cell", x: 2048, y: 512, width: 1024, height: 341, visibleBounds: { left: 20, top: 24, right: 1004, bottom: 317 }, length: 3 },
+  sport: { column: 0, row: "two-cell", x: 0, y: 0, width: 1024, height: 512, visibleBounds: { left: 49, top: 20, right: 974, bottom: 492 }, length: 2 },
+  "compact-van": { column: 1, row: "two-cell", x: 1024, y: 0, width: 1024, height: 512, visibleBounds: { left: 63, top: 20, right: 961, bottom: 492 }, length: 2 },
+  "city-taxi": { column: 2, row: "two-cell", x: 2048, y: 0, width: 1024, height: 512, visibleBounds: { left: 20, top: 51, right: 1004, bottom: 461 }, length: 2 },
+  "city-bus": { column: 0, row: "three-cell", x: 0, y: 512, width: 1024, height: 341, visibleBounds: { left: 27, top: 20, right: 996, bottom: 321 }, length: 3 },
+  "box-truck": { column: 1, row: "three-cell", x: 1024, y: 512, width: 1024, height: 341, visibleBounds: { left: 20, top: 33, right: 1004, bottom: 308 }, length: 3 },
+  "stretch-sedan": { column: 2, row: "three-cell", x: 2048, y: 512, width: 1024, height: 341, visibleBounds: { left: 20, top: 24, right: 1004, bottom: 316 }, length: 3 },
 };
 
 export function getTrafficVehicleAtlasSlot(

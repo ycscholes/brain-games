@@ -23,7 +23,7 @@ const GECKO_IDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/gecko-id
 const TURTLE_CUDDLE_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/turtle-cuddle.png";
 const BISCUIT_FILE_ID = "cloud://test-env.test-bucket/assets/v1/pets/food-biscuit.png";
 const TAP_AUDIO_FILE_ID = "cloud://test-env.test-bucket/assets/audio/v1/tap.m4a";
-const TRAFFIC_ATLAS_FILE_ID = "cloud://test-env.test-bucket/assets/games/traffic-escape/v4/vehicle-atlas.png";
+const TRAFFIC_ATLAS_FILE_ID = "cloud://test-env.test-bucket/assets/games/traffic-escape/v5/vehicle-atlas.png";
 const GENERATED_FOOD_IMAGE_IDS = [
   "biscuit",
   "salmon",

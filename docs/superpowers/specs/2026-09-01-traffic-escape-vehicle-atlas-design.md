@@ -9,7 +9,7 @@
 - 将现有六张透明 PNG 裁去四周多余透明像素，保留完整车身、轮胎和阴影。
 - 合成为一张透明 PNG：第一行是三辆两格车，每个图块为 `2:1`；第二行是三辆三格车，每个图块为 `3:1`。
 - 图集统一宽度为三个图块宽：两格行图块高为图块宽的一半，三格行图块高为图块宽的三分之一。页面以整张图宽的三倍显示，因此每个图块恰好映射为所属车辆的横向边界。
-- 图集保存为 `asset-backups/cloudbase-images/games/traffic-escape/vehicle-atlas.png`，当前版本为 `v4`，上传到 CloudBase 的 `assets/games/traffic-escape/v4/vehicle-atlas.png`；旧的六张单车资源不再由页面请求。
+- 图集保存为 `asset-backups/cloudbase-images/games/traffic-escape/vehicle-atlas.png`，当前版本为 `v5`，上传到 CloudBase 的 `assets/games/traffic-escape/v5/vehicle-atlas.png`；旧的六张单车资源不再由页面请求。
 
 ## 渲染规则
 
@@ -34,5 +34,5 @@
 
 - 图集以现有六种车辆为视觉参考，仅重新生成第二排中间三格卡车后合成；输出为透明 `3072 × 853` PNG，六个图块的 alpha 通道均非空，第二排中间车辆为自然约 `3:1` 比例且未做横向拉伸。其本地路径为 `asset-backups/cloudbase-images/games/traffic-escape/vehicle-atlas.png`。运行时仅保留并使用这一张图集，旧的独立车辆 PNG 已清理。
 - 已通过 `npm run assets:check`、`npm test -- --runInBand`（47 suites / 366 tests）、`npm run typecheck`、`npm run lint`、`npm run build:weapp`、`npm run secrets:check` 与 `git diff --check`。
-- 已执行 `npm run assets:upload -- games/traffic-escape/vehicle-atlas.png`，并以 `tcb storage list assets/games/traffic-escape/v4/` 确认 CloudBase 存在 `assets/games/traffic-escape/v4/vehicle-atlas.png`，最新大小为 2154.40 KB；旧的 v3 路径未被覆盖。
+- 已执行 `npm run assets:upload -- games/traffic-escape/vehicle-atlas.png`，并以 `tcb storage list assets/games/traffic-escape/v5/` 确认 CloudBase 存在 `assets/games/traffic-escape/v5/vehicle-atlas.png`，最新大小约 2146.90 KB；旧的 v4 路径未被覆盖。
 - 微信开发者工具已能读取项目首页，但自动化输入通道在进入车阵突围前连续返回无可用窗口，故本次未将模拟器中的横竖比例、选中态和远程加载画面记为已验证；需要在该输入通道恢复后补做一次实机/开发者工具检查。
