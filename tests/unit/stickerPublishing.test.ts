@@ -11,9 +11,11 @@ jest.mock("@tarojs/taro", () => ({
       mockStorage.set(key, value);
     }),
     getSystemInfoSync: jest.fn(() => ({ platform: mockPlatform })),
+    getDeviceInfo: jest.fn(() => ({ platform: mockPlatform })),
   },
 }));
 
+import Taro from "@tarojs/taro";
 import {
   canShareCompletedGameResult,
   createStickerPublishPayload,
@@ -33,6 +35,8 @@ describe("sticker publishing", () => {
     mockStorage.clear();
     mockPlatform = undefined;
     shareToOfficialAccount.mockReset();
+    (Taro.getSystemInfoSync as jest.Mock).mockClear();
+    (Taro.getDeviceInfo as jest.Mock).mockClear();
     (globalThis as { wx?: { shareToOfficialAccount: typeof shareToOfficialAccount } }).wx = {
       shareToOfficialAccount,
     };
@@ -106,6 +110,15 @@ describe("sticker publishing", () => {
     mockPlatform = "devtools";
 
     expect(isOfficialAccountPublishFeedSupported()).toBe(false);
+  });
+
+  test("uses the non-deprecated device info API for platform detection", () => {
+    process.env.TARO_ENV = "weapp";
+    mockPlatform = "ios";
+
+    expect(isOfficialAccountPublishFeedSupported()).toBe(true);
+    expect(Taro.getDeviceInfo).toHaveBeenCalled();
+    expect(Taro.getSystemInfoSync).not.toHaveBeenCalled();
   });
 
   test("awards only after the native success callback has a postUrl", () => {

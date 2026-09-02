@@ -152,8 +152,8 @@ export default function MultipleObjectTracking() {
   const gauntletPreset = readGameGauntletModePreset();
   const isGauntletPreset = gauntletPreset !== null;
 
-  const systemInfoRef = useRef(Taro.getSystemInfoSync());
-  const boardSizeRef = useRef(getBoardSize(systemInfoRef.current.windowWidth));
+  const windowInfoRef = useRef(Taro.getWindowInfo());
+  const boardSizeRef = useRef(getBoardSize(windowInfoRef.current.windowWidth));
   const phaseRef = useRef<Phase>("start");
   const circlesRef = useRef<MovingCircle[]>([]);
   const frameRef = useRef<number | null>(null);

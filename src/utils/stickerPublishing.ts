@@ -61,7 +61,7 @@ export function isOfficialAccountStickerRuntimeSupported() {
   }
 
   try {
-    return isOfficialAccountStickerPlatformSupported(Taro.getSystemInfoSync().platform);
+    return isOfficialAccountStickerPlatformSupported(Taro.getDeviceInfo().platform);
   } catch {
     return true;
   }
