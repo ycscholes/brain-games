@@ -2,10 +2,7 @@
   min-height: 100vh;
   padding: 28px 24px 56px;
   box-sizing: border-box;
-  background:
-    radial-gradient(circle at 12% 5%, rgba(45, 212, 191, 0.14), transparent 28%),
-    radial-gradient(circle at 90% 12%, rgba(251, 146, 60, 0.16), transparent 26%),
-    #081522;
+  background: #f8fafc;
   color: #edf7ff;
 }
 
@@ -181,6 +178,15 @@
 
 .traffic-floating-spacer { height: 112px; }
 
+.traffic-escape-page .traffic-play,
+.traffic-escape-page .traffic-finish {
+  min-height: 100vh;
+  margin: -28px -24px -56px;
+  padding: 28px 24px 56px;
+  box-sizing: border-box;
+  background: #081522;
+}
+
 .traffic-primary-button,
 .traffic-secondary-button,
 .traffic-move-button {
@@ -205,7 +211,7 @@
 /* Shared light start-screen treatment; gameplay keeps the road-control theme below. */
 .traffic-escape-page .traffic-start.start-screen {
   min-height: calc(100vh - 84px);
-  max-height: calc(100vh - 84px);
+  max-height: none;
   margin: -28px -24px -56px;
   padding: 34px 24px calc(150px + env(safe-area-inset-bottom));
   gap: 18px;
@@ -275,8 +281,33 @@
 
 .traffic-hud {
   display: flex;
+  align-items: center;
   justify-content: space-around;
   padding: 17px 14px;
+}
+
+.traffic-hud-back {
+  display: flex;
+  min-width: 112px;
+  min-height: 58px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 16px;
+  background: rgba(94, 234, 212, 0.12);
+}
+
+.traffic-hud-back-icon {
+  color: #5eead4;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.traffic-hud-back-text {
+  color: #d5f9f2;
+  font-size: 19px;
+  font-weight: 800;
 }
 
 .traffic-hud-label,
