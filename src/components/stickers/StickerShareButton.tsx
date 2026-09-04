@@ -1,5 +1,5 @@
 import { Text, View } from "@tarojs/components";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import StickerScorePoster from "./StickerScorePoster";
 import {
   canShareCompletedGameResult,
@@ -47,36 +47,58 @@ export default function StickerShareButton({
 }: StickerShareButtonProps) {
   const [isPublishing, setIsPublishing] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [isPreparingPoster, setIsPreparingPoster] = useState(true);
   const canvasIdRef = useRef("sticker-score-poster");
+  const imagePathRef = useRef<string>();
+  const canShare = isOfficialAccountStickerRuntimeSupported() && canShareCompletedGameResult({ completed: true, isGauntlet });
 
-  if (!isOfficialAccountStickerRuntimeSupported() || !canShareCompletedGameResult({ completed: true, isGauntlet })) {
+  useEffect(() => {
+    if (!canShare) {
+      return undefined;
+    }
+
+    let isCurrent = true;
+    imagePathRef.current = undefined;
+    setIsPreparingPoster(true);
+
+    void exportStickerScorePoster({
+      canvasId: canvasIdRef.current,
+      gameTitle,
+      score,
+    }).then((imagePath) => {
+      if (isCurrent) {
+        imagePathRef.current = imagePath;
+      }
+    }).catch(() => {
+      // The native editor can still accept the score text without an image.
+    }).finally(() => {
+      if (isCurrent) {
+        setIsPreparingPoster(false);
+      }
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [canShare, gameTitle, score]);
+
+  if (!canShare) {
     return null;
   }
 
-  const handlePublish = async () => {
+  const handlePublish = () => {
     if (isPublishing) {
       return;
     }
 
     setIsPublishing(true);
     setFeedback("");
-    let imagePath: string | undefined;
-
-    try {
-      imagePath = await exportStickerScorePoster({
-        canvasId: canvasIdRef.current,
-        gameTitle,
-        score,
-      });
-    } catch {
-      // The native editor can still accept the score text without an image.
-    }
 
     const result = publishGameResultSticker({
       gameTitle,
       score,
       pagePath,
-      imagePath,
+      imagePath: imagePathRef.current,
       onResult: (publishResult) => {
         setIsPublishing(false);
         setFeedback(getFeedback(publishResult));
@@ -91,9 +113,9 @@ export default function StickerShareButton({
 
   return (
     <View className="sticker-share-wrap">
-      <StickerScorePoster canvasId={canvasIdRef.current} />
+      {isPreparingPoster ? <StickerScorePoster canvasId={canvasIdRef.current} /> : null}
       <View className="sticker-share-button" onClick={handlePublish}>
-        <Text className="sticker-share-button-text">{isPublishing ? "正在生成成绩海报…" : "晒出本局成绩"}</Text>
+        <Text className="sticker-share-button-text">{isPublishing ? "正在打开发表页…" : "晒出本局成绩"}</Text>
         <Text className="sticker-share-button-reward">发表成功可得 30 积分（每日 3 次）</Text>
       </View>
       {feedback ? <Text className="sticker-share-feedback">{feedback}</Text> : null}

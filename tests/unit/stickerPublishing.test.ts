@@ -225,6 +225,8 @@ describe("sticker publishing", () => {
 
     expect(source).toContain("StickerScorePoster");
     expect(source).toContain("exportStickerScorePoster");
+    expect(source).toContain("useEffect");
+    expect(source).not.toContain("await exportStickerScorePoster");
   });
 
   test("uses one configured topic and homepage return link for the native feed", () => {
