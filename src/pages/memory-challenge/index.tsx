@@ -144,10 +144,10 @@ async function resolvePetItems(): Promise<MemoryChallengeItem[]> {
   return loadPetMemoryItemsFromAssets(
     pets,
     PET_MOOD_UNLOCK_ORDER,
-    (assetRef, skin, mood) =>
+    (assetRef, skin, mood, options) =>
       assetRef.kind === "custom"
-        ? resolveCustomPetSpriteUrl(assetRef.customAssetId, mood)
-        : resolvePetSpriteUrl(skin, mood),
+        ? resolveCustomPetSpriteUrl(assetRef.customAssetId, mood, options)
+        : resolvePetSpriteUrl(skin, mood, options),
     preloadImage,
   );
 }

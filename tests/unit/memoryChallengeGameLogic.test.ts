@@ -140,6 +140,23 @@ describe("memory challenge game logic", () => {
     )).rejects.toThrow("Unable to load cat-feed");
   });
 
+  test("refreshes a stale pet image URL before rejecting the item", async () => {
+    const resolveImage = jest.fn(async (_skin, _mood, options?: { forceRefresh?: boolean }) => (
+      options?.forceRefresh ? "fresh.png" : "stale.png"
+    ));
+    const preloadImage = jest.fn(async (url: string) => url === "fresh.png");
+
+    await expect(loadPetMemoryItems(
+      ["cat"],
+      ["idle"],
+      resolveImage,
+      preloadImage,
+    )).resolves.toMatchObject([{ imageSrc: "fresh.png" }]);
+
+    expect(resolveImage).toHaveBeenNthCalledWith(1, "cat", "idle", undefined);
+    expect(resolveImage).toHaveBeenNthCalledWith(2, "cat", "idle", { forceRefresh: true });
+  });
+
   test("builds unique pet items for every loaded skin and mood", async () => {
     const items = await loadPetMemoryItems(
       PET_SKINS,
@@ -151,6 +168,26 @@ describe("memory challenge game logic", () => {
     expect(items).toHaveLength(28);
     expect(new Set(items.map((item) => item.answerId)).size).toBe(28);
     expect(items.find((item) => item.answerId === "pet-cat-feed")?.petMood).toBe("feed");
+  });
+
+  test("limits concurrent pet image loads to avoid a startup request burst", async () => {
+    let activeLoads = 0;
+    let maxConcurrentLoads = 0;
+
+    await loadPetMemoryItems(
+      ["cat", "dog"],
+      PET_MOODS,
+      async (skin, mood) => {
+        activeLoads += 1;
+        maxConcurrentLoads = Math.max(maxConcurrentLoads, activeLoads);
+        await Promise.resolve();
+        activeLoads -= 1;
+        return `${skin}-${mood}.png`;
+      },
+      async () => true,
+    );
+
+    expect(maxConcurrentLoads).toBeLessThanOrEqual(3);
   });
 
   test("uses custom asset identity for private pet memory items", async () => {

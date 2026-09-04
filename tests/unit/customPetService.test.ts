@@ -91,6 +91,40 @@ describe("customPetService", () => {
     });
   });
 
+  test("deduplicates concurrent private URL requests for one pet asset", async () => {
+    mockCallFunction.mockResolvedValue({
+      result: {
+        ok: true,
+        data: {
+          urls: {
+            idle: { url: "https://private.example/idle.png" },
+            feed: { url: "https://private.example/feed.png" },
+            cuddle: { url: "https://private.example/cuddle.png" },
+            hungry: { url: "https://private.example/hungry.png" },
+          },
+        },
+      },
+    });
+    const { resolveCustomPetSpriteUrl } = await import(
+      "../../src/services/custom-pet/customPetService"
+    );
+
+    const urls = await Promise.all([
+      resolveCustomPetSpriteUrl("asset-1", "idle"),
+      resolveCustomPetSpriteUrl("asset-1", "feed"),
+      resolveCustomPetSpriteUrl("asset-1", "cuddle"),
+      resolveCustomPetSpriteUrl("asset-1", "hungry"),
+    ]);
+
+    expect(urls).toEqual([
+      "https://private.example/idle.png",
+      "https://private.example/feed.png",
+      "https://private.example/cuddle.png",
+      "https://private.example/hungry.png",
+    ]);
+    expect(mockCallFunction).toHaveBeenCalledTimes(1);
+  });
+
   test("refreshes an expired private URL cache", async () => {
     mockStorage.set("custom_pet_url_cache_v1", JSON.stringify({
       "asset-1": {

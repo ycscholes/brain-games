@@ -29,6 +29,7 @@ type CachedMoodUrls = {
 };
 
 type UrlCache = Record<string, CachedMoodUrls>;
+const urlRequestCache = new Map<string, Promise<CustomPetMoodUrls>>();
 type ImageFileResult = {
   filePath?: string;
   path?: string;
@@ -318,26 +319,39 @@ export async function resolveCustomPetSpriteUrls(
   if (!options?.forceRefresh && cached && cached.expiresAt > Date.now()) {
     return cached.urls;
   }
-  const result = await callCustomPetApi<{
-    urls: Partial<Record<PetSpriteMood, { url: string; maxAge?: number }>>;
-  }>({
-    action: "getAssetUrls",
-    assetId,
-    moods: MOODS,
-  });
-  const urls = MOODS.reduce<CustomPetMoodUrls>((acc, mood) => {
-    const value = result.urls[mood]?.url;
-    if (value) {
-      acc[mood] = value;
-    }
-    return acc;
-  }, {});
-  cache[assetId] = {
-    expiresAt: Date.now() + URL_CACHE_TTL_MS,
-    urls,
-  };
-  writeUrlCache(cache);
-  return urls;
+  const pendingRequest = urlRequestCache.get(assetId);
+  if (pendingRequest) {
+    return pendingRequest;
+  }
+
+  const request = (async () => {
+    const result = await callCustomPetApi<{
+      urls: Partial<Record<PetSpriteMood, { url: string; maxAge?: number }>>;
+    }>({
+      action: "getAssetUrls",
+      assetId,
+      moods: MOODS,
+    });
+    const urls = MOODS.reduce<CustomPetMoodUrls>((acc, mood) => {
+      const value = result.urls[mood]?.url;
+      if (value) {
+        acc[mood] = value;
+      }
+      return acc;
+    }, {});
+    cache[assetId] = {
+      expiresAt: Date.now() + URL_CACHE_TTL_MS,
+      urls,
+    };
+    writeUrlCache(cache);
+    return urls;
+  })();
+  urlRequestCache.set(assetId, request);
+  try {
+    return await request;
+  } finally {
+    urlRequestCache.delete(assetId);
+  }
 }
 
 export async function resolveCustomPetSpriteUrl(

@@ -21,6 +21,10 @@ export interface MemoryChallengeOption {
   imageSrc?: string;
 }
 
+type PetImageResolveOptions = {
+  forceRefresh?: boolean;
+};
+
 const ROUND_POINTS: Record<MemoryChallengeN, number> = {
   1: 1,
   2: 2,
@@ -41,6 +45,45 @@ const PET_MOOD_NAME: Record<PetSpriteMood, string> = {
   cuddle: "互动",
   hungry: "饥饿",
 };
+
+const PET_IMAGE_LOAD_CONCURRENCY = 3;
+
+async function mapWithConcurrency<T, Result>(
+  values: readonly T[],
+  mapValue: (value: T) => Promise<Result>,
+): Promise<Result[]> {
+  const results = new Array<Result>(values.length);
+  let nextIndex = 0;
+
+  const worker = async () => {
+    while (nextIndex < values.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await mapValue(values[index]);
+    }
+  };
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(PET_IMAGE_LOAD_CONCURRENCY, values.length) },
+      () => worker(),
+    ),
+  );
+  return results;
+}
+
+async function resolvePreloadedPetImage(
+  resolveImage: (options?: PetImageResolveOptions) => Promise<string>,
+  preloadImage: (url: string) => Promise<boolean>,
+): Promise<string> {
+  const imageSrc = await resolveImage();
+  if (imageSrc && await preloadImage(imageSrc)) {
+    return imageSrc;
+  }
+
+  const refreshedImageSrc = await resolveImage({ forceRefresh: true });
+  return refreshedImageSrc && await preloadImage(refreshedImageSrc) ? refreshedImageSrc : "";
+}
 
 function randomInteger(maxInclusive: number, random: () => number) {
   return Math.floor(random() * (maxInclusive + 1));
@@ -65,30 +108,36 @@ export function getUnlockedPetItems(
 export async function loadPetMemoryItems(
   skins: readonly PetSkin[],
   moods: readonly PetSpriteMood[],
-  resolveImage: (skin: PetSkin, mood: PetSpriteMood) => Promise<string>,
+  resolveImage: (
+    skin: PetSkin,
+    mood: PetSpriteMood,
+    options?: PetImageResolveOptions,
+  ) => Promise<string>,
   preloadImage: (url: string) => Promise<boolean>,
 ): Promise<MemoryChallengeItem[]> {
   try {
-    return await Promise.all(
-      skins.flatMap((skin) =>
-        moods.map(async (mood) => {
-          const imageSrc = await resolveImage(skin, mood);
-          if (!imageSrc || !(await preloadImage(imageSrc))) {
-            throw new Error(`Unable to load ${skin}-${mood}`);
-          }
+    return await mapWithConcurrency(
+      skins.flatMap((skin) => moods.map((mood) => ({ skin, mood }))),
+      async ({ skin, mood }) => {
+        const imageSrc = await resolvePreloadedPetImage(
+          (options) => resolveImage(skin, mood, options),
+          preloadImage,
+        );
+        if (!imageSrc) {
+          throw new Error(`Unable to load ${skin}-${mood}`);
+        }
 
-          const id = `pet-${skin}-${mood}`;
-          const label = `${PET_SKIN_NAME[skin]}·${PET_MOOD_NAME[mood]}`;
-          return {
-            id,
-            prompt: label,
-            answerId: id,
-            answerLabel: label,
-            imageSrc,
-            petMood: mood,
-          };
-        }),
-      ),
+        const id = `pet-${skin}-${mood}`;
+        const label = `${PET_SKIN_NAME[skin]}·${PET_MOOD_NAME[mood]}`;
+        return {
+          id,
+          prompt: label,
+          answerId: id,
+          answerLabel: label,
+          imageSrc,
+          petMood: mood,
+        };
+      },
     );
   } catch (error) {
     throw error instanceof Error ? error : new Error("Unable to load pet memory images");
@@ -103,29 +152,36 @@ export async function loadPetMemoryItemsFromAssets(
     assetRef: PetAssetRef;
   }>,
   moods: readonly PetSpriteMood[],
-  resolveImage: (assetRef: PetAssetRef, skin: PetSkin, mood: PetSpriteMood) => Promise<string>,
+  resolveImage: (
+    assetRef: PetAssetRef,
+    skin: PetSkin,
+    mood: PetSpriteMood,
+    options?: PetImageResolveOptions,
+  ) => Promise<string>,
   preloadImage: (url: string) => Promise<boolean>,
 ): Promise<MemoryChallengeItem[]> {
-  return Promise.all(
-    pets.flatMap((pet) =>
-      moods.map(async (mood) => {
-        const imageSrc = await resolveImage(pet.assetRef, pet.skin, mood);
-        const petKey = pet.displayId ?? getPetAssetKey(pet.assetRef);
-        if (!imageSrc || !(await preloadImage(imageSrc))) {
-          throw new Error(`Unable to load ${petKey}-${mood}`);
-        }
-        const id = `pet-${petKey}-${mood}`;
-        const label = `${pet.name}·${PET_MOOD_NAME[mood]}`;
-        return {
-          id,
-          prompt: label,
-          answerId: id,
-          answerLabel: label,
-          imageSrc,
-          petMood: mood,
-        };
-      }),
-    ),
+  return mapWithConcurrency(
+    pets.flatMap((pet) => moods.map((mood) => ({ pet, mood }))),
+    async ({ pet, mood }) => {
+      const imageSrc = await resolvePreloadedPetImage(
+        (options) => resolveImage(pet.assetRef, pet.skin, mood, options),
+        preloadImage,
+      );
+      const petKey = pet.displayId ?? getPetAssetKey(pet.assetRef);
+      if (!imageSrc) {
+        throw new Error(`Unable to load ${petKey}-${mood}`);
+      }
+      const id = `pet-${petKey}-${mood}`;
+      const label = `${pet.name}·${PET_MOOD_NAME[mood]}`;
+      return {
+        id,
+        prompt: label,
+        answerId: id,
+        answerLabel: label,
+        imageSrc,
+        petMood: mood,
+      };
+    },
   );
 }
 
