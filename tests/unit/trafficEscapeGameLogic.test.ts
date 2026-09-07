@@ -4,6 +4,7 @@ import {
   createTrafficEscapeState,
   createTrafficEscapePuzzle,
   getTrafficEscapeHint,
+  getTrafficEscapeLegalMoves,
   getTrafficEscapePuzzlePool,
   isTrafficEscapeSolved,
   scoreTrafficEscapeGame,
@@ -11,6 +12,53 @@ import {
   solveTrafficEscapePuzzleDetailed,
   TRAFFIC_VEHICLE_APPEARANCES,
 } from "../../src/pages/traffic-escape/gameLogic";
+import { CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES } from "../../src/pages/traffic-escape/hardPuzzles.generated";
+import { certifyTrafficEscapeHardPuzzle } from "../../src/pages/traffic-escape/puzzleQuality";
+
+function getMoveKey(move: { vehicleId: string; delta: number }) {
+  return `${move.vehicleId}:${move.delta}`;
+}
+
+const hardPuzzleCertifications = new Map<
+  string,
+  ReturnType<typeof certifyTrafficEscapeHardPuzzle>
+>();
+
+function getHardPuzzleCertification(
+  puzzle: (typeof CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES)[number],
+) {
+  const cached = hardPuzzleCertifications.get(puzzle.id);
+  if (cached) return cached;
+  const certification = certifyTrafficEscapeHardPuzzle(puzzle);
+  hardPuzzleCertifications.set(puzzle.id, certification);
+  return certification;
+}
+
+function expectHintLeadsToCertifiedSolution(
+  puzzle: (typeof CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES)[number],
+  initialState: ReturnType<typeof createTrafficEscapeState>,
+  openingMove: { vehicleId: string; delta: number },
+) {
+  const openingResult = applyTrafficEscapeMove(puzzle, initialState, openingMove);
+  expect(openingResult.moved).toBe(true);
+
+  const hint = getTrafficEscapeHint(puzzle, openingResult.state);
+  expect(hint).not.toBeNull();
+  const hintedResult = applyTrafficEscapeMove(puzzle, openingResult.state, hint!);
+  expect(hintedResult.moved).toBe(true);
+
+  let replayState = hintedResult.state;
+  [
+    { ...hint!, delta: -hint!.delta },
+    { ...openingMove, delta: -openingMove.delta },
+    ...puzzle.solutionMoves,
+  ].forEach((move) => {
+    const result = applyTrafficEscapeMove(puzzle, replayState, move);
+    expect(result.moved).toBe(true);
+    replayState = result.state;
+  });
+  expect(isTrafficEscapeSolved(puzzle, replayState)).toBe(true);
+}
 
 describe("traffic-escape game logic", () => {
   test("provides compact normal and hard parking puzzles", () => {
@@ -32,6 +80,44 @@ describe("traffic-escape game logic", () => {
       expect(puzzle.vehicles.length).toBe(difficulty === "hard" ? 10 : 8);
       expect(solution!.length).toBeGreaterThanOrEqual(difficulty === "hard" ? 5 : 3);
     });
+  });
+
+  test("ships 36 certified hard puzzles", () => {
+    expect(CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES).toHaveLength(36);
+    CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES.forEach((puzzle) => {
+      const certification = getHardPuzzleCertification(puzzle);
+      expect(certification.accepted).toBe(true);
+      expect(certification.analysis?.visitedStateCount).toBeLessThanOrEqual(30_000);
+    });
+  });
+
+  test("hard mode selects every certified bank entry and no legacy fallback", () => {
+    const bankIds = CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES.map((puzzle) => puzzle.id);
+    const selectedIds = Array.from({ length: bankIds.length }, (_, seed) => (
+      createTrafficEscapePuzzle("hard", seed).id
+    ));
+
+    expect(new Set(selectedIds)).toEqual(new Set(bankIds));
+    expect(getTrafficEscapePuzzlePool("hard").map((puzzle) => puzzle.id)).toEqual(bankIds);
+
+    for (let seed = 1; seed <= 100; seed += 1) {
+      const puzzle = createTrafficEscapePuzzle("hard", seed);
+      expect(bankIds).toContain(puzzle.id);
+      expect(puzzle.vehicles).toHaveLength(10);
+    }
+  });
+
+  test("clones certified hard puzzle geometry and solution moves before returning them", () => {
+    const first = createTrafficEscapePuzzle("hard", 0);
+    const originalRow = CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES[0].vehicles[0].row;
+    const originalDelta = CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES[0].solutionMoves[0].delta;
+
+    first.vehicles[0].row += 1;
+    first.solutionMoves[0].delta += 1;
+
+    const second = createTrafficEscapePuzzle("hard", 0);
+    expect(second.vehicles[0].row).toBe(originalRow);
+    expect(second.solutionMoves[0].delta).toBe(originalDelta);
   });
 
   test("reports shortest-path evidence without changing the public solver result", () => {
@@ -150,6 +236,21 @@ describe("traffic-escape game logic", () => {
     expect(applyTrafficEscapeMove(puzzle, movedState, hint!).moved).toBe(true);
   });
 
+  test("keeps hints state-aware after optimal moves and alternate legal moves", () => {
+    CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES.slice(0, 6).forEach((puzzle) => {
+      const initialState = createTrafficEscapeState(puzzle);
+      const certification = getHardPuzzleCertification(puzzle);
+      const optimalMove = certification.analysis!.solutionMoves[0];
+      expectHintLeadsToCertifiedSolution(puzzle, initialState, optimalMove);
+
+      const optimalMoveKeys = new Set([getMoveKey(optimalMove)]);
+      const deviation = getTrafficEscapeLegalMoves(puzzle, initialState)
+        .find((move) => !optimalMoveKeys.has(getMoveKey(move)));
+      expect(deviation).toBeDefined();
+      expectHintLeadsToCertifiedSolution(puzzle, initialState, deviation!);
+    });
+  });
+
   test("scores successful escapes by difficulty, time, moves, and hints", () => {
     expect(scoreTrafficEscapeGame({
       difficulty: "normal",
@@ -167,11 +268,25 @@ describe("traffic-escape game logic", () => {
     })).toBeLessThan(40);
     expect(scoreTrafficEscapeGame({
       difficulty: "hard",
-      elapsedSeconds: 85,
+      elapsedSeconds: 150,
       moveCount: 12,
       hintCount: 0,
       completed: true,
-    })).toBeGreaterThanOrEqual(44);
+    })).toBe(44);
+    expect(scoreTrafficEscapeGame({
+      difficulty: "hard",
+      elapsedSeconds: 151,
+      moveCount: 12,
+      hintCount: 0,
+      completed: true,
+    })).toBe(42);
+    expect(scoreTrafficEscapeGame({
+      difficulty: "hard",
+      elapsedSeconds: 210,
+      moveCount: 12,
+      hintCount: 0,
+      completed: true,
+    })).toBe(42);
     expect(scoreTrafficEscapeGame({
       difficulty: "hard",
       elapsedSeconds: 85,

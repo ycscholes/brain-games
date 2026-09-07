@@ -1,4 +1,5 @@
 import type { TrainingDifficulty } from "../../utils/trainingStorage";
+import { CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES } from "./hardPuzzles.generated";
 
 export type TrafficEscapeDifficulty = TrainingDifficulty;
 export type TrafficVehicleOrientation = "horizontal" | "vertical";
@@ -89,73 +90,6 @@ const NORMAL_PUZZLES: TrafficEscapePuzzle[] = [
     solutionMoves: [
       { vehicleId: "violet-2", delta: 1 },
       { vehicleId: "target", delta: 3 },
-    ],
-  },
-];
-
-const HARD_PUZZLES: TrafficEscapePuzzle[] = [
-  {
-    id: "traffic-escape-hard-1",
-    size: 6,
-    exitRow: 2,
-    vehicles: [
-      { id: "target", row: 2, col: 0, length: 2, orientation: "horizontal", color: "target", isTarget: true },
-      { id: "cyan-3", row: 0, col: 2, length: 3, orientation: "vertical", color: "cyan" },
-      { id: "amber-3", row: 4, col: 1, length: 2, orientation: "horizontal", color: "amber" },
-      { id: "violet-3", row: 3, col: 5, length: 2, orientation: "vertical", color: "violet" },
-      { id: "lime-3", row: 4, col: 4, length: 2, orientation: "vertical", color: "lime" },
-      { id: "coral-2", row: 0, col: 3, length: 2, orientation: "horizontal", color: "coral" },
-      { id: "hard-1-filler-1", row: 0, col: 0, length: 2, orientation: "horizontal", color: "amber" },
-      { id: "hard-1-filler-2", row: 1, col: 3, length: 2, orientation: "horizontal", color: "lime" },
-      { id: "hard-1-filler-3", row: 3, col: 0, length: 2, orientation: "horizontal", color: "cyan" },
-      { id: "hard-1-filler-4", row: 3, col: 3, length: 2, orientation: "horizontal", color: "violet" },
-    ],
-    solutionMoves: [
-      { vehicleId: "amber-3", delta: -1 },
-      { vehicleId: "cyan-3", delta: 3 },
-      { vehicleId: "target", delta: 4 },
-    ],
-  },
-  {
-    id: "traffic-escape-hard-2",
-    size: 6,
-    exitRow: 3,
-    vehicles: [
-      { id: "target", row: 3, col: 0, length: 2, orientation: "horizontal", color: "target", isTarget: true },
-      { id: "lime-4", row: 2, col: 2, length: 2, orientation: "vertical", color: "lime" },
-      { id: "amber-4", row: 0, col: 0, length: 3, orientation: "horizontal", color: "amber" },
-      { id: "cyan-4", row: 0, col: 4, length: 3, orientation: "vertical", color: "cyan" },
-      { id: "violet-4", row: 4, col: 3, length: 2, orientation: "horizontal", color: "violet" },
-      { id: "coral-3", row: 4, col: 0, length: 2, orientation: "vertical", color: "coral" },
-      { id: "hard-2-filler-1", row: 1, col: 0, length: 2, orientation: "horizontal", color: "amber" },
-      { id: "hard-2-filler-2", row: 1, col: 2, length: 2, orientation: "horizontal", color: "lime" },
-      { id: "hard-2-filler-3", row: 5, col: 3, length: 3, orientation: "horizontal", color: "cyan" },
-      { id: "hard-2-filler-4", row: 0, col: 5, length: 2, orientation: "vertical", color: "amber" },
-    ],
-    solutionMoves: [
-      { vehicleId: "lime-4", delta: 2 },
-      { vehicleId: "target", delta: 4 },
-    ],
-  },
-  {
-    id: "traffic-escape-hard-3",
-    size: 6,
-    exitRow: 2,
-    vehicles: [
-      { id: "target", row: 2, col: 0, length: 2, orientation: "horizontal", color: "target", isTarget: true },
-      { id: "violet-5", row: 1, col: 2, length: 2, orientation: "vertical", color: "violet" },
-      { id: "cyan-5", row: 0, col: 0, length: 2, orientation: "horizontal", color: "cyan" },
-      { id: "amber-5", row: 3, col: 3, length: 2, orientation: "vertical", color: "amber" },
-      { id: "lime-5", row: 4, col: 0, length: 2, orientation: "horizontal", color: "lime" },
-      { id: "coral-4", row: 4, col: 5, length: 2, orientation: "vertical", color: "coral" },
-      { id: "hard-3-filler-1", row: 0, col: 4, length: 2, orientation: "horizontal", color: "amber" },
-      { id: "hard-3-filler-2", row: 1, col: 0, length: 2, orientation: "horizontal", color: "cyan" },
-      { id: "hard-3-filler-3", row: 3, col: 0, length: 3, orientation: "horizontal", color: "violet" },
-      { id: "hard-3-filler-4", row: 3, col: 4, length: 2, orientation: "horizontal", color: "lime" },
-    ],
-    solutionMoves: [
-      { vehicleId: "violet-5", delta: -1 },
-      { vehicleId: "target", delta: 4 },
     ],
   },
 ];
@@ -443,15 +377,28 @@ function createTrafficEscapeCandidate(
 }
 
 export function getTrafficEscapePuzzlePool(difficulty: TrafficEscapeDifficulty) {
-  const puzzles = difficulty === "hard" ? HARD_PUZZLES : NORMAL_PUZZLES;
+  const puzzles = difficulty === "hard" ? CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES : NORMAL_PUZZLES;
   return puzzles.map((puzzle, index) => ({
     ...puzzle,
     vehicles: assignTrafficVehicleAppearances(puzzle.vehicles, createSeededRandom(index + 1)),
-    solutionMoves: [...puzzle.solutionMoves],
+    solutionMoves: difficulty === "hard"
+      ? puzzle.solutionMoves.map((move) => ({ ...move }))
+      : [...puzzle.solutionMoves],
   }));
 }
 
 export function createTrafficEscapePuzzle(difficulty: TrafficEscapeDifficulty, seed = Date.now()) {
+  if (difficulty === "hard") {
+    const source = CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES[
+      Math.abs(seed) % CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES.length
+    ];
+    return {
+      ...source,
+      vehicles: assignTrafficVehicleAppearances(source.vehicles, createSeededRandom(seed)),
+      solutionMoves: source.solutionMoves.map((move) => ({ ...move })),
+    };
+  }
+
   const random = createSeededRandom(seed);
   const requirements = DIFFICULTY_REQUIREMENTS[difficulty];
 
@@ -527,8 +474,8 @@ export function scoreTrafficEscapeGame(params: {
   if (!params.completed) return 0;
 
   const baseScore = params.difficulty === "hard" ? 36 : 28;
-  const fastThreshold = params.difficulty === "hard" ? 90 : 60;
-  const mediumThreshold = params.difficulty === "hard" ? 140 : 100;
+  const fastThreshold = params.difficulty === "hard" ? 150 : 60;
+  const mediumThreshold = params.difficulty === "hard" ? 210 : 100;
   const speedBonus = params.elapsedSeconds <= fastThreshold ? 6 : params.elapsedSeconds <= mediumThreshold ? 4 : 0;
   const moveBonus = params.moveCount <= 6 ? 6 : params.moveCount <= 10 ? 4 : params.moveCount <= 12 ? 2 : 0;
   const maxScore = params.difficulty === "hard" ? 50 : 40;
