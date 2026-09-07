@@ -108,7 +108,7 @@ describe("getTrafficVehicleAtlasSlot", () => {
     ["box-truck", 3, { column: 1, row: "three-cell", x: 768, y: 384, width: 768, height: 256, visibleBounds: { left: 13, top: 23, right: 755, bottom: 234 } }],
     ["stretch-sedan", 3, { column: 2, row: "three-cell", x: 1536, y: 384, width: 768, height: 256, visibleBounds: { left: 13, top: 16, right: 755, bottom: 240 } }],
     ["pink-sport", 2, { column: 3, row: "two-cell", x: 2304, y: 0, width: 768, height: 384, visibleBounds: { left: 20, top: 68, right: 748, bottom: 316 } }],
-    ["offroad-suv", 2, { column: 4, row: "two-cell", x: 3072, y: 0, width: 768, height: 384, visibleBounds: { left: 31, top: 46, right: 737, bottom: 338 } }],
+    ["offroad-suv", 2, { column: 4, row: "two-cell", x: 3072, y: 0, width: 768, height: 384, visibleBounds: { left: 31, top: 47, right: 736, bottom: 337 } }],
     ["camper-rv", 3, { column: 3, row: "three-cell", x: 2304, y: 384, width: 768, height: 256, visibleBounds: { left: 48, top: 16, right: 720, bottom: 240 } }],
     ["tanker-truck", 3, { column: 4, row: "three-cell", x: 3072, y: 384, width: 768, height: 256, visibleBounds: { left: 64, top: 16, right: 704, bottom: 240 } }],
   ] as const)("maps %s", (appearance, length, expected) => {
@@ -224,6 +224,27 @@ describe("getTrafficVehicleAtlasSlot", () => {
           expect(atlas.alphaAt(slot.x + x, slot.y + y)).toBe(255);
         }
       }
+    });
+  });
+
+  test("keeps the new vehicle silhouette free of a heavy white outer outline", () => {
+    const atlas = readTrafficVehicleAtlasPng();
+    (["pink-sport", "offroad-suv", "camper-rv", "tanker-truck"] as const).forEach((appearance) => {
+      const length = appearance === "pink-sport" || appearance === "offroad-suv" ? 2 : 3;
+      const slot = getTrafficVehicleAtlasSlot(appearance, length);
+      let paleBoundaryPixels = 0;
+      for (let y = 1; y < slot.height - 1; y += 1) {
+        for (let x = 1; x < slot.width - 1; x += 1) {
+          const offset = ((slot.y + y) * atlas.width + slot.x + x) * 4;
+          const [red, green, blue, alpha] = atlas.pixels.subarray(offset, offset + 4);
+          if (alpha === 0 || Math.min(red, green, blue) < 212 || Math.max(red, green, blue) - Math.min(red, green, blue) > 28) continue;
+          const touchesTransparency = [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => (
+            (dx !== 0 || dy !== 0) && atlas.alphaAt(slot.x + x + dx, slot.y + y + dy) === 0
+          )));
+          if (touchesTransparency) paleBoundaryPixels += 1;
+        }
+      }
+      expect(paleBoundaryPixels).toBeLessThanOrEqual(2);
     });
   });
 
