@@ -20,6 +20,8 @@ export type TrafficVehicleAtlasCropStyle = {
 };
 
 const ATLAS_COLUMN_COUNT = 5;
+const ATLAS_WIDTH = 3840;
+const ATLAS_HEIGHT = 640;
 const ATLAS_SLOT_WIDTH = 768;
 const TWO_CELL_SLOT_HEIGHT = 384;
 const THREE_CELL_SLOT_HEIGHT = 256;
@@ -91,7 +93,7 @@ export function getTrafficVehicleAtlasCropStyle(
   const slotCenterX = ATLAS_SLOT_WIDTH / 2;
   const slotCenterY = slot.height / 2;
   const backgroundWidthFreeSpace = ATLAS_COLUMN_COUNT - 1;
-  const backgroundHeightFreeSpace = 3 * length * (853 / 3072) - 1;
+  const backgroundHeightFreeSpace = (ATLAS_COLUMN_COUNT * length * ATLAS_HEIGHT) / ATLAS_WIDTH - 1;
   const xCorrection = ((visibleCenterX - slotCenterX) / slot.width / backgroundWidthFreeSpace) * 100;
   const measuredYCorrection = ((visibleCenterY - slotCenterY) / slot.height / backgroundHeightFreeSpace) * 100;
   const opticalThreeCellYOffset = length === 3 ? -5 : 0;

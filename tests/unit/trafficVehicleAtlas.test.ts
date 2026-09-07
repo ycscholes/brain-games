@@ -71,7 +71,7 @@ describe("getTrafficVehicleAtlasSlot", () => {
 
   test("applies the optical downward correction to three-cell vehicles", () => {
     expect(getTrafficVehicleAtlasCropStyle("stretch-sedan", 3, "https://cdn.example/vehicle-atlas-v5.png").backgroundPosition)
-      .toBe("calc(50% + 0.0000%) calc(100% - 5.1303%)");
+      .toBe("calc(50% + 0.0000%) calc(100% - 5.1302%)");
   });
 
   test("uses the same crop coordinates for the grid-hiding vehicle mask", () => {
