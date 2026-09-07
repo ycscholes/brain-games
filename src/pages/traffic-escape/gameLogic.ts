@@ -105,6 +105,10 @@ const HARD_PUZZLES: TrafficEscapePuzzle[] = [
       { id: "violet-3", row: 3, col: 5, length: 2, orientation: "vertical", color: "violet" },
       { id: "lime-3", row: 4, col: 4, length: 2, orientation: "vertical", color: "lime" },
       { id: "coral-2", row: 0, col: 3, length: 2, orientation: "horizontal", color: "coral" },
+      { id: "hard-1-filler-1", row: 0, col: 0, length: 2, orientation: "horizontal", color: "amber" },
+      { id: "hard-1-filler-2", row: 1, col: 3, length: 2, orientation: "horizontal", color: "lime" },
+      { id: "hard-1-filler-3", row: 3, col: 0, length: 2, orientation: "horizontal", color: "cyan" },
+      { id: "hard-1-filler-4", row: 3, col: 3, length: 2, orientation: "horizontal", color: "violet" },
     ],
     solutionMoves: [
       { vehicleId: "amber-3", delta: -1 },
@@ -123,6 +127,10 @@ const HARD_PUZZLES: TrafficEscapePuzzle[] = [
       { id: "cyan-4", row: 0, col: 4, length: 3, orientation: "vertical", color: "cyan" },
       { id: "violet-4", row: 4, col: 3, length: 2, orientation: "horizontal", color: "violet" },
       { id: "coral-3", row: 4, col: 0, length: 2, orientation: "vertical", color: "coral" },
+      { id: "hard-2-filler-1", row: 1, col: 0, length: 2, orientation: "horizontal", color: "amber" },
+      { id: "hard-2-filler-2", row: 1, col: 2, length: 2, orientation: "horizontal", color: "lime" },
+      { id: "hard-2-filler-3", row: 5, col: 3, length: 3, orientation: "horizontal", color: "cyan" },
+      { id: "hard-2-filler-4", row: 0, col: 5, length: 2, orientation: "vertical", color: "amber" },
     ],
     solutionMoves: [
       { vehicleId: "lime-4", delta: 2 },
@@ -140,6 +148,10 @@ const HARD_PUZZLES: TrafficEscapePuzzle[] = [
       { id: "amber-5", row: 3, col: 3, length: 2, orientation: "vertical", color: "amber" },
       { id: "lime-5", row: 4, col: 0, length: 2, orientation: "horizontal", color: "lime" },
       { id: "coral-4", row: 4, col: 5, length: 2, orientation: "vertical", color: "coral" },
+      { id: "hard-3-filler-1", row: 0, col: 4, length: 2, orientation: "horizontal", color: "amber" },
+      { id: "hard-3-filler-2", row: 1, col: 0, length: 2, orientation: "horizontal", color: "cyan" },
+      { id: "hard-3-filler-3", row: 3, col: 0, length: 3, orientation: "horizontal", color: "violet" },
+      { id: "hard-3-filler-4", row: 3, col: 4, length: 2, orientation: "horizontal", color: "lime" },
     ],
     solutionMoves: [
       { vehicleId: "violet-5", delta: -1 },
@@ -229,8 +241,8 @@ function moveVehicleOneStep(
 }
 
 const DIFFICULTY_REQUIREMENTS = {
-  normal: { size: 6, vehicleCount: 6, minimumSolutionMoves: 3, scrambleMoves: 16, attempts: 80 },
-  hard: { size: 6, vehicleCount: 8, minimumSolutionMoves: 4, scrambleMoves: 28, attempts: 120 },
+  normal: { size: 6, vehicleCount: 8, minimumSolutionMoves: 3, scrambleMoves: 16, attempts: 80 },
+  hard: { size: 6, vehicleCount: 10, minimumSolutionMoves: 5, scrambleMoves: 28, attempts: 120 },
 } as const;
 
 function createSeededRandom(seed: number) {
@@ -295,6 +307,8 @@ function createSolvedTrafficLayout(): TrafficEscapePuzzle {
     { id: "vehicle-4", row: 4, col: 0, length: 2, orientation: "horizontal", color: "coral" },
     { id: "vehicle-5", row: 0, col: 3, length: 3, orientation: "vertical", color: "amber" },
     { id: "vehicle-6", row: 5, col: 0, length: 3, orientation: "horizontal", color: "violet" },
+    { id: "vehicle-7", row: 3, col: 3, length: 2, orientation: "horizontal", color: "cyan" },
+    { id: "vehicle-8", row: 4, col: 4, length: 2, orientation: "horizontal", color: "lime" },
   ];
 
   return { id: "traffic-escape-solved", size, exitRow, vehicles, solutionMoves: [] };
@@ -315,7 +329,7 @@ function createTrafficEscapeCandidate(
 ) {
   const layout = createSolvedTrafficLayout();
   const requirements = DIFFICULTY_REQUIREMENTS[difficulty];
-  const reversedVehicles = layout.vehicles.map(cloneVehicle);
+  const reversedVehicles = layout.vehicles.slice(0, requirements.vehicleCount).map(cloneVehicle);
   const target = reversedVehicles.find((vehicle) => vehicle.id === "target");
   const blocker = reversedVehicles.find((vehicle) => vehicle.id === "blocker");
   const upperGate = reversedVehicles.find((vehicle) => vehicle.id === "vehicle-1");

@@ -28,8 +28,8 @@ describe("traffic-escape game logic", () => {
       const solution = solveTrafficEscapePuzzle(puzzle, createTrafficEscapeState(puzzle));
 
       expect(solution).not.toBeNull();
-      expect(puzzle.vehicles.length).toBeGreaterThanOrEqual(difficulty === "hard" ? 8 : 6);
-      expect(solution!.length).toBeGreaterThanOrEqual(difficulty === "hard" ? 4 : 3);
+      expect(puzzle.vehicles.length).toBe(difficulty === "hard" ? 10 : 8);
+      expect(solution!.length).toBeGreaterThanOrEqual(difficulty === "hard" ? 5 : 3);
     });
   });
 
