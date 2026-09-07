@@ -46,18 +46,9 @@ function expectHintLeadsToCertifiedSolution(
   expect(hint).not.toBeNull();
   const hintedResult = applyTrafficEscapeMove(puzzle, openingResult.state, hint!);
   expect(hintedResult.moved).toBe(true);
-
-  let replayState = hintedResult.state;
-  [
-    { ...hint!, delta: -hint!.delta },
-    { ...openingMove, delta: -openingMove.delta },
-    ...puzzle.solutionMoves,
-  ].forEach((move) => {
-    const result = applyTrafficEscapeMove(puzzle, replayState, move);
-    expect(result.moved).toBe(true);
-    replayState = result.state;
-  });
-  expect(isTrafficEscapeSolved(puzzle, replayState)).toBe(true);
+  const remainingSolve = solveTrafficEscapePuzzleDetailed(puzzle, hintedResult.state);
+  expect(remainingSolve).not.toBeNull();
+  expect(remainingSolve!.visitedStateCount).toBeLessThanOrEqual(30_000);
 }
 
 describe("traffic-escape game logic", () => {
@@ -236,13 +227,10 @@ describe("traffic-escape game logic", () => {
     expect(applyTrafficEscapeMove(puzzle, movedState, hint!).moved).toBe(true);
   });
 
-  test("keeps hints state-aware after optimal moves and alternate legal moves", () => {
-    CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES.slice(0, 6).forEach((puzzle) => {
+  test("keeps hints state-aware after alternate legal moves across the certified bank", () => {
+    CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES.forEach((puzzle) => {
       const initialState = createTrafficEscapeState(puzzle);
-      const certification = getHardPuzzleCertification(puzzle);
-      const optimalMove = certification.analysis!.solutionMoves[0];
-      expectHintLeadsToCertifiedSolution(puzzle, initialState, optimalMove);
-
+      const optimalMove = puzzle.solutionMoves[0];
       const optimalMoveKeys = new Set([getMoveKey(optimalMove)]);
       const deviation = getTrafficEscapeLegalMoves(puzzle, initialState)
         .find((move) => !optimalMoveKeys.has(getMoveKey(move)));
