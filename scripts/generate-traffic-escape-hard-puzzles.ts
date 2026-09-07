@@ -69,7 +69,7 @@ function getRange(values: number[]) {
   return `${Math.min(...values)}–${Math.max(...values)}`;
 }
 
-function run() {
+export function run() {
   const selected = collectCertifiedPuzzles({ firstSeed: 1, lastSeed: 20_000, count: 36 });
 
   if (selected.length !== 36) {
@@ -93,4 +93,4 @@ function run() {
   ].join("\n") + "\n");
 }
 
-run();
+if (require.main === module) run();

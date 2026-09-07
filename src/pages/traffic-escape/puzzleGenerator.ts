@@ -13,6 +13,12 @@ import {
 export interface TrafficEscapeHardCandidate {
   seed: number;
   templateId: string;
+  generationStartPuzzle: TrafficEscapePuzzle;
+  initialTargetRelocation: {
+    vehicleId: string;
+    fromCol: number;
+    toCol: number;
+  };
   puzzle: TrafficEscapePuzzle;
   generationTrace: TrafficEscapeMove[];
 }
@@ -135,7 +141,7 @@ function createReverseWalk(
   const visitedKeys = new Set([getTrafficEscapeStateKey(initialState)]);
   let state = initialState;
 
-  for (let moveIndex = trace.length - 1; moveIndex < moveCount; moveIndex += 1) {
+  while (trace.length < moveCount) {
     const previousMove = trace[trace.length - 1];
     const candidates = shuffleMoves(
       getTrafficEscapeLegalMoves(puzzle, state).filter((move) => (
@@ -174,8 +180,11 @@ export function createTrafficEscapeHardCandidate(seed: number): TrafficEscapeHar
   const target = puzzle.vehicles.find((vehicle) => vehicle.isTarget);
   if (!target) throw new Error(`Template ${puzzle.id} has no target vehicle`);
 
-  const targetReverseMove = { vehicleId: target.id, delta: -target.col };
+  // Runtime movement intentionally rejects moves after completion. Record this setup-only
+  // relocation separately, then expose a trace containing only reducer-applied transitions.
+  const initialTargetRelocation = { vehicleId: target.id, fromCol: target.col, toCol: 0 };
   target.col = 0;
+  const generationStartPuzzle = clonePuzzle(puzzle);
   let state = createTrafficEscapeState(puzzle);
   const gateResult = applyTrafficEscapeMove(puzzle, state, definition.gateMove);
   if (!gateResult.moved || !hasBlockedExit(puzzle, gateResult.state)) {
@@ -184,7 +193,7 @@ export function createTrafficEscapeHardCandidate(seed: number): TrafficEscapeHar
   state = gateResult.state;
 
   const nonTargetMoveCount = 48 + Math.floor(random() * 25);
-  const initialTrace = [targetReverseMove, definition.gateMove];
+  const initialTrace = [definition.gateMove];
   let walk = createReverseWalk(puzzle, state, initialTrace, nonTargetMoveCount, random);
   for (let retry = 0; !walk && retry < 31; retry += 1) {
     walk = createReverseWalk(puzzle, state, initialTrace, nonTargetMoveCount, random);
@@ -194,6 +203,8 @@ export function createTrafficEscapeHardCandidate(seed: number): TrafficEscapeHar
   return {
     seed,
     templateId: puzzle.id,
+    generationStartPuzzle,
+    initialTargetRelocation,
     puzzle: {
       ...puzzle,
       id: `traffic-escape-hard-seed-${seed}`,

@@ -311,11 +311,6 @@ export function solveTrafficEscapePuzzleDetailed(
   const visitedDepth = new Map([[getTrafficEscapeStateKey(initialState), 0]]);
   const bestPathsByState = new Map<string, Map<string, TrafficEscapeMove[]>>();
   const maxVisitedStates = 30_000;
-  const transitionsByState = new Map<string, Array<{
-    move: TrafficEscapeMove;
-    state: TrafficEscapeState;
-    key: string;
-  }>>();
   const optimalFirstMoveMap = new Map<string, TrafficEscapeMove>();
   const solvedPaths: TrafficEscapeMove[][] = [];
   let shortestSolvedDepth: number | null = null;
@@ -335,27 +330,12 @@ export function solveTrafficEscapePuzzleDetailed(
 
     if (shortestSolvedDepth !== null) continue;
 
-    const currentKey = getTrafficEscapeStateKey(current.state);
-    let transitions = transitionsByState.get(currentKey);
-    if (!transitions) {
-      const nextTransitions: Array<{
-        move: TrafficEscapeMove;
-        state: TrafficEscapeState;
-        key: string;
-      }> = [];
-      getTrafficEscapeLegalMoves(puzzle, current.state).forEach((move) => {
-        const result = applyTrafficEscapeMove(puzzle, current.state, move);
-        if (result.moved) {
-          nextTransitions.push({ move, state: result.state, key: getTrafficEscapeStateKey(result.state) });
-        }
-      });
-      transitions = nextTransitions;
-      transitionsByState.set(currentKey, transitions);
-    }
-
-    transitions.forEach(({ move, state, key }) => {
+    getTrafficEscapeLegalMoves(puzzle, current.state).forEach((move) => {
+      const result = applyTrafficEscapeMove(puzzle, current.state, move);
+      if (!result.moved) return;
 
       const nextDepth = current.depth + 1;
+      const key = getTrafficEscapeStateKey(result.state);
       const previousDepth = visitedDepth.get(key);
       const firstMove = current.firstMove ?? move;
       const firstMoveKey = getTrafficEscapeMoveKey(firstMove);
@@ -375,7 +355,7 @@ export function solveTrafficEscapePuzzleDetailed(
       }
 
       queue.push({
-        state,
+        state: result.state,
         moves: nextPath,
         depth: nextDepth,
         firstMove,

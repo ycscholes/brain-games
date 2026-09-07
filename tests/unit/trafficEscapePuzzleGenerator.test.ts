@@ -3,6 +3,11 @@ import {
   getTrafficEscapeHardSolvedTemplates,
 } from "../../src/pages/traffic-escape/puzzleGenerator";
 import {
+  applyTrafficEscapeMove,
+  createTrafficEscapeState,
+  getTrafficEscapeStateKey,
+} from "../../src/pages/traffic-escape/gameLogic";
+import {
   certifyTrafficEscapeHardPuzzle,
   getTrafficEscapeGeometryKey,
 } from "../../src/pages/traffic-escape/puzzleQuality";
@@ -27,12 +32,45 @@ describe("traffic-escape hard puzzle generator", () => {
       && move.delta === -trace[index - 1].delta)).toBe(false);
   });
 
-  test("a fixed seed corpus contains certifiable candidates", () => {
-    const containsCertifiedCandidate = Array.from({ length: 500 }, (_, index) => index + 1)
+  test("generation trace replays every transition from its declared initial puzzle", () => {
+    const candidate = createTrafficEscapeHardCandidate(20260907);
+
+    expect(candidate).not.toBeNull();
+    let state = createTrafficEscapeState(candidate!.generationStartPuzzle);
+    const visitedStateKeys = new Set([getTrafficEscapeStateKey(state)]);
+    candidate!.generationTrace.forEach((move) => {
+      const result = applyTrafficEscapeMove(candidate!.generationStartPuzzle, state, move);
+      expect(result.moved).toBe(true);
+      state = result.state;
+      const stateKey = getTrafficEscapeStateKey(state);
+      expect(visitedStateKeys.has(stateKey)).toBe(false);
+      visitedStateKeys.add(stateKey);
+    });
+
+    expect(state.vehicles).toEqual(candidate!.puzzle.vehicles);
+  });
+
+  test("performs 48 to 72 non-target reverse moves", () => {
+    const candidate = createTrafficEscapeHardCandidate(20260907);
+    const targetId = candidate!.puzzle.vehicles.find((vehicle) => vehicle.isTarget)!.id;
+
+    expect(candidate!.generationTrace.length).toBeGreaterThanOrEqual(48);
+    expect(candidate!.generationTrace.length).toBeLessThanOrEqual(72);
+    expect(candidate!.generationTrace.every((move) => move.vehicleId !== targetId)).toBe(true);
+    expect(candidate!.initialTargetRelocation).toEqual({
+      vehicleId: targetId,
+      fromCol: 4,
+      toCol: 0,
+    });
+  });
+
+  test("a fixed seed corpus produces multiple certified candidates", () => {
+    const certifiedSeeds = [4, 11, 20, 25]
       .map(createTrafficEscapeHardCandidate)
       .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null)
-      .some((candidate) => certifyTrafficEscapeHardPuzzle(candidate.puzzle).accepted);
+      .filter((candidate) => certifyTrafficEscapeHardPuzzle(candidate.puzzle).accepted)
+      .map((candidate) => candidate.seed);
 
-    expect(containsCertifiedCandidate).toBe(true);
+    expect(certifiedSeeds).toEqual([4, 11, 20, 25]);
   });
 });
