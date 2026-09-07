@@ -227,10 +227,12 @@ describe("traffic-escape game logic", () => {
     expect(applyTrafficEscapeMove(puzzle, movedState, hint!).moved).toBe(true);
   });
 
-  test("keeps hints state-aware after alternate legal moves across the certified bank", () => {
+  test("keeps hints state-aware after optimal and alternate legal moves across the certified bank", () => {
     CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES.forEach((puzzle) => {
       const initialState = createTrafficEscapeState(puzzle);
       const optimalMove = puzzle.solutionMoves[0];
+      expectHintLeadsToCertifiedSolution(puzzle, initialState, optimalMove);
+
       const optimalMoveKeys = new Set([getMoveKey(optimalMove)]);
       const deviation = getTrafficEscapeLegalMoves(puzzle, initialState)
         .find((move) => !optimalMoveKeys.has(getMoveKey(move)));
