@@ -107,10 +107,10 @@ describe("getTrafficVehicleAtlasSlot", () => {
     ["city-bus", 3, { column: 0, row: "three-cell", x: 0, y: 384, width: 768, height: 256, visibleBounds: { left: 18, top: 13, right: 749, bottom: 243 } }],
     ["box-truck", 3, { column: 1, row: "three-cell", x: 768, y: 384, width: 768, height: 256, visibleBounds: { left: 13, top: 23, right: 755, bottom: 234 } }],
     ["stretch-sedan", 3, { column: 2, row: "three-cell", x: 1536, y: 384, width: 768, height: 256, visibleBounds: { left: 13, top: 16, right: 755, bottom: 240 } }],
-    ["pink-sport", 2, { column: 3, row: "two-cell", x: 2304, y: 0, width: 768, height: 384, visibleBounds: { left: 35, top: 38, right: 733, bottom: 346 } }],
-    ["offroad-suv", 2, { column: 4, row: "two-cell", x: 3072, y: 0, width: 768, height: 384, visibleBounds: { left: 32, top: 31, right: 736, bottom: 353 } }],
-    ["camper-rv", 3, { column: 3, row: "three-cell", x: 2304, y: 384, width: 768, height: 256, visibleBounds: { left: 22, top: 18, right: 746, bottom: 239 } }],
-    ["tanker-truck", 3, { column: 4, row: "three-cell", x: 3072, y: 384, width: 768, height: 256, visibleBounds: { left: 21, top: 19, right: 747, bottom: 238 } }],
+    ["pink-sport", 2, { column: 3, row: "two-cell", x: 2304, y: 0, width: 768, height: 384, visibleBounds: { left: 20, top: 68, right: 748, bottom: 316 } }],
+    ["offroad-suv", 2, { column: 4, row: "two-cell", x: 3072, y: 0, width: 768, height: 384, visibleBounds: { left: 31, top: 46, right: 737, bottom: 338 } }],
+    ["camper-rv", 3, { column: 3, row: "three-cell", x: 2304, y: 384, width: 768, height: 256, visibleBounds: { left: 48, top: 16, right: 720, bottom: 240 } }],
+    ["tanker-truck", 3, { column: 4, row: "three-cell", x: 3072, y: 384, width: 768, height: 256, visibleBounds: { left: 64, top: 16, right: 704, bottom: 240 } }],
   ] as const)("maps %s", (appearance, length, expected) => {
     expect(getTrafficVehicleAtlasSlot(appearance, length)).toEqual(expected);
   });
@@ -149,7 +149,7 @@ describe("getTrafficVehicleAtlasSlot", () => {
   test("uses explicit atlas coordinates for the regenerated middle truck", () => {
     expect(getTrafficVehicleAtlasCropStyle("box-truck", 3, "https://cdn.example/vehicle-atlas-v2.png")).toEqual({
       backgroundImage: "url(https://cdn.example/vehicle-atlas-v2.png)",
-      backgroundPosition: "calc(25% + 0.0000%) calc(100% - 4.8698%)",
+      backgroundPosition: "calc(25% + 0.0000%) calc(100% + 0.1302%)",
       backgroundRepeat: "no-repeat",
       backgroundSize: "500% auto",
     });
@@ -167,22 +167,22 @@ describe("getTrafficVehicleAtlasSlot", () => {
       .toBe("calc(0% - 0.0326%) calc(0% + 0.0000%)");
   });
 
-  test("applies the optical downward correction to three-cell vehicles", () => {
+  test("centers three-cell vehicles using their measured visible bounds", () => {
     expect(getTrafficVehicleAtlasCropStyle("stretch-sedan", 3, "https://cdn.example/vehicle-atlas-v5.png").backgroundPosition)
-      .toBe("calc(50% + 0.0000%) calc(100% - 5.0000%)");
+      .toBe("calc(50% + 0.0000%) calc(100% + 0.0000%)");
   });
 
   test("uses the same crop coordinates for the grid-hiding vehicle mask", () => {
     expect(getTrafficVehicleAtlasMaskStyle("box-truck", 3, "https://cdn.example/vehicle-atlas-v4.png")).toEqual({
       backgroundImage: "url(https://cdn.example/vehicle-atlas-v4.png)",
-      backgroundPosition: "calc(25% + 0.0000%) calc(100% - 4.8698%)",
+      backgroundPosition: "calc(25% + 0.0000%) calc(100% + 0.1302%)",
       backgroundRepeat: "no-repeat",
       backgroundSize: "500% auto",
       filter: "brightness(0)",
     });
   });
 
-  test("keeps the v6 PNG geometry synchronized with slot metadata", () => {
+  test("keeps the PNG geometry synchronized with slot metadata", () => {
     const atlas = readTrafficVehicleAtlasPng();
     expect(atlas).toMatchObject({ width: 3840, height: 640, colorType: 6, bitDepth: 8 });
     for (let x = 0; x < atlas.width; x += 1) {
@@ -199,6 +199,56 @@ describe("getTrafficVehicleAtlasSlot", () => {
     ] as const).forEach(([appearance, length]) => {
       const slot = getTrafficVehicleAtlasSlot(appearance, length);
       expect(atlas.alphaBounds(slot.x, slot.y, slot.width, slot.height)).toEqual(slot.visibleBounds);
+    });
+  });
+
+  test("keeps new vehicle wheel interiors and dark body panels opaque", () => {
+    const atlas = readTrafficVehicleAtlasPng();
+    // Interior disks include spokes, backing and rubber; edge antialiasing is excluded.
+    ([
+      ["pink-sport", 2, 164, 247, 46],
+      ["offroad-suv", 2, 186, 274, 38],
+      ["camper-rv", 3, 178, 202, 24],
+      ["tanker-truck", 3, 166, 197, 28],
+    ] as const).forEach(([appearance, length, cx, cy, radius]) => {
+      const slot = getTrafficVehicleAtlasSlot(appearance, length);
+      for (let dy = -radius; dy <= radius; dy += 1) {
+        for (let dx = -radius; dx <= radius; dx += 1) {
+          if (dx * dx + dy * dy <= radius * radius) {
+            expect(atlas.alphaAt(slot.x + cx + dx, slot.y + cy + dy)).toBe(255);
+          }
+        }
+      }
+      for (let y = 100; y < 170; y += 1) {
+        for (let x = 330; x < 440; x += 1) {
+          expect(atlas.alphaAt(slot.x + x, slot.y + y)).toBe(255);
+        }
+      }
+    });
+  });
+
+  test("never samples opaque pixels from a neighboring atlas row or column", () => {
+    const atlas = readTrafficVehicleAtlasPng();
+    ([
+      ["sport", 2], ["compact-van", 2], ["city-taxi", 2], ["pink-sport", 2], ["offroad-suv", 2],
+      ["city-bus", 3], ["box-truck", 3], ["stretch-sedan", 3], ["camper-rv", 3], ["tanker-truck", 3],
+    ] as const).forEach(([appearance, length]) => {
+      const slot = getTrafficVehicleAtlasSlot(appearance, length);
+      const positions = [...getTrafficVehicleAtlasCropStyle(appearance, length, "atlas.png")
+        .backgroundPosition.matchAll(/calc\(([-\d.]+)% ([+-]) ([\d.]+)%\)/g)]
+        .map((match) => Number(match[1]) + (match[2] === "+" ? 1 : -1) * Number(match[3]));
+      expect(positions).toHaveLength(2);
+      const sourceX = (atlas.width - slot.width) * positions[0] / 100;
+      const sourceY = (atlas.height - slot.height) * positions[1] / 100;
+      let foreignOpaquePixels = 0;
+      for (let y = Math.floor(sourceY); y < Math.ceil(sourceY + slot.height); y += 1) {
+        for (let x = Math.floor(sourceX); x < Math.ceil(sourceX + slot.width); x += 1) {
+          if (x < 0 || y < 0 || x >= atlas.width || y >= atlas.height) continue;
+          if (x >= slot.x && x < slot.x + slot.width && y >= slot.y && y < slot.y + slot.height) continue;
+          if (atlas.alphaAt(x, y) > 0) foreignOpaquePixels += 1;
+        }
+      }
+      expect({ appearance, foreignOpaquePixels }).toEqual({ appearance, foreignOpaquePixels: 0 });
     });
   });
 });
