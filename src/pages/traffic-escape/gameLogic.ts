@@ -273,26 +273,107 @@ function getTrafficEscapeLegalMoves(puzzle: TrafficEscapePuzzle, state: TrafficE
   return moves;
 }
 
-export function solveTrafficEscapePuzzle(puzzle: TrafficEscapePuzzle, initialState: TrafficEscapeState) {
-  const queue: Array<{ state: TrafficEscapeState; moves: TrafficEscapeMove[] }> = [{ state: initialState, moves: [] }];
-  const visited = new Set([getTrafficEscapeStateKey(initialState)]);
-  const maxVisitedStates = 30_000;
+export interface TrafficEscapeSolveResult {
+  moves: TrafficEscapeMove[];
+  visitedStateCount: number;
+  legalFirstMoves: TrafficEscapeMove[];
+  optimalFirstMoves: TrafficEscapeMove[];
+}
 
-  for (let cursor = 0; cursor < queue.length && visited.size <= maxVisitedStates; cursor += 1) {
+function getTrafficEscapeMoveKey(move: TrafficEscapeMove) {
+  return `${move.vehicleId}:${move.delta}`;
+}
+
+function compareTrafficEscapeMoves(left: TrafficEscapeMove, right: TrafficEscapeMove) {
+  const vehicleComparison = left.vehicleId.localeCompare(right.vehicleId);
+  return vehicleComparison || left.delta - right.delta;
+}
+
+function compareTrafficEscapePaths(left: TrafficEscapeMove[], right: TrafficEscapeMove[]) {
+  for (let index = 0; index < Math.min(left.length, right.length); index += 1) {
+    const comparison = compareTrafficEscapeMoves(left[index], right[index]);
+    if (comparison) return comparison;
+  }
+  return left.length - right.length;
+}
+
+export function solveTrafficEscapePuzzleDetailed(
+  puzzle: TrafficEscapePuzzle,
+  initialState: TrafficEscapeState,
+): TrafficEscapeSolveResult | null {
+  const legalFirstMoves = getTrafficEscapeLegalMoves(puzzle, initialState);
+  const queue: Array<{
+    state: TrafficEscapeState;
+    moves: TrafficEscapeMove[];
+    depth: number;
+    firstMove: TrafficEscapeMove | null;
+  }> = [{ state: initialState, moves: [], depth: 0, firstMove: null }];
+  const visitedDepth = new Map([[getTrafficEscapeStateKey(initialState), 0]]);
+  const firstMovesByState = new Map<string, Set<string>>();
+  const maxVisitedStates = 30_000;
+  const optimalFirstMoveMap = new Map<string, TrafficEscapeMove>();
+  const solvedPaths: TrafficEscapeMove[][] = [];
+  let shortestSolvedDepth: number | null = null;
+
+  for (let cursor = 0; cursor < queue.length && visitedDepth.size <= maxVisitedStates; cursor += 1) {
     const current = queue[cursor];
-    if (isTrafficEscapeSolved(puzzle, current.state)) return current.moves;
+    if (shortestSolvedDepth !== null && current.depth > shortestSolvedDepth) break;
+
+    if (isTrafficEscapeSolved(puzzle, current.state)) {
+      if (shortestSolvedDepth === null) shortestSolvedDepth = current.depth;
+      if (current.depth === shortestSolvedDepth) {
+        if (current.firstMove) optimalFirstMoveMap.set(getTrafficEscapeMoveKey(current.firstMove), current.firstMove);
+        solvedPaths.push(current.moves);
+      }
+      continue;
+    }
+
+    if (shortestSolvedDepth !== null) continue;
 
     getTrafficEscapeLegalMoves(puzzle, current.state).forEach((move) => {
       const result = applyTrafficEscapeMove(puzzle, current.state, move);
+      if (!result.moved) return;
+
+      const nextDepth = current.depth + 1;
       const key = getTrafficEscapeStateKey(result.state);
-      if (result.moved && !visited.has(key)) {
-        visited.add(key);
-        queue.push({ state: result.state, moves: [...current.moves, move] });
+      const previousDepth = visitedDepth.get(key);
+      const firstMove = current.firstMove ?? move;
+      const firstMoveKey = getTrafficEscapeMoveKey(firstMove);
+      const stateFirstMoves = firstMovesByState.get(key) ?? new Set<string>();
+
+      if (previousDepth !== undefined && previousDepth < nextDepth) return;
+      if (previousDepth === nextDepth && stateFirstMoves.has(firstMoveKey)) return;
+
+      if (previousDepth === undefined || nextDepth < previousDepth) {
+        visitedDepth.set(key, nextDepth);
+        firstMovesByState.set(key, new Set([firstMoveKey]));
+      } else {
+        stateFirstMoves.add(firstMoveKey);
+        firstMovesByState.set(key, stateFirstMoves);
       }
+
+      queue.push({
+        state: result.state,
+        moves: [...current.moves, move],
+        depth: nextDepth,
+        firstMove,
+      });
     });
   }
 
-  return null;
+  if (solvedPaths.length === 0) return null;
+
+  solvedPaths.sort(compareTrafficEscapePaths);
+  return {
+    moves: solvedPaths[0],
+    visitedStateCount: visitedDepth.size,
+    legalFirstMoves: [...new Map(legalFirstMoves.map((move) => [getTrafficEscapeMoveKey(move), move])).values()],
+    optimalFirstMoves: [...optimalFirstMoveMap.values()].sort(compareTrafficEscapeMoves),
+  };
+}
+
+export function solveTrafficEscapePuzzle(puzzle: TrafficEscapePuzzle, initialState: TrafficEscapeState) {
+  return solveTrafficEscapePuzzleDetailed(puzzle, initialState)?.moves ?? null;
 }
 
 function createSolvedTrafficLayout(): TrafficEscapePuzzle {

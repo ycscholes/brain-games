@@ -8,6 +8,7 @@ import {
   isTrafficEscapeSolved,
   scoreTrafficEscapeGame,
   solveTrafficEscapePuzzle,
+  solveTrafficEscapePuzzleDetailed,
   TRAFFIC_VEHICLE_APPEARANCES,
 } from "../../src/pages/traffic-escape/gameLogic";
 
@@ -31,6 +32,17 @@ describe("traffic-escape game logic", () => {
       expect(puzzle.vehicles.length).toBe(difficulty === "hard" ? 10 : 8);
       expect(solution!.length).toBeGreaterThanOrEqual(difficulty === "hard" ? 5 : 3);
     });
+  });
+
+  test("reports shortest-path evidence without changing the public solver result", () => {
+    const puzzle = createTrafficEscapePuzzle("normal", 17);
+    const state = createTrafficEscapeState(puzzle);
+    const detailed = solveTrafficEscapePuzzleDetailed(puzzle, state);
+
+    expect(detailed?.moves).toEqual(solveTrafficEscapePuzzle(puzzle, state));
+    expect(detailed?.visitedStateCount).toBeGreaterThan(0);
+    expect(detailed?.legalFirstMoves.length).toBeGreaterThan(0);
+    expect(detailed?.optimalFirstMoves.length).toBeGreaterThan(0);
   });
 
   test("assigns every two-cell and three-cell appearance before repeating", () => {
