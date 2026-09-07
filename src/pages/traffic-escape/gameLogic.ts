@@ -309,7 +309,7 @@ export function solveTrafficEscapePuzzleDetailed(
     firstMove: TrafficEscapeMove | null;
   }> = [{ state: initialState, moves: [], depth: 0, firstMove: null }];
   const visitedDepth = new Map([[getTrafficEscapeStateKey(initialState), 0]]);
-  const firstMovesByState = new Map<string, Set<string>>();
+  const bestPathsByState = new Map<string, Map<string, TrafficEscapeMove[]>>();
   const maxVisitedStates = 30_000;
   const optimalFirstMoveMap = new Map<string, TrafficEscapeMove>();
   const solvedPaths: TrafficEscapeMove[][] = [];
@@ -339,22 +339,24 @@ export function solveTrafficEscapePuzzleDetailed(
       const previousDepth = visitedDepth.get(key);
       const firstMove = current.firstMove ?? move;
       const firstMoveKey = getTrafficEscapeMoveKey(firstMove);
-      const stateFirstMoves = firstMovesByState.get(key) ?? new Set<string>();
+      const nextPath = [...current.moves, move];
+      const stateBestPaths = bestPathsByState.get(key) ?? new Map<string, TrafficEscapeMove[]>();
+      const previousPath = stateBestPaths.get(firstMoveKey);
 
       if (previousDepth !== undefined && previousDepth < nextDepth) return;
-      if (previousDepth === nextDepth && stateFirstMoves.has(firstMoveKey)) return;
+      if (previousDepth === nextDepth && previousPath && compareTrafficEscapePaths(previousPath, nextPath) <= 0) return;
 
       if (previousDepth === undefined || nextDepth < previousDepth) {
         visitedDepth.set(key, nextDepth);
-        firstMovesByState.set(key, new Set([firstMoveKey]));
+        bestPathsByState.set(key, new Map([[firstMoveKey, nextPath]]));
       } else {
-        stateFirstMoves.add(firstMoveKey);
-        firstMovesByState.set(key, stateFirstMoves);
+        stateBestPaths.set(firstMoveKey, nextPath);
+        bestPathsByState.set(key, stateBestPaths);
       }
 
       queue.push({
         state: result.state,
-        moves: [...current.moves, move],
+        moves: nextPath,
         depth: nextDepth,
         firstMove,
       });

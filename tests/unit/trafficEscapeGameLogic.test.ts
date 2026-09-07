@@ -38,11 +38,30 @@ describe("traffic-escape game logic", () => {
     const puzzle = createTrafficEscapePuzzle("normal", 17);
     const state = createTrafficEscapeState(puzzle);
     const detailed = solveTrafficEscapePuzzleDetailed(puzzle, state);
+    const repeated = solveTrafficEscapePuzzleDetailed(puzzle, state);
 
     expect(detailed?.moves).toEqual(solveTrafficEscapePuzzle(puzzle, state));
+    expect(repeated?.moves).toEqual(detailed?.moves);
+    expect(detailed?.moves).toEqual([
+      { vehicleId: "blocker", delta: -1 },
+      { vehicleId: "vehicle-3", delta: -2 },
+      { vehicleId: "vehicle-6", delta: -2 },
+      { vehicleId: "vehicle-5", delta: 3 },
+      { vehicleId: "target", delta: 4 },
+    ]);
     expect(detailed?.visitedStateCount).toBeGreaterThan(0);
     expect(detailed?.legalFirstMoves.length).toBeGreaterThan(0);
     expect(detailed?.optimalFirstMoves.length).toBeGreaterThan(0);
+    expect(detailed?.optimalFirstMoves).toEqual([
+      { vehicleId: "blocker", delta: -1 },
+      { vehicleId: "vehicle-3", delta: -2 },
+      { vehicleId: "vehicle-6", delta: -2 },
+    ]);
+    detailed!.optimalFirstMoves.forEach((firstMove) => {
+      const result = applyTrafficEscapeMove(puzzle, state, firstMove);
+      expect(result.moved).toBe(true);
+      expect(solveTrafficEscapePuzzle(puzzle, result.state)?.length).toBe(detailed!.moves.length - 1);
+    });
   });
 
   test("assigns every two-cell and three-cell appearance before repeating", () => {
