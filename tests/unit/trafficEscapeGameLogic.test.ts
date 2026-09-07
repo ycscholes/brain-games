@@ -38,19 +38,29 @@ describe("traffic-escape game logic", () => {
       { id: "target", row: 0, col: 0, length: 2 as const, orientation: "horizontal" as const, color: "target" as const, isTarget: true },
       { id: "short-1", row: 1, col: 0, length: 2 as const, orientation: "horizontal" as const, color: "amber" as const },
       { id: "short-2", row: 2, col: 0, length: 2 as const, orientation: "horizontal" as const, color: "cyan" as const },
-      { id: "long-1", row: 3, col: 0, length: 3 as const, orientation: "horizontal" as const, color: "violet" as const },
-      { id: "long-2", row: 4, col: 0, length: 3 as const, orientation: "horizontal" as const, color: "lime" as const },
-      { id: "long-3", row: 5, col: 0, length: 3 as const, orientation: "horizontal" as const, color: "coral" as const },
-      { id: "short-repeat", row: 6, col: 0, length: 2 as const, orientation: "horizontal" as const, color: "amber" as const },
+      { id: "short-3", row: 3, col: 0, length: 2 as const, orientation: "horizontal" as const, color: "violet" as const },
+      { id: "short-4", row: 4, col: 0, length: 2 as const, orientation: "horizontal" as const, color: "lime" as const },
+      { id: "long-1", row: 5, col: 0, length: 3 as const, orientation: "horizontal" as const, color: "violet" as const },
+      { id: "long-2", row: 6, col: 0, length: 3 as const, orientation: "horizontal" as const, color: "lime" as const },
+      { id: "long-3", row: 7, col: 0, length: 3 as const, orientation: "horizontal" as const, color: "coral" as const },
+      { id: "long-4", row: 8, col: 0, length: 3 as const, orientation: "horizontal" as const, color: "amber" as const },
+      { id: "long-5", row: 9, col: 0, length: 3 as const, orientation: "horizontal" as const, color: "cyan" as const },
     ];
 
     const assigned = assignTrafficVehicleAppearances(vehicles, () => 0.4);
     const twoCellAppearances = assigned.filter((vehicle) => vehicle.length === 2).map((vehicle) => vehicle.appearance);
     const threeCellAppearances = assigned.filter((vehicle) => vehicle.length === 3).map((vehicle) => vehicle.appearance);
 
-    expect(new Set(twoCellAppearances.slice(0, 3))).toEqual(new Set(TRAFFIC_VEHICLE_APPEARANCES[2]));
+    expect(TRAFFIC_VEHICLE_APPEARANCES[2]).toEqual([
+      "sport", "compact-van", "city-taxi", "pink-sport", "offroad-suv",
+    ]);
+    expect(TRAFFIC_VEHICLE_APPEARANCES[3]).toEqual([
+      "city-bus", "box-truck", "stretch-sedan", "camper-rv", "tanker-truck",
+    ]);
+    expect(assigned.find((vehicle) => vehicle.isTarget)?.appearance).toBe("sport");
+    expect(assigned.filter((vehicle) => vehicle.appearance === "pink-sport")).toHaveLength(1);
+    expect(new Set(twoCellAppearances)).toEqual(new Set(TRAFFIC_VEHICLE_APPEARANCES[2]));
     expect(new Set(threeCellAppearances)).toEqual(new Set(TRAFFIC_VEHICLE_APPEARANCES[3]));
-    expect(TRAFFIC_VEHICLE_APPEARANCES[2]).toContain(twoCellAppearances[3]);
   });
 
   test("generates every vehicle form in each difficulty", () => {
@@ -64,7 +74,8 @@ describe("traffic-escape game logic", () => {
         .map((vehicle) => vehicle.appearance);
 
       expect(new Set(twoCellAppearances)).toEqual(new Set(TRAFFIC_VEHICLE_APPEARANCES[2]));
-      expect(new Set(threeCellAppearances)).toEqual(new Set(TRAFFIC_VEHICLE_APPEARANCES[3]));
+      expect(new Set(threeCellAppearances).size).toBe(threeCellAppearances.length);
+      expect(threeCellAppearances.every((appearance) => TRAFFIC_VEHICLE_APPEARANCES[3].includes(appearance!))).toBe(true);
     });
   });
 

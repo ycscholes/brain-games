@@ -4,8 +4,8 @@ export type TrafficEscapeDifficulty = TrainingDifficulty;
 export type TrafficVehicleOrientation = "horizontal" | "vertical";
 
 export const TRAFFIC_VEHICLE_APPEARANCES = {
-  2: ["sport", "compact-van", "city-taxi"],
-  3: ["city-bus", "box-truck", "stretch-sedan"],
+  2: ["sport", "compact-van", "city-taxi", "pink-sport", "offroad-suv"],
+  3: ["city-bus", "box-truck", "stretch-sedan", "camper-rv", "tanker-truck"],
 } as const;
 
 export const TRAFFIC_VEHICLE_APPEARANCE_LIST = [
