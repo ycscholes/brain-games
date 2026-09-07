@@ -43,7 +43,7 @@ function readBestScore(difficulty: TrainingDifficulty) {
 }
 
 function getDifficultyCopy(difficulty: TrainingDifficulty) {
-  return difficulty === "hard" ? "6×6 · 八车密集车阵" : "6×6 · 六种车型破局";
+  return difficulty === "hard" ? "6×6 · 八车密集车阵" : "6×6 · 十种车型随机登场";
 }
 
 export default function TrafficEscape() {

@@ -7,18 +7,27 @@ import {
 
 describe("getTrafficVehicleAtlasSlot", () => {
   test.each([
-    ["sport", 2, { column: 0, row: "two-cell", x: 0, y: 0, width: 1024, height: 512, visibleBounds: { left: 49, top: 20, right: 974, bottom: 492 } }],
-    ["compact-van", 2, { column: 1, row: "two-cell", x: 1024, y: 0, width: 1024, height: 512, visibleBounds: { left: 63, top: 20, right: 961, bottom: 492 } }],
-    ["city-taxi", 2, { column: 2, row: "two-cell", x: 2048, y: 0, width: 1024, height: 512, visibleBounds: { left: 20, top: 51, right: 1004, bottom: 461 } }],
-    ["city-bus", 3, { column: 0, row: "three-cell", x: 0, y: 512, width: 1024, height: 341, visibleBounds: { left: 27, top: 20, right: 996, bottom: 321 } }],
-    ["box-truck", 3, { column: 1, row: "three-cell", x: 1024, y: 512, width: 1024, height: 341, visibleBounds: { left: 20, top: 33, right: 1004, bottom: 308 } }],
-    ["stretch-sedan", 3, { column: 2, row: "three-cell", x: 2048, y: 512, width: 1024, height: 341, visibleBounds: { left: 20, top: 24, right: 1004, bottom: 316 } }],
+    ["sport", 2, { column: 0, row: "two-cell", x: 0, y: 0, width: 768, height: 384, visibleBounds: { left: 36.75, top: 15, right: 730.5, bottom: 369 } }],
+    ["compact-van", 2, { column: 1, row: "two-cell", x: 768, y: 0, width: 768, height: 384, visibleBounds: { left: 47.25, top: 15, right: 720.75, bottom: 369 } }],
+    ["city-taxi", 2, { column: 2, row: "two-cell", x: 1536, y: 0, width: 768, height: 384, visibleBounds: { left: 15, top: 38.25, right: 753, bottom: 345.75 } }],
+    ["city-bus", 3, { column: 0, row: "three-cell", x: 0, y: 384, width: 768, height: 256, visibleBounds: { left: 20.25, top: 15, right: 747, bottom: 240.75 } }],
+    ["box-truck", 3, { column: 1, row: "three-cell", x: 768, y: 384, width: 768, height: 256, visibleBounds: { left: 15, top: 24.75, right: 753, bottom: 231 } }],
+    ["stretch-sedan", 3, { column: 2, row: "three-cell", x: 1536, y: 384, width: 768, height: 256, visibleBounds: { left: 15, top: 18, right: 753, bottom: 237 } }],
   ] as const)("maps %s", (appearance, length, expected) => {
     expect(getTrafficVehicleAtlasSlot(appearance, length)).toEqual(expected);
   });
 
   test("rejects an appearance with the wrong length", () => {
     expect(() => getTrafficVehicleAtlasSlot("city-bus", 2)).toThrow("does not belong to a 2-cell vehicle");
+  });
+
+  test("maps the fourth and fifth atlas columns", () => {
+    expect(getTrafficVehicleAtlasSlot("pink-sport", 2)).toMatchObject({ column: 3, row: "two-cell", x: 2304, y: 0, width: 768, height: 384 });
+    expect(getTrafficVehicleAtlasSlot("tanker-truck", 3)).toMatchObject({ column: 4, row: "three-cell", x: 3072, y: 384, width: 768, height: 256 });
+  });
+
+  test("rejects an appearance with the wrong length in the expanded atlas", () => {
+    expect(() => getTrafficVehicleAtlasSlot("pink-sport", 3)).toThrow("does not belong to a 3-cell vehicle");
   });
 
   test("creates an unscaled horizontal viewport class for a two-cell vehicle", () => {
@@ -42,28 +51,35 @@ describe("getTrafficVehicleAtlasSlot", () => {
   test("uses explicit atlas coordinates for the regenerated middle truck", () => {
     expect(getTrafficVehicleAtlasCropStyle("box-truck", 3, "https://cdn.example/vehicle-atlas-v2.png")).toEqual({
       backgroundImage: "url(https://cdn.example/vehicle-atlas-v2.png)",
-      backgroundPosition: "calc(50% + 0.0000%) calc(100% - 5.0000%)",
+      backgroundPosition: "calc(25% + 0.0000%) calc(100% - 5.0326%)",
       backgroundRepeat: "no-repeat",
-      backgroundSize: "300% auto",
+      backgroundSize: "500% auto",
+    });
+  });
+
+  test("uses five-column crop positioning and shared mask styles", () => {
+    expect(getTrafficVehicleAtlasCropStyle("offroad-suv", 2, "https://cdn.example/v6.png").backgroundSize).toBe("500% auto");
+    expect(getTrafficVehicleAtlasMaskStyle("camper-rv", 3, "https://cdn.example/v6.png")).toEqual({
+      ...getTrafficVehicleAtlasCropStyle("camper-rv", 3, "https://cdn.example/v6.png"), filter: "brightness(0)",
     });
   });
 
   test("centers regenerated content using its measured visible bounds", () => {
     expect(getTrafficVehicleAtlasCropStyle("sport", 2, "https://cdn.example/vehicle-atlas-v5.png").backgroundPosition)
-      .toBe("calc(0% - 0.0244%) calc(0% + 0.0000%)");
+      .toBe("calc(0% - 0.0122%) calc(0% + 0.0000%)");
   });
 
   test("applies the optical downward correction to three-cell vehicles", () => {
     expect(getTrafficVehicleAtlasCropStyle("stretch-sedan", 3, "https://cdn.example/vehicle-atlas-v5.png").backgroundPosition)
-      .toBe("calc(100% + 0.0000%) calc(100% - 5.0978%)");
+      .toBe("calc(50% + 0.0000%) calc(100% - 5.1303%)");
   });
 
   test("uses the same crop coordinates for the grid-hiding vehicle mask", () => {
     expect(getTrafficVehicleAtlasMaskStyle("box-truck", 3, "https://cdn.example/vehicle-atlas-v4.png")).toEqual({
       backgroundImage: "url(https://cdn.example/vehicle-atlas-v4.png)",
-      backgroundPosition: "calc(50% + 0.0000%) calc(100% - 5.0000%)",
+      backgroundPosition: "calc(25% + 0.0000%) calc(100% - 5.0326%)",
       backgroundRepeat: "no-repeat",
-      backgroundSize: "300% auto",
+      backgroundSize: "500% auto",
       filter: "brightness(0)",
     });
   });

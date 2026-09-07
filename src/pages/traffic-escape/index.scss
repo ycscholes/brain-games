@@ -357,7 +357,7 @@
   overflow: hidden;
   pointer-events: none;
   background-repeat: no-repeat;
-  background-size: 300% auto;
+  background-size: 500% auto;
 }
 .traffic-vehicle-atlas-mask {
   position: absolute;
@@ -367,7 +367,7 @@
   overflow: hidden;
   pointer-events: none;
   background-repeat: no-repeat;
-  background-size: 300% auto;
+  background-size: 500% auto;
 }
 .traffic-vehicle-atlas-horizontal { width: 100%; height: 100%; }
 .traffic-vehicle-atlas-vertical { top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(90deg); }
