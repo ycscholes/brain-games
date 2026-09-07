@@ -7,6 +7,8 @@ import {
   type TrafficEscapeState,
 } from "./gameLogic";
 
+export type CertifiedTrafficEscapePuzzle = TrafficEscapePuzzle;
+
 export interface TrafficEscapePuzzleAnalysis {
   solutionMoves: TrafficEscapeMove[];
   shortestMoveCount: number;

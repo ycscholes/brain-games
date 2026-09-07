@@ -1,0 +1,4437 @@
+// Generated file, do not edit. Run npm run traffic-escape:puzzles.
+import type { CertifiedTrafficEscapePuzzle } from "./puzzleQuality";
+
+export const CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES = [
+  {
+    "id": "traffic-escape-hard-seed-541",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 2,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 1,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 3,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "gate",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v4",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-352",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 2,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 4,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -4
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 1
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-420",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 1,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 4,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -4
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-376",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 0,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -1
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-4",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 1,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 4,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -4
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-136",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 2,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 0,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -1
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-165",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 0,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 1,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 4,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -4
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-529",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 0,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 4,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": -2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -4
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 3
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-20",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 0,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 3,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-68",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 2,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 4,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -4
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 1
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-524",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 1,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 4,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -4
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-336",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 0,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 0,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -1
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-513",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 0,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 0,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 2,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v8",
+        "delta": -2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-368",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 2,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 1,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 4,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -4
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-25",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 0,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 3,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": -2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 3
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-188",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 0,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 0,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": -1
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-216",
+    "size": 6,
+    "exitRow": 2,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 2,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 2,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 3,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 5,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "gate",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v4",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": 1
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-94",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 2,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-134",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 2,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 3,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 3,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 1
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-71",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 2,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 3,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v8",
+        "delta": -2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -3
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-442",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 3,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 2,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-454",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 2,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 2,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 4
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-303",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 3,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 3,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 1,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -3
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-95",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 3,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": -1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 4
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -3
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-270",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 2,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 0,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 1,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v6",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 4
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-483",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 3,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 3,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 2,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v8",
+        "delta": -2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-467",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 2,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 3,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 1,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v8",
+        "delta": -2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-490",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 2,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 2,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 1,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-127",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 3,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 1,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "gate",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v4",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v5",
+        "delta": 2
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -1
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-242",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 3,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 3,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 2,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 1,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v5",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 1
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-47",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 2,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 2,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 1,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "gate",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v4",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-358",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 2,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-282",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 1,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 3,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 3,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 1,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 1,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v8",
+        "delta": 2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 1
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-11",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 2,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 3,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": -2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -3
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-139",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 3,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 2,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 0,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v4",
+        "delta": 1
+      },
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": -2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  },
+  {
+    "id": "traffic-escape-hard-seed-263",
+    "size": 6,
+    "exitRow": 3,
+    "vehicles": [
+      {
+        "id": "target",
+        "row": 3,
+        "col": 0,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "target",
+        "isTarget": true
+      },
+      {
+        "id": "v1",
+        "row": 3,
+        "col": 2,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "cyan"
+      },
+      {
+        "id": "v2",
+        "row": 2,
+        "col": 5,
+        "length": 3,
+        "orientation": "vertical",
+        "color": "violet"
+      },
+      {
+        "id": "gate",
+        "row": 1,
+        "col": 3,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "lime"
+      },
+      {
+        "id": "v4",
+        "row": 1,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      },
+      {
+        "id": "v5",
+        "row": 1,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "amber"
+      },
+      {
+        "id": "v6",
+        "row": 0,
+        "col": 2,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "cyan"
+      },
+      {
+        "id": "v7",
+        "row": 0,
+        "col": 4,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "violet"
+      },
+      {
+        "id": "v8",
+        "row": 5,
+        "col": 3,
+        "length": 2,
+        "orientation": "horizontal",
+        "color": "lime"
+      },
+      {
+        "id": "v9",
+        "row": 4,
+        "col": 0,
+        "length": 2,
+        "orientation": "vertical",
+        "color": "coral"
+      }
+    ],
+    "solutionMoves": [
+      {
+        "vehicleId": "v6",
+        "delta": -2
+      },
+      {
+        "vehicleId": "v1",
+        "delta": -3
+      },
+      {
+        "vehicleId": "v7",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v8",
+        "delta": -2
+      },
+      {
+        "vehicleId": "gate",
+        "delta": 3
+      },
+      {
+        "vehicleId": "v5",
+        "delta": -1
+      },
+      {
+        "vehicleId": "v2",
+        "delta": -2
+      },
+      {
+        "vehicleId": "target",
+        "delta": 4
+      }
+    ]
+  }
+] satisfies readonly CertifiedTrafficEscapePuzzle[];

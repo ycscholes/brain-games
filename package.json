@@ -23,6 +23,7 @@
     "assets:upload": "bash scripts/sync-cloudbase-images.sh --upload",
     "audio:check": "bash scripts/sync-cloudbase-audio.sh --check",
     "audio:upload": "bash scripts/sync-cloudbase-audio.sh --upload",
+    "traffic-escape:puzzles": "bash scripts/generate-traffic-escape-hard-puzzles.sh",
     "deploy:cloudfunctions": "bash scripts/deploy-cloudfunctions.sh",
     "dev:weapp": "npm run build:weapp -- --watch",
     "dev:h5": "npm run build:h5 -- --watch",

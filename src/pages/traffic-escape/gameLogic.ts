@@ -245,7 +245,7 @@ const DIFFICULTY_REQUIREMENTS = {
   hard: { size: 6, vehicleCount: 10, minimumSolutionMoves: 5, scrambleMoves: 28, attempts: 120 },
 } as const;
 
-function createSeededRandom(seed: number) {
+export function createSeededRandom(seed: number) {
   let value = seed >>> 0;
   return () => {
     value = (value * 1664525 + 1013904223) >>> 0;
@@ -253,14 +253,14 @@ function createSeededRandom(seed: number) {
   };
 }
 
-function getTrafficEscapeStateKey(state: TrafficEscapeState) {
+export function getTrafficEscapeStateKey(state: TrafficEscapeState) {
   return [...state.vehicles]
     .sort((left, right) => left.id.localeCompare(right.id))
     .map((vehicle) => `${vehicle.id}:${vehicle.row}:${vehicle.col}`)
     .join("|");
 }
 
-function getTrafficEscapeLegalMoves(puzzle: TrafficEscapePuzzle, state: TrafficEscapeState) {
+export function getTrafficEscapeLegalMoves(puzzle: TrafficEscapePuzzle, state: TrafficEscapeState) {
   const moves: TrafficEscapeMove[] = [];
   state.vehicles.forEach((vehicle) => {
     for (const direction of [-1, 1]) {
@@ -311,6 +311,11 @@ export function solveTrafficEscapePuzzleDetailed(
   const visitedDepth = new Map([[getTrafficEscapeStateKey(initialState), 0]]);
   const bestPathsByState = new Map<string, Map<string, TrafficEscapeMove[]>>();
   const maxVisitedStates = 30_000;
+  const transitionsByState = new Map<string, Array<{
+    move: TrafficEscapeMove;
+    state: TrafficEscapeState;
+    key: string;
+  }>>();
   const optimalFirstMoveMap = new Map<string, TrafficEscapeMove>();
   const solvedPaths: TrafficEscapeMove[][] = [];
   let shortestSolvedDepth: number | null = null;
@@ -330,12 +335,27 @@ export function solveTrafficEscapePuzzleDetailed(
 
     if (shortestSolvedDepth !== null) continue;
 
-    getTrafficEscapeLegalMoves(puzzle, current.state).forEach((move) => {
-      const result = applyTrafficEscapeMove(puzzle, current.state, move);
-      if (!result.moved) return;
+    const currentKey = getTrafficEscapeStateKey(current.state);
+    let transitions = transitionsByState.get(currentKey);
+    if (!transitions) {
+      const nextTransitions: Array<{
+        move: TrafficEscapeMove;
+        state: TrafficEscapeState;
+        key: string;
+      }> = [];
+      getTrafficEscapeLegalMoves(puzzle, current.state).forEach((move) => {
+        const result = applyTrafficEscapeMove(puzzle, current.state, move);
+        if (result.moved) {
+          nextTransitions.push({ move, state: result.state, key: getTrafficEscapeStateKey(result.state) });
+        }
+      });
+      transitions = nextTransitions;
+      transitionsByState.set(currentKey, transitions);
+    }
+
+    transitions.forEach(({ move, state, key }) => {
 
       const nextDepth = current.depth + 1;
-      const key = getTrafficEscapeStateKey(result.state);
       const previousDepth = visitedDepth.get(key);
       const firstMove = current.firstMove ?? move;
       const firstMoveKey = getTrafficEscapeMoveKey(firstMove);
@@ -355,7 +375,7 @@ export function solveTrafficEscapePuzzleDetailed(
       }
 
       queue.push({
-        state: result.state,
+        state,
         moves: nextPath,
         depth: nextDepth,
         firstMove,
