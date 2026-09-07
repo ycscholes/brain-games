@@ -4,6 +4,100 @@ import {
   getTrafficVehicleAtlasMaskStyle,
   getTrafficVehicleAtlasSlot,
 } from "../../src/pages/traffic-escape/vehicleAtlas";
+import { readFileSync } from "fs";
+import { inflateSync } from "zlib";
+import { join } from "path";
+
+type TrafficVehicleAtlasPng = {
+  width: number;
+  height: number;
+  bitDepth: number;
+  colorType: number;
+  pixels: Uint8Array;
+  alphaAt: (x: number, y: number) => number;
+  alphaBounds: (x: number, y: number, width: number, height: number) => {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  };
+};
+
+function readTrafficVehicleAtlasPng(): TrafficVehicleAtlasPng {
+  const png = readFileSync(join(__dirname, "../../asset-backups/cloudbase-images/games/traffic-escape/vehicle-atlas.png"));
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  expect(png.subarray(0, 8)).toEqual(signature);
+  let width = 0;
+  let height = 0;
+  let bitDepth = 0;
+  let colorType = 0;
+  let interlace = 0;
+  const idat: Buffer[] = [];
+  let offset = 8;
+  while (offset < png.length) {
+    const length = png.readUInt32BE(offset);
+    const type = png.toString("ascii", offset + 4, offset + 8);
+    const chunk = png.subarray(offset + 8, offset + 8 + length);
+    if (type === "IHDR") {
+      width = chunk.readUInt32BE(0);
+      height = chunk.readUInt32BE(4);
+      bitDepth = chunk[8];
+      colorType = chunk[9];
+      interlace = chunk[12];
+    } else if (type === "IDAT") {
+      idat.push(chunk);
+    }
+    offset += 12 + length;
+  }
+  if (bitDepth !== 8 || colorType !== 6 || interlace !== 0) {
+    throw new Error("traffic vehicle atlas must be a non-interlaced 8-bit RGBA PNG");
+  }
+  const stride = width * 4;
+  const scanlines = inflateSync(Buffer.concat(idat));
+  const pixels = new Uint8Array(width * height * 4);
+  for (let y = 0; y < height; y += 1) {
+    const scanlineOffset = y * (stride + 1);
+    const filter = scanlines[scanlineOffset];
+    const sourceOffset = scanlineOffset + 1;
+    const destinationOffset = y * stride;
+    for (let i = 0; i < stride; i += 1) {
+      const raw = scanlines[sourceOffset + i];
+      const left = i >= 4 ? pixels[destinationOffset + i - 4] : 0;
+      const up = y > 0 ? pixels[destinationOffset + i - stride] : 0;
+      const upperLeft = y > 0 && i >= 4 ? pixels[destinationOffset + i - stride - 4] : 0;
+      if (filter === 0) pixels[destinationOffset + i] = raw;
+      else if (filter === 1) pixels[destinationOffset + i] = (raw + left) & 255;
+      else if (filter === 2) pixels[destinationOffset + i] = (raw + up) & 255;
+      else if (filter === 3) pixels[destinationOffset + i] = (raw + Math.floor((left + up) / 2)) & 255;
+      else if (filter === 4) {
+        const predictor = left + up - upperLeft;
+        const pa = Math.abs(predictor - left);
+        const pb = Math.abs(predictor - up);
+        const pc = Math.abs(predictor - upperLeft);
+        const nearest = pa <= pb && pa <= pc ? left : pb <= pc ? up : upperLeft;
+        pixels[destinationOffset + i] = (raw + nearest) & 255;
+      } else throw new Error(`unsupported PNG filter ${filter}`);
+    }
+  }
+  const alphaAt = (x: number, y: number) => pixels[(y * width + x) * 4 + 3];
+  const alphaBounds = (x: number, y: number, slotWidth: number, slotHeight: number) => {
+    let left = slotWidth;
+    let top = slotHeight;
+    let right = 0;
+    let bottom = 0;
+    for (let row = 0; row < slotHeight; row += 1) {
+      for (let column = 0; column < slotWidth; column += 1) {
+        if (alphaAt(x + column, y + row) === 0) continue;
+        left = Math.min(left, column);
+        top = Math.min(top, row);
+        right = Math.max(right, column + 1);
+        bottom = Math.max(bottom, row + 1);
+      }
+    }
+    return { left, top, right, bottom };
+  };
+  return { width, height, bitDepth, colorType, pixels, alphaAt, alphaBounds };
+}
 
 describe("getTrafficVehicleAtlasSlot", () => {
   test.each([
@@ -85,6 +179,26 @@ describe("getTrafficVehicleAtlasSlot", () => {
       backgroundRepeat: "no-repeat",
       backgroundSize: "500% auto",
       filter: "brightness(0)",
+    });
+  });
+
+  test("keeps the v6 PNG geometry synchronized with slot metadata", () => {
+    const atlas = readTrafficVehicleAtlasPng();
+    expect(atlas).toMatchObject({ width: 3840, height: 640, colorType: 6, bitDepth: 8 });
+    for (let x = 0; x < atlas.width; x += 1) {
+      expect(atlas.alphaAt(x, 0)).toBe(0);
+      expect(atlas.alphaAt(x, atlas.height - 1)).toBe(0);
+    }
+    for (let y = 0; y < atlas.height; y += 1) {
+      expect(atlas.alphaAt(0, y)).toBe(0);
+      expect(atlas.alphaAt(atlas.width - 1, y)).toBe(0);
+    }
+    ([
+      ["sport", 2], ["compact-van", 2], ["city-taxi", 2], ["pink-sport", 2], ["offroad-suv", 2],
+      ["city-bus", 3], ["box-truck", 3], ["stretch-sedan", 3], ["camper-rv", 3], ["tanker-truck", 3],
+    ] as const).forEach(([appearance, length]) => {
+      const slot = getTrafficVehicleAtlasSlot(appearance, length);
+      expect(atlas.alphaBounds(slot.x, slot.y, slot.width, slot.height)).toEqual(slot.visibleBounds);
     });
   });
 });
