@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import {
   createTrafficEscapeHardCandidate,
   getTrafficEscapeHardSolvedTemplates,
@@ -13,6 +16,15 @@ import {
 } from "../../src/pages/traffic-escape/puzzleQuality";
 
 describe("traffic-escape hard puzzle generator", () => {
+  test("keeps the generated runtime puzzle bank within 80 KB", () => {
+    const generatedSource = readFileSync(
+      resolve("src/pages/traffic-escape/hardPuzzles.generated.ts"),
+      "utf8",
+    );
+
+    expect(Buffer.byteLength(generatedSource, "utf8")).toBeLessThanOrEqual(80_000);
+  });
+
   test("uses multiple valid ten-vehicle solved templates", () => {
     const templates = getTrafficEscapeHardSolvedTemplates();
 

@@ -58,7 +58,7 @@ export function collectCertifiedPuzzles({
 }
 
 export function serializeCertifiedPuzzles(selected: readonly CollectedCertifiedPuzzle[]) {
-  const serializedPuzzles = JSON.stringify(selected.map(({ puzzle }) => puzzle), null, 2);
+  const serializedPuzzles = JSON.stringify(selected.map(({ puzzle }) => puzzle));
   return `// Generated file, do not edit. Run npm run traffic-escape:puzzles.\n`
     + `import type { CertifiedTrafficEscapePuzzle } from "./puzzleQuality";\n\n`
     + `export const CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES = ${serializedPuzzles}`
