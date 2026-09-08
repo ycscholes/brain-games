@@ -253,6 +253,16 @@ export function solveTrafficEscapePuzzleDetailed(
     const current = queue[cursor];
     if (shortestSolvedDepth !== null && current.depth > shortestSolvedDepth) break;
 
+    // A state can be enqueued more than once while a lexicographically
+    // smaller path for the same first move is discovered. Ignore stale queue
+    // entries so the solver does not expand paths that have already lost.
+    if (current.firstMove) {
+      const currentKey = getTrafficEscapeStateKey(current.state);
+      const firstMoveKey = getTrafficEscapeMoveKey(current.firstMove);
+      const currentBestPath = bestPathsByState.get(currentKey)?.get(firstMoveKey);
+      if (currentBestPath !== current.moves) continue;
+    }
+
     if (isTrafficEscapeSolved(puzzle, current.state)) {
       if (shortestSolvedDepth === null) shortestSolvedDepth = current.depth;
       if (current.depth === shortestSolvedDepth) {
@@ -310,6 +320,32 @@ export function solveTrafficEscapePuzzleDetailed(
 
 export function solveTrafficEscapePuzzle(puzzle: TrafficEscapePuzzle, initialState: TrafficEscapeState) {
   return solveTrafficEscapePuzzleDetailed(puzzle, initialState)?.moves ?? null;
+}
+
+function solveTrafficEscapePuzzleForHint(
+  puzzle: TrafficEscapePuzzle,
+  initialState: TrafficEscapeState,
+) {
+  const queue: Array<{ state: TrafficEscapeState; moves: TrafficEscapeMove[] }> = [
+    { state: initialState, moves: [] },
+  ];
+  const visited = new Set([getTrafficEscapeStateKey(initialState)]);
+
+  for (let cursor = 0; cursor < queue.length; cursor += 1) {
+    const current = queue[cursor];
+    if (isTrafficEscapeSolved(puzzle, current.state)) return current.moves;
+
+    for (const move of getTrafficEscapeLegalMoves(puzzle, current.state)) {
+      const result = applyTrafficEscapeMove(puzzle, current.state, move);
+      if (!result.moved) continue;
+      const key = getTrafficEscapeStateKey(result.state);
+      if (visited.has(key)) continue;
+      visited.add(key);
+      queue.push({ state: result.state, moves: [...current.moves, move] });
+    }
+  }
+
+  return null;
 }
 
 function createSolvedTrafficLayout(): TrafficEscapePuzzle {
@@ -461,7 +497,7 @@ export function isTrafficEscapeSolved(puzzle: TrafficEscapePuzzle, state: Traffi
 }
 
 export function getTrafficEscapeHint(puzzle: TrafficEscapePuzzle, state: TrafficEscapeState) {
-  return solveTrafficEscapePuzzle(puzzle, state)?.[0] ?? null;
+  return solveTrafficEscapePuzzleForHint(puzzle, state)?.[0] ?? null;
 }
 
 export function scoreTrafficEscapeGame(params: {
