@@ -1,9 +1,12 @@
 import type { TrafficEscapePuzzle } from "../../src/pages/traffic-escape/gameLogic";
 import {
+  HARD_PUZZLE_BANK_DIVERSITY_RULES,
   HARD_PUZZLE_QUALITY_RULES,
   analyzeTrafficEscapePuzzle,
   certifyTrafficEscapeHardPuzzle,
+  certifyTrafficEscapeHardPuzzleBank,
   getTrafficEscapeGeometryKey,
+  getTrafficEscapeVerticalAnchorKeys,
 } from "../../src/pages/traffic-escape/puzzleQuality";
 
 const certifiedFixture: TrafficEscapePuzzle = {
@@ -113,5 +116,36 @@ describe("traffic-escape hard puzzle quality", () => {
   test("geometry keys ignore ids, colors, and appearances", () => {
     expect(getTrafficEscapeGeometryKey(certifiedFixture))
       .toBe(getTrafficEscapeGeometryKey(relabelPuzzle(certifiedFixture)));
+  });
+
+  test("extracts sorted non-target vertical anchors", () => {
+    expect(getTrafficEscapeVerticalAnchorKeys(certifiedFixture)).toEqual([
+      "0:4:2",
+      "1:0:2",
+      "2:2:3",
+      "3:2:2",
+      "5:0:3",
+    ]);
+  });
+
+  test("rejects a bank that repeats the same vertical-car structure", () => {
+    const certification = certifyTrafficEscapeHardPuzzleBank(
+      Array.from({ length: 36 }, () => ({
+        puzzle: certifiedFixture,
+        templateId: "same-template",
+      })),
+    );
+
+    expect(HARD_PUZZLE_BANK_DIVERSITY_RULES).toMatchObject({
+      expectedPuzzleCount: 36,
+      maximumAnchorFrequency: 6,
+      minimumDistinctAnchors: 28,
+    });
+    expect(certification.accepted).toBe(false);
+    expect(certification.failures).toEqual(expect.arrayContaining([
+      expect.stringContaining("vertical anchor"),
+      expect.stringContaining("distinct vertical anchors"),
+      expect.stringContaining("template"),
+    ]));
   });
 });

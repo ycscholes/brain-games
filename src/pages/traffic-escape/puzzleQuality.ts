@@ -52,6 +52,124 @@ export const HARD_PUZZLE_QUALITY_RULES = {
   requireTargetOnlyOnFinalMove: true,
 } as const;
 
+export interface TrafficEscapePuzzleBankDiversityRules {
+  expectedPuzzleCount: number;
+  maximumAnchorFrequency: number;
+  minimumDistinctAnchors: number;
+  minimumColumnBandAppearances: number;
+  minimumRowBandAppearances: number;
+  minimumDistinctTemplates: number;
+  minimumTemplateAppearances: number;
+}
+
+export const HARD_PUZZLE_BANK_DIVERSITY_RULES = {
+  expectedPuzzleCount: 36,
+  maximumAnchorFrequency: 6,
+  minimumDistinctAnchors: 28,
+  minimumColumnBandAppearances: 8,
+  minimumRowBandAppearances: 8,
+  minimumDistinctTemplates: 8,
+  minimumTemplateAppearances: 3,
+} as const satisfies TrafficEscapePuzzleBankDiversityRules;
+
+export interface TrafficEscapePuzzleBankEntry {
+  puzzle: TrafficEscapePuzzle;
+  templateId: string;
+}
+
+export interface TrafficEscapePuzzleBankDiversitySummary {
+  anchorFrequencies: Record<string, number>;
+  distinctAnchorCount: number;
+  columnBandAppearances: Record<string, number>;
+  rowBandAppearances: Record<string, number>;
+  templateAppearances: Record<string, number>;
+}
+
+export interface TrafficEscapePuzzleBankCertification {
+  accepted: boolean;
+  failures: string[];
+  summary: TrafficEscapePuzzleBankDiversitySummary;
+}
+
+function incrementCount(counts: Map<string, number>, key: string) {
+  counts.set(key, (counts.get(key) ?? 0) + 1);
+}
+
+function toSortedRecord(counts: Map<string, number>) {
+  return Object.fromEntries([...counts.entries()].sort(([left], [right]) => left.localeCompare(right)));
+}
+
+export function getTrafficEscapeVerticalAnchorKeys(puzzle: TrafficEscapePuzzle) {
+  return puzzle.vehicles
+    .filter((vehicle) => !vehicle.isTarget && vehicle.orientation === "vertical")
+    .map((vehicle) => [vehicle.col, vehicle.row, vehicle.length].join(":"))
+    .sort();
+}
+
+export function certifyTrafficEscapeHardPuzzleBank(
+  entries: readonly TrafficEscapePuzzleBankEntry[],
+  overrides: Partial<TrafficEscapePuzzleBankDiversityRules> = {},
+): TrafficEscapePuzzleBankCertification {
+  const rules: TrafficEscapePuzzleBankDiversityRules = {
+    ...HARD_PUZZLE_BANK_DIVERSITY_RULES,
+    ...overrides,
+  };
+  const anchorFrequencies = new Map<string, number>();
+  const columnBandAppearances = new Map<string, number>();
+  const rowBandAppearances = new Map<string, number>();
+  const templateAppearances = new Map<string, number>();
+
+  entries.forEach(({ puzzle, templateId }) => {
+    incrementCount(templateAppearances, templateId);
+    puzzle.vehicles
+      .filter((vehicle) => !vehicle.isTarget && vehicle.orientation === "vertical")
+      .forEach((vehicle) => {
+        incrementCount(anchorFrequencies, [vehicle.col, vehicle.row, vehicle.length].join(":"));
+        incrementCount(columnBandAppearances, String(Math.floor(vehicle.col / 2)));
+        incrementCount(rowBandAppearances, String(Math.floor(vehicle.row / 2)));
+      });
+  });
+
+  const summary = {
+    anchorFrequencies: toSortedRecord(anchorFrequencies),
+    distinctAnchorCount: anchorFrequencies.size,
+    columnBandAppearances: toSortedRecord(columnBandAppearances),
+    rowBandAppearances: toSortedRecord(rowBandAppearances),
+    templateAppearances: toSortedRecord(templateAppearances),
+  };
+  const failures: string[] = [];
+
+  if (entries.length !== rules.expectedPuzzleCount) {
+    failures.push("bank must contain " + rules.expectedPuzzleCount + " puzzles");
+  }
+  if (summary.distinctAnchorCount < rules.minimumDistinctAnchors) {
+    failures.push("bank must contain at least " + rules.minimumDistinctAnchors + " distinct vertical anchors");
+  }
+  if (Object.keys(summary.templateAppearances).length < rules.minimumDistinctTemplates) {
+    failures.push("bank must contain at least " + rules.minimumDistinctTemplates + " distinct templates");
+  }
+  Object.entries(summary.anchorFrequencies).forEach(([anchor, frequency]) => {
+    if (frequency > rules.maximumAnchorFrequency) {
+      failures.push("vertical anchor " + anchor + " appears " + frequency + " times, maximum is " + rules.maximumAnchorFrequency);
+    }
+  });
+  ["0", "1", "2"].forEach((band) => {
+    if ((summary.columnBandAppearances[band] ?? 0) < rules.minimumColumnBandAppearances) {
+      failures.push("column band " + band + " must appear at least " + rules.minimumColumnBandAppearances + " times");
+    }
+    if ((summary.rowBandAppearances[band] ?? 0) < rules.minimumRowBandAppearances) {
+      failures.push("row band " + band + " must appear at least " + rules.minimumRowBandAppearances + " times");
+    }
+  });
+  Object.entries(summary.templateAppearances).forEach(([templateId, appearances]) => {
+    if (appearances < rules.minimumTemplateAppearances) {
+      failures.push("template " + templateId + " must appear at least " + rules.minimumTemplateAppearances + " times");
+    }
+  });
+
+  return { accepted: failures.length === 0, failures, summary };
+}
+
 function isExactMoveLegal(
   puzzle: TrafficEscapePuzzle,
   state: TrafficEscapeState,
