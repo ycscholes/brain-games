@@ -330,8 +330,9 @@ function solveTrafficEscapePuzzleForHint(
     { state: initialState, moves: [] },
   ];
   const visited = new Set([getTrafficEscapeStateKey(initialState)]);
+  const maxVisitedStates = 30_000;
 
-  for (let cursor = 0; cursor < queue.length; cursor += 1) {
+  for (let cursor = 0; cursor < queue.length && visited.size <= maxVisitedStates; cursor += 1) {
     const current = queue[cursor];
     if (isTrafficEscapeSolved(puzzle, current.state)) return current.moves;
 
