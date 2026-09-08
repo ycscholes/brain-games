@@ -43,6 +43,19 @@ const BASE_SOLVED_VEHICLES: TrafficVehicle[] = [
   { id: "v9", row: 0, col: 1, length: 2, orientation: "vertical", color: "coral" },
 ];
 
+const MIRRORED_SOLVED_VEHICLES: TrafficVehicle[] = [
+  { id: "target", row: 2, col: 4, length: 2, orientation: "horizontal", color: "target", isTarget: true },
+  { id: "v1", row: 3, col: 3, length: 3, orientation: "vertical", color: "cyan" },
+  { id: "v2", row: 3, col: 0, length: 3, orientation: "vertical", color: "violet" },
+  { id: "gate", row: 0, col: 2, length: 2, orientation: "vertical", color: "lime" },
+  { id: "v4", row: 3, col: 5, length: 2, orientation: "vertical", color: "coral" },
+  { id: "v5", row: 4, col: 1, length: 2, orientation: "horizontal", color: "amber" },
+  { id: "v6", row: 5, col: 4, length: 2, orientation: "horizontal", color: "cyan" },
+  { id: "v7", row: 5, col: 1, length: 2, orientation: "horizontal", color: "violet" },
+  { id: "v8", row: 0, col: 0, length: 2, orientation: "horizontal", color: "lime" },
+  { id: "v9", row: 0, col: 4, length: 2, orientation: "vertical", color: "coral" },
+];
+
 function cloneVehicle(vehicle: TrafficVehicle): TrafficVehicle {
   return { ...vehicle };
 }
@@ -64,14 +77,14 @@ function reflectVehicleVertically(vehicle: TrafficVehicle, size: number): Traffi
 
 function createTemplateDefinition(
   id: string,
-  moveUnusedVehicleLeft: boolean,
+  solvedVehicles: readonly TrafficVehicle[],
+  unusedVehicleCol: number,
   reflectVertically: boolean,
 ): SolvedTemplateDefinition {
   const size = 6;
-  let vehicles = BASE_SOLVED_VEHICLES.map(cloneVehicle);
-  if (moveUnusedVehicleLeft) {
-    vehicles = vehicles.map((vehicle) => vehicle.id === "v9" ? { ...vehicle, col: 0 } : vehicle);
-  }
+  let vehicles = solvedVehicles.map((vehicle) => (
+    vehicle.id === "v9" ? { ...vehicle, col: unusedVehicleCol } : cloneVehicle(vehicle)
+  ));
   if (reflectVertically) {
     vehicles = vehicles.map((vehicle) => reflectVehicleVertically(vehicle, size));
   }
@@ -93,10 +106,14 @@ function createTemplateDefinition(
 }
 
 const SOLVED_TEMPLATE_DEFINITIONS: readonly SolvedTemplateDefinition[] = [
-  createTemplateDefinition("traffic-escape-hard-template-1", false, false),
-  createTemplateDefinition("traffic-escape-hard-template-2", true, false),
-  createTemplateDefinition("traffic-escape-hard-template-3", false, true),
-  createTemplateDefinition("traffic-escape-hard-template-4", true, true),
+  createTemplateDefinition("traffic-escape-hard-template-1", BASE_SOLVED_VEHICLES, 1, false),
+  createTemplateDefinition("traffic-escape-hard-template-2", BASE_SOLVED_VEHICLES, 0, false),
+  createTemplateDefinition("traffic-escape-hard-template-3", BASE_SOLVED_VEHICLES, 1, true),
+  createTemplateDefinition("traffic-escape-hard-template-4", BASE_SOLVED_VEHICLES, 0, true),
+  createTemplateDefinition("traffic-escape-hard-template-5", MIRRORED_SOLVED_VEHICLES, 4, false),
+  createTemplateDefinition("traffic-escape-hard-template-6", MIRRORED_SOLVED_VEHICLES, 5, false),
+  createTemplateDefinition("traffic-escape-hard-template-7", MIRRORED_SOLVED_VEHICLES, 4, true),
+  createTemplateDefinition("traffic-escape-hard-template-8", MIRRORED_SOLVED_VEHICLES, 5, true),
 ];
 
 function hasBlockedExit(puzzle: TrafficEscapePuzzle, state: TrafficEscapeState) {
