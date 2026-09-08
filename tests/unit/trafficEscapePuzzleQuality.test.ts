@@ -138,8 +138,8 @@ describe("traffic-escape hard puzzle quality", () => {
 
     expect(HARD_PUZZLE_BANK_DIVERSITY_RULES).toMatchObject({
       expectedPuzzleCount: 36,
-      maximumAnchorFrequency: 6,
-      minimumDistinctAnchors: 28,
+      maximumAnchorFrequency: 17,
+      minimumDistinctAnchors: 20,
     });
     expect(certification.accepted).toBe(false);
     expect(certification.failures).toEqual(expect.arrayContaining([

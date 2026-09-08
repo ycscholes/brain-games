@@ -43,17 +43,30 @@ const BASE_SOLVED_VEHICLES: TrafficVehicle[] = [
   { id: "v9", row: 0, col: 1, length: 2, orientation: "vertical", color: "coral" },
 ];
 
-const MIRRORED_SOLVED_VEHICLES: TrafficVehicle[] = [
+const ALTERNATE_B_SOLVED_VEHICLES: TrafficVehicle[] = [
   { id: "target", row: 2, col: 4, length: 2, orientation: "horizontal", color: "target", isTarget: true },
-  { id: "v1", row: 3, col: 3, length: 3, orientation: "vertical", color: "cyan" },
-  { id: "v2", row: 3, col: 0, length: 3, orientation: "vertical", color: "violet" },
-  { id: "gate", row: 0, col: 2, length: 2, orientation: "vertical", color: "lime" },
-  { id: "v4", row: 3, col: 5, length: 2, orientation: "vertical", color: "coral" },
-  { id: "v5", row: 4, col: 1, length: 2, orientation: "horizontal", color: "amber" },
-  { id: "v6", row: 5, col: 4, length: 2, orientation: "horizontal", color: "cyan" },
-  { id: "v7", row: 5, col: 1, length: 2, orientation: "horizontal", color: "violet" },
-  { id: "v8", row: 0, col: 0, length: 2, orientation: "horizontal", color: "lime" },
-  { id: "v9", row: 0, col: 4, length: 2, orientation: "vertical", color: "coral" },
+  { id: "v1", row: 3, col: 2, length: 3, orientation: "vertical", color: "cyan" },
+  { id: "v2", row: 3, col: 5, length: 3, orientation: "vertical", color: "violet" },
+  { id: "gate", row: 0, col: 3, length: 2, orientation: "vertical", color: "lime" },
+  { id: "v4", row: 3, col: 1, length: 2, orientation: "vertical", color: "coral" },
+  { id: "v5", row: 4, col: 3, length: 2, orientation: "horizontal", color: "amber" },
+  { id: "v6", row: 5, col: 0, length: 2, orientation: "horizontal", color: "cyan" },
+  { id: "v7", row: 5, col: 3, length: 2, orientation: "horizontal", color: "violet" },
+  { id: "v8", row: 0, col: 4, length: 2, orientation: "horizontal", color: "lime" },
+  { id: "v9", row: 0, col: 0, length: 2, orientation: "vertical", color: "coral" },
+];
+
+const ALTERNATE_C_SOLVED_VEHICLES: TrafficVehicle[] = [
+  { id: "target", row: 2, col: 4, length: 2, orientation: "horizontal", color: "target", isTarget: true },
+  { id: "v1", row: 2, col: 2, length: 3, orientation: "vertical", color: "cyan" },
+  { id: "v2", row: 3, col: 5, length: 3, orientation: "vertical", color: "violet" },
+  { id: "gate", row: 0, col: 3, length: 2, orientation: "vertical", color: "lime" },
+  { id: "v4", row: 3, col: 0, length: 2, orientation: "vertical", color: "coral" },
+  { id: "v5", row: 4, col: 3, length: 2, orientation: "horizontal", color: "amber" },
+  { id: "v6", row: 5, col: 0, length: 2, orientation: "horizontal", color: "cyan" },
+  { id: "v7", row: 5, col: 3, length: 2, orientation: "horizontal", color: "violet" },
+  { id: "v8", row: 0, col: 4, length: 2, orientation: "horizontal", color: "lime" },
+  { id: "v9", row: 0, col: 1, length: 2, orientation: "vertical", color: "coral" },
 ];
 
 function cloneVehicle(vehicle: TrafficVehicle): TrafficVehicle {
@@ -110,10 +123,8 @@ const SOLVED_TEMPLATE_DEFINITIONS: readonly SolvedTemplateDefinition[] = [
   createTemplateDefinition("traffic-escape-hard-template-2", BASE_SOLVED_VEHICLES, 0, false),
   createTemplateDefinition("traffic-escape-hard-template-3", BASE_SOLVED_VEHICLES, 1, true),
   createTemplateDefinition("traffic-escape-hard-template-4", BASE_SOLVED_VEHICLES, 0, true),
-  createTemplateDefinition("traffic-escape-hard-template-5", MIRRORED_SOLVED_VEHICLES, 4, false),
-  createTemplateDefinition("traffic-escape-hard-template-6", MIRRORED_SOLVED_VEHICLES, 5, false),
-  createTemplateDefinition("traffic-escape-hard-template-7", MIRRORED_SOLVED_VEHICLES, 4, true),
-  createTemplateDefinition("traffic-escape-hard-template-8", MIRRORED_SOLVED_VEHICLES, 5, true),
+  createTemplateDefinition("traffic-escape-hard-template-5", ALTERNATE_C_SOLVED_VEHICLES, 1, false),
+  createTemplateDefinition("traffic-escape-hard-template-6", ALTERNATE_B_SOLVED_VEHICLES, 0, true),
 ];
 
 function hasBlockedExit(puzzle: TrafficEscapePuzzle, state: TrafficEscapeState) {

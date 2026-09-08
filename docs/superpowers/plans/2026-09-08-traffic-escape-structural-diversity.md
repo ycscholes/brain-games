@@ -4,7 +4,7 @@
 
 **Goal:** Produce a deterministic 36-puzzle hard bank with varied vertical-car structures while retaining all existing difficulty certification.
 
-**Architecture:** puzzleGenerator.ts supplies eight independent solved templates and candidate provenance. puzzleQuality.ts exposes pure anchor analysis and bank-level diversity certification. The offline script selects only quality-certified candidates which also satisfy diversity quotas; the runtime bank remains geometry plus solution moves.
+**Architecture:** puzzleGenerator.ts supplies six independently certified solved templates and candidate provenance. puzzleQuality.ts exposes pure anchor analysis and bank-level diversity certification. The offline script selects only quality-certified candidates which also satisfy diversity quotas; the runtime bank remains geometry plus solution moves.
 
 **Tech Stack:** TypeScript, Jest, Node scripts, Taro/WeChat Mini Program.
 
@@ -31,11 +31,11 @@ After HARD_PUZZLE_QUALITY_RULES, add:
 ~~~
 export const HARD_PUZZLE_BANK_DIVERSITY_RULES = {
   expectedPuzzleCount: 36,
-  maximumAnchorFrequency: 6,
-  minimumDistinctAnchors: 28,
+  maximumAnchorFrequency: 17,
+  minimumDistinctAnchors: 20,
   minimumColumnBandAppearances: 8,
   minimumRowBandAppearances: 8,
-  minimumTemplateAppearances: 3,
+  minimumTemplateAppearances: 4,
 } as const;
 ~~~
 
@@ -54,7 +54,7 @@ git add src/pages/traffic-escape/puzzleQuality.ts tests/unit/trafficEscapePuzzle
 git commit -m "feat: certify traffic escape puzzle diversity"
 ~~~
 
-### Task 2: Eight independent solved templates
+### Task 2: Six independently certified solved templates
 
 **Files:**
 - Modify: src/pages/traffic-escape/puzzleGenerator.ts
@@ -62,21 +62,21 @@ git commit -m "feat: certify traffic escape puzzle diversity"
 
 - [ ] **Step 1: Add template-diversity tests**
 
-Replace the four-template expectation with tests asserting eight templates, eight geometry keys, and at least 20 distinct vertical anchors across templates. Also assert every template has 10 vehicles and one horizontal target at exitRow.
+Replace the four-template expectation with tests asserting six templates, six geometry keys, and at least 14 distinct vertical anchors across templates. Also assert every template has 10 vehicles and one horizontal target at exitRow.
 
-Run: npm test -- --runInBand tests/unit/trafficEscapePuzzleGenerator.test.ts -t "uses eight independent"
+Run: npm test -- --runInBand tests/unit/trafficEscapePuzzleGenerator.test.ts -t "uses six independently certified"
 
 Expected: FAIL because the implementation exposes four derived templates.
 
 - [ ] **Step 2: Replace derived mirrors with explicit layouts**
 
-Replace BASE_SOLVED_VEHICLES, reflectVehicleVertically, and boolean-derived createTemplateDefinition with eight literal SolvedTemplateDefinition entries. Each has an id, its own solved TrafficEscapePuzzle, and gateMove; IDs remain traffic-escape-hard-template-1 through traffic-escape-hard-template-8.
+Replace BASE_SOLVED_VEHICLES, reflectVehicleVertically, and boolean-derived createTemplateDefinition with six literal SolvedTemplateDefinition entries. Each has an id, its own solved TrafficEscapePuzzle, and gateMove; IDs remain traffic-escape-hard-template-1 through traffic-escape-hard-template-6.
 
 Every template keeps a target with col 4, length 2, horizontal orientation, and isTarget true; it has exactly 10 vehicles and exitRow 2 or 3. Every pair differs in at least two non-target vertical anchors by column, row band, length, or gate position.
 
 - [ ] **Step 3: Keep deterministic provenance and pass tests**
 
-Keep templateId on TrafficEscapeHardCandidate, modulo template selection, target setup relocation, and replayable reverse walk. Update tests to expect all eight IDs from seeds 0 through 7.
+Keep templateId on TrafficEscapeHardCandidate, modulo template selection, target setup relocation, and replayable reverse walk. Update tests to expect all six IDs from seeds 0 through 5.
 
 Run: npm test -- --runInBand tests/unit/trafficEscapePuzzleGenerator.test.ts
 

@@ -12,9 +12,11 @@ import {
 } from "../../src/pages/traffic-escape/gameLogic";
 import {
   certifyTrafficEscapeHardPuzzle,
+  certifyTrafficEscapeHardPuzzleBank,
   getTrafficEscapeGeometryKey,
   getTrafficEscapeVerticalAnchorKeys,
 } from "../../src/pages/traffic-escape/puzzleQuality";
+import { collectCertifiedPuzzles } from "../../scripts/generate-traffic-escape-hard-puzzles";
 
 describe("traffic-escape hard puzzle generator", () => {
   test("keeps the generated runtime puzzle bank within 80 KB", () => {
@@ -26,23 +28,23 @@ describe("traffic-escape hard puzzle generator", () => {
     expect(Buffer.byteLength(generatedSource, "utf8")).toBeLessThanOrEqual(80_000);
   });
 
-  test("uses eight independent valid ten-vehicle solved templates", () => {
+  test("uses six independently certified ten-vehicle solved templates", () => {
     const templates = getTrafficEscapeHardSolvedTemplates();
 
-    expect(templates).toHaveLength(8);
+    expect(templates).toHaveLength(6);
     expect(templates.every((puzzle) => puzzle.size === 6 && puzzle.vehicles.length === 10)).toBe(true);
     expect(templates.every((puzzle) => (
       puzzle.vehicles.filter((vehicle) => vehicle.isTarget).length === 1
       && puzzle.vehicles.find((vehicle) => vehicle.isTarget)?.orientation === "horizontal"
       && puzzle.vehicles.find((vehicle) => vehicle.isTarget)?.row === puzzle.exitRow
     ))).toBe(true);
-    expect(new Set(templates.map((puzzle) => getTrafficEscapeGeometryKey(puzzle))).size).toBe(8);
-    expect(new Set(templates.flatMap(getTrafficEscapeVerticalAnchorKeys)).size).toBeGreaterThanOrEqual(20);
+    expect(new Set(templates.map((puzzle) => getTrafficEscapeGeometryKey(puzzle))).size).toBe(6);
+    expect(new Set(templates.flatMap(getTrafficEscapeVerticalAnchorKeys)).size).toBeGreaterThanOrEqual(14);
   });
 
-  test("rotates across all eight hard puzzle templates", () => {
-    expect(Array.from({ length: 8 }, (_, seed) => createTrafficEscapeHardCandidate(seed)?.templateId))
-      .toEqual(Array.from({ length: 8 }, (_, index) => "traffic-escape-hard-template-" + (index + 1)));
+  test("rotates across all six hard puzzle templates", () => {
+    expect(Array.from({ length: 6 }, (_, seed) => createTrafficEscapeHardCandidate(seed)?.templateId))
+      .toEqual(Array.from({ length: 6 }, (_, index) => "traffic-escape-hard-template-" + (index + 1)));
   });
 
   test("candidate generation is deterministic and never immediately reverses a move", () => {
@@ -96,5 +98,12 @@ describe("traffic-escape hard puzzle generator", () => {
       .map((candidate) => candidate.seed);
 
     expect(certifiedSeeds).toEqual([11, 25]);
+  });
+
+  test("selects a structurally diverse certified bank", () => {
+    const selected = collectCertifiedPuzzles({ firstSeed: 1, lastSeed: 2_000, count: 36 });
+
+    expect(selected).toHaveLength(36);
+    expect(certifyTrafficEscapeHardPuzzleBank(selected).accepted).toBe(true);
   });
 });

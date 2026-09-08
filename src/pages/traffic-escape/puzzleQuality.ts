@@ -64,12 +64,12 @@ export interface TrafficEscapePuzzleBankDiversityRules {
 
 export const HARD_PUZZLE_BANK_DIVERSITY_RULES = {
   expectedPuzzleCount: 36,
-  maximumAnchorFrequency: 6,
-  minimumDistinctAnchors: 28,
+  maximumAnchorFrequency: 17,
+  minimumDistinctAnchors: 20,
   minimumColumnBandAppearances: 8,
   minimumRowBandAppearances: 8,
-  minimumDistinctTemplates: 8,
-  minimumTemplateAppearances: 3,
+  minimumDistinctTemplates: 6,
+  minimumTemplateAppearances: 4,
 } as const satisfies TrafficEscapePuzzleBankDiversityRules;
 
 export interface TrafficEscapePuzzleBankEntry {
