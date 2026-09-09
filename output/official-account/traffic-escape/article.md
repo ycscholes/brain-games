@@ -1,3 +1,8 @@
+---
+title: 明明每辆车都能动，为什么就是出不去？来挑战车阵突围
+cover: ../../../asset-backups/cloudbase-images/games/traffic-escape/vehicle-atlas.png
+---
+
 # 明明每辆车都能动，为什么就是出不去？来挑战车阵突围
 
 出口就在右边，目标车离它也不算远。
