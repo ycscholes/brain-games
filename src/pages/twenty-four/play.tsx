@@ -18,7 +18,12 @@ import {
   type Operator,
   type Token,
 } from "./gameLogic";
-import { abandonTwentyFourRun, readTwentyFourRun, settleTwentyFourCompletion } from "./run";
+import {
+  abandonTwentyFourRun,
+  readTwentyFourRun,
+  settleTwentyFourCompletion,
+  updateTwentyFourRun,
+} from "./run";
 import "./index.scss";
 
 type Phase = "playing";
@@ -54,23 +59,58 @@ export default function TwentyFour() {
     }
   }, [routeRun, runId]);
 
-  const [round, setRound] = useState(() => generateRound());
+  const persistedState = routeRun?.payload.state;
+  const [round, setRound] = useState(() => persistedState?.round ?? generateRound());
   const [phase] = useState<Phase>("playing");
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [score, setScore] = useState(0);
-  const [solvedCount, setSolvedCount] = useState(0);
+  const [tokens, setTokens] = useState<Token[]>(() => persistedState?.tokens ?? []);
+  const [score, setScore] = useState(() => persistedState?.score ?? 0);
+  const [solvedCount, setSolvedCount] = useState(() => persistedState?.solvedCount ?? 0);
   const [best, setBest] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(GAME_SECONDS);
-  const [feedback, setFeedback] = useState("用四张牌和运算符凑出 24");
-  const [hintUsed, setHintUsed] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(() => persistedState?.timeLeft ?? GAME_SECONDS);
+  const [feedback, setFeedback] = useState(
+    () => persistedState?.feedback ?? "用四张牌和运算符凑出 24",
+  );
+  const [hintUsed, setHintUsed] = useState(() => persistedState?.hintUsed ?? false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const scoreRef = useRef(0);
+  const scoreRef = useRef(persistedState?.score ?? 0);
+  const solvedCountRef = useRef(persistedState?.solvedCount ?? 0);
+  const startedAtRef = useRef(persistedState?.clockStartedAt ?? routeRun?.payload.startedAt ?? 0);
   const autoStartedRef = useRef(false);
 
   useEffect(() => {
     scoreRef.current = score;
   }, [score]);
+  useEffect(() => {
+    solvedCountRef.current = solvedCount;
+  }, [solvedCount]);
+
+  const persistRunState = useCallback(
+    (
+      nextRound: typeof round,
+      nextTokens: Token[],
+      nextScore: number,
+      nextSolvedCount: number,
+      nextTimeLeft: number,
+      nextHintUsed: boolean,
+      nextFeedback: string,
+    ) => {
+      if (!runId) return;
+      updateTwentyFourRun(runId, {
+        state: {
+          round: nextRound,
+          tokens: nextTokens,
+          score: nextScore,
+          solvedCount: nextSolvedCount,
+          timeLeft: nextTimeLeft,
+          hintUsed: nextHintUsed,
+          feedback: nextFeedback,
+          clockStartedAt: startedAtRef.current,
+        },
+      });
+    },
+    [runId],
+  );
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -122,7 +162,7 @@ export default function TwentyFour() {
         score: finalScore,
         awardedPoints: 0,
         durationSeconds: GAME_SECONDS,
-        solvedCount,
+        solvedCount: solvedCountRef.current,
         isNewBest: nextIsNewBest,
       },
       settlementInput,
@@ -138,7 +178,7 @@ export default function TwentyFour() {
       setBest(finalScore);
     }
     void Taro.redirectTo({ url: `/pages/twenty-four/result?runId=${encodeURIComponent(runId)}` });
-  }, [best, clearTimer, runId, solvedCount]);
+  }, [best, clearTimer, runId]);
 
   useEffect(() => {
     if (phase !== "playing") return undefined;
@@ -146,33 +186,82 @@ export default function TwentyFour() {
     timerRef.current = setInterval(() => {
       setTimeLeft((current) => {
         if (current <= 1) {
+          persistRunState(
+            round,
+            tokens,
+            scoreRef.current,
+            solvedCountRef.current,
+            0,
+            hintUsed,
+            "时间到，正在结算。",
+          );
           finishGame();
           return 0;
         }
-        return current - 1;
+        const nextTimeLeft = current - 1;
+        persistRunState(
+          round,
+          tokens,
+          scoreRef.current,
+          solvedCountRef.current,
+          nextTimeLeft,
+          hintUsed,
+          feedback,
+        );
+        return nextTimeLeft;
       });
     }, 1000);
 
     return () => clearTimer();
-  }, [clearTimer, finishGame, phase]);
+  }, [clearTimer, feedback, finishGame, hintUsed, persistRunState, phase, round, tokens]);
 
   const startGame = useCallback(() => {
     playTap();
     clearTimer();
-    setRound(generateRound());
+    startedAtRef.current = Date.now();
+    scoreRef.current = 0;
+    solvedCountRef.current = 0;
+    const nextRound = generateRound();
+    setRound(nextRound);
     setTokens([]);
     setScore(0);
     setSolvedCount(0);
     setTimeLeft(GAME_SECONDS);
     setFeedback("用四张牌和运算符凑出 24");
     setHintUsed(false);
-  }, [clearTimer]);
+    persistRunState(nextRound, [], 0, 0, GAME_SECONDS, false, "用四张牌和运算符凑出 24");
+  }, [clearTimer, persistRunState]);
+
+  const restoreGame = useCallback(() => {
+    if (!persistedState) {
+      startGame();
+      return;
+    }
+    startedAtRef.current = persistedState.clockStartedAt;
+    scoreRef.current = persistedState.score;
+    solvedCountRef.current = persistedState.solvedCount;
+    setRound(persistedState.round);
+    setTokens(persistedState.tokens);
+    setScore(persistedState.score);
+    setSolvedCount(persistedState.solvedCount);
+    setHintUsed(persistedState.hintUsed);
+    setFeedback(persistedState.feedback);
+    setTimeLeft(
+      Math.max(
+        0,
+        Math.min(
+          persistedState.timeLeft,
+          GAME_SECONDS - Math.floor((Date.now() - persistedState.clockStartedAt) / 1000),
+        ),
+      ),
+    );
+  }, [persistedState, startGame]);
 
   useEffect(() => {
     if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
-    startGame();
-  }, [routeRun, startGame]);
+    restoreGame();
+  }, [restoreGame, routeRun]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;
@@ -188,16 +277,36 @@ export default function TwentyFour() {
   useUnload(handleRouteBack);
 
   const nextRound = () => {
-    setRound(generateRound());
+    const nextGeneratedRound = generateRound();
+    setRound(nextGeneratedRound);
     setTokens([]);
     setHintUsed(false);
     setFeedback("继续凑出 24");
+    persistRunState(
+      nextGeneratedRound,
+      [],
+      scoreRef.current,
+      solvedCountRef.current,
+      timeLeft,
+      false,
+      "继续凑出 24",
+    );
   };
 
   const showHint = () => {
     if (phase !== "playing") return;
     setHintUsed(true);
-    setFeedback(`参考解法：${round.solution}。本题继续练习但不计分`);
+    const nextFeedback = `参考解法：${round.solution}。本题继续练习但不计分`;
+    setFeedback(nextFeedback);
+    persistRunState(
+      round,
+      tokens,
+      scoreRef.current,
+      solvedCountRef.current,
+      timeLeft,
+      true,
+      nextFeedback,
+    );
   };
 
   const usedCardIndexes = new Set(
@@ -210,63 +319,169 @@ export default function TwentyFour() {
 
   const appendCard = (card: CardValue, cardIndex: number) => {
     if (phase !== "playing" || usedCardIndexes.has(cardIndex)) return;
-    setTokens((current) => [
-      ...current,
+    const nextTokens: Token[] = [
+      ...tokens,
       { type: "number", value: card.value, cardIndex, label: card.label },
-    ]);
+    ];
+    setTokens(nextTokens);
+    persistRunState(
+      round,
+      nextTokens,
+      scoreRef.current,
+      solvedCountRef.current,
+      timeLeft,
+      hintUsed,
+      feedback,
+    );
   };
 
   const appendOperator = (operator: Operator) => {
     if (phase !== "playing") return;
-    setTokens((current) => [...current, { type: "operator", value: operator }]);
+    const nextTokens: Token[] = [...tokens, { type: "operator", value: operator }];
+    setTokens(nextTokens);
+    persistRunState(
+      round,
+      nextTokens,
+      scoreRef.current,
+      solvedCountRef.current,
+      timeLeft,
+      hintUsed,
+      feedback,
+    );
   };
 
   const appendParen = (value: "(" | ")") => {
     if (phase !== "playing") return;
-    setTokens((current) => [...current, { type: "paren", value }]);
+    const nextTokens: Token[] = [...tokens, { type: "paren", value }];
+    setTokens(nextTokens);
+    persistRunState(
+      round,
+      nextTokens,
+      scoreRef.current,
+      solvedCountRef.current,
+      timeLeft,
+      hintUsed,
+      feedback,
+    );
   };
 
   const undo = () => {
     if (phase !== "playing") return;
-    setTokens((current) => current.slice(0, -1));
+    const nextTokens = tokens.slice(0, -1);
+    setTokens(nextTokens);
+    persistRunState(
+      round,
+      nextTokens,
+      scoreRef.current,
+      solvedCountRef.current,
+      timeLeft,
+      hintUsed,
+      feedback,
+    );
   };
 
   const clearExpression = () => {
     if (phase !== "playing") return;
     setTokens([]);
-    setFeedback("已清空，重新组合");
+    const nextFeedback = "已清空，重新组合";
+    setFeedback(nextFeedback);
+    persistRunState(
+      round,
+      [],
+      scoreRef.current,
+      solvedCountRef.current,
+      timeLeft,
+      hintUsed,
+      nextFeedback,
+    );
   };
 
   const submitExpression = () => {
     playTap();
     if (usedCardIndexes.size !== round.cards.length) {
-      setFeedback("需要用完四张牌");
+      const nextFeedback = "需要用完四张牌";
+      setFeedback(nextFeedback);
+      persistRunState(
+        round,
+        tokens,
+        scoreRef.current,
+        solvedCountRef.current,
+        timeLeft,
+        hintUsed,
+        nextFeedback,
+      );
       return;
     }
 
     const result = evaluateExpression(tokens);
     if (result === null || !Number.isFinite(result)) {
-      setFeedback("表达式还不完整");
+      const nextFeedback = "表达式还不完整";
+      setFeedback(nextFeedback);
+      persistRunState(
+        round,
+        tokens,
+        scoreRef.current,
+        solvedCountRef.current,
+        timeLeft,
+        hintUsed,
+        nextFeedback,
+      );
       return;
     }
 
     const isCorrect = Math.abs(result - 24) < EPSILON;
     if (isCorrect) {
       playCorrect();
-      const roundPoints = getPointsForAttempt(solvedCount, isCorrect, hintUsed);
+      const roundPoints = getPointsForAttempt(solvedCountRef.current, isCorrect, hintUsed);
+      const nextScore = scoreRef.current + roundPoints;
+      const nextSolvedCount = solvedCountRef.current + (roundPoints > 0 ? 1 : 0);
+      scoreRef.current = nextScore;
+      solvedCountRef.current = nextSolvedCount;
       if (roundPoints > 0) {
-        setScore((current) => current + roundPoints);
-        setSolvedCount((current) => current + 1);
-        setFeedback(`正确，获得 ${roundPoints} 分，进入下一题`);
+        const nextFeedback = `正确，获得 ${roundPoints} 分，进入下一题`;
+        setScore(nextScore);
+        setSolvedCount(nextSolvedCount);
+        setFeedback(nextFeedback);
+        persistRunState(
+          round,
+          tokens,
+          nextScore,
+          nextSolvedCount,
+          timeLeft,
+          hintUsed,
+          nextFeedback,
+        );
       } else {
-        setFeedback("已完成提示题，进入下一题");
+        const nextFeedback = "已完成提示题，进入下一题";
+        setScore(nextScore);
+        setSolvedCount(nextSolvedCount);
+        setFeedback(nextFeedback);
+        persistRunState(
+          round,
+          tokens,
+          nextScore,
+          nextSolvedCount,
+          timeLeft,
+          hintUsed,
+          nextFeedback,
+        );
       }
       setTimeout(nextRound, 450);
       return;
     }
 
     playWrong();
-    setFeedback(`当前结果 ${Number(result.toFixed(2))}，还不是 24`);
+    const nextFeedback = `当前结果 ${Number(result.toFixed(2))}，还不是 24`;
+    setFeedback(nextFeedback);
+    persistRunState(
+      round,
+      tokens,
+      scoreRef.current,
+      solvedCountRef.current,
+      timeLeft,
+      hintUsed,
+      nextFeedback,
+    );
   };
 
   return (

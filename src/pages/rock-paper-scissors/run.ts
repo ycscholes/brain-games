@@ -11,11 +11,28 @@ import {
   type GameRun,
 } from "../../utils/gameFlowSession";
 
+export type RockPaperScissorsHand = "rock" | "paper" | "scissors";
+export type RockPaperScissorsOutcome = "win" | "draw" | "lose";
+
+export interface RockPaperScissorsRunState {
+  score: number;
+  streak: number;
+  bestStreak: number;
+  timeLeft: number;
+  currentHand: RockPaperScissorsHand | null;
+  targetOutcome: RockPaperScissorsOutcome | null;
+  feedback: "none" | "correct" | "wrong";
+  selectedHand: RockPaperScissorsHand | null;
+  clockStartedAt: number;
+  questionStartedAt: number;
+}
+
 export interface RockPaperScissorsRunPayload {
   difficulty: TrainingDifficulty;
   level: 1 | 2 | 3 | 4;
   rounds: 1 | 3;
   startedAt: number;
+  state?: RockPaperScissorsRunState;
 }
 export interface RockPaperScissorsRunResult {
   score: number;

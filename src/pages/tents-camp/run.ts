@@ -1,6 +1,7 @@
 import type { GameSettlementInput, GameSettlementResult } from "../../domain/training/settlement";
 import type { TrainingDifficulty } from "../../domain/training/types";
 import { settleGame } from "../../services/gameSettlementService";
+import type { TentsCampCoord, TentsCampPuzzle, TentsCampResult } from "./gameLogic";
 import {
   abandonGameRun,
   createGameRun,
@@ -11,9 +12,24 @@ import {
   type GameRun,
 } from "../../utils/gameFlowSession";
 
+export interface TentsCampRunState {
+  puzzles: TentsCampPuzzle[];
+  currentIndex: number;
+  selectedTents: TentsCampCoord[];
+  score: number;
+  combo: number;
+  bestCombo: number;
+  correctPuzzles: number;
+  lastResult: TentsCampResult | null;
+  phase: "playing" | "feedback";
+  clockStartedAt: number;
+  puzzleStartedAt: number;
+}
+
 export interface TentsCampRunPayload {
   difficulty: TrainingDifficulty;
   startedAt: number;
+  state?: TentsCampRunState;
 }
 export interface TentsCampRunResult {
   score: number;

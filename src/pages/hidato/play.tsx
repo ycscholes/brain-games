@@ -23,7 +23,7 @@ import {
   type HidatoClickState,
   type HidatoPuzzle,
 } from "./gameLogic";
-import { abandonHidatoRun, readHidatoRun, settleHidatoCompletion } from "./run";
+import { abandonHidatoRun, readHidatoRun, settleHidatoCompletion, updateHidatoRun } from "./run";
 import "./index.scss";
 
 type Phase = "playing";
@@ -54,14 +54,17 @@ export default function HidatoPage() {
   const phase: Phase = "playing";
   const difficulty: TrainingDifficulty =
     routeRun?.payload.difficulty ?? gauntletPreset?.difficulty ?? "normal";
-  const [puzzle, setPuzzle] = useState<HidatoPuzzle | null>(null);
-  const [clickState, setClickState] = useState<HidatoClickState>(() => createInitialClickState());
+  const persistedState = routeRun?.payload.state;
+  const [puzzle, setPuzzle] = useState<HidatoPuzzle | null>(() => persistedState?.puzzle ?? null);
+  const [clickState, setClickState] = useState<HidatoClickState>(
+    () => persistedState?.clickState ?? createInitialClickState(),
+  );
   const [feedback, setFeedback] = useState("从 1 开始，沿相邻格连接到终点。");
   const [hintValue, setHintValue] = useState<number | null>(null);
   const [lastWrongCellId, setLastWrongCellId] = useState<string | null>(null);
   const [boardBounds, setBoardBounds] = useState<HidatoBoardBounds | null>(null);
 
-  const startedAtRef = useRef(0);
+  const startedAtRef = useRef(persistedState?.clockStartedAt ?? routeRun?.payload.startedAt ?? 0);
   const finishedRef = useRef(false);
   const autoStartedRef = useRef(false);
   const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -92,6 +95,20 @@ export default function HidatoPage() {
       wrongTimerRef.current = null;
     }
   }, []);
+
+  const persistRunState = useCallback(
+    (nextPuzzle: HidatoPuzzle, nextClickState: HidatoClickState) => {
+      if (!runId) return;
+      updateHidatoRun(runId, {
+        state: {
+          puzzle: nextPuzzle,
+          clickState: nextClickState,
+          clockStartedAt: startedAtRef.current,
+        },
+      });
+    },
+    [runId],
+  );
 
   useEffect(() => {
     return () => {
@@ -186,13 +203,29 @@ export default function HidatoPage() {
     setHintValue(null);
     setLastWrongCellId(null);
     setFeedback("先点击 1，再沿相邻格寻找下一个数字。");
-  }, [clearTransientTimers, difficulty]);
+    persistRunState(nextPuzzle, nextState);
+  }, [clearTransientTimers, difficulty, persistRunState]);
+
+  const restoreGame = useCallback(() => {
+    if (!persistedState) {
+      startGame();
+      return;
+    }
+    clearTransientTimers();
+    startedAtRef.current = persistedState.clockStartedAt;
+    finishedRef.current = false;
+    setPuzzle(persistedState.puzzle);
+    setClickState(persistedState.clickState);
+    setHintValue(null);
+    setLastWrongCellId(null);
+    setFeedback("已恢复本局，请继续寻找下一个数字。");
+  }, [clearTransientTimers, persistedState, startGame]);
 
   useEffect(() => {
     if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
-    startGame();
-  }, [phase, routeRun, startGame]);
+    restoreGame();
+  }, [phase, restoreGame, routeRun]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;
@@ -232,6 +265,7 @@ export default function HidatoPage() {
     playTap();
     result.correct ? playCorrect() : playWrong();
     setClickState(result.state);
+    persistRunState(puzzle, result.state);
 
     if (!result.correct) {
       flashWrongCell(cell.id);
@@ -252,7 +286,9 @@ export default function HidatoPage() {
     if (!puzzle || phase !== "playing" || finishedRef.current) return;
 
     const targetValue = clickState.nextValue;
-    setClickState((current) => applyHidatoHint(current));
+    const nextState = applyHidatoHint(clickState);
+    setClickState(nextState);
+    persistRunState(puzzle, nextState);
     setHintValue(targetValue);
     setFeedback(`提示已高亮 ${targetValue}，本局分数会降低。`);
 

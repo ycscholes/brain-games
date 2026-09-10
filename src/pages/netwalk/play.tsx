@@ -18,7 +18,12 @@ import {
   type NetwalkState,
   type NetwalkTile,
 } from "./gameLogic";
-import { abandonNetwalkRun, readNetwalkRun, settleNetwalkCompletion } from "./run";
+import {
+  abandonNetwalkRun,
+  readNetwalkRun,
+  settleNetwalkCompletion,
+  updateNetwalkRun,
+} from "./run";
 import "./index.scss";
 
 type Phase = "playing";
@@ -47,14 +52,42 @@ export default function Netwalk() {
   const phase: Phase = "playing";
   const difficulty: TrainingDifficulty =
     routeRun?.payload.difficulty ?? gauntletPreset?.difficulty ?? "normal";
-  const [puzzle, setPuzzle] = useState<NetwalkPuzzle | null>(null);
-  const [networkState, setNetworkState] = useState<NetwalkState | null>(null);
-  const [hintCount, setHintCount] = useState(0);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [feedback, setFeedback] = useState("旋转线路，让每个终端接回琥珀服务器。");
-  const startedAtRef = useRef(0);
+  const persistedState = routeRun?.payload.state;
+  const [puzzle, setPuzzle] = useState<NetwalkPuzzle | null>(() => persistedState?.puzzle ?? null);
+  const [networkState, setNetworkState] = useState<NetwalkState | null>(
+    () => persistedState?.networkState ?? null,
+  );
+  const [hintCount, setHintCount] = useState(persistedState?.hintCount ?? 0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(persistedState?.elapsedSeconds ?? 0);
+  const [feedback, setFeedback] = useState(
+    persistedState?.feedback ?? "旋转线路，让每个终端接回琥珀服务器。",
+  );
+  const startedAtRef = useRef(persistedState?.clockStartedAt ?? routeRun?.payload.startedAt ?? 0);
   const completedRef = useRef(false);
   const autoStartedRef = useRef(false);
+
+  const persistRunState = useCallback(
+    (
+      nextPuzzle: NetwalkPuzzle,
+      nextNetworkState: NetwalkState,
+      nextHintCount: number,
+      nextElapsedSeconds: number,
+      nextFeedback: string,
+    ) => {
+      if (!runId) return;
+      updateNetwalkRun(runId, {
+        state: {
+          puzzle: nextPuzzle,
+          networkState: nextNetworkState,
+          hintCount: nextHintCount,
+          elapsedSeconds: nextElapsedSeconds,
+          feedback: nextFeedback,
+          clockStartedAt: startedAtRef.current,
+        },
+      });
+    },
+    [runId],
+  );
 
   useEffect(() => {
     if (phase !== "playing") return undefined;
@@ -114,20 +147,47 @@ export default function Netwalk() {
   const startGame = useCallback(() => {
     playTap();
     const nextPuzzle = createNetwalkPuzzle(difficulty);
+    const nextNetworkState = createNetwalkState(nextPuzzle);
     completedRef.current = false;
     startedAtRef.current = Date.now();
     setPuzzle(nextPuzzle);
-    setNetworkState(createNetwalkState(nextPuzzle));
+    setNetworkState(nextNetworkState);
     setHintCount(0);
     setElapsedSeconds(0);
     setFeedback("点击任意蓝色节点顺时针旋转，接口需要两边同时对齐。");
-  }, [difficulty]);
+    persistRunState(
+      nextPuzzle,
+      nextNetworkState,
+      0,
+      0,
+      "点击任意蓝色节点顺时针旋转，接口需要两边同时对齐。",
+    );
+  }, [difficulty, persistRunState]);
+
+  const restoreGame = useCallback(() => {
+    if (!persistedState) {
+      startGame();
+      return;
+    }
+    startedAtRef.current = persistedState.clockStartedAt;
+    completedRef.current = false;
+    setPuzzle(persistedState.puzzle);
+    setNetworkState(persistedState.networkState);
+    setHintCount(persistedState.hintCount);
+    setElapsedSeconds(
+      Math.max(
+        persistedState.elapsedSeconds,
+        Math.floor((Date.now() - persistedState.clockStartedAt) / 1000),
+      ),
+    );
+    setFeedback(persistedState.feedback);
+  }, [persistedState, startGame]);
 
   useEffect(() => {
     if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
-    startGame();
-  }, [phase, routeRun, startGame]);
+    restoreGame();
+  }, [phase, restoreGame, routeRun]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;
@@ -155,26 +215,44 @@ export default function Netwalk() {
       const nextState = rotateNetwalkTile(networkState, tile.id);
       playTap();
       setNetworkState(nextState);
+      const nextHintCount = hintCount + (fromHint ? 1 : 0);
+      const nextElapsedSeconds = Math.max(
+        1,
+        Math.floor((Date.now() - startedAtRef.current) / 1000),
+      );
       if (isNetwalkSolved(puzzle, nextState)) {
-        finishGame(nextState, hintCount + (fromHint ? 1 : 0));
+        persistRunState(
+          puzzle,
+          nextState,
+          nextHintCount,
+          nextElapsedSeconds,
+          "全网已接通，正在结算。 ",
+        );
+        finishGame(nextState, nextHintCount);
         return;
       }
       if (fromHint) {
-        setFeedback("提示已旋转一个错误节点。顺着亮起的线路继续延展。 ");
+        const nextFeedback = "提示已旋转一个错误节点。顺着亮起的线路继续延展。 ";
+        setFeedback(nextFeedback);
+        persistRunState(puzzle, nextState, nextHintCount, nextElapsedSeconds, nextFeedback);
         return;
       }
       const connectedCount = getConnectedNetwalkTileIds(puzzle, nextState).length;
       if (connectedCount > 1) playCorrect();
-      setFeedback(`已有 ${connectedCount}/${puzzle.size * puzzle.size} 个节点接回服务器。`);
+      const nextFeedback = `已有 ${connectedCount}/${puzzle.size * puzzle.size} 个节点接回服务器。`;
+      setFeedback(nextFeedback);
+      persistRunState(puzzle, nextState, hintCount, nextElapsedSeconds, nextFeedback);
     },
-    [finishGame, hintCount, networkState, phase, puzzle],
+    [finishGame, hintCount, networkState, persistRunState, phase, puzzle],
   );
 
   const useHint = () => {
     if (!puzzle || !networkState || phase !== "playing") return;
     const hint = getNetwalkHint(puzzle, networkState);
     if (!hint) {
-      setFeedback("全网已对齐，检查是否还有断开的支路。 ");
+      const nextFeedback = "全网已对齐，检查是否还有断开的支路。 ";
+      setFeedback(nextFeedback);
+      persistRunState(puzzle, networkState, hintCount, elapsedSeconds, nextFeedback);
       return;
     }
     const tile = networkState.tiles.find((item) => item.id === hint.tileId);

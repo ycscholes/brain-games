@@ -1,6 +1,7 @@
 import type { GameSettlementInput, GameSettlementResult } from "../../domain/training/settlement";
 import type { TrainingDifficulty } from "../../domain/training/types";
 import { settleGame } from "../../services/gameSettlementService";
+import type { GeneratedRound, Token } from "./gameLogic";
 import {
   abandonGameRun,
   createGameRun,
@@ -11,9 +12,21 @@ import {
   type GameRun,
 } from "../../utils/gameFlowSession";
 
+export interface TwentyFourRunState {
+  round: GeneratedRound;
+  tokens: Token[];
+  score: number;
+  solvedCount: number;
+  timeLeft: number;
+  hintUsed: boolean;
+  feedback: string;
+  clockStartedAt: number;
+}
+
 export interface TwentyFourRunPayload {
   difficulty: TrainingDifficulty;
   startedAt: number;
+  state?: TwentyFourRunState;
 }
 export interface TwentyFourRunResult {
   score: number;

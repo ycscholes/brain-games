@@ -11,7 +11,13 @@ import {
   playTap,
   playWrong,
 } from "../../services/audio/audioFeedbackService";
-import { abandonDigitSpanRun, readDigitSpanRun, settleDigitSpanCompletion } from "./run";
+import {
+  abandonDigitSpanRun,
+  readDigitSpanRun,
+  settleDigitSpanCompletion,
+  updateDigitSpanRun,
+  type DigitSpanRunState,
+} from "./run";
 import "./index.scss";
 
 type Phase = "showing" | "input";
@@ -48,25 +54,48 @@ export default function DigitSpan() {
     }
   }, [routeRun, runId]);
 
-  const [phase, setPhase] = useState<Phase>("showing");
+  const persistedState = routeRun?.payload.state;
+  const [phase, setPhase] = useState<Phase>(persistedState?.phase ?? "showing");
   const rewardDifficulty: TrainingDifficulty =
     routeRun?.payload.difficulty ?? gauntletPreset?.difficulty ?? "normal";
   const [best, setBest] = useState(0);
-  const [score, setScore] = useState(0);
-  const [roundLength, setRoundLength] = useState(INITIAL_LENGTH.normal);
-  const [sequence, setSequence] = useState("");
-  const [currentDigit, setCurrentDigit] = useState("");
-  const [inputValue, setInputValue] = useState("");
-  const [displayStep, setDisplayStep] = useState(0);
+  const [score, setScore] = useState(() => persistedState?.score ?? 0);
+  const [roundLength, setRoundLength] = useState(
+    () => persistedState?.roundLength ?? INITIAL_LENGTH.normal,
+  );
+  const [sequence, setSequence] = useState(() => persistedState?.sequence ?? "");
+  const [currentDigit, setCurrentDigit] = useState(() => persistedState?.currentDigit ?? "");
+  const [inputValue, setInputValue] = useState(() => persistedState?.inputValue ?? "");
+  const [displayStep, setDisplayStep] = useState(() => persistedState?.displayStep ?? 0);
 
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const autoStartedRef = useRef(false);
-  const startedAtRef = useRef(0);
+  const startedAtRef = useRef(persistedState?.clockStartedAt ?? routeRun?.payload.startedAt ?? 0);
+  const revealStartedAtRef = useRef(persistedState?.revealStartedAt ?? 0);
+  const scoreRef = useRef(persistedState?.score ?? 0);
 
-  const clearTimers = () => {
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
+
+  const persistRunState = useCallback(
+    (state: Omit<DigitSpanRunState, "clockStartedAt" | "revealStartedAt">) => {
+      if (!runId) return;
+      updateDigitSpanRun(runId, {
+        state: {
+          ...state,
+          clockStartedAt: startedAtRef.current,
+          revealStartedAt: revealStartedAtRef.current,
+        },
+      });
+    },
+    [runId],
+  );
+
+  const clearTimers = useCallback(() => {
     timeoutsRef.current.forEach((timer) => clearTimeout(timer));
     timeoutsRef.current = [];
-  };
+  }, []);
 
   const refreshBest = useCallback(() => {
     const value = Number(
@@ -93,7 +122,7 @@ export default function DigitSpan() {
       clearTimers();
       playComplete();
     };
-  }, []);
+  }, [clearTimers]);
 
   const finishGame = useCallback(
     (finalScore: number) => {
@@ -132,25 +161,45 @@ export default function DigitSpan() {
         url: `/pages/digit-span/result?runId=${encodeURIComponent(runId)}`,
       });
     },
-    [best, rewardDifficulty, runId],
+    [best, clearTimers, rewardDifficulty, runId],
   );
 
   const startRound = useCallback(
-    (length: number) => {
+    (length: number, nextScore = scoreRef.current) => {
       clearTimers();
 
       const nextSequence = buildSequence(length);
+      const revealStartedAt = Date.now();
+      revealStartedAtRef.current = revealStartedAt;
       setRoundLength(length);
       setSequence(nextSequence);
       setInputValue("");
       setDisplayStep(1);
       setCurrentDigit(nextSequence.charAt(0));
       setPhase("showing");
+      persistRunState({
+        phase: "showing",
+        sequence: nextSequence,
+        roundLength: length,
+        inputValue: "",
+        score: nextScore,
+        currentDigit: nextSequence.charAt(0),
+        displayStep: 1,
+      });
 
       for (let index = 1; index < nextSequence.length; index += 1) {
         const timer = setTimeout(() => {
           setDisplayStep(index + 1);
           setCurrentDigit(nextSequence.charAt(index));
+          persistRunState({
+            phase: "showing",
+            sequence: nextSequence,
+            roundLength: length,
+            inputValue: "",
+            score: scoreRef.current,
+            currentDigit: nextSequence.charAt(index),
+            displayStep: index + 1,
+          });
         }, index * REVEAL_MS[rewardDifficulty]);
 
         timeoutsRef.current.push(timer);
@@ -160,25 +209,92 @@ export default function DigitSpan() {
         setCurrentDigit("");
         setDisplayStep(0);
         setPhase("input");
+        persistRunState({
+          phase: "input",
+          sequence: nextSequence,
+          roundLength: length,
+          inputValue: "",
+          score: scoreRef.current,
+          currentDigit: "",
+          displayStep: 0,
+        });
       }, nextSequence.length * REVEAL_MS[rewardDifficulty]);
 
       timeoutsRef.current.push(doneTimer);
     },
-    [rewardDifficulty],
+    [clearTimers, persistRunState, rewardDifficulty],
   );
 
   const startGame = useCallback(() => {
     playTap();
     startedAtRef.current = Date.now();
+    scoreRef.current = 0;
     setScore(0);
-    startRound(INITIAL_LENGTH[rewardDifficulty]);
+    startRound(INITIAL_LENGTH[rewardDifficulty], 0);
   }, [rewardDifficulty, startRound]);
+
+  const restoreGame = useCallback(() => {
+    if (!persistedState) {
+      startGame();
+      return;
+    }
+    clearTimers();
+    startedAtRef.current = persistedState.clockStartedAt;
+    revealStartedAtRef.current = persistedState.revealStartedAt;
+    scoreRef.current = persistedState.score;
+    setPhase(persistedState.phase);
+    setScore(persistedState.score);
+    setRoundLength(persistedState.roundLength);
+    setSequence(persistedState.sequence);
+    setInputValue(persistedState.inputValue);
+    setCurrentDigit(persistedState.currentDigit);
+    setDisplayStep(persistedState.displayStep);
+
+    if (persistedState.phase !== "showing" || !persistedState.sequence) return;
+
+    const revealDuration = REVEAL_MS[rewardDifficulty];
+    const elapsed = Math.max(0, Date.now() - persistedState.revealStartedAt);
+    const nextIndex = Math.max(1, persistedState.displayStep);
+    for (let index = nextIndex; index < persistedState.sequence.length; index += 1) {
+      const delay = Math.max(0, index * revealDuration - elapsed);
+      const timer = setTimeout(() => {
+        setDisplayStep(index + 1);
+        setCurrentDigit(persistedState.sequence.charAt(index));
+        persistRunState({
+          phase: "showing",
+          sequence: persistedState.sequence,
+          roundLength: persistedState.roundLength,
+          inputValue: "",
+          score: scoreRef.current,
+          currentDigit: persistedState.sequence.charAt(index),
+          displayStep: index + 1,
+        });
+      }, delay);
+      timeoutsRef.current.push(timer);
+    }
+    const doneDelay = Math.max(0, persistedState.sequence.length * revealDuration - elapsed);
+    const doneTimer = setTimeout(() => {
+      setCurrentDigit("");
+      setDisplayStep(0);
+      setPhase("input");
+      persistRunState({
+        phase: "input",
+        sequence: persistedState.sequence,
+        roundLength: persistedState.roundLength,
+        inputValue: "",
+        score: scoreRef.current,
+        currentDigit: "",
+        displayStep: 0,
+      });
+    }, doneDelay);
+    timeoutsRef.current.push(doneTimer);
+  }, [clearTimers, persistedState, persistRunState, rewardDifficulty, startGame]);
 
   useEffect(() => {
     if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
-    startGame();
-  }, [routeRun, startGame]);
+    restoreGame();
+  }, [restoreGame, routeRun]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;
@@ -197,7 +313,17 @@ export default function DigitSpan() {
       return;
     }
 
-    setInputValue((prev) => `${prev}${digit}`);
+    const nextInputValue = `${inputValue}${digit}`;
+    setInputValue(nextInputValue);
+    persistRunState({
+      phase: "input",
+      sequence,
+      roundLength,
+      inputValue: nextInputValue,
+      score: scoreRef.current,
+      currentDigit: "",
+      displayStep: 0,
+    });
   };
 
   const clearInput = () => {
@@ -206,6 +332,15 @@ export default function DigitSpan() {
     }
 
     setInputValue("");
+    persistRunState({
+      phase: "input",
+      sequence,
+      roundLength,
+      inputValue: "",
+      score: scoreRef.current,
+      currentDigit: "",
+      displayStep: 0,
+    });
   };
 
   const deleteLastDigit = () => {
@@ -213,7 +348,17 @@ export default function DigitSpan() {
       return;
     }
 
-    setInputValue((prev) => prev.slice(0, -1));
+    const nextInputValue = inputValue.slice(0, -1);
+    setInputValue(nextInputValue);
+    persistRunState({
+      phase: "input",
+      sequence,
+      roundLength,
+      inputValue: nextInputValue,
+      score: scoreRef.current,
+      currentDigit: "",
+      displayStep: 0,
+    });
   };
 
   const submitAnswer = () => {
@@ -224,8 +369,9 @@ export default function DigitSpan() {
     if (inputValue === sequence) {
       playCorrect();
       const nextScore = roundLength;
+      scoreRef.current = nextScore;
       setScore(nextScore);
-      startRound(roundLength + 1);
+      startRound(roundLength + 1, nextScore);
       return;
     }
 

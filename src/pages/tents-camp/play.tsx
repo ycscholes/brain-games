@@ -23,7 +23,12 @@ import {
   type TentsCampPuzzle,
   type TentsCampResult,
 } from "./gameLogic";
-import { abandonTentsCampRun, readTentsCampRun, settleTentsCampCompletion } from "./run";
+import {
+  abandonTentsCampRun,
+  readTentsCampRun,
+  settleTentsCampCompletion,
+  updateTentsCampRun,
+} from "./run";
 import "./index.scss";
 
 type Phase = "playing" | "feedback";
@@ -58,21 +63,26 @@ export default function TentsCamp() {
     }
   }, [routeRun, runId]);
 
-  const [phase, setPhase] = useState<Phase>("playing");
   const difficulty: TrainingDifficulty =
     routeRun?.payload.difficulty ?? gauntletPreset?.difficulty ?? "normal";
-  const [puzzles, setPuzzles] = useState<TentsCampPuzzle[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedTents, setSelectedTents] = useState<TentsCampCoord[]>([]);
-  const [score, setScore] = useState(0);
-  const [combo, setCombo] = useState(0);
-  const [bestCombo, setBestCombo] = useState(0);
-  const [correctPuzzles, setCorrectPuzzles] = useState(0);
-  const [lastResult, setLastResult] = useState<TentsCampResult | null>(null);
+  const persistedState = routeRun?.payload.state;
+  const [phase, setPhase] = useState<Phase>(persistedState?.phase ?? "playing");
+  const [puzzles, setPuzzles] = useState<TentsCampPuzzle[]>(persistedState?.puzzles ?? []);
+  const [currentIndex, setCurrentIndex] = useState(persistedState?.currentIndex ?? 0);
+  const [selectedTents, setSelectedTents] = useState<TentsCampCoord[]>(
+    persistedState?.selectedTents ?? [],
+  );
+  const [score, setScore] = useState(persistedState?.score ?? 0);
+  const [combo, setCombo] = useState(persistedState?.combo ?? 0);
+  const [bestCombo, setBestCombo] = useState(persistedState?.bestCombo ?? 0);
+  const [correctPuzzles, setCorrectPuzzles] = useState(persistedState?.correctPuzzles ?? 0);
+  const [lastResult, setLastResult] = useState<TentsCampResult | null>(
+    persistedState?.lastResult ?? null,
+  );
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const startedAtRef = useRef(0);
-  const puzzleStartedAtRef = useRef(0);
+  const startedAtRef = useRef(persistedState?.clockStartedAt ?? routeRun?.payload.startedAt ?? 0);
+  const puzzleStartedAtRef = useRef(persistedState?.puzzleStartedAt ?? 0);
   const finishedRef = useRef(false);
   const autoStartedRef = useRef(false);
   const phaseRef = useRef<Phase>("playing");
@@ -98,6 +108,38 @@ export default function TentsCamp() {
     timersRef.current.forEach((timer) => clearTimeout(timer));
     timersRef.current = [];
   }, []);
+
+  const persistRunState = useCallback(
+    (
+      nextPuzzles: TentsCampPuzzle[],
+      nextIndex: number,
+      nextSelectedTents: TentsCampCoord[],
+      nextScore: number,
+      nextCombo: number,
+      nextBestCombo: number,
+      nextCorrectPuzzles: number,
+      nextLastResult: TentsCampResult | null,
+      nextPhase: Phase,
+    ) => {
+      if (!runId) return;
+      updateTentsCampRun(runId, {
+        state: {
+          puzzles: nextPuzzles,
+          currentIndex: nextIndex,
+          selectedTents: nextSelectedTents,
+          score: nextScore,
+          combo: nextCombo,
+          bestCombo: nextBestCombo,
+          correctPuzzles: nextCorrectPuzzles,
+          lastResult: nextLastResult,
+          phase: nextPhase,
+          clockStartedAt: startedAtRef.current,
+          puzzleStartedAt: puzzleStartedAtRef.current,
+        },
+      });
+    },
+    [runId],
+  );
 
   const schedule = useCallback((callback: () => void, delay: number) => {
     const timer = setTimeout(callback, delay);
@@ -165,7 +207,7 @@ export default function TentsCamp() {
               durationSeconds,
               placedCount: finalCorrectPuzzles,
               correctPuzzles: finalCorrectPuzzles,
-              bestCombo,
+              bestCombo: bestComboRef.current,
               isNewBest,
             },
             settlementInput,
@@ -177,19 +219,33 @@ export default function TentsCamp() {
         url: `/pages/tents-camp/result?runId=${encodeURIComponent(runId)}`,
       });
     },
-    [bestCombo, clearTimers, difficulty, runId],
+    [clearTimers, difficulty, runId],
   );
 
   const beginPuzzle = useCallback(
     (puzzleIndex: number) => {
       clearTimers();
       setCurrentIndex(puzzleIndex);
+      currentIndexRef.current = puzzleIndex;
       setSelectedTents([]);
+      selectedTentsRef.current = [];
       setLastResult(null);
       puzzleStartedAtRef.current = Date.now();
       setPhase("playing");
+      phaseRef.current = "playing";
+      persistRunState(
+        puzzles,
+        puzzleIndex,
+        [],
+        scoreRef.current,
+        comboRef.current,
+        bestComboRef.current,
+        correctPuzzlesRef.current,
+        null,
+        "playing",
+      );
     },
-    [clearTimers],
+    [clearTimers, persistRunState, puzzles],
   );
 
   const startGame = useCallback(() => {
@@ -206,14 +262,58 @@ export default function TentsCamp() {
     setBestCombo(0);
     setCorrectPuzzles(0);
     setLastResult(null);
-    beginPuzzle(0);
-  }, [beginPuzzle, clearTimers, difficulty]);
+    scoreRef.current = 0;
+    comboRef.current = 0;
+    bestComboRef.current = 0;
+    correctPuzzlesRef.current = 0;
+    currentIndexRef.current = 0;
+    selectedTentsRef.current = [];
+    phaseRef.current = "playing";
+    puzzleStartedAtRef.current = startedAtRef.current;
+    persistRunState(nextPuzzles, 0, [], 0, 0, 0, 0, null, "playing");
+  }, [clearTimers, difficulty, persistRunState]);
+
+  const restoreGame = useCallback(() => {
+    if (!persistedState) {
+      startGame();
+      return;
+    }
+    clearTimers();
+    startedAtRef.current = persistedState.clockStartedAt;
+    puzzleStartedAtRef.current = persistedState.puzzleStartedAt;
+    finishedRef.current = false;
+    setPuzzles(persistedState.puzzles);
+    setCurrentIndex(persistedState.currentIndex);
+    setSelectedTents(persistedState.selectedTents);
+    setScore(persistedState.score);
+    setCombo(persistedState.combo);
+    setBestCombo(persistedState.bestCombo);
+    setCorrectPuzzles(persistedState.correctPuzzles);
+    setLastResult(persistedState.lastResult);
+    setPhase(persistedState.phase);
+    scoreRef.current = persistedState.score;
+    comboRef.current = persistedState.combo;
+    bestComboRef.current = persistedState.bestCombo;
+    correctPuzzlesRef.current = persistedState.correctPuzzles;
+    currentIndexRef.current = persistedState.currentIndex;
+    selectedTentsRef.current = persistedState.selectedTents;
+    phaseRef.current = persistedState.phase;
+    if (persistedState.phase === "feedback") {
+      schedule(() => {
+        if (persistedState.currentIndex >= TENTS_CAMP_TOTAL_PUZZLES - 1) {
+          finishGame(persistedState.score, persistedState.correctPuzzles);
+          return;
+        }
+        beginPuzzle(persistedState.currentIndex + 1);
+      }, FEEDBACK_MS);
+    }
+  }, [beginPuzzle, clearTimers, finishGame, persistedState, schedule, startGame]);
 
   useEffect(() => {
     if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
-    startGame();
-  }, [phase, routeRun, startGame]);
+    restoreGame();
+  }, [phase, restoreGame, routeRun]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;
@@ -238,13 +338,27 @@ export default function TentsCamp() {
     playTap();
     const key = coordKey(coord);
     setSelectedTents((items) => {
+      let nextItems: TentsCampCoord[];
       if (items.some((item) => coordKey(item) === key)) {
-        return items.filter((item) => coordKey(item) !== key);
+        nextItems = items.filter((item) => coordKey(item) !== key);
+      } else if (items.length >= currentPuzzle.tents.length) {
+        nextItems = items;
+      } else {
+        nextItems = [...items, coord];
       }
-      if (items.length >= currentPuzzle.tents.length) {
-        return items;
-      }
-      return [...items, coord];
+      selectedTentsRef.current = nextItems;
+      persistRunState(
+        puzzles,
+        currentIndex,
+        nextItems,
+        scoreRef.current,
+        comboRef.current,
+        bestComboRef.current,
+        correctPuzzlesRef.current,
+        lastResult,
+        "playing",
+      );
+      return nextItems;
     });
   };
 
@@ -271,6 +385,22 @@ export default function TentsCamp() {
     setCorrectPuzzles(nextCorrectPuzzles);
     setLastResult(result);
     setPhase("feedback");
+    scoreRef.current = nextScore;
+    comboRef.current = nextCombo;
+    bestComboRef.current = nextBestCombo;
+    correctPuzzlesRef.current = nextCorrectPuzzles;
+    phaseRef.current = "feedback";
+    persistRunState(
+      puzzles,
+      currentIndexRef.current,
+      selectedTentsRef.current,
+      nextScore,
+      nextCombo,
+      nextBestCombo,
+      nextCorrectPuzzles,
+      result,
+      "feedback",
+    );
 
     schedule(() => {
       if (currentIndexRef.current >= TENTS_CAMP_TOTAL_PUZZLES - 1) {

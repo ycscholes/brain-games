@@ -14,6 +14,7 @@ import {
   abandonRockPaperScissorsRun,
   readRockPaperScissorsRun,
   settleRockPaperScissorsCompletion,
+  updateRockPaperScissorsRun,
 } from "./run";
 import "./index.scss";
 
@@ -66,20 +67,74 @@ export default function RockPaperScissors() {
     }
   }, [routeRun, runId]);
 
+  const persistedState = routeRun?.payload.state;
   const [gameState] = useState<GameState>("playing");
-  const [score, setScore] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [bestStreak, setBestStreak] = useState(0);
+  const [score, setScore] = useState(() => persistedState?.score ?? 0);
+  const [streak, setStreak] = useState(() => persistedState?.streak ?? 0);
+  const [bestStreak, setBestStreak] = useState(() => persistedState?.bestStreak ?? 0);
   const difficulty: Difficulty = routeRun?.payload.level ?? presetDifficulty;
-  const [timeLeft, setTimeLeft] = useState(5);
-  const [currentHand, setCurrentHand] = useState<HandType | null>(null);
-  const [targetOutcome, setTargetOutcome] = useState<OutcomeType | null>(null);
-  const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">("none");
-  const [selectedHand, setSelectedHand] = useState<HandType | null>(null);
+  const [timeLeft, setTimeLeft] = useState(
+    () => persistedState?.timeLeft ?? DIFFICULTY_CONFIG[difficulty].time,
+  );
+  const [currentHand, setCurrentHand] = useState<HandType | null>(
+    () => persistedState?.currentHand ?? null,
+  );
+  const [targetOutcome, setTargetOutcome] = useState<OutcomeType | null>(
+    () => persistedState?.targetOutcome ?? null,
+  );
+  const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">(
+    () => persistedState?.feedback ?? "none",
+  );
+  const [selectedHand, setSelectedHand] = useState<HandType | null>(
+    () => persistedState?.selectedHand ?? null,
+  );
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const autoStartedRef = useRef(false);
-  const startedAtRef = useRef(0);
+  const startedAtRef = useRef(persistedState?.clockStartedAt ?? routeRun?.payload.startedAt ?? 0);
+  const questionStartedAtRef = useRef(
+    persistedState?.questionStartedAt ?? routeRun?.payload.startedAt ?? 0,
+  );
+  const scoreRef = useRef(persistedState?.score ?? 0);
+  const streakRef = useRef(persistedState?.streak ?? 0);
+  const bestStreakRef = useRef(persistedState?.bestStreak ?? 0);
+  const restoredTransientRef = useRef(false);
+
+  useEffect(() => {
+    scoreRef.current = score;
+    streakRef.current = streak;
+    bestStreakRef.current = bestStreak;
+  }, [bestStreak, score, streak]);
+
+  const persistRunState = useCallback(
+    (
+      nextCurrentHand: HandType | null,
+      nextTargetOutcome: OutcomeType | null,
+      nextFeedback: "none" | "correct" | "wrong",
+      nextSelectedHand: HandType | null,
+      nextTimeLeft: number,
+      nextScore: number,
+      nextStreak: number,
+      nextBestStreak: number,
+    ) => {
+      if (!runId) return;
+      updateRockPaperScissorsRun(runId, {
+        state: {
+          score: nextScore,
+          streak: nextStreak,
+          bestStreak: nextBestStreak,
+          timeLeft: nextTimeLeft,
+          currentHand: nextCurrentHand,
+          targetOutcome: nextTargetOutcome,
+          feedback: nextFeedback,
+          selectedHand: nextSelectedHand,
+          clockStartedAt: startedAtRef.current,
+          questionStartedAt: questionStartedAtRef.current,
+        },
+      });
+    },
+    [runId],
+  );
 
   const getCurrentHighScore = useCallback((): RockPaperScissorsHighScore | null => {
     const key = `rps_highscore_D${difficulty}`;
@@ -112,12 +167,24 @@ export default function RockPaperScissors() {
 
     const randomHand = hands[Math.floor(Math.random() * hands.length)];
     const randomOutcome = outcomes[Math.floor(Math.random() * outcomes.length)];
+    questionStartedAtRef.current = Date.now();
 
     setCurrentHand(randomHand);
     setTargetOutcome(randomOutcome);
     setFeedback("none");
     setSelectedHand(null);
-  }, []);
+    setTimeLeft(DIFFICULTY_CONFIG[difficulty].time);
+    persistRunState(
+      randomHand,
+      randomOutcome,
+      "none",
+      null,
+      DIFFICULTY_CONFIG[difficulty].time,
+      scoreRef.current,
+      streakRef.current,
+      bestStreakRef.current,
+    );
+  }, [difficulty, persistRunState]);
 
   const checkAnswer = (playerHand: HandType): boolean => {
     if (!currentHand || !targetOutcome) return false;
@@ -134,6 +201,10 @@ export default function RockPaperScissors() {
   const startGame = useCallback(() => {
     playTap();
     startedAtRef.current = Date.now();
+    questionStartedAtRef.current = startedAtRef.current;
+    scoreRef.current = 0;
+    streakRef.current = 0;
+    bestStreakRef.current = 0;
     setScore(0);
     setStreak(0);
     setBestStreak(0);
@@ -141,11 +212,40 @@ export default function RockPaperScissors() {
     generateQuestion();
   }, [difficulty, generateQuestion]);
 
+  const restoreGame = useCallback(() => {
+    if (!persistedState) {
+      startGame();
+      return;
+    }
+    startedAtRef.current = persistedState.clockStartedAt;
+    questionStartedAtRef.current = persistedState.questionStartedAt;
+    scoreRef.current = persistedState.score;
+    streakRef.current = persistedState.streak;
+    bestStreakRef.current = persistedState.bestStreak;
+    setScore(persistedState.score);
+    setStreak(persistedState.streak);
+    setBestStreak(persistedState.bestStreak);
+    setCurrentHand(persistedState.currentHand);
+    setTargetOutcome(persistedState.targetOutcome);
+    setSelectedHand(persistedState.selectedHand);
+    setFeedback(persistedState.feedback);
+    setTimeLeft(
+      Math.max(
+        0,
+        Math.min(
+          persistedState.timeLeft,
+          DIFFICULTY_CONFIG[difficulty].time -
+            (Date.now() - persistedState.questionStartedAt) / 1000,
+        ),
+      ),
+    );
+  }, [difficulty, persistedState, startGame]);
+
   useEffect(() => {
     if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
-    startGame();
-  }, [routeRun, startGame]);
+    restoreGame();
+  }, [restoreGame, routeRun]);
 
   const getRewardDifficulty = useCallback((): TrainingDifficulty => {
     return difficulty >= 3 ? "hard" : "normal";
@@ -153,7 +253,7 @@ export default function RockPaperScissors() {
 
   const handleGameOver = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
-    const finalScore = Math.min(MAX_POINTS_PER_SESSION, score);
+    const finalScore = Math.min(MAX_POINTS_PER_SESSION, scoreRef.current);
     const rewardDifficulty = getRewardDifficulty();
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1_000));
     const settlementInput = {
@@ -173,7 +273,7 @@ export default function RockPaperScissors() {
             awardedPoints: 0,
             durationSeconds,
             correctCount: Math.floor(finalScore / (DIFFICULTY_POINTS[difficulty] || 2)),
-            bestStreak,
+            bestStreak: bestStreakRef.current,
             isNewBest,
           },
           settlementInput,
@@ -184,7 +284,31 @@ export default function RockPaperScissors() {
     void Taro.redirectTo({
       url: `/pages/rock-paper-scissors/result?runId=${encodeURIComponent(runId)}`,
     });
-  }, [bestStreak, difficulty, getRewardDifficulty, runId, score, updateHighScore]);
+  }, [difficulty, getRewardDifficulty, runId, updateHighScore]);
+
+  useEffect(() => {
+    if (
+      restoredTransientRef.current ||
+      !persistedState ||
+      !routeRun ||
+      routeRun.status !== "active" ||
+      feedback === "none"
+    ) {
+      return undefined;
+    }
+    restoredTransientRef.current = true;
+    const timer = setTimeout(
+      () => {
+        if (feedback === "wrong") {
+          handleGameOver();
+          return;
+        }
+        generateQuestion();
+      },
+      feedback === "wrong" ? 520 : 420,
+    );
+    return () => clearTimeout(timer);
+  }, [feedback, generateQuestion, handleGameOver, persistedState, routeRun]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;
@@ -209,11 +333,25 @@ export default function RockPaperScissors() {
       const nextStreak = streak + 1;
       const pts = DIFFICULTY_POINTS[difficulty] || 2;
       const newScore = Math.min(MAX_POINTS_PER_SESSION, score + pts);
+      const nextBestStreak = Math.max(bestStreakRef.current, nextStreak);
 
       setFeedback("correct");
       setScore(newScore);
       setStreak(nextStreak);
-      setBestStreak((prev) => Math.max(prev, nextStreak));
+      setBestStreak(nextBestStreak);
+      scoreRef.current = newScore;
+      streakRef.current = nextStreak;
+      bestStreakRef.current = nextBestStreak;
+      persistRunState(
+        currentHand,
+        targetOutcome,
+        "correct",
+        hand,
+        timeLeft,
+        newScore,
+        nextStreak,
+        nextBestStreak,
+      );
       if (!isGameGauntletRun()) {
         Taro.setStorageSync("rps_streak", nextStreak);
       }
@@ -227,6 +365,17 @@ export default function RockPaperScissors() {
 
     setFeedback("wrong");
     setStreak(0);
+    streakRef.current = 0;
+    persistRunState(
+      currentHand,
+      targetOutcome,
+      "wrong",
+      hand,
+      timeLeft,
+      scoreRef.current,
+      0,
+      bestStreakRef.current,
+    );
     if (!isGameGauntletRun()) {
       Taro.setStorageSync("rps_streak", 0);
     }

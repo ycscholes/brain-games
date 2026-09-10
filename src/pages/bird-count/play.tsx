@@ -42,7 +42,13 @@ import {
   type HeadCountSpeedDifficulty,
 } from "../head-count/gameLogic";
 import { useTimerQueue } from "./useTimerQueue";
-import { abandonBirdCountRun, readBirdCountRun, settleBirdCountCompletion } from "./run";
+import {
+  abandonBirdCountRun,
+  readBirdCountRun,
+  settleBirdCountCompletion,
+  updateBirdCountRun,
+  type BirdCountRunPhase,
+} from "./run";
 import FarmCountPlayArea from "./components/FarmCountPlayArea";
 import "./index.scss";
 
@@ -204,7 +210,8 @@ export default function FarmCount() {
   const difficulty: TrainingDifficulty = routeRun?.payload.difficulty ?? presetDifficulty;
   const yardDifficulty: HeadCountDifficulty = routeRun?.payload.difficulty ?? presetDifficulty;
   const speedDifficulty: HeadCountSpeedDifficulty = routeRun?.payload.yardSpeed ?? presetYardSpeed;
-  const [phase, setPhase] = useState<Phase>("loading");
+  const persistedState = routeRun?.payload.state;
+  const [phase, setPhase] = useState<Phase>(persistedState?.phase ?? "loading");
   const [best, setBest] = useState(0);
   const [petDisplayPool, setPetDisplayPool] = useState<PetDisplayItem[]>(() =>
     buildPetDisplayPool({
@@ -215,26 +222,77 @@ export default function FarmCount() {
       lastCheckTime: new Date().toISOString(),
     }),
   );
-  const [speedQuestions, setSpeedQuestions] = useState<BirdCountQuestion[]>([]);
-  const [yardQuestions, setYardQuestions] = useState<HeadCountQuestion[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [eventIndex, setEventIndex] = useState(-1);
-  const [displayCount, setDisplayCount] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [score, setScore] = useState(0);
-  const [combo, setCombo] = useState(0);
-  const [bestCombo, setBestCombo] = useState(0);
-  const [correctQuestions, setCorrectQuestions] = useState(0);
-  const [lastSpeedResult, setLastSpeedResult] = useState<BirdCountQuestionResult | null>(null);
-  const [lastYardResult, setLastYardResult] = useState<HeadCountQuestionResult | null>(null);
+  const [speedQuestions, setSpeedQuestions] = useState<BirdCountQuestion[]>(
+    () => persistedState?.speedQuestions ?? [],
+  );
+  const [yardQuestions, setYardQuestions] = useState<HeadCountQuestion[]>(
+    () => persistedState?.yardQuestions ?? [],
+  );
+  const [currentIndex, setCurrentIndex] = useState(() => persistedState?.currentIndex ?? 0);
+  const [eventIndex, setEventIndex] = useState(() => persistedState?.eventIndex ?? -1);
+  const [displayCount, setDisplayCount] = useState(() => persistedState?.displayCount ?? 0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(
+    () => persistedState?.selectedAnswer ?? null,
+  );
+  const [score, setScore] = useState(() => persistedState?.score ?? 0);
+  const [combo, setCombo] = useState(() => persistedState?.combo ?? 0);
+  const [bestCombo, setBestCombo] = useState(() => persistedState?.bestCombo ?? 0);
+  const [correctQuestions, setCorrectQuestions] = useState(
+    () => persistedState?.correctQuestions ?? 0,
+  );
+  const [lastSpeedResult, setLastSpeedResult] = useState<BirdCountQuestionResult | null>(
+    () => persistedState?.lastSpeedResult ?? null,
+  );
+  const [lastYardResult, setLastYardResult] = useState<HeadCountQuestionResult | null>(
+    () => persistedState?.lastYardResult ?? null,
+  );
   const [loadProgress, setLoadProgress] = useState({ loaded: 0, total: 0 });
 
   const { clear: clearTimers, schedule } = useTimerQueue();
-  const startedAtRef = useRef(0);
-  const answerStartedAtRef = useRef(0);
+  const startedAtRef = useRef(persistedState?.clockStartedAt ?? routeRun?.payload.startedAt ?? 0);
+  const answerStartedAtRef = useRef(persistedState?.answerStartedAt ?? 0);
+  const scoreRef = useRef(persistedState?.score ?? 0);
+  const comboRef = useRef(persistedState?.combo ?? 0);
+  const bestComboRef = useRef(persistedState?.bestCombo ?? 0);
+  const correctQuestionsRef = useRef(persistedState?.correctQuestions ?? 0);
   const finishedRef = useRef(false);
   const preloadRunIdRef = useRef(0);
   const autoStartedRef = useRef(false);
+
+  useEffect(() => {
+    scoreRef.current = score;
+    comboRef.current = combo;
+    bestComboRef.current = bestCombo;
+    correctQuestionsRef.current = correctQuestions;
+  }, [bestCombo, combo, correctQuestions, score]);
+
+  const persistRunState = useCallback(
+    (state: {
+      speedQuestions: BirdCountQuestion[];
+      yardQuestions: HeadCountQuestion[];
+      currentIndex: number;
+      eventIndex: number;
+      displayCount: number;
+      selectedAnswer: number | null;
+      score: number;
+      combo: number;
+      bestCombo: number;
+      correctQuestions: number;
+      phase: BirdCountRunPhase;
+      lastSpeedResult: BirdCountQuestionResult | null;
+      lastYardResult: HeadCountQuestionResult | null;
+    }) => {
+      if (!runId) return;
+      updateBirdCountRun(runId, {
+        state: {
+          ...state,
+          clockStartedAt: startedAtRef.current,
+          answerStartedAt: answerStartedAtRef.current,
+        },
+      });
+    },
+    [runId],
+  );
 
   const speedQuestion = speedQuestions[currentIndex] ?? null;
   const yardQuestion = yardQuestions[currentIndex] ?? null;
@@ -284,6 +342,10 @@ export default function FarmCount() {
     setLastSpeedResult(null);
     setLastYardResult(null);
     setLoadProgress({ loaded: 0, total: 0 });
+    scoreRef.current = 0;
+    comboRef.current = 0;
+    bestComboRef.current = 0;
+    correctQuestionsRef.current = 0;
     finishedRef.current = false;
   }, []);
 
@@ -318,7 +380,7 @@ export default function FarmCount() {
               awardedPoints: 0,
               durationSeconds,
               correctCount: finalCorrectQuestions,
-              bestCombo,
+              bestCombo: bestComboRef.current,
               isNewBest,
             },
             settlementInput,
@@ -330,7 +392,7 @@ export default function FarmCount() {
         url: `/pages/bird-count/result?runId=${encodeURIComponent(runId)}`,
       });
     },
-    [best, bestCombo, clearTimers, difficulty, runId],
+    [best, clearTimers, difficulty, runId],
   );
 
   const finishYardGame = useCallback(
@@ -365,7 +427,7 @@ export default function FarmCount() {
               awardedPoints: 0,
               durationSeconds,
               correctCount: finalCorrectQuestions,
-              bestCombo,
+              bestCombo: bestComboRef.current,
               isNewBest,
             },
             settlementInput,
@@ -377,7 +439,7 @@ export default function FarmCount() {
         url: `/pages/bird-count/result?runId=${encodeURIComponent(runId)}`,
       });
     },
-    [best, bestCombo, clearTimers, isGauntletPreset, runId, speedDifficulty, yardDifficulty],
+    [best, clearTimers, isGauntletPreset, runId, speedDifficulty, yardDifficulty],
   );
 
   const beginSpeedQuestion = useCallback(
@@ -389,16 +451,61 @@ export default function FarmCount() {
       setLastSpeedResult(null);
       setLastYardResult(null);
       setPhase("ready");
+      persistRunState({
+        speedQuestions: nextQuestions,
+        yardQuestions: [],
+        currentIndex: questionIndex,
+        eventIndex: -1,
+        displayCount: 0,
+        selectedAnswer: null,
+        score: scoreRef.current,
+        combo: comboRef.current,
+        bestCombo: bestComboRef.current,
+        correctQuestions: correctQuestionsRef.current,
+        phase: "ready",
+        lastSpeedResult: null,
+        lastYardResult: null,
+      });
 
       schedule(() => {
         setPhase("watching");
+        persistRunState({
+          speedQuestions: nextQuestions,
+          yardQuestions: [],
+          currentIndex: questionIndex,
+          eventIndex: -1,
+          displayCount: 0,
+          selectedAnswer: null,
+          score: scoreRef.current,
+          combo: comboRef.current,
+          bestCombo: bestComboRef.current,
+          correctQuestions: correctQuestionsRef.current,
+          phase: "watching",
+          lastSpeedResult: null,
+          lastYardResult: null,
+        });
         schedule(() => {
           answerStartedAtRef.current = Date.now();
           setPhase("answering");
+          persistRunState({
+            speedQuestions: nextQuestions,
+            yardQuestions: [],
+            currentIndex: questionIndex,
+            eventIndex: -1,
+            displayCount: 0,
+            selectedAnswer: null,
+            score: scoreRef.current,
+            combo: comboRef.current,
+            bestCombo: bestComboRef.current,
+            correctQuestions: correctQuestionsRef.current,
+            phase: "answering",
+            lastSpeedResult: null,
+            lastYardResult: null,
+          });
         }, question?.revealMs ?? 1000);
       }, READY_MS);
     },
-    [clearTimers, schedule, speedQuestions],
+    [clearTimers, persistRunState, schedule, speedQuestions],
   );
 
   const beginYardQuestion = useCallback(
@@ -412,13 +519,58 @@ export default function FarmCount() {
       setEventIndex(-1);
       setDisplayCount(question?.initialCount ?? 0);
       setPhase("ready");
+      persistRunState({
+        speedQuestions: [],
+        yardQuestions: nextQuestions,
+        currentIndex: questionIndex,
+        eventIndex: -1,
+        displayCount: question?.initialCount ?? 0,
+        selectedAnswer: null,
+        score: scoreRef.current,
+        combo: comboRef.current,
+        bestCombo: bestComboRef.current,
+        correctQuestions: correctQuestionsRef.current,
+        phase: "ready",
+        lastSpeedResult: null,
+        lastYardResult: null,
+      });
 
       schedule(() => {
         setPhase("playing-event");
+        persistRunState({
+          speedQuestions: [],
+          yardQuestions: nextQuestions,
+          currentIndex: questionIndex,
+          eventIndex: -1,
+          displayCount: question?.initialCount ?? 0,
+          selectedAnswer: null,
+          score: scoreRef.current,
+          combo: comboRef.current,
+          bestCombo: bestComboRef.current,
+          correctQuestions: correctQuestionsRef.current,
+          phase: "playing-event",
+          lastSpeedResult: null,
+          lastYardResult: null,
+        });
         question?.events.forEach((event, index) => {
           schedule(() => {
             setEventIndex(index);
             setDisplayCount(event.afterCount);
+            persistRunState({
+              speedQuestions: [],
+              yardQuestions: nextQuestions,
+              currentIndex: questionIndex,
+              eventIndex: index,
+              displayCount: event.afterCount,
+              selectedAnswer: null,
+              score: scoreRef.current,
+              combo: comboRef.current,
+              bestCombo: bestComboRef.current,
+              correctQuestions: correctQuestionsRef.current,
+              phase: "playing-event",
+              lastSpeedResult: null,
+              lastYardResult: null,
+            });
           }, index * question.eventMs);
         });
 
@@ -427,12 +579,27 @@ export default function FarmCount() {
             answerStartedAtRef.current = Date.now();
             setEventIndex(-1);
             setPhase("answering");
+            persistRunState({
+              speedQuestions: [],
+              yardQuestions: nextQuestions,
+              currentIndex: questionIndex,
+              eventIndex: -1,
+              displayCount: question?.answer ?? question?.initialCount ?? 0,
+              selectedAnswer: null,
+              score: scoreRef.current,
+              combo: comboRef.current,
+              bestCombo: bestComboRef.current,
+              correctQuestions: correctQuestionsRef.current,
+              phase: "answering",
+              lastSpeedResult: null,
+              lastYardResult: null,
+            });
           },
           (question?.events.length ?? 0) * (question?.eventMs ?? 700) + 160,
         );
       }, READY_MS);
     },
-    [clearTimers, schedule, yardQuestions],
+    [clearTimers, persistRunState, schedule, yardQuestions],
   );
 
   const startSpeedGame = useCallback(
@@ -451,6 +618,21 @@ export default function FarmCount() {
       setYardQuestions([]);
       setPhase("loading");
       setCurrentIndex(0);
+      persistRunState({
+        speedQuestions: nextQuestions,
+        yardQuestions: [],
+        currentIndex: 0,
+        eventIndex: -1,
+        displayCount: 0,
+        selectedAnswer: null,
+        score: 0,
+        combo: 0,
+        bestCombo: 0,
+        correctQuestions: 0,
+        phase: "loading",
+        lastSpeedResult: null,
+        lastYardResult: null,
+      });
 
       await Promise.all([
         preloadSpeedQuestionImages(nextQuestions, currentPetDisplayPool, (loaded, total) => {
@@ -468,7 +650,7 @@ export default function FarmCount() {
       startedAtRef.current = Date.now();
       beginSpeedQuestion(0, nextQuestions);
     },
-    [beginSpeedQuestion, clearTimers, difficulty, petDisplayPool, resetRoundState],
+    [beginSpeedQuestion, clearTimers, difficulty, persistRunState, petDisplayPool, resetRoundState],
   );
 
   const startYardGame = useCallback(() => {
@@ -493,11 +675,114 @@ export default function FarmCount() {
     void startSpeedGame(currentPetDisplayPool);
   }, [mode, refreshPetSkinPool, startSpeedGame, startYardGame]);
 
+  const restoreGame = useCallback(() => {
+    if (!persistedState) {
+      startGame();
+      return;
+    }
+
+    clearTimers();
+    const currentPetPool = refreshPetSkinPool();
+    setSpeedQuestions(persistedState.speedQuestions);
+    setYardQuestions(persistedState.yardQuestions);
+    setCurrentIndex(persistedState.currentIndex);
+    setEventIndex(persistedState.eventIndex);
+    setDisplayCount(persistedState.displayCount);
+    setSelectedAnswer(persistedState.selectedAnswer);
+    setScore(persistedState.score);
+    setCombo(persistedState.combo);
+    setBestCombo(persistedState.bestCombo);
+    setCorrectQuestions(persistedState.correctQuestions);
+    setLastSpeedResult(persistedState.lastSpeedResult);
+    setLastYardResult(persistedState.lastYardResult);
+    scoreRef.current = persistedState.score;
+    comboRef.current = persistedState.combo;
+    bestComboRef.current = persistedState.bestCombo;
+    correctQuestionsRef.current = persistedState.correctQuestions;
+    startedAtRef.current = persistedState.clockStartedAt;
+    answerStartedAtRef.current = persistedState.answerStartedAt;
+    finishedRef.current = false;
+    setPetDisplayPool(currentPetPool);
+
+    if (persistedState.phase === "loading") {
+      if (mode === "yard" && persistedState.yardQuestions.length > 0) {
+        beginYardQuestion(persistedState.currentIndex, persistedState.yardQuestions);
+      } else if (persistedState.speedQuestions.length > 0) {
+        beginSpeedQuestion(persistedState.currentIndex, persistedState.speedQuestions);
+      }
+      return;
+    }
+
+    if (
+      persistedState.phase === "ready" ||
+      persistedState.phase === "watching" ||
+      persistedState.phase === "playing-event"
+    ) {
+      answerStartedAtRef.current = Date.now();
+      setEventIndex(-1);
+      setPhase("answering");
+      persistRunState({
+        speedQuestions: persistedState.speedQuestions,
+        yardQuestions: persistedState.yardQuestions,
+        currentIndex: persistedState.currentIndex,
+        eventIndex: -1,
+        displayCount:
+          mode === "yard"
+            ? (persistedState.yardQuestions[persistedState.currentIndex]?.answer ??
+              persistedState.displayCount)
+            : persistedState.displayCount,
+        selectedAnswer: null,
+        score: persistedState.score,
+        combo: persistedState.combo,
+        bestCombo: persistedState.bestCombo,
+        correctQuestions: persistedState.correctQuestions,
+        phase: "answering",
+        lastSpeedResult: persistedState.lastSpeedResult,
+        lastYardResult: persistedState.lastYardResult,
+      });
+      return;
+    }
+
+    if (persistedState.phase === "replay") {
+      const question = persistedState.speedQuestions[persistedState.currentIndex];
+      schedule(() => {
+        if (persistedState.currentIndex >= BIRD_COUNT_TOTAL_QUESTIONS - 1) {
+          finishSpeedGame(persistedState.score, persistedState.correctQuestions);
+          return;
+        }
+        beginSpeedQuestion(persistedState.currentIndex + 1, persistedState.speedQuestions);
+      }, question?.revealMs ?? 1000);
+      return;
+    }
+
+    if (persistedState.phase === "feedback") {
+      schedule(() => {
+        if (persistedState.currentIndex >= HEAD_COUNT_TOTAL_QUESTIONS - 1) {
+          finishYardGame(persistedState.score, persistedState.correctQuestions);
+          return;
+        }
+        beginYardQuestion(persistedState.currentIndex + 1, persistedState.yardQuestions);
+      }, FEEDBACK_MS);
+    }
+  }, [
+    beginSpeedQuestion,
+    beginYardQuestion,
+    clearTimers,
+    finishSpeedGame,
+    finishYardGame,
+    mode,
+    persistRunState,
+    persistedState,
+    refreshPetSkinPool,
+    schedule,
+    startGame,
+  ]);
+
   useEffect(() => {
     if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
-    startGame();
-  }, [phase, routeRun, startGame]);
+    restoreGame();
+  }, [phase, restoreGame, routeRun]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;
@@ -540,13 +825,33 @@ export default function FarmCount() {
     const nextScore = score + result.score;
     const nextCombo = result.correct ? combo + 1 : 0;
     const nextCorrectQuestions = correctQuestions + (result.correct ? 1 : 0);
+    const nextBestCombo = Math.max(bestCombo, nextCombo);
 
     setSelectedAnswer(answer);
     setLastSpeedResult(result);
     setScore(nextScore);
     setCombo(nextCombo);
-    setBestCombo(Math.max(bestCombo, nextCombo));
+    setBestCombo(nextBestCombo);
     setCorrectQuestions(nextCorrectQuestions);
+    scoreRef.current = nextScore;
+    comboRef.current = nextCombo;
+    bestComboRef.current = nextBestCombo;
+    correctQuestionsRef.current = nextCorrectQuestions;
+    persistRunState({
+      speedQuestions,
+      yardQuestions: [],
+      currentIndex,
+      eventIndex: -1,
+      displayCount,
+      selectedAnswer: answer,
+      score: nextScore,
+      combo: nextCombo,
+      bestCombo: nextBestCombo,
+      correctQuestions: nextCorrectQuestions,
+      phase: result.correct ? "answering" : "replay",
+      lastSpeedResult: result,
+      lastYardResult: null,
+    });
 
     if (result.correct) {
       advanceAfterSpeedQuestion(nextScore, nextCorrectQuestions);
@@ -575,15 +880,35 @@ export default function FarmCount() {
     const nextScore = score + result.score;
     const nextCombo = result.correct ? combo + 1 : 0;
     const nextCorrectQuestions = correctQuestions + (result.correct ? 1 : 0);
+    const nextBestCombo = Math.max(bestCombo, nextCombo);
 
     setSelectedAnswer(answer);
     setLastYardResult(result);
     setScore(nextScore);
     setCombo(nextCombo);
-    setBestCombo(Math.max(bestCombo, nextCombo));
+    setBestCombo(nextBestCombo);
     setCorrectQuestions(nextCorrectQuestions);
     setDisplayCount(yardQuestion.answer);
     setPhase("feedback");
+    scoreRef.current = nextScore;
+    comboRef.current = nextCombo;
+    bestComboRef.current = nextBestCombo;
+    correctQuestionsRef.current = nextCorrectQuestions;
+    persistRunState({
+      speedQuestions: [],
+      yardQuestions,
+      currentIndex,
+      eventIndex: -1,
+      displayCount: yardQuestion.answer,
+      selectedAnswer: answer,
+      score: nextScore,
+      combo: nextCombo,
+      bestCombo: nextBestCombo,
+      correctQuestions: nextCorrectQuestions,
+      phase: "feedback",
+      lastSpeedResult: null,
+      lastYardResult: result,
+    });
 
     schedule(() => {
       if (currentIndex >= HEAD_COUNT_TOTAL_QUESTIONS - 1) {

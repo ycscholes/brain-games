@@ -1,6 +1,7 @@
 import type { GameSettlementInput, GameSettlementResult } from "../../domain/training/settlement";
 import type { TrainingDifficulty } from "../../domain/training/types";
 import { settleGame } from "../../services/gameSettlementService";
+import type { HidatoClickState, HidatoPuzzle } from "./gameLogic";
 import {
   abandonGameRun,
   createGameRun,
@@ -11,9 +12,16 @@ import {
   type GameRun,
 } from "../../utils/gameFlowSession";
 
+export interface HidatoRunState {
+  puzzle: HidatoPuzzle;
+  clickState: HidatoClickState;
+  clockStartedAt: number;
+}
+
 export interface HidatoRunPayload {
   difficulty: TrainingDifficulty;
   startedAt: number;
+  state?: HidatoRunState;
 }
 export interface HidatoRunResult {
   score: number;

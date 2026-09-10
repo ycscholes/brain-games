@@ -31,6 +31,9 @@ import {
   abandonMemoryChallengeRun,
   readMemoryChallengeRun,
   settleMemoryChallengeCompletion,
+  updateMemoryChallengeRun,
+  type MemoryChallengeItemSnapshot,
+  type MemoryChallengeOptionSnapshot,
 } from "./run";
 import "./index.scss";
 
@@ -158,6 +161,42 @@ function pickRandomItem(items: MemoryChallengeItem[]) {
   return items[Math.floor(Math.random() * items.length)];
 }
 
+function snapshotItem(item: MemoryChallengeItem): MemoryChallengeItemSnapshot {
+  return {
+    id: item.id,
+    prompt: item.prompt,
+    answerId: item.answerId,
+    answerLabel: item.answerLabel,
+    petMood: item.petMood,
+  };
+}
+
+function restoreItem(
+  snapshot: MemoryChallengeItemSnapshot | null,
+  itemPool: MemoryChallengeItem[],
+): MemoryChallengeItem | null {
+  if (!snapshot) return null;
+  return (
+    itemPool.find((item) => item.id === snapshot.id || item.answerId === snapshot.answerId) ?? {
+      ...snapshot,
+      petMood: snapshot.petMood as MemoryChallengeItem["petMood"],
+    }
+  );
+}
+
+function restoreOption(
+  snapshot: MemoryChallengeOptionSnapshot,
+  itemPool: MemoryChallengeItem[],
+): MemoryChallengeOption {
+  const item = itemPool.find(
+    (candidate) => candidate.answerId === snapshot.id || candidate.id === snapshot.id,
+  );
+  return {
+    ...snapshot,
+    imageSrc: item?.imageSrc,
+  };
+}
+
 export default function MemoryChallenge() {
   usePageShare("pages/memory-challenge/index");
   const gauntletPreset = readGameGauntletModePreset();
@@ -175,33 +214,92 @@ export default function MemoryChallenge() {
     }
   }, [routeRun, runId]);
 
-  const [gameState, setGameState] = useState<GameState>("memorize");
   const mode: MemoryChallengeMode = routeRun?.payload.mode ?? presetMode;
   const memoryN: MemoryChallengeN = routeRun?.payload.n ?? presetN;
-  const [score, setScore] = useState(0);
-  const [round, setRound] = useState(1);
-  const [timeLeft, setTimeLeft] = useState(ANSWER_TIME_SECONDS);
-  const [currentItem, setCurrentItem] = useState<MemoryChallengeItem | null>(null);
-  const [targetItem, setTargetItem] = useState<MemoryChallengeItem | null>(null);
-  const [memorizeIndex, setMemorizeIndex] = useState(0);
-  const [options, setOptions] = useState<MemoryChallengeOption[]>([]);
-  const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">("none");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const persistedState = routeRun?.payload.state;
+  const initialStaticPool = mode === "shape" ? SHAPE_ITEMS : [];
+  const [gameState, setGameState] = useState<GameState>(persistedState?.gameState ?? "memorize");
+  const [score, setScore] = useState(() => persistedState?.score ?? 0);
+  const [round, setRound] = useState(() => persistedState?.round ?? 1);
+  const [timeLeft, setTimeLeft] = useState(() => persistedState?.timeLeft ?? ANSWER_TIME_SECONDS);
+  const [currentItem, setCurrentItem] = useState<MemoryChallengeItem | null>(() =>
+    restoreItem(persistedState?.currentItem ?? null, initialStaticPool),
+  );
+  const [targetItem, setTargetItem] = useState<MemoryChallengeItem | null>(() =>
+    restoreItem(persistedState?.targetItem ?? null, initialStaticPool),
+  );
+  const [memorizeIndex, setMemorizeIndex] = useState(() => persistedState?.memorizeIndex ?? 0);
+  const [options, setOptions] = useState<MemoryChallengeOption[]>(() =>
+    (persistedState?.options ?? []).map((option) => restoreOption(option, initialStaticPool)),
+  );
+  const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">(
+    () => persistedState?.feedback ?? "none",
+  );
+  const [selectedId, setSelectedId] = useState<string | null>(
+    () => persistedState?.selectedId ?? null,
+  );
   const [isLoadingPets, setIsLoadingPets] = useState(false);
   const [petItems, setPetItems] = useState<MemoryChallengeItem[]>([]);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const historyRef = useRef<MemoryChallengeItem[]>([]);
-  const scoreRef = useRef(0);
-  const correctCountRef = useRef(0);
+  const historyRef = useRef<MemoryChallengeItem[]>(
+    (persistedState?.history ?? [])
+      .map((item) => restoreItem(item, initialStaticPool))
+      .filter((item): item is MemoryChallengeItem => Boolean(item)),
+  );
+  const scoreRef = useRef(persistedState?.score ?? 0);
+  const correctCountRef = useRef(persistedState?.correctCount ?? 0);
   const finishedRef = useRef(false);
-  const activeModeRef = useRef<MemoryChallengeMode>("shape");
-  const activeNRef = useRef<MemoryChallengeN>(1);
-  const activePoolRef = useRef<MemoryChallengeItem[]>(SHAPE_ITEMS);
+  const activeModeRef = useRef<MemoryChallengeMode>(mode);
+  const activeNRef = useRef<MemoryChallengeN>(memoryN);
+  const activePoolRef = useRef<MemoryChallengeItem[]>(initialStaticPool);
   const allPetItemsRef = useRef<MemoryChallengeItem[]>([]);
-  const startedAtRef = useRef(0);
+  const startedAtRef = useRef(persistedState?.clockStartedAt ?? routeRun?.payload.startedAt ?? 0);
+  const answerStartedAtRef = useRef(persistedState?.answerStartedAt ?? 0);
   const autoStartedRef = useRef(false);
+  const restoredTransientRef = useRef(false);
+
+  const persistRunState = useCallback(
+    (state: {
+      history: MemoryChallengeItem[];
+      currentItem: MemoryChallengeItem | null;
+      targetItem: MemoryChallengeItem | null;
+      options: MemoryChallengeOption[];
+      gameState: GameState;
+      round: number;
+      memorizeIndex: number;
+      score: number;
+      correctCount: number;
+      timeLeft: number;
+      selectedId: string | null;
+      feedback: "none" | "correct" | "wrong";
+    }) => {
+      if (!runId) return;
+      updateMemoryChallengeRun(runId, {
+        state: {
+          history: state.history.map(snapshotItem),
+          currentItem: state.currentItem ? snapshotItem(state.currentItem) : null,
+          targetItem: state.targetItem ? snapshotItem(state.targetItem) : null,
+          options: state.options.map((option) => ({
+            id: option.id,
+            label: option.label,
+          })),
+          gameState: state.gameState,
+          round: state.round,
+          memorizeIndex: state.memorizeIndex,
+          score: state.score,
+          correctCount: state.correctCount,
+          timeLeft: state.timeLeft,
+          selectedId: state.selectedId,
+          feedback: state.feedback,
+          clockStartedAt: startedAtRef.current,
+          answerStartedAt: answerStartedAtRef.current,
+        },
+      });
+    },
+    [runId],
+  );
 
   const clearTimers = useCallback(() => {
     if (timerRef.current) {
@@ -245,15 +343,31 @@ export default function MemoryChallenge() {
       if (!target) return;
 
       historyRef.current = nextHistory;
+      answerStartedAtRef.current = Date.now();
+      const nextOptions = buildOptions(selectedMode, target);
       setCurrentItem(nextItem);
       setTargetItem(target);
-      setOptions(buildOptions(selectedMode, target));
+      setOptions(nextOptions);
       setGameState("playing");
       setFeedback("none");
       setSelectedId(null);
       setTimeLeft(ANSWER_TIME_SECONDS);
+      persistRunState({
+        history: nextHistory,
+        currentItem: nextItem,
+        targetItem: target,
+        options: nextOptions,
+        gameState: "playing",
+        round,
+        memorizeIndex: selectedN - 1,
+        score: scoreRef.current,
+        correctCount: correctCountRef.current,
+        timeLeft: ANSWER_TIME_SECONDS,
+        selectedId: null,
+        feedback: "none",
+      });
     },
-    [buildOptions, createNextItem],
+    [buildOptions, createNextItem, persistRunState, round],
   );
 
   const beginSession = useCallback(
@@ -270,6 +384,7 @@ export default function MemoryChallenge() {
       allPetItemsRef.current = selectedMode === "pet" ? itemPool : [];
       finishedRef.current = false;
       startedAtRef.current = Date.now();
+      answerStartedAtRef.current = 0;
       scoreRef.current = 0;
       correctCountRef.current = 0;
 
@@ -287,6 +402,20 @@ export default function MemoryChallenge() {
       setGameState("memorize");
       setFeedback("none");
       setSelectedId(null);
+      persistRunState({
+        history: initialItems,
+        currentItem: initialItems[0],
+        targetItem: null,
+        options: [],
+        gameState: "memorize",
+        round: 1,
+        memorizeIndex: 0,
+        score: 0,
+        correctCount: 0,
+        timeLeft: ANSWER_TIME_SECONDS,
+        selectedId: null,
+        feedback: "none",
+      });
 
       let index = 0;
       const showNextItem = () => {
@@ -294,6 +423,20 @@ export default function MemoryChallenge() {
         if (index < selectedN) {
           setMemorizeIndex(index);
           setCurrentItem(initialItems[index]);
+          persistRunState({
+            history: initialItems,
+            currentItem: initialItems[index],
+            targetItem: null,
+            options: [],
+            gameState: "memorize",
+            round: 1,
+            memorizeIndex: index,
+            score: scoreRef.current,
+            correctCount: correctCountRef.current,
+            timeLeft: ANSWER_TIME_SECONDS,
+            selectedId: null,
+            feedback: "none",
+          });
           schedule(showNextItem, MEMORIZE_ITEM_MS);
           return;
         }
@@ -302,7 +445,7 @@ export default function MemoryChallenge() {
 
       schedule(showNextItem, MEMORIZE_ITEM_MS);
     },
-    [clearTimers, schedule, startPlaying],
+    [clearTimers, persistRunState, schedule, startPlaying],
   );
 
   const startGame = useCallback(async () => {
@@ -329,12 +472,120 @@ export default function MemoryChallenge() {
     }
   }, [beginSession, isLoadingPets, memoryN, mode, petItems]);
 
+  const restoreGame = useCallback(async () => {
+    if (!persistedState) {
+      await startGame();
+      return;
+    }
+
+    clearTimers();
+    setIsLoadingPets(mode === "pet");
+    try {
+      const resolvedItems =
+        mode === "pet" ? (petItems.length > 0 ? petItems : await resolvePetItems()) : [];
+      if (mode === "pet") setPetItems(resolvedItems);
+      const pool = mode === "shape" ? SHAPE_ITEMS : mode === "pet" ? resolvedItems : [];
+      const restoredHistory = persistedState.history
+        .map((item) => restoreItem(item, pool))
+        .filter((item): item is MemoryChallengeItem => Boolean(item));
+      if (restoredHistory.length === 0) {
+        await startGame();
+        return;
+      }
+
+      activeModeRef.current = mode;
+      activeNRef.current = memoryN;
+      activePoolRef.current =
+        mode === "pet" ? getUnlockedPetItems(pool, persistedState.correctCount) : pool;
+      allPetItemsRef.current = mode === "pet" ? pool : [];
+      historyRef.current = restoredHistory;
+      scoreRef.current = persistedState.score;
+      correctCountRef.current = persistedState.correctCount;
+      startedAtRef.current = persistedState.clockStartedAt;
+      answerStartedAtRef.current = persistedState.answerStartedAt;
+      finishedRef.current = false;
+
+      const restoredCurrentItem = restoreItem(persistedState.currentItem, pool);
+      const restoredTargetItem = restoreItem(persistedState.targetItem, pool);
+      const restoredOptions = persistedState.options.map((option) => restoreOption(option, pool));
+      const restoredTimeLeft =
+        persistedState.gameState === "playing" && persistedState.answerStartedAt > 0
+          ? Math.max(
+              0,
+              Math.min(
+                persistedState.timeLeft,
+                ANSWER_TIME_SECONDS - (Date.now() - persistedState.answerStartedAt) / 1000,
+              ),
+            )
+          : persistedState.timeLeft;
+
+      setScore(persistedState.score);
+      setRound(persistedState.round);
+      setMemorizeIndex(persistedState.memorizeIndex);
+      setCurrentItem(restoredCurrentItem);
+      setTargetItem(restoredTargetItem);
+      setOptions(restoredOptions);
+      setGameState(persistedState.gameState);
+      setFeedback(persistedState.feedback);
+      setSelectedId(persistedState.selectedId);
+      setTimeLeft(restoredTimeLeft);
+      restoredTransientRef.current =
+        persistedState.gameState === "playing" && persistedState.feedback !== "none";
+
+      if (persistedState.gameState === "memorize") {
+        let index = persistedState.memorizeIndex;
+        const showNextItem = () => {
+          index += 1;
+          if (index < memoryN) {
+            setMemorizeIndex(index);
+            setCurrentItem(restoredHistory[index]);
+            persistRunState({
+              history: restoredHistory,
+              currentItem: restoredHistory[index],
+              targetItem: null,
+              options: [],
+              gameState: "memorize",
+              round: persistedState.round,
+              memorizeIndex: index,
+              score: scoreRef.current,
+              correctCount: correctCountRef.current,
+              timeLeft: ANSWER_TIME_SECONDS,
+              selectedId: null,
+              feedback: "none",
+            });
+            schedule(showNextItem, MEMORIZE_ITEM_MS);
+            return;
+          }
+          startPlaying(restoredHistory);
+        };
+        schedule(showNextItem, MEMORIZE_ITEM_MS);
+      }
+    } catch {
+      Taro.showToast({
+        title: "宠物图片加载失败，请重试",
+        icon: "none",
+      });
+    } finally {
+      setIsLoadingPets(false);
+    }
+  }, [
+    clearTimers,
+    memoryN,
+    mode,
+    persistedState,
+    petItems,
+    persistRunState,
+    schedule,
+    startGame,
+    startPlaying,
+  ]);
+
   useEffect(() => {
     if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || isLoadingPets)
       return;
     autoStartedRef.current = true;
-    void startGame();
-  }, [gameState, isLoadingPets, routeRun, startGame]);
+    void restoreGame();
+  }, [gameState, isLoadingPets, restoreGame, routeRun]);
 
   const updateHighScore = useCallback(
     (finalScore: number, selectedMode: MemoryChallengeMode, selectedN: MemoryChallengeN) => {
@@ -417,14 +668,46 @@ export default function MemoryChallenge() {
     if (!target) return;
 
     historyRef.current = nextHistory;
+    answerStartedAtRef.current = Date.now();
+    const nextOptions = buildOptions(selectedMode, target);
+    const nextRoundNumber = round + 1;
     setCurrentItem(nextItem);
     setTargetItem(target);
-    setOptions(buildOptions(selectedMode, target));
-    setRound((value) => value + 1);
+    setOptions(nextOptions);
+    setRound(nextRoundNumber);
     setFeedback("none");
     setSelectedId(null);
     setTimeLeft(ANSWER_TIME_SECONDS);
-  }, [buildOptions, createNextItem]);
+    persistRunState({
+      history: nextHistory,
+      currentItem: nextItem,
+      targetItem: target,
+      options: nextOptions,
+      gameState: "playing",
+      round: nextRoundNumber,
+      memorizeIndex: activeNRef.current - 1,
+      score: scoreRef.current,
+      correctCount: correctCountRef.current,
+      timeLeft: ANSWER_TIME_SECONDS,
+      selectedId: null,
+      feedback: "none",
+    });
+  }, [buildOptions, createNextItem, persistRunState, round]);
+
+  useEffect(() => {
+    if (!restoredTransientRef.current || gameState !== "playing" || feedback === "none") {
+      return undefined;
+    }
+    restoredTransientRef.current = false;
+    const timeout = setTimeout(() => {
+      if (feedback === "wrong") {
+        handleGameOver();
+      } else {
+        nextRound();
+      }
+    }, FEEDBACK_MS);
+    return () => clearTimeout(timeout);
+  }, [feedback, gameState, handleGameOver, nextRound]);
 
   useEffect(() => {
     if (gameState !== "playing" || feedback !== "none") {
@@ -460,6 +743,20 @@ export default function MemoryChallenge() {
       setSelectedId(id);
       if (id !== targetItem.answerId) {
         setFeedback("wrong");
+        persistRunState({
+          history: historyRef.current,
+          currentItem,
+          targetItem,
+          options,
+          gameState,
+          round,
+          memorizeIndex,
+          score: scoreRef.current,
+          correctCount: correctCountRef.current,
+          timeLeft,
+          selectedId: id,
+          feedback: "wrong",
+        });
         schedule(handleGameOver, FEEDBACK_MS);
         return;
       }
@@ -477,9 +774,36 @@ export default function MemoryChallenge() {
         activePoolRef.current = getUnlockedPetItems(allPetItemsRef.current, nextCorrectCount);
       }
       setFeedback("correct");
+      persistRunState({
+        history: historyRef.current,
+        currentItem,
+        targetItem,
+        options,
+        gameState,
+        round,
+        memorizeIndex,
+        score: nextScore,
+        correctCount: nextCorrectCount,
+        timeLeft,
+        selectedId: id,
+        feedback: "correct",
+      });
       schedule(nextRound, FEEDBACK_MS);
     },
-    [feedback, gameState, handleGameOver, nextRound, schedule, targetItem],
+    [
+      currentItem,
+      feedback,
+      gameState,
+      handleGameOver,
+      memorizeIndex,
+      nextRound,
+      options,
+      persistRunState,
+      round,
+      schedule,
+      targetItem,
+      timeLeft,
+    ],
   );
 
   const statusText =

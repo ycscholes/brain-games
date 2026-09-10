@@ -20,7 +20,13 @@ import {
 } from "./mathStages";
 import MentalMathPlayPanel from "./components/MentalMathPlayPanel";
 import { type MentalMathGameMode } from "./components/MentalMathStartPanel";
-import { abandonMentalMathRun, readMentalMathRun, settleMentalMathCompletion } from "./run";
+import {
+  abandonMentalMathRun,
+  readMentalMathRun,
+  settleMentalMathCompletion,
+  updateMentalMathRun,
+  type MentalMathRunState,
+} from "./run";
 import "./index.scss";
 
 type GameState = "playing";
@@ -63,19 +69,27 @@ export default function MentalMath() {
   );
   const [selectedStageId] = useState<MathStageId>(initialStageId);
   const [customConfig] = useState(routeRun?.payload.customConfig ?? DEFAULT_CUSTOM_MATH_CONFIG);
-  const [timeLeft, setTimeLeft] = useState(60);
-  const [currentProblem, setCurrentProblem] = useState<MathProblem | null>(null);
-  const [options, setOptions] = useState<number[]>([]);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [score, setScore] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">("none");
+  const persistedState = routeRun?.payload.state;
+  const [timeLeft, setTimeLeft] = useState(persistedState?.timeLeft ?? 60);
+  const [currentProblem, setCurrentProblem] = useState<MathProblem | null>(
+    persistedState?.currentProblem ?? null,
+  );
+  const [options, setOptions] = useState<number[]>(persistedState?.options ?? []);
+  const [correctCount, setCorrectCount] = useState(persistedState?.correctCount ?? 0);
+  const [score, setScore] = useState(persistedState?.score ?? 0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(
+    persistedState?.selectedAnswer ?? null,
+  );
+  const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">(
+    persistedState?.feedback ?? "none",
+  );
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const correctCountRef = useRef(0);
   const scoreRef = useRef(0);
   const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoStartedRef = useRef(false);
+  const startedAtRef = useRef(persistedState?.clockStartedAt ?? routeRun?.payload.startedAt ?? 0);
   const selectedStage = useMemo(() => getMathStage(selectedStageId), [selectedStageId]);
   const customProfile = useMemo(() => getCustomMathProfile(customConfig), [customConfig]);
   const isCustomStage = selectedStageId === CUSTOM_MATH_STAGE_ID;
@@ -96,6 +110,14 @@ export default function MentalMath() {
     if (timerRef.current) clearInterval(timerRef.current);
     if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
   }, []);
+
+  const persistRunState = useCallback(
+    (state: MentalMathRunState) => {
+      if (!runId) return;
+      updateMentalMathRun(runId, { state });
+    },
+    [runId],
+  );
 
   useEffect(() => {
     return () => {
@@ -175,19 +197,33 @@ export default function MentalMath() {
   ]);
 
   // 下一题
-  const nextProblem = useCallback(() => {
-    const problem = generateMathProblem(selectedStageId, customConfig);
-    const opts = generateMathOptions(problem.answer);
-    setCurrentProblem(problem);
-    setOptions(opts);
-    setSelectedAnswer(null);
-    setFeedback("none");
-  }, [customConfig, selectedStageId]);
+  const nextProblem = useCallback(
+    (nextTimeLeft = timeLeft) => {
+      const problem = generateMathProblem(selectedStageId, customConfig);
+      const opts = generateMathOptions(problem.answer);
+      setCurrentProblem(problem);
+      setOptions(opts);
+      setSelectedAnswer(null);
+      setFeedback("none");
+      persistRunState({
+        currentProblem: problem,
+        options: opts,
+        timeLeft: nextTimeLeft,
+        score: scoreRef.current,
+        correctCount: correctCountRef.current,
+        selectedAnswer: null,
+        feedback: "none",
+        clockStartedAt: startedAtRef.current,
+      });
+    },
+    [customConfig, persistRunState, selectedStageId, timeLeft],
+  );
 
   // 开始新游戏
   const startGame = useCallback(() => {
     playTap();
     clearAllTimers();
+    startedAtRef.current = Date.now();
     setTimeLeft(30);
     setCorrectCount(0);
     correctCountRef.current = 0;
@@ -195,14 +231,36 @@ export default function MentalMath() {
     scoreRef.current = 0;
     setSelectedAnswer(null);
     setFeedback("none");
-    nextProblem();
+    nextProblem(30);
   }, [clearAllTimers, nextProblem]);
+
+  const restoreGame = useCallback(() => {
+    if (!persistedState) {
+      startGame();
+      return;
+    }
+    clearAllTimers();
+    startedAtRef.current = persistedState.clockStartedAt;
+    const restoredTimeLeft =
+      gameMode === "timed"
+        ? Math.max(0, 30 - Math.floor((Date.now() - persistedState.clockStartedAt) / 1000))
+        : persistedState.timeLeft;
+    setTimeLeft(restoredTimeLeft);
+    setCurrentProblem(persistedState.currentProblem);
+    setOptions(persistedState.options);
+    setCorrectCount(persistedState.correctCount);
+    correctCountRef.current = persistedState.correctCount;
+    setScore(persistedState.score);
+    scoreRef.current = persistedState.score;
+    setSelectedAnswer(persistedState.selectedAnswer);
+    setFeedback(persistedState.feedback);
+  }, [clearAllTimers, gameMode, persistedState, startGame]);
 
   useEffect(() => {
     if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
-    startGame();
-  }, [routeRun, startGame]);
+    restoreGame();
+  }, [restoreGame, routeRun]);
 
   // 游戏结束
   const handleGameOver = useCallback(() => {
@@ -224,10 +282,7 @@ export default function MentalMath() {
           {
             score: finalScore,
             awardedPoints: 0,
-            durationSeconds: Math.max(
-              1,
-              Math.round((Date.now() - (routeRun?.payload.startedAt ?? Date.now())) / 1_000),
-            ),
+            durationSeconds: Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1_000)),
             correctCount: correctCountRef.current,
             isNewBest: nextIsNewBest,
           },
@@ -247,7 +302,6 @@ export default function MentalMath() {
     getEffectiveScoreForPoints,
     getTrainingModeRecord,
     rewardDifficulty,
-    routeRun,
     runId,
     updateHighScore,
   ]);
@@ -294,11 +348,21 @@ export default function MentalMath() {
     if (answer === currentProblem.answer) {
       // Correct answer
       setFeedback("correct");
-      setCorrectCount((c) => c + 1);
-      setScore((currentScore) => {
-        const nextScore = getTimedMentalMathScore(currentScore, true);
-        scoreRef.current = nextScore;
-        return nextScore;
+      const nextCorrectCount = correctCountRef.current + 1;
+      correctCountRef.current = nextCorrectCount;
+      setCorrectCount(nextCorrectCount);
+      const nextScore = getTimedMentalMathScore(scoreRef.current, true);
+      scoreRef.current = nextScore;
+      setScore(nextScore);
+      persistRunState({
+        currentProblem,
+        options,
+        timeLeft,
+        score: nextScore,
+        correctCount: nextCorrectCount,
+        selectedAnswer: answer,
+        feedback: "correct",
+        clockStartedAt: startedAtRef.current,
       });
 
       feedbackTimerRef.current = setTimeout(() => {
@@ -309,14 +373,32 @@ export default function MentalMath() {
       setFeedback("wrong");
       if (gameMode === "death") {
         // In death mode: wrong answer ends game immediately
+        persistRunState({
+          currentProblem,
+          options,
+          timeLeft,
+          score: scoreRef.current,
+          correctCount: correctCountRef.current,
+          selectedAnswer: answer,
+          feedback: "wrong",
+          clockStartedAt: startedAtRef.current,
+        });
         feedbackTimerRef.current = setTimeout(() => {
           handleGameOver();
         }, 500);
       } else {
-        setScore((currentScore) => {
-          const nextScore = getTimedMentalMathScore(currentScore, false);
-          scoreRef.current = nextScore;
-          return nextScore;
+        const nextScore = getTimedMentalMathScore(scoreRef.current, false);
+        scoreRef.current = nextScore;
+        setScore(nextScore);
+        persistRunState({
+          currentProblem,
+          options,
+          timeLeft,
+          score: nextScore,
+          correctCount: correctCountRef.current,
+          selectedAnswer: answer,
+          feedback: "wrong",
+          clockStartedAt: startedAtRef.current,
         });
         // In timed mode: continue to next problem
         feedbackTimerRef.current = setTimeout(() => {

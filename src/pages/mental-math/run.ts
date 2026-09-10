@@ -10,7 +10,18 @@ import {
   updateSettledGameRunResult,
   type GameRun,
 } from "../../utils/gameFlowSession";
-import type { CustomMathConfig, MathStageId } from "./mathStages";
+import type { CustomMathConfig, MathProblem, MathStageId } from "./mathStages";
+
+export interface MentalMathRunState {
+  currentProblem: MathProblem;
+  options: number[];
+  timeLeft: number;
+  score: number;
+  correctCount: number;
+  selectedAnswer: number | null;
+  feedback: "none" | "correct" | "wrong";
+  clockStartedAt: number;
+}
 
 export interface MentalMathRunPayload {
   difficulty: TrainingDifficulty;
@@ -18,6 +29,7 @@ export interface MentalMathRunPayload {
   stageId: MathStageId;
   customConfig?: CustomMathConfig;
   startedAt: number;
+  state?: MentalMathRunState;
 }
 
 export interface MentalMathRunResult {

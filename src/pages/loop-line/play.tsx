@@ -23,7 +23,12 @@ import {
   type LoopLinePuzzle,
   type LoopLineState,
 } from "./gameLogic";
-import { abandonLoopLineRun, readLoopLineRun, settleLoopLineCompletion } from "./run";
+import {
+  abandonLoopLineRun,
+  readLoopLineRun,
+  settleLoopLineCompletion,
+  updateLoopLineRun,
+} from "./run";
 import "./index.scss";
 
 type Phase = "playing";
@@ -67,27 +72,57 @@ export default function LoopLinePage() {
   const phase: Phase = "playing";
   const difficulty: TrainingDifficulty =
     routeRun?.payload.difficulty ?? gauntletPreset?.difficulty ?? "normal";
-  const [puzzle, setPuzzle] = useState<LoopLinePuzzle | null>(null);
-  const [boardState, setBoardState] = useState<LoopLineState>(() => createLoopLineState());
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [hintCount, setHintCount] = useState(0);
+  const persistedState = routeRun?.payload.state;
+  const [puzzle, setPuzzle] = useState<LoopLinePuzzle | null>(() => persistedState?.puzzle ?? null);
+  const [boardState, setBoardState] = useState<LoopLineState>(
+    () => persistedState?.boardState ?? createLoopLineState(),
+  );
+  const [elapsedSeconds, setElapsedSeconds] = useState(persistedState?.elapsedSeconds ?? 0);
+  const [hintCount, setHintCount] = useState(persistedState?.hintCount ?? 0);
   const [hintKey, setHintKey] = useState("");
   const [feedback, setFeedback] = useState(
     "先从 0 与 3 附近开始，让每个数字刚好被对应数量的线段围住。",
   );
-  const startedAtRef = useRef(0);
+  const startedAtRef = useRef(persistedState?.clockStartedAt ?? routeRun?.payload.startedAt ?? 0);
   const completedRef = useRef(false);
   const autoStartedRef = useRef(false);
+
+  const persistRunState = useCallback(
+    (
+      nextPuzzle: LoopLinePuzzle,
+      nextBoardState: LoopLineState,
+      nextHintCount: number,
+      nextElapsedSeconds: number,
+      nextFeedback: string,
+    ) => {
+      if (!runId) return;
+      updateLoopLineRun(runId, {
+        state: {
+          puzzle: nextPuzzle,
+          boardState: nextBoardState,
+          hintCount: nextHintCount,
+          elapsedSeconds: nextElapsedSeconds,
+          feedback: nextFeedback,
+          clockStartedAt: startedAtRef.current,
+        },
+      });
+    },
+    [runId],
+  );
   useEffect(() => {
     if (phase !== "playing") return undefined;
     const timer = setInterval(() => {
-      setElapsedSeconds(Math.max(1, Math.floor((Date.now() - startedAtRef.current) / 1000)));
+      const nextElapsedSeconds = Math.max(
+        1,
+        Math.floor((Date.now() - startedAtRef.current) / 1000),
+      );
+      setElapsedSeconds(nextElapsedSeconds);
     }, 1000);
     return () => clearInterval(timer);
   }, [phase]);
 
   const finishGame = useCallback(
-    (nextHintCount: number) => {
+    (nextHintCount: number, nextBoardState = boardState) => {
       if (!puzzle || completedRef.current) return;
       completedRef.current = true;
       playComplete();
@@ -116,7 +151,7 @@ export default function LoopLinePage() {
               score: nextScore,
               awardedPoints: 0,
               durationSeconds,
-              moveCount: boardState.selectedEdges.length,
+              moveCount: nextBoardState.selectedEdges.length,
               hintCount: nextHintCount,
               isNewBest,
             },
@@ -128,26 +163,55 @@ export default function LoopLinePage() {
       setElapsedSeconds(durationSeconds);
       void Taro.redirectTo({ url: `/pages/loop-line/result?runId=${encodeURIComponent(runId)}` });
     },
-    [boardState.selectedEdges.length, difficulty, puzzle, runId],
+    [boardState, difficulty, puzzle, runId],
   );
 
   const startGame = useCallback(() => {
     playTap();
     completedRef.current = false;
     startedAtRef.current = Date.now();
-    setPuzzle(createLoopLinePuzzle(difficulty));
-    setBoardState(createLoopLineState());
+    const nextPuzzle = createLoopLinePuzzle(difficulty);
+    const nextBoardState = createLoopLineState();
+    setPuzzle(nextPuzzle);
+    setBoardState(nextBoardState);
     setElapsedSeconds(0);
     setHintCount(0);
     setHintKey("");
     setFeedback("每个数字表示它四周需要经过的线段数；所有线最后必须只组成一个闭环。");
-  }, [difficulty]);
+    persistRunState(
+      nextPuzzle,
+      nextBoardState,
+      0,
+      0,
+      "每个数字表示它四周需要经过的线段数；所有线最后必须只组成一个闭环。",
+    );
+  }, [difficulty, persistRunState]);
+
+  const restoreGame = useCallback(() => {
+    if (!persistedState) {
+      startGame();
+      return;
+    }
+    startedAtRef.current = persistedState.clockStartedAt;
+    completedRef.current = false;
+    setPuzzle(persistedState.puzzle);
+    setBoardState(persistedState.boardState);
+    setHintCount(persistedState.hintCount);
+    setElapsedSeconds(
+      Math.max(
+        persistedState.elapsedSeconds,
+        Math.floor((Date.now() - persistedState.clockStartedAt) / 1000),
+      ),
+    );
+    setHintKey("");
+    setFeedback(persistedState.feedback);
+  }, [persistedState, startGame]);
 
   useEffect(() => {
     if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
-    startGame();
-  }, [phase, routeRun, startGame]);
+    restoreGame();
+  }, [phase, restoreGame, routeRun]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;
@@ -177,30 +241,38 @@ export default function LoopLinePage() {
     const nextStatus = getLoopLineBoardStatus(puzzle, nextState);
     setBoardState(nextState);
     setHintKey("");
+    const nextElapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAtRef.current) / 1000));
     if (nextStatus.solved) {
-      finishGame(hintCount);
+      persistRunState(puzzle, nextState, hintCount, nextElapsedSeconds, "路线已闭合，正在结算。 ");
+      finishGame(hintCount, nextState);
       return;
     }
     if (nextStatus.overfilledClueKeys.length > 0) {
       playWrong();
-      setFeedback("有数字被多余线段包围了，先撤掉附近的一段线。 ");
+      const nextFeedback = "有数字被多余线段包围了，先撤掉附近的一段线。 ";
+      setFeedback(nextFeedback);
+      persistRunState(puzzle, nextState, hintCount, nextElapsedSeconds, nextFeedback);
       return;
     }
     if (nextStatus.branchNodeKeys.length > 0) {
       playWrong();
-      setFeedback("回路不能分叉：每个亮点最多连接两段线。 ");
+      const nextFeedback = "回路不能分叉：每个亮点最多连接两段线。 ";
+      setFeedback(nextFeedback);
+      persistRunState(puzzle, nextState, hintCount, nextElapsedSeconds, nextFeedback);
       return;
     }
-    setFeedback(
-      `还有 ${nextStatus.unsatisfiedClueKeys.length} 个数字待满足，当前有 ${nextStatus.openNodeKeys.length} 个回路端点。`,
-    );
+    const nextFeedback = `还有 ${nextStatus.unsatisfiedClueKeys.length} 个数字待满足，当前有 ${nextStatus.openNodeKeys.length} 个回路端点。`;
+    setFeedback(nextFeedback);
+    persistRunState(puzzle, nextState, hintCount, nextElapsedSeconds, nextFeedback);
   };
 
   const useHint = () => {
     if (!puzzle || phase !== "playing" || completedRef.current) return;
     const hint = getLoopLineHint(puzzle, boardState);
     if (!hint) {
-      setFeedback("正确的路线已经画出，检查它是否闭合成一个单环。 ");
+      const nextFeedback = "正确的路线已经画出，检查它是否闭合成一个单环。 ";
+      setFeedback(nextFeedback);
+      persistRunState(puzzle, boardState, hintCount, elapsedSeconds, nextFeedback);
       return;
     }
     const key = loopLineEdgeKey(hint);
@@ -216,8 +288,10 @@ export default function LoopLinePage() {
     setBoardState(nextState);
     setHintCount(nextHintCount);
     setHintKey(key);
-    setFeedback("已点亮一段正确路线，本局结算会扣减 4 分。 ");
-    if (nextStatus.solved) finishGame(nextHintCount);
+    const nextFeedback = "已点亮一段正确路线，本局结算会扣减 4 分。 ";
+    setFeedback(nextFeedback);
+    persistRunState(puzzle, nextState, nextHintCount, elapsedSeconds, nextFeedback);
+    if (nextStatus.solved) finishGame(nextHintCount, nextState);
   };
 
   const leaveGame = () => {

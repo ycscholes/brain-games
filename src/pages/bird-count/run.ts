@@ -1,6 +1,8 @@
 import type { GameSettlementInput, GameSettlementResult } from "../../domain/training/settlement";
 import type { TrainingDifficulty } from "../../domain/training/types";
 import { settleGame } from "../../services/gameSettlementService";
+import type { BirdCountQuestion, BirdCountQuestionResult } from "./gameLogic";
+import type { HeadCountQuestion, HeadCountQuestionResult } from "../head-count/gameLogic";
 import {
   abandonGameRun,
   createGameRun,
@@ -11,11 +13,39 @@ import {
   type GameRun,
 } from "../../utils/gameFlowSession";
 
+export type BirdCountRunPhase =
+  | "loading"
+  | "ready"
+  | "watching"
+  | "replay"
+  | "playing-event"
+  | "answering"
+  | "feedback";
+
+export interface BirdCountRunState {
+  speedQuestions: BirdCountQuestion[];
+  yardQuestions: HeadCountQuestion[];
+  currentIndex: number;
+  eventIndex: number;
+  displayCount: number;
+  selectedAnswer: number | null;
+  score: number;
+  combo: number;
+  bestCombo: number;
+  correctQuestions: number;
+  phase: BirdCountRunPhase;
+  lastSpeedResult: BirdCountQuestionResult | null;
+  lastYardResult: HeadCountQuestionResult | null;
+  clockStartedAt: number;
+  answerStartedAt: number;
+}
+
 export interface BirdCountRunPayload {
   difficulty: TrainingDifficulty;
   mode: "speed" | "yard";
   yardSpeed?: "slow" | "standard" | "fast";
   startedAt: number;
+  state?: BirdCountRunState;
 }
 export interface BirdCountRunResult {
   score: number;

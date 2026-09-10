@@ -1,6 +1,7 @@
 import type { GameSettlementInput, GameSettlementResult } from "../../domain/training/settlement";
 import type { TrainingDifficulty } from "../../domain/training/types";
 import { settleGame } from "../../services/gameSettlementService";
+import type { LoopLinePuzzle, LoopLineState } from "./gameLogic";
 import {
   abandonGameRun,
   createGameRun,
@@ -11,9 +12,19 @@ import {
   type GameRun,
 } from "../../utils/gameFlowSession";
 
+export interface LoopLineRunState {
+  puzzle: LoopLinePuzzle;
+  boardState: LoopLineState;
+  hintCount: number;
+  elapsedSeconds: number;
+  feedback: string;
+  clockStartedAt: number;
+}
+
 export interface LoopLineRunPayload {
   difficulty: TrainingDifficulty;
   startedAt: number;
+  state?: LoopLineRunState;
 }
 export interface LoopLineRunResult {
   score: number;

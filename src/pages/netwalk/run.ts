@@ -1,6 +1,7 @@
 import type { GameSettlementInput, GameSettlementResult } from "../../domain/training/settlement";
 import type { TrainingDifficulty } from "../../domain/training/types";
 import { settleGame } from "../../services/gameSettlementService";
+import type { NetwalkPuzzle, NetwalkState } from "./gameLogic";
 import {
   abandonGameRun,
   createGameRun,
@@ -11,9 +12,19 @@ import {
   type GameRun,
 } from "../../utils/gameFlowSession";
 
+export interface NetwalkRunState {
+  puzzle: NetwalkPuzzle;
+  networkState: NetwalkState;
+  hintCount: number;
+  elapsedSeconds: number;
+  feedback: string;
+  clockStartedAt: number;
+}
+
 export interface NetwalkRunPayload {
   difficulty: TrainingDifficulty;
   startedAt: number;
+  state?: NetwalkRunState;
 }
 export interface NetwalkRunResult {
   score: number;

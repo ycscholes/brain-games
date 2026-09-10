@@ -11,9 +11,22 @@ import {
   type GameRun,
 } from "../../utils/gameFlowSession";
 
+export interface DigitSpanRunState {
+  phase: "showing" | "input";
+  sequence: string;
+  roundLength: number;
+  inputValue: string;
+  score: number;
+  currentDigit: string;
+  displayStep: number;
+  clockStartedAt: number;
+  revealStartedAt: number;
+}
+
 export interface DigitSpanRunPayload {
   difficulty: TrainingDifficulty;
   startedAt: number;
+  state?: DigitSpanRunState;
 }
 export interface DigitSpanRunResult {
   score: number;

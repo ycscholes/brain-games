@@ -12,11 +12,42 @@ import {
   type GameRun,
 } from "../../utils/gameFlowSession";
 
+export interface MemoryChallengeItemSnapshot {
+  id: string;
+  prompt: string;
+  answerId: string;
+  answerLabel: string;
+  petMood?: string;
+}
+
+export interface MemoryChallengeOptionSnapshot {
+  id: string;
+  label: string;
+}
+
+export interface MemoryChallengeRunState {
+  history: MemoryChallengeItemSnapshot[];
+  currentItem: MemoryChallengeItemSnapshot | null;
+  targetItem: MemoryChallengeItemSnapshot | null;
+  options: MemoryChallengeOptionSnapshot[];
+  gameState: "memorize" | "playing";
+  round: number;
+  memorizeIndex: number;
+  score: number;
+  correctCount: number;
+  timeLeft: number;
+  selectedId: string | null;
+  feedback: "none" | "correct" | "wrong";
+  clockStartedAt: number;
+  answerStartedAt: number;
+}
+
 export interface MemoryChallengeRunPayload {
   difficulty: TrainingDifficulty;
   mode: "shape" | "pet" | "calculation";
   n: MemoryChallengeN;
   startedAt: number;
+  state?: MemoryChallengeRunState;
 }
 export interface MemoryChallengeRunResult {
   score: number;
