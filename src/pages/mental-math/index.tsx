@@ -1,20 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { View, Text } from "@tarojs/components";
+import { View } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
-import {
-  getAwardedPoints,
-  getTrainingDifficultyLabel,
-} from "../../utils/trainingStorage";
+import { getAwardedPoints, getTrainingDifficultyLabel } from "../../utils/trainingStorage";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
-import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playTap } from "../../services/audio/audioFeedbackService";
 import {
   CUSTOM_MATH_STAGE_ID,
-  CUSTOM_OPERATION_OPTIONS,
-  CUSTOM_RANGE_OPTIONS,
   DEFAULT_MATH_STAGE_ID,
   DEFAULT_CUSTOM_MATH_CONFIG,
   MATH_STAGES,
@@ -28,10 +22,13 @@ import {
   type MathProblem,
   type MathStageId,
 } from "./mathStages";
+import MentalMathPlayPanel from "./components/MentalMathPlayPanel";
+import MentalMathResultPanel from "./components/MentalMathResultPanel";
+import MentalMathStartPanel, { type MentalMathGameMode } from "./components/MentalMathStartPanel";
 import "./index.scss";
 
 type GameState = "start" | "playing" | "gameover";
-type GameMode = "timed" | "death";
+type GameMode = MentalMathGameMode;
 
 // 最高分记录接口
 interface HighScoreRecord {
@@ -44,13 +41,16 @@ export default function MentalMath() {
   const gauntletPreset = readGameGauntletModePreset();
   const isGauntletPreset = gauntletPreset !== null;
   const gauntletStageId = gauntletPreset?.stageId;
-  const presetStageId = gauntletStageId && MATH_STAGES.some((stage) => stage.id === gauntletStageId)
-    ? gauntletStageId as MathStageId
-    : DEFAULT_MATH_STAGE_ID;
+  const presetStageId =
+    gauntletStageId && MATH_STAGES.some((stage) => stage.id === gauntletStageId)
+      ? (gauntletStageId as MathStageId)
+      : DEFAULT_MATH_STAGE_ID;
 
   const [gameState, setGameState] = useState<GameState>("start");
   useAmbientMusic(gameState === "start");
-  const [gameMode, setGameMode] = useState<GameMode>(gauntletPreset?.mode === "death" ? "death" : "timed");
+  const [gameMode, setGameMode] = useState<GameMode>(
+    gauntletPreset?.mode === "death" ? "death" : "timed",
+  );
   const [selectedStageId, setSelectedStageId] = useState<MathStageId>(presetStageId);
   const [customConfig, setCustomConfig] = useState(DEFAULT_CUSTOM_MATH_CONFIG);
   const [highScoreTimed, setHighScoreTimed] = useState(0);
@@ -110,8 +110,11 @@ export default function MentalMath() {
   // 获取当前最高分
   const getCurrentHighScore = useCallback((): HighScoreRecord | null => {
     const key = getStorageKey();
-    const legacyKey = gameMode === "timed" ? "mental_math_high_score_timed" : "mental_math_high_score_death";
-    const record = Taro.getStorageSync(key) || (selectedStageId === DEFAULT_MATH_STAGE_ID ? Taro.getStorageSync(legacyKey) : "");
+    const legacyKey =
+      gameMode === "timed" ? "mental_math_high_score_timed" : "mental_math_high_score_death";
+    const record =
+      Taro.getStorageSync(key) ||
+      (selectedStageId === DEFAULT_MATH_STAGE_ID ? Taro.getStorageSync(legacyKey) : "");
     if (record) {
       try {
         const parsed = JSON.parse(record);
@@ -129,28 +132,31 @@ export default function MentalMath() {
   }, [gameMode, getStorageKey, selectedStageId]);
 
   // 更新最高分
-  const updateHighScore = useCallback((newScore: number): boolean => {
-    const key = getStorageKey();
-    const currentRecord = getCurrentHighScore();
+  const updateHighScore = useCallback(
+    (newScore: number): boolean => {
+      const key = getStorageKey();
+      const currentRecord = getCurrentHighScore();
 
-    if (!currentRecord || newScore > currentRecord.score) {
-      const newRecord: HighScoreRecord = {
-        score: newScore,
-        achievedAt: new Date().toISOString(),
-      };
-      Taro.setStorageSync(key, JSON.stringify(newRecord));
-      setIsNewRecord(true);
-      // Update the corresponding state based on current mode
-      if (gameMode === "timed") {
-        setHighScoreTimed(newScore);
-      } else {
-        setHighScoreDeath(newScore);
+      if (!currentRecord || newScore > currentRecord.score) {
+        const newRecord: HighScoreRecord = {
+          score: newScore,
+          achievedAt: new Date().toISOString(),
+        };
+        Taro.setStorageSync(key, JSON.stringify(newRecord));
+        setIsNewRecord(true);
+        // Update the corresponding state based on current mode
+        if (gameMode === "timed") {
+          setHighScoreTimed(newScore);
+        } else {
+          setHighScoreDeath(newScore);
+        }
+        return true;
       }
-      return true;
-    }
-    setIsNewRecord(false);
-    return false;
-  }, [gameMode, getCurrentHighScore, getStorageKey]);
+      setIsNewRecord(false);
+      return false;
+    },
+    [gameMode, getCurrentHighScore, getStorageKey],
+  );
 
   // 刷新最高分
   const refreshHighScore = useCallback(() => {
@@ -160,10 +166,14 @@ export default function MentalMath() {
 
     const timedRecord =
       Taro.getStorageSync(timedKey) ||
-      (selectedStageId === DEFAULT_MATH_STAGE_ID ? Taro.getStorageSync("mental_math_high_score_timed") : "");
+      (selectedStageId === DEFAULT_MATH_STAGE_ID
+        ? Taro.getStorageSync("mental_math_high_score_timed")
+        : "");
     const deathRecord =
       Taro.getStorageSync(deathKey) ||
-      (selectedStageId === DEFAULT_MATH_STAGE_ID ? Taro.getStorageSync("mental_math_high_score_death") : "");
+      (selectedStageId === DEFAULT_MATH_STAGE_ID
+        ? Taro.getStorageSync("mental_math_high_score_death")
+        : "");
 
     if (timedRecord) {
       try {
@@ -194,19 +204,28 @@ export default function MentalMath() {
     } else {
       setHighScoreDeath(0);
     }
-
   }, [selectedStageId]);
 
-  const getEffectiveScoreForPoints = useCallback((rawScore: number) => {
-    return isCustomStage ? rawScore * customProfile.coefficient : rawScore;
-  }, [customProfile.coefficient, isCustomStage]);
+  const getEffectiveScoreForPoints = useCallback(
+    (rawScore: number) => {
+      return isCustomStage ? rawScore * customProfile.coefficient : rawScore;
+    },
+    [customProfile.coefficient, isCustomStage],
+  );
 
   const getTrainingModeRecord = useCallback(() => {
     if (!isCustomStage) {
       return `${gameMode}:${selectedStageId}`;
     }
     return `${gameMode}:${CUSTOM_MATH_STAGE_ID}:${customProfile.operationsKey}:${customProfile.rangeKey}:x${customProfile.coefficient}`;
-  }, [customProfile.coefficient, customProfile.operationsKey, customProfile.rangeKey, gameMode, isCustomStage, selectedStageId]);
+  }, [
+    customProfile.coefficient,
+    customProfile.operationsKey,
+    customProfile.rangeKey,
+    gameMode,
+    isCustomStage,
+    selectedStageId,
+  ]);
 
   const handleToggleCustomOperation = (operation: CustomMathOperation | "all") => {
     if (operation === "all") {
@@ -225,414 +244,223 @@ export default function MentalMath() {
       const nextOperations = hasOperation
         ? config.operations.filter((item) => item !== operation)
         : [...config.operations, operation];
-      const orderedOperations = (["add", "subtract", "multiply", "divide"] satisfies CustomMathOperation[]).filter((item) =>
-        nextOperations.includes(item),
-      );
-    return {
-      ...config,
-      operations: orderedOperations,
-    };
-  });
-};
-
-const handleSelectCustomRange = (rangeId: CustomMathRangeId) => {
-  setCustomConfig((config) => ({
-    ...config,
-    rangeId,
-  }));
-};
-
-const getStageDifficulty = (stageId: MathStageId) => {
-  return stageId === CUSTOM_MATH_STAGE_ID ? customProfile.difficulty : getMathStage(stageId).difficulty;
-};
-
-// Update high scores when mode or stage changes
-useEffect(() => {
-  refreshHighScore();
-}, [refreshHighScore]);
-
-useLoad(() => {
-  refreshHighScore();
-});
-
-useDidShow(() => {
-  refreshHighScore();
-});
-
-// 下一题
-const nextProblem = useCallback(() => {
-  const problem = generateMathProblem(selectedStageId, customConfig);
-  const opts = generateMathOptions(problem.answer);
-  setCurrentProblem(problem);
-  setOptions(opts);
-  setSelectedAnswer(null);
-  setFeedback("none");
-}, [customConfig, selectedStageId]);
-
-// 开始新游戏
-const startGame = useCallback(() => {
-  playTap();
-  clearAllTimers();
-  setTimeLeft(30);
-  setCorrectCount(0);
-  correctCountRef.current = 0;
-  setScore(0);
-  scoreRef.current = 0;
-  setSelectedAnswer(null);
-  setFeedback("none");
-  nextProblem();
-  setGameState("playing");
-}, [clearAllTimers, nextProblem]);
-
-useEffect(() => {
-  if (!isGauntletPreset || autoStartedRef.current || gameState !== "start") return;
-  autoStartedRef.current = true;
-  startGame();
-}, [gameState, isGauntletPreset, startGame]);
-
-// 游戏结束
-const handleGameOver = useCallback(() => {
-  clearAllTimers();
-  const finalScore = gameMode === "timed" ? scoreRef.current : correctCountRef.current;
-  const effectiveScore = getEffectiveScoreForPoints(finalScore);
-  const settlement = settleGame({
-    gameId: "mental-math",
-    score: finalScore,
-    rewardScore: effectiveScore,
-    mode: getTrainingModeRecord(),
-    difficulty: rewardDifficulty,
-    outcome: "completed",
-  });
-  if (settlement.gauntletHandled) {
-    return;
-  }
-
-  Taro.setStorageSync("mental_math_last_score", finalScore);
-  setGameState("gameover");
-  updateHighScore(finalScore);
-}, [clearAllTimers, gameMode, getEffectiveScoreForPoints, getTrainingModeRecord, rewardDifficulty, updateHighScore]);
-
-// 计时器
-useEffect(() => {
-  if (gameState === "playing" && gameMode === "timed") {
-    timerRef.current = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 0.1) {
-          handleGameOver();
-          return 0;
-        }
-        return t - 0.1;
-      });
-    }, 100);
-  } else {
-    if (timerRef.current) clearInterval(timerRef.current);
-  }
-  return () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-  };
-}, [gameState, gameMode, handleGameOver]);
-
-// 处理答案选择
-const handleSelect = (answer: number) => {
-  if (gameState !== "playing" || feedback !== "none" || !currentProblem) return;
-
-  setSelectedAnswer(answer);
-
-  if (answer === currentProblem.answer) {
-    // Correct answer
-    setFeedback("correct");
-    setCorrectCount((c) => c + 1);
-    setScore((currentScore) => {
-      const nextScore = getTimedMentalMathScore(currentScore, true);
-      scoreRef.current = nextScore;
-      return nextScore;
+      const orderedOperations = (
+        ["add", "subtract", "multiply", "divide"] satisfies CustomMathOperation[]
+      ).filter((item) => nextOperations.includes(item));
+      return {
+        ...config,
+        operations: orderedOperations,
+      };
     });
+  };
 
-    feedbackTimerRef.current = setTimeout(() => {
-      nextProblem();
-    }, 300);
-  } else {
-    // Wrong answer
-    setFeedback("wrong");
-    if (gameMode === "death") {
-      // In death mode: wrong answer ends game immediately
-      feedbackTimerRef.current = setTimeout(() => {
-        handleGameOver();
-      }, 500);
+  const handleSelectCustomRange = (rangeId: CustomMathRangeId) => {
+    setCustomConfig((config) => ({
+      ...config,
+      rangeId,
+    }));
+  };
+
+  const getStageDifficulty = (stageId: MathStageId) => {
+    return stageId === CUSTOM_MATH_STAGE_ID
+      ? customProfile.difficulty
+      : getMathStage(stageId).difficulty;
+  };
+
+  // Update high scores when mode or stage changes
+  useEffect(() => {
+    refreshHighScore();
+  }, [refreshHighScore]);
+
+  useLoad(() => {
+    refreshHighScore();
+  });
+
+  useDidShow(() => {
+    refreshHighScore();
+  });
+
+  // 下一题
+  const nextProblem = useCallback(() => {
+    const problem = generateMathProblem(selectedStageId, customConfig);
+    const opts = generateMathOptions(problem.answer);
+    setCurrentProblem(problem);
+    setOptions(opts);
+    setSelectedAnswer(null);
+    setFeedback("none");
+  }, [customConfig, selectedStageId]);
+
+  // 开始新游戏
+  const startGame = useCallback(() => {
+    playTap();
+    clearAllTimers();
+    setTimeLeft(30);
+    setCorrectCount(0);
+    correctCountRef.current = 0;
+    setScore(0);
+    scoreRef.current = 0;
+    setSelectedAnswer(null);
+    setFeedback("none");
+    nextProblem();
+    setGameState("playing");
+  }, [clearAllTimers, nextProblem]);
+
+  useEffect(() => {
+    if (!isGauntletPreset || autoStartedRef.current || gameState !== "start") return;
+    autoStartedRef.current = true;
+    startGame();
+  }, [gameState, isGauntletPreset, startGame]);
+
+  // 游戏结束
+  const handleGameOver = useCallback(() => {
+    clearAllTimers();
+    const finalScore = gameMode === "timed" ? scoreRef.current : correctCountRef.current;
+    const effectiveScore = getEffectiveScoreForPoints(finalScore);
+    const settlement = settleGame({
+      gameId: "mental-math",
+      score: finalScore,
+      rewardScore: effectiveScore,
+      mode: getTrainingModeRecord(),
+      difficulty: rewardDifficulty,
+      outcome: "completed",
+    });
+    if (settlement.gauntletHandled) {
+      return;
+    }
+
+    Taro.setStorageSync("mental_math_last_score", finalScore);
+    setGameState("gameover");
+    updateHighScore(finalScore);
+  }, [
+    clearAllTimers,
+    gameMode,
+    getEffectiveScoreForPoints,
+    getTrainingModeRecord,
+    rewardDifficulty,
+    updateHighScore,
+  ]);
+
+  // 计时器
+  useEffect(() => {
+    if (gameState === "playing" && gameMode === "timed") {
+      timerRef.current = setInterval(() => {
+        setTimeLeft((t) => {
+          if (t <= 0.1) {
+            handleGameOver();
+            return 0;
+          }
+          return t - 0.1;
+        });
+      }, 100);
     } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [gameState, gameMode, handleGameOver]);
+
+  // 处理答案选择
+  const handleSelect = (answer: number) => {
+    if (gameState !== "playing" || feedback !== "none" || !currentProblem) return;
+
+    setSelectedAnswer(answer);
+
+    if (answer === currentProblem.answer) {
+      // Correct answer
+      setFeedback("correct");
+      setCorrectCount((c) => c + 1);
       setScore((currentScore) => {
-        const nextScore = getTimedMentalMathScore(currentScore, false);
+        const nextScore = getTimedMentalMathScore(currentScore, true);
         scoreRef.current = nextScore;
         return nextScore;
       });
-      // In timed mode: continue to next problem
+
       feedbackTimerRef.current = setTimeout(() => {
         nextProblem();
-      }, 500);
+      }, 300);
+    } else {
+      // Wrong answer
+      setFeedback("wrong");
+      if (gameMode === "death") {
+        // In death mode: wrong answer ends game immediately
+        feedbackTimerRef.current = setTimeout(() => {
+          handleGameOver();
+        }, 500);
+      } else {
+        setScore((currentScore) => {
+          const nextScore = getTimedMentalMathScore(currentScore, false);
+          scoreRef.current = nextScore;
+          return nextScore;
+        });
+        // In timed mode: continue to next problem
+        feedbackTimerRef.current = setTimeout(() => {
+          nextProblem();
+        }, 500);
+      }
     }
-  }
-};
+  };
 
-// 获取选项样式
-const getOptionClass = (option: number): string => {
-  if (selectedAnswer === null || feedback === "none") return "option-item";
-  if (option === currentProblem?.answer) return "option-item option-correct";
-  if (option === selectedAnswer && feedback === "wrong") return "option-item option-wrong";
-  return "option-item";
-};
+  const awardedPoints = getAwardedPoints(
+    "mental-math",
+    getEffectiveScoreForPoints(score),
+    rewardDifficulty,
+  );
 
-return (
-  <View className="game-container">
-    {/* ---------------- START SCREEN ---------------- */}
-    {gameState === "start" && (
-      <View className="start-screen">
-        <View className="header-section">
-          <View className="logo-container">
-            <View className="logo-icon">
-              <Text className="logo-emoji">🧮</Text>
-            </View>
-          </View>
-          <Text className="game-title">速算挑战</Text>
+  return (
+    <View className="game-container">
+      {gameState === "start" && (
+        <MentalMathStartPanel
+          highScore={getHighScore()}
+          isGauntletPreset={isGauntletPreset}
+          gameMode={gameMode}
+          selectedStageId={selectedStageId}
+          customConfig={customConfig}
+          customProfileSummary={customProfile.summary}
+          stages={MATH_STAGES}
+          getStageDifficulty={getStageDifficulty}
+          getDifficultyLabel={getTrainingDifficultyLabel}
+          onStageChange={setSelectedStageId}
+          onModeChange={setGameMode}
+          onToggleCustomOperation={handleToggleCustomOperation}
+          onSelectCustomRange={handleSelectCustomRange}
+          onStart={startGame}
+        />
+      )}
 
-          <View className="high-score-badge">
-            <View className="high-score-icon">
-              <Text className="high-score-icon-text">🏆</Text>
-            </View>
-            <View className="high-score-content">
-              <Text className="high-score-label">历史最高分</Text>
-              <Text className="high-score-value">{getHighScore()}</Text>
-            </View>
-          </View>
-        </View>
+      {gameState === "playing" && currentProblem && (
+        <MentalMathPlayPanel
+          gameMode={gameMode}
+          stageTitle={selectedStage.name}
+          stageShortName={selectedStageShortName}
+          timeLeft={timeLeft}
+          score={score}
+          correctCount={correctCount}
+          currentProblem={currentProblem}
+          options={options}
+          selectedAnswer={selectedAnswer}
+          feedback={feedback}
+          onSelect={handleSelect}
+        />
+      )}
 
-        {!isGauntletPreset && (
-        <View className="mode-section">
-          <View className="mode-header">
-            <View className="mode-icon">
-              <Text className="mode-icon-text">⚡</Text>
-            </View>
-            <Text className="mode-title">选择训练内容</Text>
-          </View>
-          <View className="stage-grid">
-            {MATH_STAGES.map((stage) => (
-              <View
-                key={stage.id}
-                className={`stage-item ${selectedStageId === stage.id ? "stage-item-selected" : ""}`}
-                onClick={() => setSelectedStageId(stage.id)}
-              >
-                <View className="stage-item-header">
-                  <Text className="stage-name">{stage.name}</Text>
-                  <Text className={`stage-difficulty stage-difficulty-${getStageDifficulty(stage.id)}`}>
-                    积分{getTrainingDifficultyLabel(getStageDifficulty(stage.id))}
-                  </Text>
-                </View>
-                <Text className="stage-short-name">
-                  {stage.id === CUSTOM_MATH_STAGE_ID ? `${stage.shortName}: ${customProfile.summary}` : stage.shortName}
-                </Text>
-                <Text className="stage-desc">
-                  {stage.summary}
-                </Text>
-              </View>
-            ))}
-          </View>
-          {isCustomStage && (
-            <View className="custom-panel">
-              <View className="custom-group">
-                <Text className="custom-label">运算</Text>
-                <View className="custom-chip-row">
-                  {CUSTOM_OPERATION_OPTIONS.map((operation) => {
-                    const selected =
-                      operation.id === "all"
-                        ? customConfig.operations.length === 4
-                        : customConfig.operations.includes(operation.id);
-                    return (
-                      <View
-                        key={operation.id}
-                        className={`custom-chip ${selected ? "custom-chip-selected" : ""}`}
-                        onClick={() => handleToggleCustomOperation(operation.id)}
-                      >
-                        <Text className="custom-chip-text">{operation.label}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-              <View className="custom-group">
-                <Text className="custom-label">数字范围</Text>
-                <View className="custom-chip-row">
-                  {CUSTOM_RANGE_OPTIONS.map((range) => (
-                    <View
-                      key={range.id}
-                      className={`custom-chip ${customConfig.rangeId === range.id ? "custom-chip-selected" : ""}`}
-                      onClick={() => handleSelectCustomRange(range.id)}
-                    >
-                      <Text className="custom-chip-text">{range.label}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            </View>
-          )}
-        </View>
-        )}
-
-        {/* 模式选择 */}
-        {!isGauntletPreset && (
-        <View className="mode-section">
-          <View className="mode-header">
-            <View className="mode-icon">
-              <Text className="mode-icon-text">🎮</Text>
-            </View>
-            <Text className="mode-title">选择模式</Text>
-          </View>
-          <View className="mode-grid">
-            <View
-              className={`mode-item ${gameMode === "timed" ? "mode-item-selected" : ""}`}
-              onClick={() => setGameMode("timed")}
-            >
-              <View className="mode-name">限时模式</View>
-              <View className="mode-desc">30秒倒计时</View>
-            </View>
-            <View
-              className={`mode-item ${gameMode === "death" ? "mode-item-selected" : ""}`}
-              onClick={() => setGameMode("death")}
-            >
-              <View className="mode-name">闯关模式</View>
-              <View className="mode-desc">错一题就结束</View>
-            </View>
-          </View>
-        </View>
-        )}
-
-        <View className="rules-card">
-          <View className="rules-header">
-            <View className="rules-icon">
-              <Text className="rules-icon-text">📋</Text>
-            </View>
-            <Text className="rules-title">游戏规则</Text>
-          </View>
-          <View className="rules-list">
-            <View className="rule-item">
-              <Text className="rule-number">1.</Text>
-              <Text className="rule-text">{gameMode === "timed" ? "30秒限时，越快越准越好" : "连续闯关，错一题结束"}</Text>
-            </View>
-            <View className="rule-item">
-              <Text className="rule-number">2.</Text>
-              <Text className="rule-text">点击四个选项中正确的答案</Text>
-            </View>
-            <View className="rule-item">
-              <Text className="rule-number">3.</Text>
-              <Text className="rule-text">{gameMode === "timed" ? "答错不结束，继续挑战下一题" : "答对一题进一关，答错立即结束"}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View className="start-button-container floating-start-action">
-          <View className="start-button" onClick={startGame}>
-            <Text className="start-button-text">开始挑战</Text>
-          </View>
-        </View>
-      </View>
-    )}
-
-    {/* ---------------- PLAYING SCREEN ---------------- */}
-    {gameState === "playing" && currentProblem && (
-      <View className="game-screen">
-        <View className="top-bar">
-          <View className="top-bar-stage">
-            <Text className="top-bar-stage-text">{selectedStage.name} · {selectedStageShortName}</Text>
-          </View>
-          {gameMode === "timed" && (
-            <View className="top-bar-item">
-              <View className="top-bar-icon top-bar-icon-clock">
-                <Text className="top-bar-icon-text">⏱️</Text>
-              </View>
-              <Text className="top-bar-text">{Math.ceil(timeLeft)}s</Text>
-            </View>
-          )}
-          <View className="top-bar-item">
-            <View className="top-bar-icon top-bar-icon-trophy">
-              <Text className="top-bar-icon-text">✅</Text>
-            </View>
-            <Text className="top-bar-text">{gameMode === "timed" ? `${score} 分` : `${correctCount} 题`}</Text>
-          </View>
-        </View>
-
-        {gameMode === "timed" && (
-          <View className="progress-bar">
-            <View
-              className="progress-bar-fill"
-              style={{
-                width: `${(timeLeft / 30) * 100}%`,
-              }}
-            />
-          </View>
-        )}
-
-        {gameMode === "death" && (
-          <View className="streak-progress">
-            <Text className="streak-text">当前连对: {correctCount} 题</Text>
-          </View>
-        )}
-
-        <View className="problem-card">
-          <Text className="question-text">{currentProblem.question}</Text>
-        </View>
-
-        <View className="options-grid">
-          {options.map((option) => (
-            <View
-              key={option}
-              className={getOptionClass(option)}
-              onClick={() => handleSelect(option)}
-            >
-              <Text className="option-text">{option}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    )}
-
-    {/* ---------------- GAME OVER SCREEN ---------------- */}
-    {gameState === "gameover" && (
-      <View className="result-screen">
-        <View className="result-card">
-          <Text className="result-title">本局成绩</Text>
-          <Text className="result-score">{score}</Text>
-          <Text className="result-desc">
-            {gameMode === "timed" ? `得分 ${score} 分 · 答对 ${correctCount} 题` : `答对 ${correctCount} 题`} · {selectedStage.name} · {selectedStageShortName}
-          </Text>
-          <Text className="result-desc">
-            {gameMode === "timed" ? "限时模式" : "闯关模式"} · 积分{getTrainingDifficultyLabel(rewardDifficulty)}
-          </Text>
-          <Text className="result-desc">
-            获得 {getAwardedPoints("mental-math", getEffectiveScoreForPoints(score), rewardDifficulty)} 积分
-            </Text>
-          <Text className="result-desc">
-            历史最高 {getHighScore()}
-            {isNewRecord && score > 0 ? <Text className="result-highlight">，刷新纪录</Text> : null}
-          </Text>
-        </View>
-
-        <View className="result-actions">
-          <StickerShareButton
-            gameTitle="速算挑战"
-            score={score}
-            pagePath="pages/mental-math/index"
-            isGauntlet={isGauntletPreset}
-          />
-          <View className="primary-button" onClick={startGame}>
-            <Text className="button-text">再来一局</Text>
-          </View>
-          <View className="secondary-button" onClick={() => setGameState("start")}>
-            <Text className="button-text">返回开始页</Text>
-          </View>
-          <View className="secondary-button" onClick={() => Taro.reLaunch({ url: '/pages/index/index' })}>
-            <Text className="button-text">返回游戏主页</Text>
-          </View>
-        </View>
-      </View>
-    )}
-  </View>
-);
+      {gameState === "gameover" && (
+        <MentalMathResultPanel
+          score={score}
+          correctCount={correctCount}
+          gameMode={gameMode}
+          stageTitle={selectedStage.name}
+          stageShortName={selectedStageShortName}
+          difficultyLabel={getTrainingDifficultyLabel(rewardDifficulty)}
+          awardedPoints={awardedPoints}
+          highScore={getHighScore()}
+          isNewRecord={isNewRecord}
+          isGauntlet={isGauntletPreset}
+          onRestart={startGame}
+          onBackToStart={() => setGameState("start")}
+          onBackHome={() => Taro.reLaunch({ url: "/pages/index/index" })}
+        />
+      )}
+    </View>
+  );
 }
