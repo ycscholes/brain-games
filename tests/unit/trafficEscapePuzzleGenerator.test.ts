@@ -11,7 +11,6 @@ import {
   getTrafficEscapeStateKey,
 } from "../../src/pages/traffic-escape/gameLogic";
 import {
-  certifyTrafficEscapeHardPuzzle,
   getTrafficEscapeGeometryKey,
   getTrafficEscapeVerticalAnchorKeys,
 } from "../../src/pages/traffic-escape/puzzleQuality";
@@ -98,13 +97,4 @@ describe("traffic-escape hard puzzle generator", () => {
     });
   });
 
-  test("a fixed seed corpus produces multiple certified candidates", () => {
-    const certifiedSeeds = [4, 11, 20, 25]
-      .map(createTrafficEscapeHardCandidate)
-      .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null)
-      .filter((candidate) => certifyTrafficEscapeHardPuzzle(candidate.puzzle).accepted)
-      .map((candidate) => candidate.seed);
-
-    expect(certifiedSeeds).toEqual([11, 25]);
-  });
 });

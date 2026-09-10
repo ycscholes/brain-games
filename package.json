@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand --testPathIgnorePatterns=/tests\\/certification/",
     "test:puzzle-certification": "jest --runInBand tests/certification",
+    "verify": "npm test && npm run typecheck && npm run lint && npm run assets:check && npm run audio:check && npm run secrets:check && git diff --check",
     "build:weapp": "taro build --type weapp --no-check",
     "build:h5": "taro build --type h5",
     "build:ci": "npm run build:weapp",
