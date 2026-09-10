@@ -1,9 +1,9 @@
 import { type CSSProperties } from "react";
 import { View, Text } from "@tarojs/components";
 import PetSprite from "../../pet/components/PetSprite";
-import type { PetSpriteMood, PetSpriteSize } from "../../pet/components/PetSprite/types";
-import type { PetSkin } from "../../pet/types";
-import type { PetAssetRef } from "../../pet/petAssets";
+import type { PetSpriteMood, PetSpriteSize } from "../../../domain/pet/sprite";
+import type { PetSkin } from "../../../domain/pet/types";
+import type { PetAssetRef } from "../../../domain/pet/assets";
 import { getPetDisplayItemsForSkin, type PetDisplayItem } from "../../pet/petDisplayPool";
 import type {
   BirdCountQuestion,

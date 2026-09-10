@@ -12,8 +12,8 @@ import {
   loadPetMemoryItemsFromAssets,
   type MemoryChallengeItem,
 } from "../../src/pages/memory-challenge/gameLogic";
-import type { PetSpriteMood } from "../../src/pages/pet/components/PetSprite/types";
-import type { PetSkin } from "../../src/pages/pet/types";
+import type { PetSpriteMood } from "../../src/domain/pet/sprite";
+import type { PetSkin } from "../../src/domain/pet/types";
 
 const PET_SKINS: PetSkin[] = ["cat", "dog", "rabbit", "bear", "panda", "gecko", "turtle"];
 const PET_MOODS: PetSpriteMood[] = ["idle", "feed", "cuddle", "hungry"];

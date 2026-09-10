@@ -295,7 +295,7 @@ describe("remoteAssets", () => {
 
     const [{ resolveFoodIconUrl }, { PET_SKIN_NAME, getFoodItemsForPetSkin }] = await Promise.all([
       import("../../src/config/remoteAssets"),
-      import("../../src/pages/pet/types"),
+      import("../../src/domain/pet/types"),
     ]);
 
     const foodImageIds = new Set(

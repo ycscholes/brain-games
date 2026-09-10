@@ -4,8 +4,8 @@ import {
   getPetDisplayNameForSkin,
   STANDARD_PET_DISPLAY_SKINS,
 } from "../../src/pages/pet/petDisplayPool";
-import { createCustomPetAssetRef } from "../../src/pages/pet/petAssets";
-import type { PetData, PetSkin, PetStorageData } from "../../src/pages/pet/types";
+import { createCustomPetAssetRef } from "../../src/domain/pet/assets";
+import type { PetData, PetSkin, PetStorageData } from "../../src/domain/pet/types";
 
 function createPet(overrides: Partial<PetData> = {}): PetData {
   return {

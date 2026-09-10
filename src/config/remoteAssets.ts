@@ -1,6 +1,6 @@
 import Taro from "@tarojs/taro";
-import type { PetSkin } from "../pages/pet/types";
-import type { PetSpriteMood } from "../pages/pet/components/PetSprite/types";
+import type { PetSkin } from "../domain/pet/types";
+import type { PetSpriteMood } from "../domain/pet/sprite";
 import { CLOUD_ENV_ID } from "./cloud";
 import { ensureCloudReady } from "../services/user-data/cloud/cloudFunctionsClient";
 import remoteAssetManifest from "../../config/remote-assets.json";

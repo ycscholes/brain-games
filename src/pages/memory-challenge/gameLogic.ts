@@ -1,7 +1,7 @@
-import type { PetSpriteMood } from "../pet/components/PetSprite/types";
-import { PET_SKIN_NAME, type PetSkin } from "../pet/types";
-import type { PetAssetRef } from "../pet/petAssets";
-import { getPetAssetKey } from "../pet/petAssets";
+import type { PetSpriteMood } from "../../domain/pet/sprite";
+import { PET_SKIN_NAME, type PetSkin } from "../../domain/pet/types";
+import type { PetAssetRef } from "../../domain/pet/assets";
+import { getPetAssetKey } from "../../domain/pet/assets";
 
 export type MemoryChallengeMode = "shape" | "pet" | "calculation";
 export type MemoryChallengeN = 1 | 2 | 3 | 4;

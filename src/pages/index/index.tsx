@@ -23,9 +23,9 @@ import { preloadGameAssets, type AssetPreloadProgress } from "../../utils/resour
 import { usePageShare } from "../../utils/share";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playTap } from "../../services/audio/audioFeedbackService";
-import { MAX_HUNGER, PetData, PetStorageData } from "../../pages/pet/types";
+import { MAX_HUNGER, PetData, PetStorageData } from "../../domain/pet/types";
 import PetSprite from "../pet/components/PetSprite";
-import type { PetSpriteMood } from "../pet/components/PetSprite/types";
+import type { PetSpriteMood } from "../../domain/pet/sprite";
 import OfficialAccountPublishFeed from "../../components/stickers/OfficialAccountPublishFeed";
 import "./index.scss";
 

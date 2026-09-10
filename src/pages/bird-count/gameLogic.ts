@@ -1,5 +1,5 @@
-import type { PetSkin } from "../pet/types";
-import type { PetSpriteMood } from "../pet/components/PetSprite/types";
+import type { PetSkin } from "../../domain/pet/types";
+import type { PetSpriteMood } from "../../domain/pet/sprite";
 import type { TrainingDifficulty } from "../../utils/trainingStorage";
 
 export type BirdCountDifficulty = TrainingDifficulty;

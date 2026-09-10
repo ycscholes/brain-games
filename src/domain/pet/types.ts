@@ -1,4 +1,4 @@
-import type { PetAssetRef } from "./petAssets";
+import type { PetAssetRef } from "./assets";
 
 export type PetStatus = "alive" | "hungry" | "dead";
 export type PetSkin = "cat" | "dog" | "rabbit" | "bear" | "panda" | "gecko" | "turtle";

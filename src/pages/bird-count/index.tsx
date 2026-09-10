@@ -14,9 +14,9 @@ import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../u
 import { usePageShare } from "../../utils/share";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
-import type { PetSpriteMood } from "../pet/components/PetSprite/types";
-import type { PetSkin } from "../pet/types";
-import { getPetAssetKey } from "../pet/petAssets";
+import type { PetSpriteMood } from "../../domain/pet/sprite";
+import type { PetSkin } from "../../domain/pet/types";
+import { getPetAssetKey } from "../../domain/pet/assets";
 import {
   buildPetDisplayPool,
   getPetDisplayNameForSkin,

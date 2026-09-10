@@ -1,5 +1,5 @@
-import type { PetSkin } from "../../pages/pet/types";
-import type { PetSpriteMood } from "../../pages/pet/components/PetSprite/types";
+import type { PetSkin } from "../../domain/pet/types";
+import type { PetSpriteMood } from "../../domain/pet/sprite";
 import type { UserCloudSnapshot } from "../user-data/types";
 
 export type CustomPetTaskStatus =

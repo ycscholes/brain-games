@@ -5,7 +5,7 @@ import {
   PET_SKIN_NAME,
   PetSkin,
   getFoodItemsForPetSkin,
-} from "../../src/pages/pet/types";
+} from "../../src/domain/pet/types";
 
 const PET_SKINS = Object.keys(PET_SKIN_NAME) as PetSkin[];
 const GENERATED_FOOD_LOADOUTS: Record<PetSkin, readonly string[]> = {
@@ -19,6 +19,12 @@ const GENERATED_FOOD_LOADOUTS: Record<PetSkin, readonly string[]> = {
 };
 
 describe("pet food config", () => {
+  test("every pet skin keeps its three-item food loadout", () => {
+    PET_SKINS.forEach((skin) => {
+      expect(getFoodItemsForPetSkin(skin)).toHaveLength(3);
+    });
+  });
+
   test("uses an eight item shared food pool and one exclusive premium food per pet", () => {
     expect(FOOD_POOL).toHaveLength(8);
     expect(PET_EXCLUSIVE_FOODS).toHaveLength(PET_SKINS.length);

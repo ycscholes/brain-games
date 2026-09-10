@@ -1,5 +1,5 @@
 import Taro from "@tarojs/taro";
-import type { PetSpriteMood } from "../../pages/pet/components/PetSprite/types";
+import type { PetSpriteMood } from "../../domain/pet/sprite";
 import { savePetData } from "../../utils/petStorage";
 import { ensureCloudReady } from "../user-data/cloud/cloudFunctionsClient";
 import { syncLocalUserDataToCloudNow } from "../user-data/sync/userDataSyncService";

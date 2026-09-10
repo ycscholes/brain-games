@@ -1,6 +1,6 @@
 import Taro from "@tarojs/taro";
-import type { PetData, PetSkin, PetStorageData } from "../pages/pet/types";
-import { createStandardPetAssetRef, getPetTemplateSkin } from "../pages/pet/petAssets";
+import type { PetData, PetSkin, PetStorageData } from "../domain/pet/types";
+import { createStandardPetAssetRef, getPetTemplateSkin } from "../domain/pet/assets";
 import { emitUserDataChanged } from "../services/user-data/local/changeNotifier";
 import {
   getAwardedPoints,
@@ -12,7 +12,7 @@ import {
   MAX_HUNGER,
   HOURS_AFTER_ZERO_BEFORE_DEATH,
   PET_ADOPTION_COST,
-} from "../pages/pet/types";
+} from "../domain/pet/types";
 
 const STORAGE_KEY = "pet_data";
 

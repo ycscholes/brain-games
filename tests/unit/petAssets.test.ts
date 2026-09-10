@@ -4,8 +4,8 @@ import {
   getPetAssetKey,
   getPetAssetRef,
   getPetTemplateSkin,
-} from "../../src/pages/pet/petAssets";
-import type { PetData } from "../../src/pages/pet/types";
+} from "../../src/domain/pet/assets";
+import type { PetData } from "../../src/domain/pet/types";
 
 function createPet(overrides: Partial<PetData> = {}): PetData {
   return {
@@ -24,6 +24,11 @@ function createPet(overrides: Partial<PetData> = {}): PetData {
 }
 
 describe("pet asset references", () => {
+  test("domain asset refs preserve standard and custom identity", () => {
+    expect(createStandardPetAssetRef("dog")).toEqual({ kind: "standard", skin: "dog" });
+    expect(getPetAssetKey(createCustomPetAssetRef("cat", "asset-1"))).toBe("custom:asset-1");
+  });
+
   test("normalizes a legacy pet to a standard asset reference", () => {
     const pet = createPet({ skin: "dog" });
 

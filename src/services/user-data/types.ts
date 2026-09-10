@@ -1,4 +1,4 @@
-import type { PetStorageData } from "../../pages/pet/types";
+import type { PetStorageData } from "../../domain/pet/types";
 import type { AppSettings, TrainingRecord } from "../../utils/trainingStorage";
 import type { StickerRewardLedger } from "../../utils/stickerRewards";
 

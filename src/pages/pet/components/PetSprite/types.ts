@@ -1,8 +1,8 @@
-import type { PetSkin, PetStatus } from "../../types";
-import type { PetAssetRef } from "../../petAssets";
+import type { PetAssetRef } from "../../../../domain/pet/assets";
+import type { PetSkin, PetStatus } from "../../../../domain/pet/types";
+import type { PetSpriteMood, PetSpriteSize } from "../../../../domain/pet/sprite";
 
-export type PetSpriteMood = "idle" | "feed" | "cuddle" | "hungry";
-export type PetSpriteSize = "xxs" | "xs" | "sm" | "md" | "lg" | "xl";
+export type { PetSpriteMood, PetSpriteSize } from "../../../../domain/pet/sprite";
 
 export interface PetSpriteProps {
   skin: PetSkin;

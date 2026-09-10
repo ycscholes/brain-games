@@ -1,9 +1,9 @@
-import { PET_SKIN_NAME, type PetSkin, type PetStorageData } from "./types";
+import { PET_SKIN_NAME, type PetSkin, type PetStorageData } from "../../domain/pet/types";
 import {
   createStandardPetAssetRef,
   getPetAssetRef,
   type PetAssetRef,
-} from "./petAssets";
+} from "../../domain/pet/assets";
 
 export const STANDARD_PET_DISPLAY_SKINS: PetSkin[] = [
   "cat",

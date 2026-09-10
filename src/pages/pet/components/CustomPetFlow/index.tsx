@@ -15,7 +15,7 @@ import type {
   CustomPetTask,
   CustomPetUploadStage,
 } from "../../../../services/custom-pet/types";
-import type { PetSpriteMood } from "../PetSprite/types";
+import type { PetSpriteMood } from "../../../../domain/pet/sprite";
 import {
   CUSTOM_PET_FLOW_STEPS,
   getActiveFlowStage,

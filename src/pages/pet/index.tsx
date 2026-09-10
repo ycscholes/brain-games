@@ -18,10 +18,10 @@ import {
   getFoodItemsForPetSkin,
   PET_SKIN_NAME,
   MAX_HUNGER,
-} from "./types";
+} from "../../domain/pet/types";
 import PetSprite from "./components/PetSprite";
 import CustomPetFlow from "./components/CustomPetFlow";
-import type { PetSpriteMood } from "./components/PetSprite/types";
+import type { PetSpriteMood } from "../../domain/pet/sprite";
 import { deleteCustomPet } from "../../services/custom-pet/customPetService";
 import { resolveCachedFoodIconUrl, resolveFoodIconUrl } from "../../config/remoteAssets";
 import "./index.scss";
