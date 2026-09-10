@@ -30,6 +30,19 @@ const ORIGINAL_RESULT_MARKERS: Record<(typeof MIGRATED_GAME_IDS)[number], string
   netwalk: ["netwalk-finish", "netwalk-finish-actions", "返回难度选择"],
 };
 
+const ORIGINAL_RESULT_ROOTS: Record<(typeof MIGRATED_GAME_IDS)[number], string> = {
+  "mental-math": '<View className="game-container">',
+  "twenty-four": '<View className="twenty-four-page">',
+  "digit-span": '<View className="digit-span-page">',
+  "rock-paper-scissors": '<View className="rps-game">',
+  "memory-challenge": '<View className="game-container">',
+  "bird-count": '<View className="farm-count-page">',
+  hidato: '<View className="hidato-page">',
+  "tents-camp": '<View className="tents-camp-page">',
+  "loop-line": '<View className="loop-line-page">',
+  netwalk: '<View className="netwalk-page">',
+};
+
 describe("home game three-page route contract", () => {
   test("removes the obsolete visible back component after migrating native back handling", () => {
     expect(existsSync(resolve(process.cwd(), "src/components/game-route/GameRouteBack.tsx"))).toBe(
@@ -76,6 +89,9 @@ describe("home game three-page route contract", () => {
         ]) {
           expect(resultSource).toContain(marker);
         }
+        expect(resultSource).toContain(
+          ORIGINAL_RESULT_ROOTS[game.id as (typeof MIGRATED_GAME_IDS)[number]],
+        );
         expect(resultSource).toContain("isGauntletPreset");
       }
     }

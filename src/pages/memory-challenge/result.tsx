@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
@@ -44,19 +45,21 @@ export default function MemoryChallengeResult() {
     void replaceWithGamePlay("memory-challenge", nextRun.runId, readGameRouteParams());
   };
   return (
-    <MemoryChallengeResultPanel
-      score={run.result.score}
-      correctCount={run.result.correctCount}
-      modeLabel={MODE_LABELS[mode]}
-      memoryLabel={MEMORY_LABELS[memoryN]}
-      awardedPoints={run.result.awardedPoints}
-      rewardCap={getMemoryChallengeRewardCap(mode, memoryN)}
-      highScore={readHighScore(mode, memoryN)}
-      isNewRecord={run.result.isNewBest}
-      isGauntlet={isGauntletPreset}
-      onRestart={restart}
-      onBackToStart={() => void goBackToGameStart("memory-challenge")}
-      onBackHome={() => void Taro.reLaunch({ url: "/pages/index/index" })}
-    />
+    <View className="game-container">
+      <MemoryChallengeResultPanel
+        score={run.result.score}
+        correctCount={run.result.correctCount}
+        modeLabel={MODE_LABELS[mode]}
+        memoryLabel={MEMORY_LABELS[memoryN]}
+        awardedPoints={run.result.awardedPoints}
+        rewardCap={getMemoryChallengeRewardCap(mode, memoryN)}
+        highScore={readHighScore(mode, memoryN)}
+        isNewRecord={run.result.isNewBest}
+        isGauntlet={isGauntletPreset}
+        onRestart={restart}
+        onBackToStart={() => void goBackToGameStart("memory-challenge")}
+        onBackHome={() => void Taro.reLaunch({ url: "/pages/index/index" })}
+      />
+    </View>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
@@ -44,17 +45,19 @@ export default function BirdCountResult() {
     void replaceWithGamePlay("bird-count", nextRun.runId, readGameRouteParams());
   };
   return (
-    <FarmCountResult
-      score={run.result.score}
-      modeTitle={modeTitle}
-      difficultyLabel={difficultyLabel}
-      accuracyText={`${run.result.correctCount}/${totalQuestions}`}
-      bestCombo={run.result.bestCombo}
-      awardedPoints={run.result.awardedPoints}
-      isNewBest={run.result.isNewBest}
-      isGauntlet={isGauntletPreset}
-      onBack={() => void goBackToGameStart("bird-count")}
-      onRestart={restart}
-    />
+    <View className="farm-count-page">
+      <FarmCountResult
+        score={run.result.score}
+        modeTitle={modeTitle}
+        difficultyLabel={difficultyLabel}
+        accuracyText={`${run.result.correctCount}/${totalQuestions}`}
+        bestCombo={run.result.bestCombo}
+        awardedPoints={run.result.awardedPoints}
+        isNewBest={run.result.isNewBest}
+        isGauntlet={isGauntletPreset}
+        onBack={() => void goBackToGameStart("bird-count")}
+        onRestart={restart}
+      />
+    </View>
   );
 }

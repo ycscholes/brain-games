@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import MentalMathResultPanel from "./components/MentalMathResultPanel";
 import { getCustomMathProfile, getMathStage, CUSTOM_MATH_STAGE_ID } from "./mathStages";
@@ -56,20 +57,22 @@ export default function MentalMathResult() {
   );
   const rewardDifficulty = isCustom ? customProfile.difficulty : stage.difficulty;
   return (
-    <MentalMathResultPanel
-      score={run.result.score}
-      correctCount={run.result.correctCount}
-      gameMode={run.payload.mode}
-      stageTitle={isCustom ? "自定义训练" : stage.name}
-      stageShortName={isCustom ? customProfile.summary : stage.shortName}
-      difficultyLabel={getTrainingDifficultyLabel(rewardDifficulty)}
-      awardedPoints={run.result.awardedPoints}
-      highScore={readBest(run)}
-      isNewRecord={run.result.isNewBest}
-      isGauntlet={isGauntletPreset}
-      onRestart={restart}
-      onBackToStart={() => void goBackToGameStart("mental-math")}
-      onBackHome={() => void Taro.reLaunch({ url: "/pages/index/index" })}
-    />
+    <View className="game-container">
+      <MentalMathResultPanel
+        score={run.result.score}
+        correctCount={run.result.correctCount}
+        gameMode={run.payload.mode}
+        stageTitle={isCustom ? "自定义训练" : stage.name}
+        stageShortName={isCustom ? customProfile.summary : stage.shortName}
+        difficultyLabel={getTrainingDifficultyLabel(rewardDifficulty)}
+        awardedPoints={run.result.awardedPoints}
+        highScore={readBest(run)}
+        isNewRecord={run.result.isNewBest}
+        isGauntlet={isGauntletPreset}
+        onRestart={restart}
+        onBackToStart={() => void goBackToGameStart("mental-math")}
+        onBackHome={() => void Taro.reLaunch({ url: "/pages/index/index" })}
+      />
+    </View>
   );
 }
