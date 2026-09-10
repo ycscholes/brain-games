@@ -190,8 +190,8 @@ describe("sticker publishing", () => {
 
   test("renders the score share action on every ordinary game result screen", () => {
     const pageFiles = [
-      "mental-math/index.tsx",
-      "pattern-completion/index.tsx",
+      "mental-math/components/MentalMathResultPanel.tsx",
+      "pattern-completion/components/PatternResultPanel.tsx",
       "digit-span/index.tsx",
       "twenty-four/index.tsx",
       "rock-paper-scissors/index.tsx",
@@ -204,7 +204,7 @@ describe("sticker publishing", () => {
       "netwalk/index.tsx",
       "loop-line/index.tsx",
       "number-order/index.tsx",
-      "memory-challenge/index.tsx",
+      "memory-challenge/components/MemoryChallengeResultPanel.tsx",
       "multiple-object-tracking/index.tsx",
       "word-scramble/index.tsx",
       "bird-count/components/FarmCountResult.tsx",
