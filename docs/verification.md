@@ -6,7 +6,7 @@
 
 ### `npm test`
 
-`npm test` 运行 Jest 默认单元测试套件。它是快速、确定性的回归入口，并通过 Jest 路径过滤排除 `tests/certification/`；当前工作区基线约为 **49 秒**，实际耗时会随机器和依赖状态变化。默认套件不会隐式执行车阵突围的完整题库 BFS 或 2,000-seed 扫描。
+`npm test` 运行 Jest 默认单元测试套件。它是快速、确定性的回归入口，并通过 Jest 路径过滤排除 `tests/certification/`；当前工作区基线约为 **49 秒**，实际耗时会随机器和依赖状态变化。默认套件不会隐式执行车阵突围的完整题库 BFS 或认证候选扫描。
 
 ### `npm run verify`
 
@@ -26,7 +26,9 @@
 
 ### `npm run test:puzzle-certification`
 
-该命令显式运行 `tests/certification/`，覆盖完整困难题库认证、题库结构和生成器扫描。当前基线约需 **11 分钟**（Task 4 的一次完整运行约 664 秒）；因此它不属于默认 `npm test` 或 `npm run verify`，不能把默认测试耗时理解成包含这套认证。
+该命令显式运行 `tests/certification/`，覆盖完整困难题库认证、题库结构和生成器候选扫描。当前基线约需 **11 分钟**（Task 4 的一次完整运行约 664 秒）；因此它不属于默认 `npm test` 或 `npm run verify`，不能把默认测试耗时理解成包含这套认证。
+
+认证测试和生成脚本都会先从有限的 `CURATED_HARD_CANDIDATE_SEEDS` 候选列表按批准的 seed 范围过滤，再选择满足结构多样性规则的题目。它是 curated candidate scan，不是对该范围内每个整数 seed 的 exhaustive scan；输出的 36 道题是候选列表中的认证结果，不代表连续 seed 全量覆盖。
 
 当下列任一内容发生变化时，必须运行 `npm run test:puzzle-certification`：
 
@@ -44,4 +46,8 @@
 
 ## 架构文档入口
 
-README 中的 [架构指南](architecture.md)链接预留给后续 Task 11；当前正文尚未落地，不能据此声称架构文档已存在或已完成。
+README 中的 [架构指南](architecture.md)是当前仓库的长期架构入口，说明
+目录职责、依赖方向、Traffic Escape 生命周期、结算边界、远程素材、生成
+文件和本地/线上证据边界。游戏模块新增或迁移时，同时参考
+[game-module contract](game-module-contract.md) 与
+[积分系统](points-economy.md)。

@@ -75,7 +75,8 @@ index (start/catalog) -> play (active run) -> result (sealed result)
 `src/pages/traffic-escape/run.ts` owns the game-specific serializable payload
 and result type. `src/utils/gameFlowSession.ts` owns the generic local run
 lifecycle. A run is stored under a key scoped by `gameId + runId`, and its
-status moves from `active` exactly once to `settled` or `abandoned`.
+status is guarded as a sequential local state transition from `active` to
+`settled` or `abandoned`.
 
 - `index.tsx` selects the difficulty, reads the gauntlet preset when present,
   creates the run, and navigates to `play`.
@@ -89,6 +90,15 @@ status moves from `active` exactly once to `settled` or `abandoned`.
 The run payload is JSON-serializable local state, not a full puzzle encoded in
 the URL and not transient React memory. Keep `runId` in the query only as the
 lookup handle. `abandonGameRun()` is used for an interrupted active run.
+
+The product terminology may call this an **exactly-once settlement** flow, but
+the implementation provides a **single-client best-effort repeated-call
+guard**, not a distributed atomic guarantee. `gameFlowSession.ts` performs a
+synchronous local read, status check and write. In the same JavaScript client,
+duplicate taps or a remounted callback see the non-active status and return
+`null`; there is no compare-and-swap, cross-process lock, server idempotency
+token or transaction. Do not describe this local guard as atomic or as proof
+against concurrent clients.
 
 ## Settlement and gauntlet sequence
 
@@ -167,7 +177,7 @@ Use the smallest relevant command during development, then the phase gate:
 
 ```bash
 npm test                              # fast/default Jest suite
-npm run test:puzzle-certification    # explicit 36-puzzle/2,000-seed certification
+npm run test:puzzle-certification    # explicit 36-puzzle curated-candidate certification
 npm run typecheck                    # TypeScript compilation without emit
 npm run lint                         # ESLint plus repository rule validator
 npm run assets:check                 # CloudBase asset backup/manifest check
@@ -181,8 +191,11 @@ git diff --check                     # whitespace/error marker check
 `npm test` intentionally excludes the expensive certification suite. Run
 `npm run test:puzzle-certification` when changing the Traffic Escape generator,
 puzzle quality rules, or `hardPuzzles.generated.ts`; a release review should
-include both suites. `npm run verify` is a local/static gate and does not upload
-assets or deploy functions.
+include both suites. The certification command filters the finite
+`CURATED_HARD_CANDIDATE_SEEDS` list by its approved seed range and selects 36
+structurally diverse entries. It is a curated candidate scan, not an
+exhaustive scan of every integer seed in that range. `npm run verify` is a
+local/static gate and does not upload assets or deploy functions.
 
 Build output proves that Taro produced a package. It is not live WeChat
 Developer Tools evidence, a physical-device interaction check, a CloudBase

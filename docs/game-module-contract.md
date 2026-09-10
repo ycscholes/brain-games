@@ -29,8 +29,13 @@ For a multi-surface game, use `index` for start/catalog, `play` for active
 interaction and `result` for a sealed result. Store a JSON-serializable run
 payload behind a local `runId` when navigation or reload must survive page
 recreation. Exactly one module owns settlement: it computes the score, calls
-the shared points conversion, atomically transitions the active run to settled,
-then performs ordinary reward/record work only when that transition succeeds.
+the shared points conversion, then performs ordinary reward/record work only
+when the active run's local transition succeeds. The product terminology may
+call this an **exactly-once settlement** flow, but it is a **single-client
+best-effort repeated-call guard**, not a distributed atomic guarantee: the
+current helper does a synchronous local read/status check/write without
+compare-and-swap, cross-process locking, a server idempotency token or a
+transaction.
 
 Traffic Escape is the reference implementation:
 
@@ -46,9 +51,10 @@ Traffic Escape is the reference implementation:
   handles the leg, leaving final aggregate settlement to the gauntlet.
 
 Do not settle from both a page effect and a button callback. Do not award based
-on a result-page mount. If a run is already settled/abandoned, the second
-attempt must be a no-op. Back, duplicate taps and route remounts must not
-restore an active completed puzzle or grant again.
+on a result-page mount. If a run is already settled/abandoned, a sequential
+second attempt in the same client is a no-op. Back, duplicate taps and route
+remounts should not restore an active completed puzzle or grant again; this is
+not proof against concurrent clients or a process crash between local writes.
 
 ## IDs, modes, storage and compatibility
 
@@ -78,7 +84,9 @@ hand. Update their generator script, run the named generation command, inspect
 the full diff, and run the generator's focused tests. In particular,
 `hardPuzzles.generated.ts` is produced by
 `npm run traffic-escape:puzzles`; full certification is separate from the fast
-suite.
+suite. The generator filters the finite `CURATED_HARD_CANDIDATE_SEEDS` list by
+an approved range and selects structurally diverse entries. It is not an
+exhaustive scan of every integer seed in that range.
 
 ## Validation checklist
 
