@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import { getTrainingDifficultyLabel } from "../../utils/trainingStorage";
 import { BIRD_COUNT_TOTAL_QUESTIONS } from "./gameLogic";
@@ -15,6 +16,7 @@ import "./index.scss";
 
 export default function BirdCountResult() {
   usePageShare("pages/bird-count/index");
+  const isGauntletPreset = readGameGauntletModePreset() !== null;
   const runId = getCurrentInstance().router?.params?.runId ?? "";
   const [run] = useState(() => readBirdCountRun(runId));
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function BirdCountResult() {
       bestCombo={run.result.bestCombo}
       awardedPoints={run.result.awardedPoints}
       isNewBest={run.result.isNewBest}
-      isGauntlet={false}
+      isGauntlet={isGauntletPreset}
       onBack={() => void goBackToGameStart("bird-count")}
       onRestart={restart}
     />

@@ -4,7 +4,6 @@ import Taro, { getCurrentInstance, useDidShow, useLoad, useUnload } from "@taroj
 import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import { type TrainingDifficulty } from "../../utils/trainingStorage";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
 import {
   playComplete,
@@ -446,10 +445,5 @@ export default function DigitSpan() {
     </View>
   );
 
-  return (
-    <View className="digit-span-page">
-      <GameRouteBack gameId="digit-span" runId={runId} onAbandon={handleRouteBack} />
-      {renderGame()}
-    </View>
-  );
+  return <View className="digit-span-page">{renderGame()}</View>;
 }

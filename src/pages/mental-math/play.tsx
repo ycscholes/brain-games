@@ -3,7 +3,6 @@ import { View } from "@tarojs/components";
 import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
 import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
 import { playTap } from "../../services/audio/audioFeedbackService";
 import {
@@ -441,8 +440,6 @@ export default function MentalMath() {
 
   return (
     <View className="game-container">
-      <GameRouteBack gameId="mental-math" runId={runId} onAbandon={handleRouteBack} />
-
       {gameState === "playing" && currentProblem && (
         <MentalMathPlayPanel
           gameMode={gameMode}

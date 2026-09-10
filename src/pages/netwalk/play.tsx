@@ -4,7 +4,6 @@ import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
 import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import { type TrainingDifficulty } from "../../utils/trainingStorage";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
 import { playComplete, playCorrect, playTap } from "../../services/audio/audioFeedbackService";
 import {
@@ -299,7 +298,6 @@ export default function Netwalk() {
 
   return (
     <View className="netwalk-page">
-      {runId ? <GameRouteBack gameId="netwalk" runId={runId} onAbandon={handleRouteBack} /> : null}
       {puzzle && networkState ? (
         <View className="netwalk-play">
           <View className="netwalk-hud">

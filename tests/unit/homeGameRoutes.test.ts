@@ -4,7 +4,39 @@ import { HOME_GAME_ITEMS } from "../../src/config/gameCatalog";
 
 const root = resolve(process.cwd(), "src/pages");
 
+const MIGRATED_GAME_IDS = [
+  "mental-math",
+  "twenty-four",
+  "digit-span",
+  "rock-paper-scissors",
+  "memory-challenge",
+  "bird-count",
+  "hidato",
+  "tents-camp",
+  "loop-line",
+  "netwalk",
+] as const;
+
+const ORIGINAL_RESULT_MARKERS: Record<(typeof MIGRATED_GAME_IDS)[number], string[]> = {
+  "mental-math": ["MentalMathResultPanel", "onBackToStart", "onBackHome"],
+  "twenty-four": ["tf-result", "tf-result-actions", "本局结束"],
+  "digit-span": ["result-screen", "result-actions", "返回开始页"],
+  "rock-paper-scissors": ["result-screen", "result-actions", "本局成绩"],
+  "memory-challenge": ["MemoryChallengeResultPanel", "onBackToStart", "onBackHome"],
+  "bird-count": ["FarmCountResult", "onBack", "onRestart"],
+  hidato: ["finish-screen", "finish-actions", "返回难度"],
+  "tents-camp": ["tents-result", "result-grid", "返回设置"],
+  "loop-line": ["loop-line-finished", "loop-line-result-grid", "再来一局"],
+  netwalk: ["netwalk-finish", "netwalk-finish-actions", "返回难度选择"],
+};
+
 describe("home game three-page route contract", () => {
+  test("removes the obsolete visible back component after migrating native back handling", () => {
+    expect(existsSync(resolve(process.cwd(), "src/components/game-route/GameRouteBack.tsx"))).toBe(
+      false,
+    );
+  });
+
   test("registers index, play, and result for every ordinary home game", () => {
     const pageConfig = readFileSync(resolve(process.cwd(), "src/app.config.ts"), "utf8");
 
@@ -23,8 +55,8 @@ describe("home game three-page route contract", () => {
       if (game.id === "traffic-escape") {
         expect(playSource).toContain("abandonTrafficEscapeRun");
         expect(playSource).toContain('redirectTo({ url: "/pages/traffic-escape/index" })');
-      } else {
-        expect(playSource).toContain("GameRouteBack");
+      } else if (MIGRATED_GAME_IDS.includes(game.id as (typeof MIGRATED_GAME_IDS)[number])) {
+        expect(playSource).not.toContain("GameRouteBack");
         expect(playSource).toContain("useUnload");
         expect(playSource).toContain('routeRun.status !== "active"');
         expect(playSource).toContain(`redirectTo({ url: "/pages/${game.id}/index" })`);
@@ -37,7 +69,21 @@ describe("home game three-page route contract", () => {
       expect(resultSource).toContain("create");
       expect(runSource).toContain("settleGameRun");
       expect(runSource).toContain("abandonGameRun");
+
+      if (MIGRATED_GAME_IDS.includes(game.id as (typeof MIGRATED_GAME_IDS)[number])) {
+        for (const marker of ORIGINAL_RESULT_MARKERS[
+          game.id as (typeof MIGRATED_GAME_IDS)[number]
+        ]) {
+          expect(resultSource).toContain(marker);
+        }
+        expect(resultSource).toContain("isGauntletPreset");
+      }
     }
+  });
+
+  test("keeps the original loop-line result surface without adding a new visual return control", () => {
+    const resultSource = readFileSync(resolve(root, "loop-line", "result.tsx"), "utf8");
+    expect(resultSource).not.toContain("返回开始页");
   });
 
   test("keeps every home catalog entry pointed at its start page", () => {

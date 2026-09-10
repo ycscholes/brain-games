@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
-import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
+import { readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import { createLoopLineRun, readLoopLineRun } from "./run";
 import "./index.scss";
 
 export default function LoopLineResult() {
   usePageShare("pages/loop-line/index");
+  const isGauntletPreset = readGameGauntletModePreset() !== null;
   const runId = getCurrentInstance().router?.params?.runId ?? "";
   const [run] = useState(() => readLoopLineRun(runId));
   useEffect(() => {
@@ -44,19 +46,13 @@ export default function LoopLineResult() {
           gameTitle="环线谜踪"
           score={run.result.score}
           pagePath="pages/loop-line/index"
-          isGauntlet={false}
+          isGauntlet={isGauntletPreset}
         />
         <View
           className="loop-line-start-button floating-start-action audio-pressable"
           onClick={restart}
         >
           <Text className="loop-line-start-button-text">再来一局</Text>
-        </View>
-        <View
-          className="loop-line-finished-copy"
-          onClick={() => void goBackToGameStart("loop-line")}
-        >
-          返回开始页
         </View>
       </View>
     </View>

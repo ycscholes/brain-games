@@ -3,6 +3,7 @@ import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import { getTrainingDifficultyLabel, MAX_POINTS_PER_SESSION } from "../../utils/trainingStorage";
 import { readRockPaperScissorsHighScore } from "./highScoreStorage";
@@ -17,6 +18,7 @@ const DIFFICULTY_CONFIG = {
 } as const;
 export default function RockPaperScissorsResult() {
   usePageShare("pages/rock-paper-scissors/index");
+  const isGauntletPreset = readGameGauntletModePreset() !== null;
   const runId = getCurrentInstance().router?.params?.runId ?? "";
   const [run] = useState(() => readRockPaperScissorsRun(runId));
   useEffect(() => {
@@ -64,7 +66,7 @@ export default function RockPaperScissorsResult() {
             gameTitle="石头剪刀布"
             score={score}
             pagePath="pages/rock-paper-scissors/index"
-            isGauntlet={false}
+            isGauntlet={isGauntletPreset}
           />
           <View className="primary-button" onClick={restart}>
             <Text className="button-text">再来一局</Text>

@@ -4,7 +4,6 @@ import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
 import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import { MAX_POINTS_PER_SESSION, type TrainingDifficulty } from "../../utils/trainingStorage";
 import { isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
 import { playTap } from "../../services/audio/audioFeedbackService";
 import {
@@ -416,9 +415,6 @@ export default function RockPaperScissors() {
 
   return (
     <View className="rps-game">
-      {runId ? (
-        <GameRouteBack gameId="rock-paper-scissors" runId={runId} onAbandon={handleRouteBack} />
-      ) : null}
       <View className="ambient ambient-one" />
       <View className="ambient ambient-two" />
       <View className="ambient-grid" />

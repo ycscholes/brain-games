@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import { getMemoryChallengeRewardCap } from "./gameLogic";
 import MemoryChallengeResultPanel from "./components/MemoryChallengeResultPanel";
@@ -23,6 +24,7 @@ function readHighScore(mode: keyof typeof MODE_LABELS, n: 1 | 2 | 3 | 4) {
 
 export default function MemoryChallengeResult() {
   usePageShare("pages/memory-challenge/index");
+  const isGauntletPreset = readGameGauntletModePreset() !== null;
   const runId = getCurrentInstance().router?.params?.runId ?? "";
   const [run] = useState(() => readMemoryChallengeRun(runId));
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function MemoryChallengeResult() {
       rewardCap={getMemoryChallengeRewardCap(mode, memoryN)}
       highScore={readHighScore(mode, memoryN)}
       isNewRecord={run.result.isNewBest}
-      isGauntlet={false}
+      isGauntlet={isGauntletPreset}
       onRestart={restart}
       onBackToStart={() => void goBackToGameStart("memory-challenge")}
       onBackHome={() => void Taro.reLaunch({ url: "/pages/index/index" })}

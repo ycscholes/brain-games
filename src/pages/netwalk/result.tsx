@@ -3,6 +3,7 @@ import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import { getTrainingDifficultyLabel } from "../../utils/trainingStorage";
 import { createNetwalkRun, readNetwalkRun } from "./run";
@@ -10,6 +11,7 @@ import "./index.scss";
 
 export default function NetwalkResult() {
   usePageShare("pages/netwalk/index");
+  const isGauntletPreset = readGameGauntletModePreset() !== null;
   const runId = getCurrentInstance().router?.params?.runId ?? "";
   const [run] = useState(() => readNetwalkRun(runId));
   useEffect(() => {
@@ -42,7 +44,7 @@ export default function NetwalkResult() {
               gameTitle="网络回路"
               score={run.result.score}
               pagePath="pages/netwalk/index"
-              isGauntlet={false}
+              isGauntlet={isGauntletPreset}
             />
             <View className="netwalk-primary-button" onClick={restart}>
               <Text className="netwalk-primary-button-text">再接一张网络</Text>

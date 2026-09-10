@@ -7,7 +7,6 @@ import { syncPetData } from "../../utils/petStorage";
 import { resolveCustomPetSpriteUrl } from "../../services/custom-pet/customPetService";
 import { type TrainingDifficulty, type TrainingRewardPolicy } from "../../utils/trainingStorage";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
 import { playTap } from "../../services/audio/audioFeedbackService";
 import { buildPetDisplayPool } from "../pet/petDisplayPool";
@@ -818,9 +817,6 @@ export default function MemoryChallenge() {
 
   return (
     <View className="game-container">
-      {runId ? (
-        <GameRouteBack gameId="memory-challenge" runId={runId} onAbandon={handleRouteBack} />
-      ) : null}
       {(gameState === "memorize" || gameState === "playing") && currentItem && (
         <MemoryChallengePlayPanel
           gameState={gameState}

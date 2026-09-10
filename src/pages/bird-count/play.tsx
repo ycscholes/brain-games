@@ -7,7 +7,6 @@ import { resolveCustomPetSpriteUrl } from "../../services/custom-pet/customPetSe
 import { syncPetData } from "../../utils/petStorage";
 import { type TrainingDifficulty } from "../../utils/trainingStorage";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
 import {
   playComplete,
@@ -921,9 +920,6 @@ export default function FarmCount() {
 
   return (
     <View className="farm-count-page">
-      {runId ? (
-        <GameRouteBack gameId="bird-count" runId={runId} onAbandon={handleRouteBack} />
-      ) : null}
       <FarmCountPlayArea
         mode={mode}
         phase={phase}

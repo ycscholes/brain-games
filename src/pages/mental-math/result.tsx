@@ -3,6 +3,7 @@ import Taro, { getCurrentInstance } from "@tarojs/taro";
 import MentalMathResultPanel from "./components/MentalMathResultPanel";
 import { getCustomMathProfile, getMathStage, CUSTOM_MATH_STAGE_ID } from "./mathStages";
 import { readGameRouteParams, replaceWithGamePlay, goBackToGameStart } from "../../utils/gameRoute";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import { getTrainingDifficultyLabel } from "../../utils/trainingStorage";
 import { createMentalMathRun, readMentalMathRun } from "./run";
@@ -25,6 +26,7 @@ function readBest(run: NonNullable<ReturnType<typeof readMentalMathRun>>) {
 
 export default function MentalMathResult() {
   usePageShare("pages/mental-math/index");
+  const isGauntletPreset = readGameGauntletModePreset() !== null;
   const runId = getCurrentInstance().router?.params?.runId ?? "";
   const [run] = useState(() => readMentalMathRun(runId));
   useEffect(() => {
@@ -52,6 +54,7 @@ export default function MentalMathResult() {
       rangeId: "within100",
     },
   );
+  const rewardDifficulty = isCustom ? customProfile.difficulty : stage.difficulty;
   return (
     <MentalMathResultPanel
       score={run.result.score}
@@ -59,11 +62,11 @@ export default function MentalMathResult() {
       gameMode={run.payload.mode}
       stageTitle={isCustom ? "自定义训练" : stage.name}
       stageShortName={isCustom ? customProfile.summary : stage.shortName}
-      difficultyLabel={getTrainingDifficultyLabel(run.payload.difficulty)}
+      difficultyLabel={getTrainingDifficultyLabel(rewardDifficulty)}
       awardedPoints={run.result.awardedPoints}
       highScore={readBest(run)}
       isNewRecord={run.result.isNewBest}
-      isGauntlet={false}
+      isGauntlet={isGauntletPreset}
       onRestart={restart}
       onBackToStart={() => void goBackToGameStart("mental-math")}
       onBackHome={() => void Taro.reLaunch({ url: "/pages/index/index" })}

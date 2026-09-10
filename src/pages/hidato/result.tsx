@@ -3,6 +3,7 @@ import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { usePageShare } from "../../utils/share";
 import { getTrainingDifficultyLabel } from "../../utils/trainingStorage";
 import { createHidatoRun, readHidatoRun } from "./run";
@@ -10,6 +11,7 @@ import "./index.scss";
 
 export default function HidatoResult() {
   usePageShare("pages/hidato/index");
+  const isGauntletPreset = readGameGauntletModePreset() !== null;
   const runId = getCurrentInstance().router?.params?.runId ?? "";
   const [run] = useState(() => readHidatoRun(runId));
   useEffect(() => {
@@ -40,7 +42,7 @@ export default function HidatoResult() {
               gameTitle="连数迷阵"
               score={run.result.score}
               pagePath="pages/hidato/index"
-              isGauntlet={false}
+              isGauntlet={isGauntletPreset}
             />
             <View className="primary-button" onClick={restart}>
               <Text className="primary-button-text">再来一局</Text>

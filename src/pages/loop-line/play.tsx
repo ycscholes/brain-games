@@ -3,7 +3,6 @@ import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
 import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
 import { getTrainingDifficultyLabel, type TrainingDifficulty } from "../../utils/trainingStorage";
 import {
@@ -312,9 +311,6 @@ export default function LoopLinePage() {
 
   return (
     <View className="loop-line-page">
-      {runId ? (
-        <GameRouteBack gameId="loop-line" runId={runId} onAbandon={handleRouteBack} />
-      ) : null}
       {puzzle && status ? (
         <View className="loop-line-play">
           <View className="loop-line-play-header">

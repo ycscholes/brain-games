@@ -9,7 +9,6 @@ import {
   playWrong,
 } from "../../services/audio/audioFeedbackService";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { type TrainingDifficulty } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
 import {
@@ -416,9 +415,6 @@ export default function TentsCamp() {
 
   return (
     <View className="tents-camp-page">
-      {runId ? (
-        <GameRouteBack gameId="tents-camp" runId={runId} onAbandon={handleRouteBack} />
-      ) : null}
       {currentPuzzle ? (
         <View className="tents-play">
           <View className="status-row">
