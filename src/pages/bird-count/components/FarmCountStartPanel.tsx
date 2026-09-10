@@ -1,10 +1,17 @@
 import { View, Text } from "@tarojs/components";
-import { getTrainingDifficultyLabel, type TrainingDifficulty } from "../../../utils/trainingStorage";
-import { HEAD_COUNT_SPEED_LABELS, type HeadCountDifficulty, type HeadCountSpeedDifficulty } from "../../head-count/gameLogic";
+import {
+  getTrainingDifficultyLabel,
+  type TrainingDifficulty,
+} from "../../../utils/trainingStorage";
+import {
+  HEAD_COUNT_SPEED_LABELS,
+  type HeadCountDifficulty,
+  type HeadCountSpeedDifficulty,
+} from "../../head-count/gameLogic";
 
-type FarmCountMode = "speed" | "yard";
+export type FarmCountMode = "speed" | "yard";
 
-type FarmCountStartPanelProps = {
+export interface FarmCountStartPanelProps {
   mode: FarmCountMode;
   difficulty: TrainingDifficulty;
   yardDifficulty: HeadCountDifficulty;
@@ -16,7 +23,7 @@ type FarmCountStartPanelProps = {
   onYardDifficultyChange: (difficulty: HeadCountDifficulty) => void;
   onSpeedDifficultyChange: (difficulty: HeadCountSpeedDifficulty) => void;
   onStart: () => void;
-};
+}
 
 export default function FarmCountStartPanel({
   mode,

@@ -5,19 +5,16 @@ import type { PetSpriteMood, PetSpriteSize } from "../../../domain/pet/sprite";
 import type { PetSkin } from "../../../domain/pet/types";
 import type { PetAssetRef } from "../../../domain/pet/assets";
 import { getPetDisplayItemsForSkin, type PetDisplayItem } from "../../pet/petDisplayPool";
-import type {
-  BirdCountQuestion,
-  BirdCountQuestionResult,
-} from "../gameLogic";
+import type { BirdCountQuestion, BirdCountQuestionResult } from "../gameLogic";
 import type {
   HeadCountEvent,
   HeadCountQuestion,
   HeadCountQuestionResult,
   HeadCountSpeedDifficulty,
 } from "../../head-count/gameLogic";
+import type { FarmCountMode } from "./FarmCountStartPanel";
 
-type FarmCountMode = "speed" | "yard";
-type Phase =
+export type FarmCountPhase =
   | "loading"
   | "ready"
   | "watching"
@@ -26,9 +23,9 @@ type Phase =
   | "answering"
   | "feedback";
 
-type FarmCountPlayAreaProps = {
+export interface FarmCountPlayAreaProps {
   mode: FarmCountMode;
-  phase: Phase;
+  phase: FarmCountPhase;
   currentIndex: number;
   totalQuestions: number;
   score: number;
@@ -50,14 +47,14 @@ type FarmCountPlayAreaProps = {
   speedTargetPetName: string;
   loadProgress: { loaded: number; total: number };
   onAnswer: (answer: number) => void;
-};
+}
 
 function formatYardEvent(event: HeadCountEvent | null) {
   if (!event) return "观察围栏数量变化";
   return event.direction === "enter" ? `进入 ${event.delta} 只` : `离开 ${event.delta} 只`;
 }
 
-function getYardCountText(phase: Phase, displayCount: number, answer: number) {
+function getYardCountText(phase: FarmCountPhase, displayCount: number, answer: number) {
   if (phase === "ready") return `${displayCount}`;
   if (phase === "feedback") return `${answer}`;
   if (phase === "answering") return "?";
@@ -73,8 +70,10 @@ function getPetDisplayItemForQuestionPet(
   displayId: string,
   skin: PetSkin,
 ) {
-  return petDisplayPool.find((item) => item.displayId === displayId) ??
-    getPetDisplayItemsForSkin(petDisplayPool, skin)[0];
+  return (
+    petDisplayPool.find((item) => item.displayId === displayId) ??
+    getPetDisplayItemsForSkin(petDisplayPool, skin)[0]
+  );
 }
 
 function CountPetSprite({
@@ -139,7 +138,9 @@ export default function FarmCountPlayArea({
     <View className="farm-play">
       <View className="status-row">
         <View className="status-card">
-          <Text className="status-value">{currentIndex + 1}/{totalQuestions}</Text>
+          <Text className="status-value">
+            {currentIndex + 1}/{totalQuestions}
+          </Text>
           <Text className="status-label">题目</Text>
         </View>
         <View className="status-card">
@@ -181,7 +182,9 @@ export default function FarmCountPlayArea({
               <Text className="yard-title">
                 {phase === "ready" ? "初始数量" : phase === "feedback" ? "正确数量" : "围栏数量"}
               </Text>
-              <Text className={`yard-count ${phase === "playing-event" ? "yard-count-hidden" : ""}`}>
+              <Text
+                className={`yard-count ${phase === "playing-event" ? "yard-count-hidden" : ""}`}
+              >
                 {getYardCountText(phase, displayCount, yardQuestion.answer)}
               </Text>
               <View className="yard-pet-row">
@@ -202,7 +205,10 @@ export default function FarmCountPlayArea({
               {phase === "playing-event" && yardEvent ? (
                 <View className={`moving-yard-layer moving-yard-layer-${yardEvent.direction}`}>
                   {movingPets.map((petIndex) => {
-                    const petItem = getPetDisplayItemForIndex(petDisplayPool, eventIndex + petIndex);
+                    const petItem = getPetDisplayItemForIndex(
+                      petDisplayPool,
+                      eventIndex + petIndex,
+                    );
                     return (
                       <View
                         key={`event-${eventIndex}-${petIndex}`}
@@ -290,12 +296,14 @@ export default function FarmCountPlayArea({
                       <View
                         key={pet.id}
                         className={`pet-count-token pet-count-${pet.size} ${pet.mirror ? "pet-count-mirror" : ""} ${pet.petKey === speedQuestion.targetPetKey ? "pet-count-target" : ""}`}
-                        style={{
-                          left: `${pet.x}%`,
-                          top: `${pet.y}%`,
-                          animationDelay: `${pet.delayMs}ms`,
-                          "--pet-count-scale": pet.scale,
-                        } as CSSProperties}
+                        style={
+                          {
+                            left: `${pet.x}%`,
+                            top: `${pet.y}%`,
+                            animationDelay: `${pet.delayMs}ms`,
+                            "--pet-count-scale": pet.scale,
+                          } as CSSProperties
+                        }
                       >
                         <CountPetSprite
                           skin={pet.skin}
@@ -350,7 +358,9 @@ export default function FarmCountPlayArea({
       ) : null}
 
       {phase === "feedback" ? (
-        <View className={`feedback-card ${lastResult?.correct ? "feedback-correct" : "feedback-wrong"}`}>
+        <View
+          className={`feedback-card ${lastResult?.correct ? "feedback-correct" : "feedback-wrong"}`}
+        >
           <Text className="feedback-title">{lastResult?.correct ? "计数准确" : "正确答案"}</Text>
           <Text className="feedback-copy">
             {mode === "yard"
