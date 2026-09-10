@@ -1,0 +1,5 @@
+dist/
+node_modules/
+output/
+asset-backups/
+src/pages/traffic-escape/hardPuzzles.generated.ts
