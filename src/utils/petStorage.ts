@@ -4,9 +4,8 @@ import { createStandardPetAssetRef, getPetTemplateSkin } from "../domain/pet/ass
 import { emitUserDataChanged } from "../services/user-data/local/changeNotifier";
 import {
   getAwardedPoints,
-  type TrainingDifficulty,
-  type TrainingRewardPolicy,
 } from "./trainingStorage";
+import type { TrainingDifficulty, TrainingRewardPolicy } from "../domain/training/types";
 import {
   HUNGER_POINT_PER_MINUTE,
   MAX_HUNGER,

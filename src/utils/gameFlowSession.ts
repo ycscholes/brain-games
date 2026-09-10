@@ -1,5 +1,5 @@
 import Taro from "@tarojs/taro";
-import type { TrainingGameId } from "./trainingStorage";
+import type { TrainingGameId } from "../domain/training/types";
 
 const STORAGE_KEY_PREFIX = "game_flow_run_v1";
 let runSequence = 0;

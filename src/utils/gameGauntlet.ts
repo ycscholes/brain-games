@@ -9,10 +9,12 @@ import { addPointsToPet } from "./petStorage";
 import {
   getAwardedPoints,
   recordTrainingSession,
-  type TrainingDifficulty,
-  type TrainingGameId,
-  type TrainingOutcome,
 } from "./trainingStorage";
+import type {
+  TrainingDifficulty,
+  TrainingGameId,
+  TrainingOutcome,
+} from "../domain/training/types";
 import { stableShuffle } from "./nextRecommendation";
 
 export const GAUNTLET_LEG_COUNT = 3;
