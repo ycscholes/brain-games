@@ -69,6 +69,12 @@ export default function RockPaperScissors() {
       : "";
   const routeRun = readRockPaperScissorsRun(runId);
 
+  useEffect(() => {
+    if (!runId || !routeRun || routeRun.status !== "active") {
+      void Taro.redirectTo({ url: "/pages/rock-paper-scissors/index" });
+    }
+  }, [routeRun, runId]);
+
   const [gameState, setGameState] = useState<GameState>("start");
   useAmbientMusic(gameState === "start");
   const [score, setScore] = useState(0);
@@ -179,10 +185,16 @@ export default function RockPaperScissors() {
   }, [difficulty, generateQuestion]);
 
   useEffect(() => {
-    if ((!isGauntletPreset && !runId) || autoStartedRef.current || gameState !== "start") return;
+    if (
+      !routeRun ||
+      routeRun.status !== "active" ||
+      autoStartedRef.current ||
+      gameState !== "start"
+    )
+      return;
     autoStartedRef.current = true;
     startGame();
-  }, [gameState, isGauntletPreset, runId, startGame]);
+  }, [gameState, routeRun, startGame]);
 
   const getRewardDifficulty = useCallback((): TrainingDifficulty => {
     return difficulty >= 3 ? "hard" : "normal";

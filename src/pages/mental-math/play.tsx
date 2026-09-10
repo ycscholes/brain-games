@@ -47,6 +47,12 @@ export default function MentalMath() {
       ? (getCurrentInstance().router?.params?.runId ?? "")
       : "";
   const routeRun = readMentalMathRun(runId);
+
+  useEffect(() => {
+    if (!runId || !routeRun || routeRun.status !== "active") {
+      void Taro.redirectTo({ url: "/pages/mental-math/index" });
+    }
+  }, [routeRun, runId]);
   const gauntletStageId = gauntletPreset?.stageId;
   const presetStageId =
     gauntletStageId && MATH_STAGES.some((stage) => stage.id === gauntletStageId)
@@ -313,10 +319,16 @@ export default function MentalMath() {
   }, [clearAllTimers, nextProblem]);
 
   useEffect(() => {
-    if ((!isGauntletPreset && !runId) || autoStartedRef.current || gameState !== "start") return;
+    if (
+      !routeRun ||
+      routeRun.status !== "active" ||
+      autoStartedRef.current ||
+      gameState !== "start"
+    )
+      return;
     autoStartedRef.current = true;
     startGame();
-  }, [gameState, isGauntletPreset, runId, startGame]);
+  }, [gameState, routeRun, startGame]);
 
   // 游戏结束
   const handleGameOver = useCallback(() => {

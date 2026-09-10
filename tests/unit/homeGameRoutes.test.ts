@@ -22,9 +22,12 @@ describe("home game three-page route contract", () => {
       const runSource = readFileSync(resolve(root, game.id, "run.ts"), "utf8");
       if (game.id === "traffic-escape") {
         expect(playSource).toContain("abandonTrafficEscapeRun");
+        expect(playSource).toContain('redirectTo({ url: "/pages/traffic-escape/index" })');
       } else {
         expect(playSource).toContain("GameRouteBack");
         expect(playSource).toContain("useUnload");
+        expect(playSource).toContain('routeRun.status !== "active"');
+        expect(playSource).toContain(`redirectTo({ url: "/pages/${game.id}/index" })`);
       }
       expect(resultSource).toContain("<StickerShareButton");
       expect(runSource).toContain("settleGameRun");

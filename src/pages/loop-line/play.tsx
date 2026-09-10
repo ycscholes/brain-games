@@ -66,6 +66,12 @@ export default function LoopLinePage() {
       ? (getCurrentInstance().router?.params?.runId ?? "")
       : "";
   const routeRun = readLoopLineRun(runId);
+
+  useEffect(() => {
+    if (!runId || !routeRun || routeRun.status !== "active") {
+      void Taro.redirectTo({ url: "/pages/loop-line/index" });
+    }
+  }, [routeRun, runId]);
   const [phase, setPhase] = useState<Phase>("start");
   const [difficulty, setDifficulty] = useState<TrainingDifficulty>(
     gauntletPreset?.difficulty ?? "normal",
@@ -185,10 +191,11 @@ export default function LoopLinePage() {
   }, [difficulty]);
 
   useEffect(() => {
-    if ((!isGauntletPreset && !runId) || autoStartedRef.current || phase !== "start") return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || phase !== "start")
+      return;
     autoStartedRef.current = true;
     startGame();
-  }, [isGauntletPreset, phase, runId, startGame]);
+  }, [phase, routeRun, startGame]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;

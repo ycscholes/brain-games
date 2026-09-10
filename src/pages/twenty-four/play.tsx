@@ -55,6 +55,12 @@ export default function TwentyFour() {
       : "";
   const routeRun = readTwentyFourRun(runId);
 
+  useEffect(() => {
+    if (!runId || !routeRun || routeRun.status !== "active") {
+      void Taro.redirectTo({ url: "/pages/twenty-four/index" });
+    }
+  }, [routeRun, runId]);
+
   const [round, setRound] = useState(() => generateRound());
   const [phase, setPhase] = useState<Phase>("start");
   useAmbientMusic(phase === "start");
@@ -184,10 +190,11 @@ export default function TwentyFour() {
   }, [clearTimer]);
 
   useEffect(() => {
-    if ((!isGauntletPreset && !runId) || autoStartedRef.current || phase !== "start") return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || phase !== "start")
+      return;
     autoStartedRef.current = true;
     startGame();
-  }, [isGauntletPreset, phase, runId, startGame]);
+  }, [phase, routeRun, startGame]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;

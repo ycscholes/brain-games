@@ -189,6 +189,12 @@ export default function MemoryChallenge() {
       : "";
   const routeRun = readMemoryChallengeRun(runId);
 
+  useEffect(() => {
+    if (!runId || !routeRun || routeRun.status !== "active") {
+      void Taro.redirectTo({ url: "/pages/memory-challenge/index" });
+    }
+  }, [routeRun, runId]);
+
   const [gameState, setGameState] = useState<GameState>("start");
   useAmbientMusic(gameState === "start");
   const [mode, setMode] = useState<MemoryChallengeMode>(presetMode);
@@ -363,7 +369,8 @@ export default function MemoryChallenge() {
 
   useEffect(() => {
     if (
-      (!isGauntletPreset && !runId) ||
+      !routeRun ||
+      routeRun.status !== "active" ||
       autoStartedRef.current ||
       gameState !== "start" ||
       isLoadingPets
@@ -371,7 +378,7 @@ export default function MemoryChallenge() {
       return;
     autoStartedRef.current = true;
     void startGame();
-  }, [gameState, isGauntletPreset, isLoadingPets, runId, startGame]);
+  }, [gameState, isLoadingPets, routeRun, startGame]);
 
   const updateHighScore = useCallback(
     (finalScore: number, selectedMode: MemoryChallengeMode, selectedN: MemoryChallengeN) => {

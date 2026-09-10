@@ -205,6 +205,12 @@ export default function FarmCount() {
       : "";
   const routeRun = readBirdCountRun(runId);
 
+  useEffect(() => {
+    if (!runId || !routeRun || routeRun.status !== "active") {
+      void Taro.redirectTo({ url: "/pages/bird-count/index" });
+    }
+  }, [routeRun, runId]);
+
   const [mode, setMode] = useState<FarmCountMode>(presetMode);
   const [phase, setPhase] = useState<Phase>("start");
   useAmbientMusic(phase === "start");
@@ -561,10 +567,11 @@ export default function FarmCount() {
   }, [mode, refreshPetSkinPool, startSpeedGame, startYardGame]);
 
   useEffect(() => {
-    if ((!isGauntletPreset && !runId) || autoStartedRef.current || phase !== "start") return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || phase !== "start")
+      return;
     autoStartedRef.current = true;
     startGame();
-  }, [isGauntletPreset, phase, runId, startGame]);
+  }, [phase, routeRun, startGame]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;

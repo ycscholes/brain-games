@@ -56,6 +56,12 @@ export default function TentsCamp() {
       : "";
   const routeRun = readTentsCampRun(runId);
 
+  useEffect(() => {
+    if (!runId || !routeRun || routeRun.status !== "active") {
+      void Taro.redirectTo({ url: "/pages/tents-camp/index" });
+    }
+  }, [routeRun, runId]);
+
   const [phase, setPhase] = useState<Phase>("start");
   useAmbientMusic(phase === "start");
   const [difficulty, setDifficulty] = useState<TrainingDifficulty>(
@@ -242,10 +248,11 @@ export default function TentsCamp() {
   }, [beginPuzzle, clearTimers, difficulty]);
 
   useEffect(() => {
-    if ((!isGauntletPreset && !runId) || autoStartedRef.current || phase !== "start") return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || phase !== "start")
+      return;
     autoStartedRef.current = true;
     startGame();
-  }, [isGauntletPreset, phase, runId, startGame]);
+  }, [phase, routeRun, startGame]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;

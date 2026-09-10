@@ -57,6 +57,12 @@ export default function HidatoPage() {
       : "";
   const routeRun = readHidatoRun(runId);
 
+  useEffect(() => {
+    if (!runId || !routeRun || routeRun.status !== "active") {
+      void Taro.redirectTo({ url: "/pages/hidato/index" });
+    }
+  }, [routeRun, runId]);
+
   const [phase, setPhase] = useState<Phase>("start");
   useAmbientMusic(phase === "start");
   const [difficulty, setDifficulty] = useState<TrainingDifficulty>(
@@ -237,10 +243,11 @@ export default function HidatoPage() {
   }, [clearTransientTimers, difficulty]);
 
   useEffect(() => {
-    if ((!isGauntletPreset && !runId) || autoStartedRef.current || phase !== "start") return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || phase !== "start")
+      return;
     autoStartedRef.current = true;
     startGame();
-  }, [isGauntletPreset, phase, runId, startGame]);
+  }, [phase, routeRun, startGame]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;
