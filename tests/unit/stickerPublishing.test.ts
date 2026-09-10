@@ -200,7 +200,7 @@ describe("sticker publishing", () => {
       "hidato/index.tsx",
       "tents-camp/index.tsx",
       "sumplete-grid/index.tsx",
-      "traffic-escape/index.tsx",
+      "traffic-escape/result.tsx",
       "netwalk/index.tsx",
       "loop-line/index.tsx",
       "number-order/index.tsx",
