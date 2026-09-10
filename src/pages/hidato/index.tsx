@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
-import { addPointsToPet } from "../../utils/petStorage";
 import {
-  getAwardedPoints,
   getTrainingDifficultyLabel,
-  recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
@@ -151,28 +149,17 @@ export default function HidatoPage() {
       mistakeCount: nextState.mistakeCount,
       hintCount: nextState.hintCount,
     });
-    const nextAwardedPoints = getAwardedPoints("hidato", nextScore, difficulty);
-
-    if (completeGauntletLegIfNeeded({
+    const settlement = settleGame({
       gameId: "hidato",
       score: nextScore,
-      awardedPoints: nextAwardedPoints,
-      durationSeconds,
-      difficulty,
-      outcome: "completed",
-    })) {
-      return;
-    }
-
-    addPointsToPet("hidato", nextScore, difficulty);
-    recordTrainingSession({
-      gameId: "hidato",
-      score: nextScore,
-      awardedPoints: nextAwardedPoints,
       durationSeconds,
       difficulty,
       outcome: "completed",
     });
+    if (settlement.gauntletHandled) {
+      return;
+    }
+    const nextAwardedPoints = settlement.awardedPoints;
 
     setFinalScore(nextScore);
     setAwardedPoints(nextAwardedPoints);

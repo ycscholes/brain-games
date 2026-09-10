@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
-import { addPointsToPet } from "../../utils/petStorage";
 import {
-  getAwardedPoints,
   getTrainingDifficultyLabel,
-  recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
@@ -110,27 +108,17 @@ export default function SumpleteGrid() {
     clearTimer();
     playComplete();
 
-    const nextAwardedPoints = getAwardedPoints("sumplete-grid", finalScore, difficulty);
-    if (completeGauntletLegIfNeeded({
+    const settlement = settleGame({
       gameId: "sumplete-grid",
       score: finalScore,
-      awardedPoints: nextAwardedPoints,
-      durationSeconds: finalElapsedSeconds,
-      difficulty,
-      outcome: "completed",
-    })) {
-      return;
-    }
-
-    addPointsToPet("sumplete-grid", finalScore, difficulty);
-    recordTrainingSession({
-      gameId: "sumplete-grid",
-      score: finalScore,
-      awardedPoints: nextAwardedPoints,
       durationSeconds: finalElapsedSeconds,
       difficulty,
       outcome: "completed",
     });
+    if (settlement.gauntletHandled) {
+      return;
+    }
+    const nextAwardedPoints = settlement.awardedPoints;
 
     setElapsedSeconds(finalElapsedSeconds);
     setScore(finalScore);

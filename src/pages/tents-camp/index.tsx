@@ -3,12 +3,10 @@ import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import { addPointsToPet } from "../../utils/petStorage";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import {
-  getAwardedPoints,
   getTrainingDifficultyLabel,
-  recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
@@ -150,27 +148,17 @@ export default function TentsCamp() {
     playComplete();
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
-    const nextAwardedPoints = getAwardedPoints("tents-camp", finalScore, difficulty);
-    if (completeGauntletLegIfNeeded({
+    const settlement = settleGame({
       gameId: "tents-camp",
       score: finalScore,
-      awardedPoints: nextAwardedPoints,
-      durationSeconds,
-      difficulty,
-      outcome: "completed",
-    })) {
-      return;
-    }
-
-    addPointsToPet("tents-camp", finalScore, difficulty);
-    recordTrainingSession({
-      gameId: "tents-camp",
-      score: finalScore,
-      awardedPoints: nextAwardedPoints,
       durationSeconds,
       difficulty,
       outcome: "completed",
     });
+    if (settlement.gauntletHandled) {
+      return;
+    }
+    const nextAwardedPoints = settlement.awardedPoints;
 
     setAwardedPoints(nextAwardedPoints);
     setCorrectPuzzles(finalCorrectPuzzles);
