@@ -1,0 +1,78 @@
+import type { GameSettlementInput, GameSettlementResult } from "../../domain/training/settlement";
+import type { TrainingDifficulty } from "../../domain/training/types";
+import { settleGame } from "../../services/gameSettlementService";
+import {
+  abandonGameRun,
+  createGameRun,
+  readGameRun,
+  settleGameRun,
+  updateGameRun,
+  updateSettledGameRunResult,
+  type GameRun,
+} from "../../utils/gameFlowSession";
+
+export interface RockPaperScissorsRunPayload {
+  difficulty: TrainingDifficulty;
+  rounds: 1 | 3;
+  startedAt: number;
+}
+export interface RockPaperScissorsRunResult {
+  score: number;
+  awardedPoints: number;
+  durationSeconds: number;
+  correctCount: number;
+  isNewBest: boolean;
+}
+export type RockPaperScissorsRun = GameRun<RockPaperScissorsRunPayload, RockPaperScissorsRunResult>;
+
+export function createRockPaperScissorsRun(
+  difficulty: TrainingDifficulty = "normal",
+  rounds: 1 | 3 = difficulty === "hard" ? 3 : 1,
+  startedAt = Date.now(),
+) {
+  return createGameRun("rock-paper-scissors", { difficulty, rounds, startedAt });
+}
+export function readRockPaperScissorsRun(runId: string) {
+  return readGameRun<RockPaperScissorsRunPayload, RockPaperScissorsRunResult>(
+    "rock-paper-scissors",
+    runId,
+  );
+}
+export function updateRockPaperScissorsRun(
+  runId: string,
+  patch: Partial<RockPaperScissorsRunPayload>,
+) {
+  return updateGameRun<RockPaperScissorsRunPayload>(
+    "rock-paper-scissors",
+    runId,
+    patch,
+  ) as RockPaperScissorsRun | null;
+}
+export function settleRockPaperScissorsRun(runId: string, result: RockPaperScissorsRunResult) {
+  return settleGameRun<RockPaperScissorsRunPayload, RockPaperScissorsRunResult>(
+    "rock-paper-scissors",
+    runId,
+    result,
+  );
+}
+export function settleRockPaperScissorsCompletion(
+  runId: string,
+  result: RockPaperScissorsRunResult,
+  input: GameSettlementInput,
+) {
+  const settled = settleRockPaperScissorsRun(runId, result);
+  if (!settled) return null;
+  const settlement = settleGame(input);
+  const updated = updateSettledGameRunResult<
+    RockPaperScissorsRunPayload,
+    RockPaperScissorsRunResult
+  >("rock-paper-scissors", runId, { awardedPoints: settlement.awardedPoints });
+  return { run: updated ?? settled, settlement };
+}
+export function abandonRockPaperScissorsRun(
+  runId: string,
+  input: GameSettlementInput,
+): GameSettlementResult | null {
+  if (!abandonGameRun<RockPaperScissorsRunPayload>("rock-paper-scissors", runId)) return null;
+  return settleGame(input);
+}

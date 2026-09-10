@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
+import { usePageShare } from "../../utils/share";
+import { goBackToGameStart } from "../../utils/gameRoute";
 import { readTrafficEscapeRun } from "./run";
 import "./index.scss";
 
 export default function TrafficEscapeResult() {
+  usePageShare("pages/traffic-escape/index");
   const runId = getCurrentInstance().router?.params?.runId ?? "";
   const [run] = useState(() => readTrafficEscapeRun(runId));
   useEffect(() => {
@@ -36,13 +39,13 @@ export default function TrafficEscapeResult() {
             />
             <View
               className="traffic-primary-button"
-              onClick={() => Taro.redirectTo({ url: "/pages/traffic-escape/index" })}
+              onClick={() => void Taro.redirectTo({ url: "/pages/traffic-escape/index" })}
             >
               <Text className="traffic-primary-button-text">再闯一条路线</Text>
             </View>
             <View
               className="traffic-secondary-button"
-              onClick={() => Taro.redirectTo({ url: "/pages/traffic-escape/index" })}
+              onClick={() => void goBackToGameStart("traffic-escape")}
             >
               <Text className="traffic-secondary-button-text">返回游戏主页</Text>
             </View>

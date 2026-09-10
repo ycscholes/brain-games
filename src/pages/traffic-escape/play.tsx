@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Text, View } from "@tarojs/components";
-import Taro, { getCurrentInstance } from "@tarojs/taro";
+import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
 import { resolveTrafficVehicleAtlasUrl } from "../../config/remoteAssets";
 import {
   abandonTrafficEscapeRun,
@@ -152,8 +152,10 @@ export default function TrafficEscapePlay() {
       outcome: "interrupted",
     });
     if (!settlement || settlement.gauntletHandled) return;
-    void Taro.navigateBack();
+    void Taro.navigateBack().catch(() => Taro.redirectTo({ url: "/pages/traffic-escape/index" }));
   }, [run, runId]);
+
+  useUnload(backToStart);
 
   if (!run || run.status !== "active") return null;
   const { payload } = run;

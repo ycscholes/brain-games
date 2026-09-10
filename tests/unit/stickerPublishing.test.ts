@@ -48,11 +48,13 @@ describe("sticker publishing", () => {
   });
 
   test("builds a score-specific publication payload with the game link", () => {
-    expect(createStickerPublishPayload({
-      gameTitle: "速算挑战",
-      score: 18,
-      pagePath: "pages/mental-math/index",
-    })).toEqual({
+    expect(
+      createStickerPublishPayload({
+        gameTitle: "速算挑战",
+        score: 18,
+        pagePath: "pages/mental-math/index",
+      }),
+    ).toEqual({
       title: "我在速算挑战拿到 18 分",
       content: "完成一局速算挑战，来和我一起每天练一点脑力吧！",
       tags: ["Cici脑力训练打卡"],
@@ -62,12 +64,14 @@ describe("sticker publishing", () => {
   });
 
   test("includes an exported score poster when one is available", () => {
-    expect(createStickerPublishPayload({
-      gameTitle: "速算挑战",
-      score: 18,
-      pagePath: "pages/mental-math/index",
-      imagePath: "wxfile://score-poster.png",
-    })).toMatchObject({
+    expect(
+      createStickerPublishPayload({
+        gameTitle: "速算挑战",
+        score: 18,
+        pagePath: "pages/mental-math/index",
+        imagePath: "wxfile://score-poster.png",
+      }),
+    ).toMatchObject({
       images: ["wxfile://score-poster.png"],
     });
   });
@@ -75,11 +79,13 @@ describe("sticker publishing", () => {
   test("does not invoke the native API or award points outside a mini program", () => {
     process.env.TARO_ENV = "h5";
 
-    expect(publishGameResultSticker({
-      gameTitle: "速算挑战",
-      score: 18,
-      pagePath: "pages/mental-math/index",
-    })).toEqual({ status: "unsupported" });
+    expect(
+      publishGameResultSticker({
+        gameTitle: "速算挑战",
+        score: 18,
+        pagePath: "pages/mental-math/index",
+      }),
+    ).toEqual({ status: "unsupported" });
     expect(shareToOfficialAccount).not.toHaveBeenCalled();
     expect(readPetData().balance).toBe(0);
   });
@@ -97,11 +103,13 @@ describe("sticker publishing", () => {
     process.env.TARO_ENV = "weapp";
     mockPlatform = "devtools";
 
-    expect(publishGameResultSticker({
-      gameTitle: "速算挑战",
-      score: 18,
-      pagePath: "pages/mental-math/index",
-    })).toEqual({ status: "unsupported" });
+    expect(
+      publishGameResultSticker({
+        gameTitle: "速算挑战",
+        score: 18,
+        pagePath: "pages/mental-math/index",
+      }),
+    ).toEqual({ status: "unsupported" });
     expect(shareToOfficialAccount).not.toHaveBeenCalled();
   });
 
@@ -125,15 +133,19 @@ describe("sticker publishing", () => {
     process.env.TARO_ENV = "weapp";
     const onResult = jest.fn();
 
-    expect(publishGameResultSticker({
-      gameTitle: "速算挑战",
-      score: 18,
-      pagePath: "pages/mental-math/index",
-      onResult,
-    })).toEqual({ status: "opened" });
+    expect(
+      publishGameResultSticker({
+        gameTitle: "速算挑战",
+        score: 18,
+        pagePath: "pages/mental-math/index",
+        onResult,
+      }),
+    ).toEqual({ status: "opened" });
     expect(readPetData().balance).toBe(0);
 
-    const options = shareToOfficialAccount.mock.calls[0][0] as { success: (result: { postUrl: string }) => void };
+    const options = shareToOfficialAccount.mock.calls[0][0] as {
+      success: (result: { postUrl: string }) => void;
+    };
     options.success({ postUrl: "https://mp.weixin.qq.com/s/score-post" });
 
     expect(onResult).toHaveBeenCalledWith({
@@ -193,17 +205,17 @@ describe("sticker publishing", () => {
       "mental-math/components/MentalMathResultPanel.tsx",
       "pattern-completion/components/PatternResultPanel.tsx",
       "music-theory/components/MusicTheoryResultPanel.tsx",
-      "digit-span/index.tsx",
-      "twenty-four/index.tsx",
-      "rock-paper-scissors/index.tsx",
+      "digit-span/result.tsx",
+      "twenty-four/result.tsx",
+      "rock-paper-scissors/result.tsx",
       "color-trap/index.tsx",
       "spatial-rotation/index.tsx",
-      "hidato/index.tsx",
-      "tents-camp/index.tsx",
+      "hidato/result.tsx",
+      "tents-camp/result.tsx",
       "sumplete-grid/index.tsx",
       "traffic-escape/result.tsx",
-      "netwalk/index.tsx",
-      "loop-line/index.tsx",
+      "netwalk/result.tsx",
+      "loop-line/result.tsx",
       "number-order/index.tsx",
       "memory-challenge/components/MemoryChallengeResultPanel.tsx",
       "multiple-object-tracking/index.tsx",
@@ -248,7 +260,9 @@ describe("sticker publishing", () => {
       score: 20,
       pagePath: "pages/twenty-four/index",
     });
-    const options = shareToOfficialAccount.mock.calls[0][0] as { success: (result: { postUrl: string }) => void };
+    const options = shareToOfficialAccount.mock.calls[0][0] as {
+      success: (result: { postUrl: string }) => void;
+    };
     options.success({ postUrl: "https://mp.weixin.qq.com/s/no-listener" });
 
     expect(readPetData().balance).toBe(30);
