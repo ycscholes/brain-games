@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
-import { addPointsToPet } from "../../utils/petStorage";
 import {
   getAwardedPoints,
   getTrainingDifficultyLabel,
-  recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
@@ -378,25 +377,15 @@ export default function MultipleObjectTracking() {
   const backToStart = () => {
     clearRoundRuntime();
     if (phase !== "start" && phase !== "finished") {
-      const awardedPoints = getAwardedPoints("multiple-object-tracking", score, rewardDifficulty);
-      if (completeGauntletLegIfNeeded({
+      const settlement = settleGame({
         gameId: "multiple-object-tracking",
         score,
-        awardedPoints,
-        difficulty: rewardDifficulty,
-        outcome: "interrupted",
-      })) {
-        return;
-      }
-
-      addPointsToPet("multiple-object-tracking", score, rewardDifficulty);
-      recordTrainingSession({
-        gameId: "multiple-object-tracking",
-        score,
-        awardedPoints,
         difficulty: rewardDifficulty,
         outcome: "interrupted",
       });
+      if (settlement.gauntletHandled) {
+        return;
+      }
     }
     setPhase("start");
     setScore(0);
@@ -458,25 +447,15 @@ export default function MultipleObjectTracking() {
     setRoundMessage("本轮未能完整锁定全部目标");
     playWrong();
     playComplete();
-    const awardedPoints = getAwardedPoints("multiple-object-tracking", score, rewardDifficulty);
-    if (completeGauntletLegIfNeeded({
+    const settlement = settleGame({
       gameId: "multiple-object-tracking",
       score,
-      awardedPoints,
-      difficulty: rewardDifficulty,
-      outcome: "completed",
-    })) {
-      return;
-    }
-
-    addPointsToPet("multiple-object-tracking", score, rewardDifficulty);
-    recordTrainingSession({
-      gameId: "multiple-object-tracking",
-      score,
-      awardedPoints,
       difficulty: rewardDifficulty,
       outcome: "completed",
     });
+    if (settlement.gauntletHandled) {
+      return;
+    }
     setPhase("finished");
   };
 

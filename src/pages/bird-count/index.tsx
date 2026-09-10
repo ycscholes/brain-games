@@ -3,14 +3,13 @@ import { View } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { resolvePetSpriteUrl } from "../../config/remoteAssets";
 import { resolveCustomPetSpriteUrl } from "../../services/custom-pet/customPetService";
-import { addPointsToPet, syncPetData } from "../../utils/petStorage";
+import { syncPetData } from "../../utils/petStorage";
 import {
-  getAwardedPoints,
   getTrainingDifficultyLabel,
-  recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
@@ -316,28 +315,18 @@ export default function FarmCount() {
     playComplete();
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
-    const nextAwardedPoints = getAwardedPoints("bird-count", finalScore, difficulty);
-    if (completeGauntletLegIfNeeded({
+    const settlement = settleGame({
       gameId: "bird-count",
       score: finalScore,
-      awardedPoints: nextAwardedPoints,
       durationSeconds,
       mode: "speed",
       difficulty,
       outcome: "completed",
-    })) {
+    });
+    if (settlement.gauntletHandled) {
       return;
     }
-
-    addPointsToPet("bird-count", finalScore, difficulty);
-    recordTrainingSession({
-      gameId: "bird-count",
-      score: finalScore,
-      awardedPoints: nextAwardedPoints,
-      durationSeconds,
-      difficulty,
-      outcome: "completed",
-    });
+    const nextAwardedPoints = settlement.awardedPoints;
 
     setAwardedPoints(nextAwardedPoints);
     setCorrectQuestions(finalCorrectQuestions);
@@ -363,29 +352,18 @@ export default function FarmCount() {
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
     const nextRewardDifficulty = getHeadCountRewardDifficulty(yardDifficulty, speedDifficulty);
-    const nextAwardedPoints = getAwardedPoints("head-count", finalScore, nextRewardDifficulty);
-    if (completeGauntletLegIfNeeded({
+    const settlement = settleGame({
       gameId: isGauntletPreset ? "bird-count" : "head-count",
       score: finalScore,
-      awardedPoints: nextAwardedPoints,
-      durationSeconds,
-      mode: `${yardDifficulty}:${speedDifficulty}`,
-      difficulty: nextRewardDifficulty,
-      outcome: "completed",
-    })) {
-      return;
-    }
-
-    addPointsToPet("head-count", finalScore, nextRewardDifficulty);
-    recordTrainingSession({
-      gameId: "head-count",
-      score: finalScore,
-      awardedPoints: nextAwardedPoints,
       durationSeconds,
       mode: `${yardDifficulty}:${speedDifficulty}`,
       difficulty: nextRewardDifficulty,
       outcome: "completed",
     });
+    if (settlement.gauntletHandled) {
+      return;
+    }
+    const nextAwardedPoints = settlement.awardedPoints;
 
     setAwardedPoints(nextAwardedPoints);
     setCorrectQuestions(finalCorrectQuestions);
