@@ -22,6 +22,7 @@ export interface BirdCountRunResult {
   awardedPoints: number;
   durationSeconds: number;
   correctCount: number;
+  bestCombo: number;
   isNewBest: boolean;
 }
 export type BirdCountRun = GameRun<BirdCountRunPayload, BirdCountRunResult>;

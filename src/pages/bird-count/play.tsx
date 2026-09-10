@@ -1,15 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "@tarojs/components";
-import Taro, { getCurrentInstance, useDidShow, useLoad, useUnload } from "@tarojs/taro";
+import Taro, { getCurrentInstance, useDidShow, useUnload } from "@tarojs/taro";
 import { resolvePetSpriteUrl } from "../../config/remoteAssets";
 import { resolveCustomPetSpriteUrl } from "../../services/custom-pet/customPetService";
 import { syncPetData } from "../../utils/petStorage";
-import { getTrainingDifficultyLabel, type TrainingDifficulty } from "../../utils/trainingStorage";
+import { type TrainingDifficulty } from "../../utils/trainingStorage";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import { settleGame } from "../../services/gameSettlementService";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
-import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import {
   playComplete,
   playCorrect,
@@ -36,7 +34,6 @@ import {
 import {
   createHeadCountSession,
   getHeadCountRewardDifficulty,
-  HEAD_COUNT_SPEED_LABELS,
   HEAD_COUNT_TOTAL_QUESTIONS,
   scoreHeadCountQuestion,
   type HeadCountDifficulty,
@@ -46,32 +43,24 @@ import {
 } from "../head-count/gameLogic";
 import { useTimerQueue } from "./useTimerQueue";
 import { abandonBirdCountRun, readBirdCountRun, settleBirdCountCompletion } from "./run";
-import FarmCountStartPanel from "./components/FarmCountStartPanel";
 import FarmCountPlayArea from "./components/FarmCountPlayArea";
-import FarmCountResult from "./components/FarmCountResult";
 import "./index.scss";
 
 type FarmCountMode = "speed" | "yard";
 type Phase =
-  | "start"
   | "loading"
   | "ready"
   | "watching"
   | "replay"
   | "playing-event"
   | "answering"
-  | "feedback"
-  | "finished";
+  | "feedback";
 
 const SPEED_STORAGE_KEY_PREFIX = "bird_count_best";
 const YARD_STORAGE_KEY_PREFIX = "head_count_best";
 const READY_MS = 520;
 const FEEDBACK_MS = 900;
 const SPEED_LOADING_MIN_MS = 520;
-
-function normalizeMode(value?: string): FarmCountMode {
-  return value === "yard" ? "yard" : "speed";
-}
 
 function getSpeedBestScoreKey(difficulty: TrainingDifficulty) {
   return `${SPEED_STORAGE_KEY_PREFIX}_${difficulty}`;
@@ -211,12 +200,11 @@ export default function FarmCount() {
     }
   }, [routeRun, runId]);
 
-  const [mode, setMode] = useState<FarmCountMode>(presetMode);
-  const [phase, setPhase] = useState<Phase>("start");
-  useAmbientMusic(phase === "start");
-  const [difficulty, setDifficulty] = useState<TrainingDifficulty>(presetDifficulty);
-  const [yardDifficulty, setYardDifficulty] = useState<HeadCountDifficulty>(presetDifficulty);
-  const [speedDifficulty, setSpeedDifficulty] = useState<HeadCountSpeedDifficulty>(presetYardSpeed);
+  const mode: FarmCountMode = routeRun?.payload.mode ?? presetMode;
+  const difficulty: TrainingDifficulty = routeRun?.payload.difficulty ?? presetDifficulty;
+  const yardDifficulty: HeadCountDifficulty = routeRun?.payload.difficulty ?? presetDifficulty;
+  const speedDifficulty: HeadCountSpeedDifficulty = routeRun?.payload.yardSpeed ?? presetYardSpeed;
+  const [phase, setPhase] = useState<Phase>("loading");
   const [best, setBest] = useState(0);
   const [petDisplayPool, setPetDisplayPool] = useState<PetDisplayItem[]>(() =>
     buildPetDisplayPool({
@@ -239,8 +227,6 @@ export default function FarmCount() {
   const [correctQuestions, setCorrectQuestions] = useState(0);
   const [lastSpeedResult, setLastSpeedResult] = useState<BirdCountQuestionResult | null>(null);
   const [lastYardResult, setLastYardResult] = useState<HeadCountQuestionResult | null>(null);
-  const [awardedPoints, setAwardedPoints] = useState(0);
-  const [isNewBest, setIsNewBest] = useState(false);
   const [loadProgress, setLoadProgress] = useState({ loaded: 0, total: 0 });
 
   const { clear: clearTimers, schedule } = useTimerQueue();
@@ -255,7 +241,6 @@ export default function FarmCount() {
   const yardEvent =
     yardQuestion && eventIndex >= 0 ? (yardQuestion.events[eventIndex] ?? null) : null;
   const totalQuestions = mode === "yard" ? HEAD_COUNT_TOTAL_QUESTIONS : BIRD_COUNT_TOTAL_QUESTIONS;
-  const rewardDifficulty = getHeadCountRewardDifficulty(yardDifficulty, speedDifficulty);
   const staticPetCount =
     yardQuestion && phase === "feedback"
       ? yardQuestion.answer
@@ -278,12 +263,6 @@ export default function FarmCount() {
     setBest(nextBest);
   }, [difficulty, mode, speedDifficulty, yardDifficulty]);
 
-  useLoad((query) => {
-    const nextMode = isGauntletPreset ? presetMode : normalizeMode(String(query.mode ?? ""));
-    setMode(nextMode);
-    refreshPetSkinPool();
-  });
-
   useDidShow(() => {
     refreshPetSkinPool();
     refreshBest();
@@ -304,31 +283,9 @@ export default function FarmCount() {
     setCorrectQuestions(0);
     setLastSpeedResult(null);
     setLastYardResult(null);
-    setAwardedPoints(0);
-    setIsNewBest(false);
     setLoadProgress({ loaded: 0, total: 0 });
     finishedRef.current = false;
   }, []);
-
-  const backToStart = useCallback(() => {
-    preloadRunIdRef.current += 1;
-    clearTimers();
-    setPhase("start");
-    setSpeedQuestions([]);
-    setYardQuestions([]);
-    resetRoundState();
-    refreshPetSkinPool();
-    refreshBest();
-  }, [clearTimers, refreshBest, refreshPetSkinPool, resetRoundState]);
-
-  const switchMode = (nextMode: FarmCountMode) => {
-    if (phase !== "start") {
-      return;
-    }
-    clearTimers();
-    setMode(nextMode);
-    resetRoundState();
-  };
 
   const finishSpeedGame = useCallback(
     (finalScore: number, finalCorrectQuestions: number) => {
@@ -349,6 +306,10 @@ export default function FarmCount() {
         difficulty,
         outcome: "completed",
       } as const;
+      const isNewBest = finalScore > best;
+      if (isNewBest) {
+        Taro.setStorageSync(getSpeedBestScoreKey(difficulty), finalScore);
+      }
       const routeSettlement = runId
         ? settleBirdCountCompletion(
             runId,
@@ -357,38 +318,19 @@ export default function FarmCount() {
               awardedPoints: 0,
               durationSeconds,
               correctCount: finalCorrectQuestions,
-              isNewBest: finalScore > best,
+              bestCombo,
+              isNewBest,
             },
             settlementInput,
           )
         : null;
-      const settlement =
-        routeSettlement?.settlement ?? (runId ? null : settleGame(settlementInput));
-      if (!settlement) return;
-      if (settlement.gauntletHandled) {
-        return;
-      }
-      const nextAwardedPoints = settlement.awardedPoints;
-
-      setAwardedPoints(nextAwardedPoints);
-      setCorrectQuestions(finalCorrectQuestions);
-      if (runId) {
-        void Taro.redirectTo({
-          url: `/pages/bird-count/result?runId=${encodeURIComponent(runId)}`,
-        });
-        return;
-      }
-      setPhase("finished");
-
-      if (finalScore > best) {
-        Taro.setStorageSync(getSpeedBestScoreKey(difficulty), finalScore);
-        setBest(finalScore);
-        setIsNewBest(true);
-      } else {
-        setIsNewBest(false);
-      }
+      if (!routeSettlement) return;
+      if (routeSettlement.settlement.gauntletHandled) return;
+      void Taro.redirectTo({
+        url: `/pages/bird-count/result?runId=${encodeURIComponent(runId)}`,
+      });
     },
-    [best, clearTimers, difficulty, runId],
+    [best, bestCombo, clearTimers, difficulty, runId],
   );
 
   const finishYardGame = useCallback(
@@ -411,6 +353,10 @@ export default function FarmCount() {
         difficulty: nextRewardDifficulty,
         outcome: "completed",
       } as const;
+      const isNewBest = finalScore > best;
+      if (isNewBest) {
+        Taro.setStorageSync(getYardBestScoreKey(yardDifficulty, speedDifficulty), finalScore);
+      }
       const routeSettlement = runId
         ? settleBirdCountCompletion(
             runId,
@@ -419,38 +365,19 @@ export default function FarmCount() {
               awardedPoints: 0,
               durationSeconds,
               correctCount: finalCorrectQuestions,
-              isNewBest: finalScore > best,
+              bestCombo,
+              isNewBest,
             },
             settlementInput,
           )
         : null;
-      const settlement =
-        routeSettlement?.settlement ?? (runId ? null : settleGame(settlementInput));
-      if (!settlement) return;
-      if (settlement.gauntletHandled) {
-        return;
-      }
-      const nextAwardedPoints = settlement.awardedPoints;
-
-      setAwardedPoints(nextAwardedPoints);
-      setCorrectQuestions(finalCorrectQuestions);
-      if (runId) {
-        void Taro.redirectTo({
-          url: `/pages/bird-count/result?runId=${encodeURIComponent(runId)}`,
-        });
-        return;
-      }
-      setPhase("finished");
-
-      if (finalScore > best) {
-        Taro.setStorageSync(getYardBestScoreKey(yardDifficulty, speedDifficulty), finalScore);
-        setBest(finalScore);
-        setIsNewBest(true);
-      } else {
-        setIsNewBest(false);
-      }
+      if (!routeSettlement) return;
+      if (routeSettlement.settlement.gauntletHandled) return;
+      void Taro.redirectTo({
+        url: `/pages/bird-count/result?runId=${encodeURIComponent(runId)}`,
+      });
     },
-    [best, clearTimers, isGauntletPreset, runId, speedDifficulty, yardDifficulty],
+    [best, bestCombo, clearTimers, isGauntletPreset, runId, speedDifficulty, yardDifficulty],
   );
 
   const beginSpeedQuestion = useCallback(
@@ -567,8 +494,7 @@ export default function FarmCount() {
   }, [mode, refreshPetSkinPool, startSpeedGame, startYardGame]);
 
   useEffect(() => {
-    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || phase !== "start")
-      return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
     startGame();
   }, [phase, routeRun, startGame]);
@@ -677,11 +603,6 @@ export default function FarmCount() {
     handleSpeedAnswer(answer);
   };
 
-  const accuracyText = useMemo(() => {
-    return `${Math.round((correctQuestions / totalQuestions) * 100)}%`;
-  }, [correctQuestions, totalQuestions]);
-
-  const modeTitle = mode === "yard" ? "农场进出" : "宠物速数";
   const currentOptions =
     mode === "yard" ? (yardQuestion?.options ?? []) : (speedQuestion?.options ?? []);
   const currentAnswer = mode === "yard" ? yardQuestion?.answer : speedQuestion?.answer;
@@ -698,68 +619,31 @@ export default function FarmCount() {
       {runId ? (
         <GameRouteBack gameId="bird-count" runId={runId} onAbandon={handleRouteBack} />
       ) : null}
-      {phase === "start" ? (
-        <FarmCountStartPanel
-          mode={mode}
-          difficulty={difficulty}
-          yardDifficulty={yardDifficulty}
-          speedDifficulty={speedDifficulty}
-          best={best}
-          isGauntletPreset={isGauntletPreset}
-          onModeChange={switchMode}
-          onDifficultyChange={setDifficulty}
-          onYardDifficultyChange={setYardDifficulty}
-          onSpeedDifficultyChange={setSpeedDifficulty}
-          onStart={startGame}
-        />
-      ) : null}
-
-      {phase !== "start" && phase !== "finished" ? (
-        <FarmCountPlayArea
-          mode={mode}
-          phase={phase}
-          currentIndex={currentIndex}
-          totalQuestions={totalQuestions}
-          score={score}
-          combo={combo}
-          speedQuestion={speedQuestion}
-          yardQuestion={yardQuestion}
-          yardEvent={yardEvent}
-          eventIndex={eventIndex}
-          displayCount={displayCount}
-          staticPetCount={staticPetCount}
-          movingPets={movingPets}
-          speedDifficulty={speedDifficulty}
-          selectedAnswer={selectedAnswer}
-          currentOptions={currentOptions}
-          currentAnswer={currentAnswer}
-          lastSpeedResult={lastSpeedResult}
-          lastYardResult={lastYardResult}
-          petDisplayPool={petDisplayPool}
-          speedTargetPetName={speedTargetPetName}
-          loadProgress={loadProgress}
-          onAnswer={handleAnswer}
-        />
-      ) : null}
-
-      {phase === "finished" ? (
-        <FarmCountResult
-          score={score}
-          modeTitle={modeTitle}
-          difficultyLabel={
-            mode === "yard"
-              ? `${getTrainingDifficultyLabel(yardDifficulty)} · ${HEAD_COUNT_SPEED_LABELS[speedDifficulty]} · 积分${getTrainingDifficultyLabel(rewardDifficulty)}`
-              : getTrainingDifficultyLabel(difficulty)
-          }
-          accuracyText={accuracyText}
-          bestCombo={bestCombo}
-          awardedPoints={awardedPoints}
-          isNewBest={isNewBest}
-          isGauntlet={isGauntletPreset}
-          onBack={backToStart}
-          onRestart={startGame}
-        />
-      ) : null}
+      <FarmCountPlayArea
+        mode={mode}
+        phase={phase}
+        currentIndex={currentIndex}
+        totalQuestions={totalQuestions}
+        score={score}
+        combo={combo}
+        speedQuestion={speedQuestion}
+        yardQuestion={yardQuestion}
+        yardEvent={yardEvent}
+        eventIndex={eventIndex}
+        displayCount={displayCount}
+        staticPetCount={staticPetCount}
+        movingPets={movingPets}
+        speedDifficulty={speedDifficulty}
+        selectedAnswer={selectedAnswer}
+        currentOptions={currentOptions}
+        currentAnswer={currentAnswer}
+        lastSpeedResult={lastSpeedResult}
+        lastYardResult={lastYardResult}
+        petDisplayPool={petDisplayPool}
+        speedTargetPetName={speedTargetPetName}
+        loadProgress={loadProgress}
+        onAnswer={handleAnswer}
+      />
     </View>
   );
 }

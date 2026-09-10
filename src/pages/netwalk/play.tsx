@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
-import Taro, { getCurrentInstance, useDidShow, useLoad, useUnload } from "@tarojs/taro";
-import { getTrainingDifficultyLabel, type TrainingDifficulty } from "../../utils/trainingStorage";
+import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
+import { type TrainingDifficulty } from "../../utils/trainingStorage";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import { settleGame } from "../../services/gameSettlementService";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
-import StickerShareButton from "../../components/stickers/StickerShareButton";
-import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playComplete, playCorrect, playTap } from "../../services/audio/audioFeedbackService";
 import {
   createNetwalkPuzzle,
@@ -24,7 +21,7 @@ import {
 import { abandonNetwalkRun, readNetwalkRun, settleNetwalkCompletion } from "./run";
 import "./index.scss";
 
-type Phase = "start" | "playing" | "finished";
+type Phase = "playing";
 
 const STORAGE_KEY_PREFIX = "netwalk_best";
 
@@ -33,14 +30,9 @@ function readBestScore(difficulty: TrainingDifficulty) {
   return Number.isFinite(value) ? value : 0;
 }
 
-function getDifficultyCopy(difficulty: TrainingDifficulty) {
-  return difficulty === "hard" ? "5×5 · 更深的分支网络" : "4×4 · 快速接通全网";
-}
-
 export default function Netwalk() {
   usePageShare("pages/netwalk/index");
   const gauntletPreset = readGameGauntletModePreset();
-  const isGauntletPreset = gauntletPreset !== null;
   const runId =
     typeof getCurrentInstance().router?.params?.runId === "string"
       ? (getCurrentInstance().router?.params?.runId ?? "")
@@ -52,34 +44,17 @@ export default function Netwalk() {
       void Taro.redirectTo({ url: "/pages/netwalk/index" });
     }
   }, [routeRun, runId]);
-  const [phase, setPhase] = useState<Phase>("start");
-  useAmbientMusic(phase === "start");
-  const [difficulty, setDifficulty] = useState<TrainingDifficulty>(
-    gauntletPreset?.difficulty ?? "normal",
-  );
-  const [best, setBest] = useState(0);
+  const phase: Phase = "playing";
+  const difficulty: TrainingDifficulty =
+    routeRun?.payload.difficulty ?? gauntletPreset?.difficulty ?? "normal";
   const [puzzle, setPuzzle] = useState<NetwalkPuzzle | null>(null);
   const [networkState, setNetworkState] = useState<NetwalkState | null>(null);
   const [hintCount, setHintCount] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [feedback, setFeedback] = useState("旋转线路，让每个终端接回琥珀服务器。");
-  const [finalScore, setFinalScore] = useState(0);
-  const [awardedPoints, setAwardedPoints] = useState(0);
-  const [isNewBest, setIsNewBest] = useState(false);
   const startedAtRef = useRef(0);
   const completedRef = useRef(false);
   const autoStartedRef = useRef(false);
-
-  const refreshBest = useCallback(() => {
-    setBest(readBestScore(difficulty));
-  }, [difficulty]);
-
-  useLoad(refreshBest);
-  useDidShow(refreshBest);
-
-  useEffect(() => {
-    refreshBest();
-  }, [refreshBest]);
 
   useEffect(() => {
     if (phase !== "playing") return undefined;
@@ -110,6 +85,10 @@ export default function Netwalk() {
         difficulty,
         outcome: "completed",
       } as const;
+      const isNewBest = nextScore > readBestScore(difficulty);
+      if (isNewBest) {
+        Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, nextScore);
+      }
       const routeSettlement = runId
         ? settleNetwalkCompletion(
             runId,
@@ -118,34 +97,18 @@ export default function Netwalk() {
               awardedPoints: 0,
               durationSeconds,
               moveCount: nextState.moveCount,
-              isNewBest: nextScore > best,
+              hintCount: nextHintCount,
+              isNewBest,
             },
             settlementInput,
           )
         : null;
-      const settlement =
-        routeSettlement?.settlement ?? (runId ? null : settleGame(settlementInput));
-      if (!settlement) return;
-      if (settlement.gauntletHandled) {
-        return;
-      }
-      const nextAwardedPoints = settlement.awardedPoints;
-      const nextBest = Math.max(best, nextScore);
-      if (nextScore > best) {
-        Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, nextScore);
-        setBest(nextBest);
-      }
-      setIsNewBest(nextScore > best);
-      setFinalScore(nextScore);
-      setAwardedPoints(nextAwardedPoints);
+      if (!routeSettlement) return;
+      if (routeSettlement.settlement.gauntletHandled) return;
       setElapsedSeconds(durationSeconds);
-      if (runId) {
-        void Taro.redirectTo({ url: `/pages/netwalk/result?runId=${encodeURIComponent(runId)}` });
-        return;
-      }
-      setPhase("finished");
+      void Taro.redirectTo({ url: `/pages/netwalk/result?runId=${encodeURIComponent(runId)}` });
     },
-    [best, difficulty, puzzle, runId],
+    [difficulty, puzzle, runId],
   );
 
   const startGame = useCallback(() => {
@@ -158,15 +121,10 @@ export default function Netwalk() {
     setHintCount(0);
     setElapsedSeconds(0);
     setFeedback("点击任意蓝色节点顺时针旋转，接口需要两边同时对齐。");
-    setFinalScore(0);
-    setAwardedPoints(0);
-    setIsNewBest(false);
-    setPhase("playing");
   }, [difficulty]);
 
   useEffect(() => {
-    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || phase !== "start")
-      return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
     startGame();
   }, [phase, routeRun, startGame]);
@@ -258,73 +216,10 @@ export default function Netwalk() {
     );
   };
 
-  const difficultyCard = (value: TrainingDifficulty) => (
-    <View
-      className={`summary-item netwalk-difficulty-card ${difficulty === value ? "summary-item-active netwalk-difficulty-card-active" : ""}`}
-      onClick={() => setDifficulty(value)}
-    >
-      <Text className="summary-value netwalk-difficulty-name">
-        {getTrainingDifficultyLabel(value)}
-      </Text>
-      <Text className="summary-label netwalk-difficulty-copy">{getDifficultyCopy(value)}</Text>
-    </View>
-  );
-
   return (
     <View className="netwalk-page">
       {runId ? <GameRouteBack gameId="netwalk" runId={runId} onAbandon={handleRouteBack} /> : null}
-      {phase === "start" ? (
-        <View className="netwalk-start start-screen">
-          <View className="header-section netwalk-hero">
-            <View className="netwalk-orbit netwalk-orbit-one" />
-            <View className="netwalk-orbit netwalk-orbit-two" />
-            <View className="netwalk-hero-server">
-              <Text>●</Text>
-            </View>
-            <View className="logo-icon netwalk-kicker">
-              <Text className="logo-emoji">⌘</Text>
-            </View>
-            <Text className="game-title netwalk-title">网络回路</Text>
-            <Text className="game-subtitle netwalk-subtitle">旋转线路，让每个终端接回核心</Text>
-            <View className="high-score-badge netwalk-best-pill">
-              <Text className="high-score-label netwalk-best-label">当前难度最高</Text>
-              <Text className="high-score-value netwalk-best-value">{best}</Text>
-            </View>
-          </View>
-
-          <View className="rules-card netwalk-panel netwalk-rule-panel">
-            <Text className="section-title netwalk-section-title">游戏规则</Text>
-            <Text className="rule-item netwalk-rule">
-              1. 点击蓝色线路节点，每次顺时针旋转 90°。
-            </Text>
-            <Text className="rule-item netwalk-rule">
-              2. 接口必须两边同时对齐，才能点亮一条线路。
-            </Text>
-            <Text className="rule-item netwalk-rule">
-              3. 全部节点接回琥珀服务器即通关；少旋转、少提示得分更高。
-            </Text>
-          </View>
-
-          {!isGauntletPreset ? (
-            <View className="summary-card netwalk-panel">
-              <Text className="section-title netwalk-section-title">选择网络规模</Text>
-              <View className="summary-grid netwalk-difficulty-grid">
-                {difficultyCard("normal")}
-                {difficultyCard("hard")}
-              </View>
-            </View>
-          ) : null}
-
-          <View className="floating-start-action netwalk-floating-start">
-            <View className="primary-button netwalk-primary-button" onClick={startGame}>
-              <Text className="primary-button-text netwalk-primary-button-text">接通网络</Text>
-            </View>
-          </View>
-          <View className="floating-start-spacer netwalk-floating-spacer" />
-        </View>
-      ) : null}
-
-      {phase === "playing" && puzzle && networkState ? (
+      {puzzle && networkState ? (
         <View className="netwalk-play">
           <View className="netwalk-hud">
             <View>
@@ -362,38 +257,6 @@ export default function Netwalk() {
             <Text className="netwalk-controls-copy">提示会替你旋转一步，并扣除 5 游戏分。</Text>
             <View className="netwalk-secondary-button" onClick={useHint}>
               <Text className="netwalk-secondary-button-text">给我一步提示（−5 分）</Text>
-            </View>
-          </View>
-        </View>
-      ) : null}
-
-      {phase === "finished" ? (
-        <View className="netwalk-finish finish-screen">
-          <View className="netwalk-finish-panel">
-            <Text className="netwalk-kicker">
-              NETWORK ONLINE · {getTrainingDifficultyLabel(difficulty)}
-            </Text>
-            <Text className="netwalk-finish-title">
-              {isNewBest ? "连通纪录刷新" : "全网已接通"}
-            </Text>
-            <Text className="netwalk-finish-score">{finalScore}</Text>
-            <Text className="netwalk-finish-copy">
-              获得 {awardedPoints} 宠物积分 · 旋转 {networkState?.moveCount ?? 0} 次 · 提示{" "}
-              {hintCount} 次
-            </Text>
-            <View className="netwalk-finish-actions">
-              <StickerShareButton
-                gameTitle="网络回路"
-                score={finalScore}
-                pagePath="pages/netwalk/index"
-                isGauntlet={isGauntletPreset}
-              />
-              <View className="netwalk-primary-button" onClick={startGame}>
-                <Text className="netwalk-primary-button-text">再接一张网络</Text>
-              </View>
-              <View className="netwalk-secondary-button" onClick={() => setPhase("start")}>
-                <Text className="netwalk-secondary-button-text">返回难度选择</Text>
-              </View>
             </View>
           </View>
         </View>

@@ -13,6 +13,7 @@ import {
 
 export interface RockPaperScissorsRunPayload {
   difficulty: TrainingDifficulty;
+  level: 1 | 2 | 3 | 4;
   rounds: 1 | 3;
   startedAt: number;
 }
@@ -21,6 +22,7 @@ export interface RockPaperScissorsRunResult {
   awardedPoints: number;
   durationSeconds: number;
   correctCount: number;
+  bestStreak: number;
   isNewBest: boolean;
 }
 export type RockPaperScissorsRun = GameRun<RockPaperScissorsRunPayload, RockPaperScissorsRunResult>;
@@ -28,9 +30,10 @@ export type RockPaperScissorsRun = GameRun<RockPaperScissorsRunPayload, RockPape
 export function createRockPaperScissorsRun(
   difficulty: TrainingDifficulty = "normal",
   rounds: 1 | 3 = difficulty === "hard" ? 3 : 1,
+  level: 1 | 2 | 3 | 4 = difficulty === "hard" ? 3 : 1,
   startedAt = Date.now(),
 ) {
-  return createGameRun("rock-paper-scissors", { difficulty, rounds, startedAt });
+  return createGameRun("rock-paper-scissors", { difficulty, level, rounds, startedAt });
 }
 export function readRockPaperScissorsRun(runId: string) {
   return readGameRun<RockPaperScissorsRunPayload, RockPaperScissorsRunResult>(

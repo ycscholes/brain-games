@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { getCurrentInstance, useDidShow, useLoad, useUnload } from "@tarojs/taro";
-import { getAwardedPoints } from "../../utils/trainingStorage";
-import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import { settleGame } from "../../services/gameSettlementService";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
-import StickerShareButton from "../../components/stickers/StickerShareButton";
-import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import {
   playComplete,
   playCorrect,
@@ -26,7 +21,7 @@ import {
 import { abandonTwentyFourRun, readTwentyFourRun, settleTwentyFourCompletion } from "./run";
 import "./index.scss";
 
-type Phase = "start" | "playing" | "finished";
+type Phase = "playing";
 
 const STORAGE_KEY_PREFIX = "twenty_four_best";
 const REWARD_DIFFICULTY = "normal";
@@ -47,8 +42,6 @@ function tokenToText(token: Token) {
 
 export default function TwentyFour() {
   usePageShare("pages/twenty-four/index");
-  const gauntletPreset = readGameGauntletModePreset();
-  const isGauntletPreset = gauntletPreset !== null;
   const runId =
     typeof getCurrentInstance().router?.params?.runId === "string"
       ? (getCurrentInstance().router?.params?.runId ?? "")
@@ -62,15 +55,13 @@ export default function TwentyFour() {
   }, [routeRun, runId]);
 
   const [round, setRound] = useState(() => generateRound());
-  const [phase, setPhase] = useState<Phase>("start");
-  useAmbientMusic(phase === "start");
+  const [phase] = useState<Phase>("playing");
   const [tokens, setTokens] = useState<Token[]>([]);
   const [score, setScore] = useState(0);
   const [solvedCount, setSolvedCount] = useState(0);
   const [best, setBest] = useState(0);
   const [timeLeft, setTimeLeft] = useState(GAME_SECONDS);
   const [feedback, setFeedback] = useState("用四张牌和运算符凑出 24");
-  const [isNewBest, setIsNewBest] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -124,39 +115,29 @@ export default function TwentyFour() {
       difficulty: REWARD_DIFFICULTY,
       outcome: "completed",
     } as const;
-    const routeSettlement = runId
-      ? settleTwentyFourCompletion(
-          runId,
-          {
-            score: finalScore,
-            awardedPoints: 0,
-            durationSeconds: GAME_SECONDS,
-            solvedCount,
-            isNewBest: finalScore > best,
-          },
-          settlementInput,
-        )
-      : null;
-    const settlement = routeSettlement?.settlement ?? (runId ? null : settleGame(settlementInput));
+    const nextIsNewBest = finalScore > best;
+    const routeSettlement = settleTwentyFourCompletion(
+      runId,
+      {
+        score: finalScore,
+        awardedPoints: 0,
+        durationSeconds: GAME_SECONDS,
+        solvedCount,
+        isNewBest: nextIsNewBest,
+      },
+      settlementInput,
+    );
+    const settlement = routeSettlement?.settlement ?? null;
     if (!settlement) return;
     if (settlement.gauntletHandled) {
       return;
     }
 
-    if (runId) {
-      void Taro.redirectTo({ url: `/pages/twenty-four/result?runId=${encodeURIComponent(runId)}` });
-      return;
-    }
-
-    if (finalScore > best) {
+    if (nextIsNewBest) {
       Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${REWARD_DIFFICULTY}`, finalScore);
       setBest(finalScore);
-      setIsNewBest(true);
-    } else {
-      setIsNewBest(false);
     }
-
-    setPhase("finished");
+    void Taro.redirectTo({ url: `/pages/twenty-four/result?runId=${encodeURIComponent(runId)}` });
   }, [best, clearTimer, runId, solvedCount]);
 
   useEffect(() => {
@@ -184,17 +165,14 @@ export default function TwentyFour() {
     setSolvedCount(0);
     setTimeLeft(GAME_SECONDS);
     setFeedback("用四张牌和运算符凑出 24");
-    setIsNewBest(false);
     setHintUsed(false);
-    setPhase("playing");
   }, [clearTimer]);
 
   useEffect(() => {
-    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || phase !== "start")
-      return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
     startGame();
-  }, [phase, routeRun, startGame]);
+  }, [routeRun, startGame]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;
@@ -293,59 +271,7 @@ export default function TwentyFour() {
 
   return (
     <View className="twenty-four-page">
-      {runId ? (
-        <GameRouteBack gameId="twenty-four" runId={runId} onAbandon={handleRouteBack} />
-      ) : null}
-      {phase === "start" && (
-        <View className="tf-start start-screen">
-          <View className="header-section">
-            <View className="logo-icon">
-              <Text className="logo-emoji">24</Text>
-            </View>
-            <Text className="game-title">24 点</Text>
-            <Text className="game-subtitle">用四个数字和四则运算凑出 24</Text>
-            <View className="high-score-badge">
-              <Text className="high-score-label">历史最高</Text>
-              <Text className="high-score-value">{best}</Text>
-            </View>
-          </View>
-
-          <View className="rules-card">
-            <Text className="section-title">游戏规则</Text>
-            <Text className="rule-item">1. 每轮四张数字牌都必须使用一次。</Text>
-            <Text className="rule-item">2. 可以使用 +、-、×、÷ 和括号。</Text>
-            <Text className="rule-item">
-              3. 数字范围为 1 至 10，初始每题 2 分，每答对 3 题后续每题加 1 分。
-            </Text>
-          </View>
-
-          <View className="summary-card">
-            <Text className="section-title">训练提示</Text>
-            <View className="summary-grid summary-grid-three">
-              <View className="summary-item">
-                <Text className="summary-value">{GAME_SECONDS}s</Text>
-                <Text className="summary-label">固定限时</Text>
-              </View>
-              <View className="summary-item">
-                <Text className="summary-value">1-10</Text>
-                <Text className="summary-label">数字范围</Text>
-              </View>
-              <View className="summary-item">
-                <Text className="summary-value">+2</Text>
-                <Text className="summary-label">起始单题</Text>
-              </View>
-            </View>
-          </View>
-
-          <View className="floating-start-action">
-            <View className="tf-primary-button" onClick={startGame}>
-              <Text className="tf-primary-button-text">开始挑战</Text>
-            </View>
-          </View>
-          <View className="floating-start-spacer" />
-        </View>
-      )}
-
+      <GameRouteBack gameId="twenty-four" runId={runId} onAbandon={handleRouteBack} />
       {phase === "playing" && (
         <View className="tf-play">
           <View className="tf-status-row">
@@ -418,36 +344,6 @@ export default function TwentyFour() {
             </View>
             <View className="tf-hint-button" onClick={showHint}>
               <Text className="tf-hint-button-text">看提示</Text>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {phase === "finished" && (
-        <View className="tf-result">
-          <Text className="tf-result-title">本局结束</Text>
-          <Text className="tf-result-score">{score}</Text>
-          <Text className="tf-result-copy">
-            解出 {solvedCount} 题，游戏得分 {score}，获得{" "}
-            {getAwardedPoints("twenty-four", score, REWARD_DIFFICULTY)} 积分
-          </Text>
-          {isNewBest ? <Text className="tf-result-highlight">刷新历史最高</Text> : null}
-
-          <View className="tf-result-actions">
-            <StickerShareButton
-              gameTitle="24 点"
-              score={score}
-              pagePath="pages/twenty-four/index"
-              isGauntlet={isGauntletPreset}
-            />
-            <View className="tf-primary-button" onClick={startGame}>
-              <Text className="tf-primary-button-text">再来一局</Text>
-            </View>
-            <View
-              className="tf-secondary-button"
-              onClick={() => Taro.reLaunch({ url: "/pages/index/index" })}
-            >
-              <Text className="tf-secondary-button-text">返回首页</Text>
             </View>
           </View>
         </View>

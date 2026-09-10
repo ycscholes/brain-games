@@ -1,6 +1,7 @@
 import type { GameSettlementInput, GameSettlementResult } from "../../domain/training/settlement";
 import type { TrainingDifficulty } from "../../domain/training/types";
 import { settleGame } from "../../services/gameSettlementService";
+import type { MemoryChallengeN } from "./gameLogic";
 import {
   abandonGameRun,
   createGameRun,
@@ -14,13 +15,14 @@ import {
 export interface MemoryChallengeRunPayload {
   difficulty: TrainingDifficulty;
   mode: "shape" | "pet" | "calculation";
-  n: 1 | 3;
+  n: MemoryChallengeN;
   startedAt: number;
 }
 export interface MemoryChallengeRunResult {
   score: number;
   awardedPoints: number;
   durationSeconds: number;
+  correctCount: number;
   level: number;
   isNewBest: boolean;
 }

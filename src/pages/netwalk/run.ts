@@ -20,6 +20,7 @@ export interface NetwalkRunResult {
   awardedPoints: number;
   durationSeconds: number;
   moveCount: number;
+  hintCount: number;
   isNewBest: boolean;
 }
 export type NetwalkRun = GameRun<NetwalkRunPayload, NetwalkRunResult>;

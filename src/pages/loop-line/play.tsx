@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
-import Taro, { getCurrentInstance, useDidShow, useLoad, useUnload } from "@tarojs/taro";
+import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import { settleGame } from "../../services/gameSettlementService";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
-import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { getTrainingDifficultyLabel, type TrainingDifficulty } from "../../utils/trainingStorage";
-import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import {
   playComplete,
   playCorrect,
@@ -29,17 +26,13 @@ import {
 import { abandonLoopLineRun, readLoopLineRun, settleLoopLineCompletion } from "./run";
 import "./index.scss";
 
-type Phase = "start" | "playing" | "finished";
+type Phase = "playing";
 
 const STORAGE_KEY_PREFIX = "loop_line_best";
 
 function readBestScore(difficulty: TrainingDifficulty) {
   const value = Number(Taro.getStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`) || 0);
   return Number.isFinite(value) ? value : 0;
-}
-
-function getDifficultyCopy(difficulty: TrainingDifficulty) {
-  return difficulty === "hard" ? "6 × 6 · 更多转折与隐藏线索" : "5 × 5 · 适合熟悉单环规则";
 }
 
 function buildBoardEdges(size: number) {
@@ -60,7 +53,6 @@ function buildBoardEdges(size: number) {
 export default function LoopLinePage() {
   usePageShare("pages/loop-line/index");
   const gauntletPreset = readGameGauntletModePreset();
-  const isGauntletPreset = gauntletPreset !== null;
   const runId =
     typeof getCurrentInstance().router?.params?.runId === "string"
       ? (getCurrentInstance().router?.params?.runId ?? "")
@@ -72,11 +64,9 @@ export default function LoopLinePage() {
       void Taro.redirectTo({ url: "/pages/loop-line/index" });
     }
   }, [routeRun, runId]);
-  const [phase, setPhase] = useState<Phase>("start");
-  const [difficulty, setDifficulty] = useState<TrainingDifficulty>(
-    gauntletPreset?.difficulty ?? "normal",
-  );
-  const [best, setBest] = useState(0);
+  const phase: Phase = "playing";
+  const difficulty: TrainingDifficulty =
+    routeRun?.payload.difficulty ?? gauntletPreset?.difficulty ?? "normal";
   const [puzzle, setPuzzle] = useState<LoopLinePuzzle | null>(null);
   const [boardState, setBoardState] = useState<LoopLineState>(() => createLoopLineState());
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -85,30 +75,9 @@ export default function LoopLinePage() {
   const [feedback, setFeedback] = useState(
     "先从 0 与 3 附近开始，让每个数字刚好被对应数量的线段围住。",
   );
-  const [finalScore, setFinalScore] = useState(0);
-  const [awardedPoints, setAwardedPoints] = useState(0);
-  const [isNewBest, setIsNewBest] = useState(false);
   const startedAtRef = useRef(0);
   const completedRef = useRef(false);
   const autoStartedRef = useRef(false);
-  useAmbientMusic(phase === "start");
-
-  const refreshBest = useCallback(() => {
-    setBest(readBestScore(difficulty));
-  }, [difficulty]);
-
-  useLoad(() => {
-    refreshBest();
-  });
-
-  useDidShow(() => {
-    refreshBest();
-  });
-
-  useEffect(() => {
-    refreshBest();
-  }, [refreshBest]);
-
   useEffect(() => {
     if (phase !== "playing") return undefined;
     const timer = setInterval(() => {
@@ -136,6 +105,10 @@ export default function LoopLinePage() {
         difficulty,
         outcome: "completed",
       } as const;
+      const isNewBest = nextScore > readBestScore(difficulty);
+      if (isNewBest) {
+        Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, nextScore);
+      }
       const routeSettlement = runId
         ? settleLoopLineCompletion(
             runId,
@@ -144,34 +117,18 @@ export default function LoopLinePage() {
               awardedPoints: 0,
               durationSeconds,
               moveCount: boardState.selectedEdges.length,
-              isNewBest: nextScore > best,
+              hintCount: nextHintCount,
+              isNewBest,
             },
             settlementInput,
           )
         : null;
-      const settlement =
-        routeSettlement?.settlement ?? (runId ? null : settleGame(settlementInput));
-      if (!settlement) return;
-      if (settlement.gauntletHandled) {
-        return;
-      }
-      const nextAwardedPoints = settlement.awardedPoints;
-      const nextBest = Math.max(best, nextScore);
-      if (nextScore > best) {
-        Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, nextScore);
-        setBest(nextBest);
-      }
-      setIsNewBest(nextScore > best);
-      setFinalScore(nextScore);
-      setAwardedPoints(nextAwardedPoints);
+      if (!routeSettlement) return;
+      if (routeSettlement.settlement.gauntletHandled) return;
       setElapsedSeconds(durationSeconds);
-      if (runId) {
-        void Taro.redirectTo({ url: `/pages/loop-line/result?runId=${encodeURIComponent(runId)}` });
-        return;
-      }
-      setPhase("finished");
+      void Taro.redirectTo({ url: `/pages/loop-line/result?runId=${encodeURIComponent(runId)}` });
     },
-    [best, boardState.selectedEdges.length, difficulty, puzzle, runId],
+    [boardState.selectedEdges.length, difficulty, puzzle, runId],
   );
 
   const startGame = useCallback(() => {
@@ -184,15 +141,10 @@ export default function LoopLinePage() {
     setHintCount(0);
     setHintKey("");
     setFeedback("每个数字表示它四周需要经过的线段数；所有线最后必须只组成一个闭环。");
-    setFinalScore(0);
-    setAwardedPoints(0);
-    setIsNewBest(false);
-    setPhase("playing");
   }, [difficulty]);
 
   useEffect(() => {
-    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || phase !== "start")
-      return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
     startGame();
   }, [phase, routeRun, startGame]);
@@ -268,12 +220,9 @@ export default function LoopLinePage() {
     if (nextStatus.solved) finishGame(nextHintCount);
   };
 
-  const restart = () => {
-    if (phase === "finished") {
-      setPhase("start");
-      return;
-    }
-    startGame();
+  const leaveGame = () => {
+    handleRouteBack();
+    void Taro.navigateBack().catch(() => Taro.redirectTo({ url: "/pages/loop-line/index" }));
   };
 
   const boardDimension = puzzle ? puzzle.size * 2 + 1 : 0;
@@ -289,57 +238,7 @@ export default function LoopLinePage() {
       {runId ? (
         <GameRouteBack gameId="loop-line" runId={runId} onAbandon={handleRouteBack} />
       ) : null}
-      {phase === "start" ? (
-        <View className="loop-line-start start-screen">
-          <View className="header-section">
-            <View className="loop-line-logo-icon">
-              <Text className="loop-line-logo-emoji">○</Text>
-            </View>
-            <Text className="loop-line-title">环线谜踪</Text>
-            <Text className="loop-line-subtitle">读懂数字，画出唯一不断开的闭环</Text>
-            <View className="loop-line-best-pill">
-              <Text className="loop-line-best-label">当前难度最高</Text>
-              <Text className="loop-line-best-value">{best}</Text>
-            </View>
-          </View>
-
-          <View className="rules-card">
-            <Text className="loop-line-section-title">游戏规则</Text>
-            <Text className="loop-line-rule-item">1. 数字表示它四边经过的线段数量。</Text>
-            <Text className="loop-line-rule-item">2. 每个交点只能经过 0 或 2 段线。</Text>
-            <Text className="loop-line-rule-item">3. 所有线段最后必须组成唯一闭环。</Text>
-          </View>
-
-          {!isGauntletPreset ? (
-            <View className="summary-card">
-              <Text className="loop-line-section-title">选择难度</Text>
-              <View className="loop-line-difficulty-row">
-                {(["normal", "hard"] as TrainingDifficulty[]).map((value) => (
-                  <View
-                    key={value}
-                    className={`loop-line-difficulty-card ${difficulty === value ? "loop-line-difficulty-card-active" : ""}`}
-                    onClick={() => setDifficulty(value)}
-                  >
-                    <Text className="loop-line-difficulty-name">
-                      {getTrainingDifficultyLabel(value)}
-                    </Text>
-                    <Text className="loop-line-difficulty-copy">{getDifficultyCopy(value)}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : null}
-
-          <View className="floating-start-action">
-            <View className="loop-line-start-button audio-pressable" onClick={startGame}>
-              <Text className="loop-line-start-button-text">开始挑战</Text>
-            </View>
-          </View>
-          <View className="floating-start-spacer" />
-        </View>
-      ) : null}
-
-      {phase === "playing" && puzzle && status ? (
+      {puzzle && status ? (
         <View className="loop-line-play">
           <View className="loop-line-play-header">
             <View>
@@ -415,7 +314,7 @@ export default function LoopLinePage() {
 
           <Text className="loop-line-feedback">{feedback}</Text>
           <View className="loop-line-actions">
-            <View className="loop-line-action loop-line-action-secondary" onClick={restart}>
+            <View className="loop-line-action loop-line-action-secondary" onClick={leaveGame}>
               <Text className="loop-line-action-text">重开</Text>
             </View>
             <View
@@ -424,39 +323,6 @@ export default function LoopLinePage() {
             >
               <Text className="loop-line-action-text">提示 -4</Text>
             </View>
-          </View>
-        </View>
-      ) : null}
-
-      {phase === "finished" ? (
-        <View className="loop-line-finished summary-card">
-          <Text className="loop-line-finished-kicker">CIRCUIT CLOSED</Text>
-          <Text className="loop-line-finished-title">路线闭合成功</Text>
-          <Text className="loop-line-finished-copy">
-            用时 {elapsedSeconds} 秒 · 使用 {hintCount} 次提示
-          </Text>
-          <View className="loop-line-result-grid">
-            <View>
-              <Text className="loop-line-result-value">{finalScore}</Text>
-              <Text className="loop-line-result-label">游戏得分</Text>
-            </View>
-            <View>
-              <Text className="loop-line-result-value">+{awardedPoints}</Text>
-              <Text className="loop-line-result-label">宠物积分</Text>
-            </View>
-          </View>
-          {isNewBest ? <Text className="loop-line-new-best">新的最高分</Text> : null}
-          <StickerShareButton
-            gameTitle="环线谜踪"
-            score={finalScore}
-            pagePath="pages/loop-line/index"
-            isGauntlet={isGauntletPreset}
-          />
-          <View
-            className="loop-line-start-button floating-start-action audio-pressable"
-            onClick={restart}
-          >
-            <Text className="loop-line-start-button-text">再来一局</Text>
           </View>
         </View>
       ) : null}

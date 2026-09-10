@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
-import Taro, { getCurrentInstance, useDidShow, useLoad, useUnload } from "@tarojs/taro";
-import { getTrainingDifficultyLabel, type TrainingDifficulty } from "../../utils/trainingStorage";
+import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
+import { type TrainingDifficulty } from "../../utils/trainingStorage";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import { settleGame } from "../../services/gameSettlementService";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
-import StickerShareButton from "../../components/stickers/StickerShareButton";
-import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import {
   playComplete,
   playCorrect,
@@ -15,7 +12,6 @@ import {
   playWrong,
 } from "../../services/audio/audioFeedbackService";
 import {
-  HIDATO_CONFIG,
   applyHidatoCellClick,
   applyHidatoHint,
   createHidatoLineSegments,
@@ -30,7 +26,7 @@ import {
 import { abandonHidatoRun, readHidatoRun, settleHidatoCompletion } from "./run";
 import "./index.scss";
 
-type Phase = "start" | "playing" | "finished";
+type Phase = "playing";
 
 const STORAGE_KEY_PREFIX = "hidato_best";
 const HINT_FLASH_MS = 900;
@@ -40,17 +36,9 @@ function readBestScore(difficulty: TrainingDifficulty) {
   return Number.isFinite(value) ? value : 0;
 }
 
-function getDifficultyCopy(difficulty: TrainingDifficulty) {
-  const config = HIDATO_CONFIG[difficulty];
-  return difficulty === "hard"
-    ? `${config.cols}列 x ${config.rows}行 · 空白 40%-50%`
-    : `${config.cols}列 x ${config.rows}行 · 空白 40%`;
-}
-
 export default function HidatoPage() {
   usePageShare("pages/hidato/index");
   const gauntletPreset = readGameGauntletModePreset();
-  const isGauntletPreset = gauntletPreset !== null;
   const runId =
     typeof getCurrentInstance().router?.params?.runId === "string"
       ? (getCurrentInstance().router?.params?.runId ?? "")
@@ -63,17 +51,11 @@ export default function HidatoPage() {
     }
   }, [routeRun, runId]);
 
-  const [phase, setPhase] = useState<Phase>("start");
-  useAmbientMusic(phase === "start");
-  const [difficulty, setDifficulty] = useState<TrainingDifficulty>(
-    gauntletPreset?.difficulty ?? "normal",
-  );
-  const [best, setBest] = useState(0);
+  const phase: Phase = "playing";
+  const difficulty: TrainingDifficulty =
+    routeRun?.payload.difficulty ?? gauntletPreset?.difficulty ?? "normal";
   const [puzzle, setPuzzle] = useState<HidatoPuzzle | null>(null);
   const [clickState, setClickState] = useState<HidatoClickState>(() => createInitialClickState());
-  const [awardedPoints, setAwardedPoints] = useState(0);
-  const [finalScore, setFinalScore] = useState(0);
-  const [isNewBest, setIsNewBest] = useState(false);
   const [feedback, setFeedback] = useState("从 1 开始，沿相邻格连接到终点。");
   const [hintValue, setHintValue] = useState<number | null>(null);
   const [lastWrongCellId, setLastWrongCellId] = useState<string | null>(null);
@@ -110,22 +92,6 @@ export default function HidatoPage() {
       wrongTimerRef.current = null;
     }
   }, []);
-
-  const refreshBest = useCallback(() => {
-    setBest(readBestScore(difficulty));
-  }, [difficulty]);
-
-  useLoad(() => {
-    refreshBest();
-  });
-
-  useDidShow(() => {
-    refreshBest();
-  });
-
-  useEffect(() => {
-    refreshBest();
-  }, [refreshBest]);
 
   useEffect(() => {
     return () => {
@@ -181,6 +147,10 @@ export default function HidatoPage() {
         difficulty,
         outcome: "completed",
       } as const;
+      const isNewBest = nextScore > readBestScore(difficulty);
+      if (isNewBest) {
+        Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, nextScore);
+      }
       const routeSettlement = runId
         ? settleHidatoCompletion(
             runId,
@@ -189,38 +159,18 @@ export default function HidatoPage() {
               awardedPoints: 0,
               durationSeconds,
               moveCount: nextState.clickedValues.length,
-              isNewBest: nextScore > best,
+              mistakeCount: nextState.mistakeCount,
+              hintCount: nextState.hintCount,
+              isNewBest,
             },
             settlementInput,
           )
         : null;
-      const settlement =
-        routeSettlement?.settlement ?? (runId ? null : settleGame(settlementInput));
-      if (!settlement) return;
-      if (settlement.gauntletHandled) {
-        return;
-      }
-      const nextAwardedPoints = settlement.awardedPoints;
-
-      if (runId) {
-        void Taro.redirectTo({ url: `/pages/hidato/result?runId=${encodeURIComponent(runId)}` });
-        return;
-      }
-
-      setFinalScore(nextScore);
-      setAwardedPoints(nextAwardedPoints);
-      setPhase("finished");
-      setFeedback("路径完整连接，训练完成。");
-
-      if (nextScore > best) {
-        Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, nextScore);
-        setBest(nextScore);
-        setIsNewBest(true);
-      } else {
-        setIsNewBest(false);
-      }
+      if (!routeSettlement) return;
+      if (routeSettlement.settlement.gauntletHandled) return;
+      void Taro.redirectTo({ url: `/pages/hidato/result?runId=${encodeURIComponent(runId)}` });
     },
-    [best, clearTransientTimers, difficulty, puzzle, runId],
+    [clearTransientTimers, difficulty, puzzle, runId],
   );
 
   const startGame = useCallback(() => {
@@ -233,18 +183,13 @@ export default function HidatoPage() {
     finishedRef.current = false;
     setPuzzle(nextPuzzle);
     setClickState(nextState);
-    setAwardedPoints(0);
-    setFinalScore(0);
-    setIsNewBest(false);
     setHintValue(null);
     setLastWrongCellId(null);
     setFeedback("先点击 1，再沿相邻格寻找下一个数字。");
-    setPhase("playing");
   }, [clearTransientTimers, difficulty]);
 
   useEffect(() => {
-    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || phase !== "start")
-      return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
     startGame();
   }, [phase, routeRun, startGame]);
@@ -265,19 +210,9 @@ export default function HidatoPage() {
   }, [routeRun, runId]);
   useUnload(handleRouteBack);
 
-  const backToStart = () => {
-    clearTransientTimers();
-    setPhase("start");
-    setPuzzle(null);
-    setClickState(createInitialClickState());
-    setAwardedPoints(0);
-    setFinalScore(0);
-    setIsNewBest(false);
-    setHintValue(null);
-    setLastWrongCellId(null);
-    setFeedback("从 1 开始，沿相邻格连接到终点。");
-    finishedRef.current = false;
-    refreshBest();
+  const leaveGame = () => {
+    handleRouteBack();
+    void Taro.navigateBack().catch(() => Taro.redirectTo({ url: "/pages/hidato/index" }));
   };
 
   const flashWrongCell = (cellId: string) => {
@@ -329,16 +264,6 @@ export default function HidatoPage() {
     }, HINT_FLASH_MS);
   };
 
-  const renderDifficultyCard = (nextDifficulty: TrainingDifficulty) => (
-    <View
-      className={`summary-item ${difficulty === nextDifficulty ? "summary-item-active" : ""}`}
-      onClick={() => setDifficulty(nextDifficulty)}
-    >
-      <Text className="summary-value">{getTrainingDifficultyLabel(nextDifficulty)}</Text>
-      <Text className="summary-label">{getDifficultyCopy(nextDifficulty)}</Text>
-    </View>
-  );
-
   const renderCell = (cell: HidatoCell) => {
     const clicked = clickedValueSet.has(cell.value);
     const visible = cell.given || clicked;
@@ -365,47 +290,7 @@ export default function HidatoPage() {
   return (
     <View className="hidato-page">
       {runId ? <GameRouteBack gameId="hidato" runId={runId} onAbandon={handleRouteBack} /> : null}
-      {phase === "start" ? (
-        <View className="hidato-start start-screen">
-          <View className="header-section">
-            <View className="logo-icon">
-              <Text className="logo-emoji">1N</Text>
-            </View>
-            <Text className="game-title">连数迷阵</Text>
-            <Text className="game-subtitle">从 1 出发，按顺序点击相邻格</Text>
-            <View className="high-score-badge">
-              <Text className="high-score-label">当前难度最高</Text>
-              <Text className="high-score-value">{best}</Text>
-            </View>
-          </View>
-
-          <View className="rules-card">
-            <Text className="section-title">游戏规则</Text>
-            <Text className="rule-item">1. 从 1 出发，按顺序点击相邻格。</Text>
-            <Text className="rule-item">2. 正确路径会自动连线，错误和提示会扣分。</Text>
-            <Text className="rule-item">3. 连接到最大数字 N 即通关。</Text>
-          </View>
-
-          {!isGauntletPreset && (
-            <View className="summary-card">
-              <Text className="section-title">难度</Text>
-              <View className="summary-grid">
-                {renderDifficultyCard("normal")}
-                {renderDifficultyCard("hard")}
-              </View>
-            </View>
-          )}
-
-          <View className="floating-start-action">
-            <View className="primary-button" onClick={startGame}>
-              <Text className="primary-button-text">开始训练</Text>
-            </View>
-          </View>
-          <View className="floating-start-spacer" />
-        </View>
-      ) : null}
-
-      {phase === "playing" && puzzle ? (
+      {puzzle ? (
         <View className="hidato-play">
           <View className="play-hud">
             <View className="play-hud-main">
@@ -461,38 +346,8 @@ export default function HidatoPage() {
             <View className="secondary-button" onClick={useHint}>
               <Text className="secondary-button-text">提示下一步</Text>
             </View>
-            <View className="secondary-button secondary-button-quiet" onClick={backToStart}>
+            <View className="secondary-button secondary-button-quiet" onClick={leaveGame}>
               <Text className="secondary-button-text">重新选择</Text>
-            </View>
-          </View>
-        </View>
-      ) : null}
-
-      {phase === "finished" ? (
-        <View className="finish-screen">
-          <View className="finish-panel">
-            <Text className="finish-kicker">
-              连数迷阵 · {getTrainingDifficultyLabel(difficulty)}
-            </Text>
-            <Text className="finish-title">{isNewBest ? "刷新最高分" : "训练完成"}</Text>
-            <Text className="finish-score">{finalScore}</Text>
-            <Text className="finish-copy">
-              获得 {awardedPoints} 宠物积分 · 错误 {clickState.mistakeCount} · 提示{" "}
-              {clickState.hintCount}
-            </Text>
-            <View className="finish-actions">
-              <StickerShareButton
-                gameTitle="连数迷阵"
-                score={finalScore}
-                pagePath="pages/hidato/index"
-                isGauntlet={isGauntletPreset}
-              />
-              <View className="primary-button" onClick={startGame}>
-                <Text className="primary-button-text">再来一局</Text>
-              </View>
-              <View className="secondary-button secondary-button-quiet" onClick={backToStart}>
-                <Text className="secondary-button-text">返回难度</Text>
-              </View>
             </View>
           </View>
         </View>

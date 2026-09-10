@@ -1,34 +1,52 @@
 import { useEffect, useState } from "react";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
-import GameRouteResult from "../../components/game-route/GameRouteResult";
-import StickerShareButton from "../../components/stickers/StickerShareButton";
+import { goBackToGameStart } from "../../utils/gameRoute";
+import { usePageShare } from "../../utils/share";
+import { getMemoryChallengeRewardCap } from "./gameLogic";
+import MemoryChallengeResultPanel from "./components/MemoryChallengeResultPanel";
 import { readMemoryChallengeRun } from "./run";
 import "./index.scss";
 
+const MODE_LABELS = { shape: "图形", pet: "宠物", calculation: "计算" } as const;
+const MEMORY_LABELS = { 1: "1-Back", 2: "2-Back", 3: "3-Back", 4: "4-Back" } as const;
+
+function readHighScore(mode: keyof typeof MODE_LABELS, n: 1 | 2 | 3 | 4) {
+  const raw = Taro.getStorageSync(`memory_highscore_${mode}_M${n}`);
+  if (typeof raw !== "string" || !raw) return 0;
+  try {
+    const parsed = JSON.parse(raw) as { score?: unknown };
+    return typeof parsed.score === "number" ? parsed.score : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export default function MemoryChallengeResult() {
+  usePageShare("pages/memory-challenge/index");
   const runId = getCurrentInstance().router?.params?.runId ?? "";
   const [run] = useState(() => readMemoryChallengeRun(runId));
   useEffect(() => {
-    if (!run || run.status !== "settled" || !run.result)
+    if (!run || run.status !== "settled" || !run.result) {
       void Taro.redirectTo({ url: "/pages/memory-challenge/index" });
+    }
   }, [run]);
   if (!run || run.status !== "settled" || !run.result) return null;
+  const mode = run.payload.mode;
+  const memoryN = run.payload.n;
   return (
-    <GameRouteResult
-      gameId="memory-challenge"
-      title="奇趣记忆"
+    <MemoryChallengeResultPanel
       score={run.result.score}
+      correctCount={run.result.correctCount}
+      modeLabel={MODE_LABELS[mode]}
+      memoryLabel={MEMORY_LABELS[memoryN]}
       awardedPoints={run.result.awardedPoints}
-      isNewBest={run.result.isNewBest}
-      details={`记忆等级 ${run.result.level}`}
-      share={
-        <StickerShareButton
-          gameTitle="奇趣记忆"
-          score={run.result.score}
-          pagePath="pages/memory-challenge/index"
-          isGauntlet={false}
-        />
-      }
+      rewardCap={getMemoryChallengeRewardCap(mode, memoryN)}
+      highScore={readHighScore(mode, memoryN)}
+      isNewRecord={run.result.isNewBest}
+      isGauntlet={false}
+      onRestart={() => void Taro.redirectTo({ url: "/pages/memory-challenge/index" })}
+      onBackToStart={() => void goBackToGameStart("memory-challenge")}
+      onBackHome={() => void Taro.reLaunch({ url: "/pages/index/index" })}
     />
   );
 }

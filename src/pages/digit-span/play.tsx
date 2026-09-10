@@ -1,17 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { getCurrentInstance, useDidShow, useLoad, useUnload } from "@tarojs/taro";
-import {
-  getAwardedPoints,
-  getTrainingDifficultyLabel,
-  type TrainingDifficulty,
-} from "../../utils/trainingStorage";
+import { type TrainingDifficulty } from "../../utils/trainingStorage";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import { settleGame } from "../../services/gameSettlementService";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
-import StickerShareButton from "../../components/stickers/StickerShareButton";
-import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import {
   playComplete,
   playCorrect,
@@ -21,7 +14,7 @@ import {
 import { abandonDigitSpanRun, readDigitSpanRun, settleDigitSpanCompletion } from "./run";
 import "./index.scss";
 
-type Phase = "start" | "showing" | "input" | "finished";
+type Phase = "showing" | "input";
 
 const INITIAL_LENGTH: Record<TrainingDifficulty, number> = {
   normal: 3,
@@ -43,7 +36,6 @@ function buildSequence(length: number): string {
 export default function DigitSpan() {
   usePageShare("pages/digit-span/index");
   const gauntletPreset = readGameGauntletModePreset();
-  const isGauntletPreset = gauntletPreset !== null;
   const runId =
     typeof getCurrentInstance().router?.params?.runId === "string"
       ? (getCurrentInstance().router?.params?.runId ?? "")
@@ -56,11 +48,9 @@ export default function DigitSpan() {
     }
   }, [routeRun, runId]);
 
-  const [phase, setPhase] = useState<Phase>("start");
-  useAmbientMusic(phase === "start");
-  const [rewardDifficulty, setRewardDifficulty] = useState<TrainingDifficulty>(
-    gauntletPreset?.difficulty ?? "normal",
-  );
+  const [phase, setPhase] = useState<Phase>("showing");
+  const rewardDifficulty: TrainingDifficulty =
+    routeRun?.payload.difficulty ?? gauntletPreset?.difficulty ?? "normal";
   const [best, setBest] = useState(0);
   const [score, setScore] = useState(0);
   const [roundLength, setRoundLength] = useState(INITIAL_LENGTH.normal);
@@ -68,7 +58,6 @@ export default function DigitSpan() {
   const [currentDigit, setCurrentDigit] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [displayStep, setDisplayStep] = useState(0);
-  const [isNewBest, setIsNewBest] = useState(false);
 
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const autoStartedRef = useRef(false);
@@ -117,43 +106,31 @@ export default function DigitSpan() {
         difficulty: rewardDifficulty,
         outcome: "completed",
       } as const;
-      const routeSettlement = runId
-        ? settleDigitSpanCompletion(
-            runId,
-            {
-              score: finalScore,
-              awardedPoints: 0,
-              durationSeconds,
-              maxLength: finalScore,
-              isNewBest: finalScore > best,
-            },
-            settlementInput,
-          )
-        : null;
-      const settlement =
-        routeSettlement?.settlement ?? (runId ? null : settleGame(settlementInput));
+      const nextIsNewBest = finalScore > best;
+      const routeSettlement = settleDigitSpanCompletion(
+        runId,
+        {
+          score: finalScore,
+          awardedPoints: 0,
+          durationSeconds,
+          maxLength: finalScore,
+          isNewBest: nextIsNewBest,
+        },
+        settlementInput,
+      );
+      const settlement = routeSettlement?.settlement ?? null;
       if (!settlement) return;
       if (settlement.gauntletHandled) {
         return;
       }
 
-      if (runId) {
-        void Taro.redirectTo({
-          url: `/pages/digit-span/result?runId=${encodeURIComponent(runId)}`,
-        });
-        return;
-      }
-
-      setScore(finalScore);
-      setPhase("finished");
-
-      if (finalScore > best) {
+      if (nextIsNewBest) {
         Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${rewardDifficulty}`, finalScore);
         setBest(finalScore);
-        setIsNewBest(true);
-      } else {
-        setIsNewBest(false);
       }
+      void Taro.redirectTo({
+        url: `/pages/digit-span/result?runId=${encodeURIComponent(runId)}`,
+      });
     },
     [best, rewardDifficulty, runId],
   );
@@ -194,16 +171,14 @@ export default function DigitSpan() {
     playTap();
     startedAtRef.current = Date.now();
     setScore(0);
-    setIsNewBest(false);
     startRound(INITIAL_LENGTH[rewardDifficulty]);
   }, [rewardDifficulty, startRound]);
 
   useEffect(() => {
-    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || phase !== "start")
-      return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
     startGame();
-  }, [phase, routeRun, startGame]);
+  }, [routeRun, startGame]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;
@@ -258,75 +233,6 @@ export default function DigitSpan() {
     const finalScore = roundLength > INITIAL_LENGTH[rewardDifficulty] ? roundLength - 1 : 0;
     finishGame(finalScore);
   };
-
-  const renderStart = () => (
-    <View className="start-screen">
-      <View className="header-section">
-        <View className="logo-icon">
-          <Text className="logo-emoji">123</Text>
-        </View>
-        <Text className="game-title">数字广度记忆</Text>
-        <Text className="game-subtitle">按顺序回忆完整数字串</Text>
-        <View className="high-score-badge">
-          <Text className="high-score-label">历史最高</Text>
-          <Text className="high-score-value">{best}</Text>
-        </View>
-      </View>
-
-      <View className="rules-card">
-        <Text className="section-title">游戏规则</Text>
-        <Text className="rule-item">1. 每轮从 3 位数字开始，数字逐个展示，每个持续 1 秒。</Text>
-        <Text className="rule-item">2. 展示结束后，使用数字键盘输入完整序列。</Text>
-        <Text className="rule-item">3. 回答正确则长度 +1，回答错误则本局结束。</Text>
-        <Text className="rule-item">4. 最终得分等于你成功记住的最大长度。</Text>
-      </View>
-
-      <View className="summary-card">
-        <Text className="section-title">训练提示</Text>
-        <View className="summary-grid">
-          <View className="summary-item">
-            <Text className="summary-value">{INITIAL_LENGTH[rewardDifficulty]}</Text>
-            <Text className="summary-label">起始位数</Text>
-          </View>
-          <View className="summary-item">
-            <Text className="summary-value">
-              {Math.max(best, INITIAL_LENGTH[rewardDifficulty])}
-            </Text>
-            <Text className="summary-label">当前挑战线</Text>
-          </View>
-        </View>
-      </View>
-
-      {!isGauntletPreset && (
-        <View className="summary-card">
-          <Text className="section-title">难度</Text>
-          <View className="summary-grid">
-            <View
-              className={`summary-item ${rewardDifficulty === "normal" ? "summary-item-active" : ""}`}
-              onClick={() => setRewardDifficulty("normal")}
-            >
-              <Text className="summary-value">普通</Text>
-              <Text className="summary-label">3 位起步 · 1.0x</Text>
-            </View>
-            <View
-              className={`summary-item ${rewardDifficulty === "hard" ? "summary-item-active" : ""}`}
-              onClick={() => setRewardDifficulty("hard")}
-            >
-              <Text className="summary-value">困难</Text>
-              <Text className="summary-label">4 位起步 · 1.5x</Text>
-            </View>
-          </View>
-        </View>
-      )}
-
-      <View className="floating-start-action">
-        <View className="primary-button" onClick={startGame}>
-          <Text className="button-text">开始挑战</Text>
-        </View>
-      </View>
-      <View className="footer-gap floating-start-spacer" />
-    </View>
-  );
 
   const renderGame = () => (
     <View className="game-screen">
@@ -391,53 +297,10 @@ export default function DigitSpan() {
     </View>
   );
 
-  const renderResult = () => (
-    <View className="result-screen">
-      <View className="result-card">
-        <Text className="result-title">本局成绩</Text>
-        <Text className="result-score">{score}</Text>
-        <Text className="result-desc">成功回忆 {score} 位数字</Text>
-        <Text className="result-desc">
-          积分{getTrainingDifficultyLabel(rewardDifficulty)} · 获得{" "}
-          {getAwardedPoints("digit-span", score, rewardDifficulty)} 积分
-        </Text>
-        <Text className="result-desc">
-          历史最高 {best}
-          {isNewBest ? <Text className="result-highlight">，刷新纪录</Text> : null}
-        </Text>
-      </View>
-
-      <View className="result-actions">
-        <StickerShareButton
-          gameTitle="数字广度记忆"
-          score={score}
-          pagePath="pages/digit-span/index"
-          isGauntlet={isGauntletPreset}
-        />
-        <View className="primary-button" onClick={startGame}>
-          <Text className="button-text">再来一局</Text>
-        </View>
-        <View className="secondary-button" onClick={() => setPhase("start")}>
-          <Text className="button-text">返回开始页</Text>
-        </View>
-        <View
-          className="secondary-button"
-          onClick={() => Taro.reLaunch({ url: "/pages/index/index" })}
-        >
-          <Text className="button-text">返回游戏主页</Text>
-        </View>
-      </View>
-    </View>
-  );
-
   return (
     <View className="digit-span-page">
-      {runId ? (
-        <GameRouteBack gameId="digit-span" runId={runId} onAbandon={handleRouteBack} />
-      ) : null}
-      {phase === "start" ? renderStart() : null}
-      {phase === "showing" || phase === "input" ? renderGame() : null}
-      {phase === "finished" ? renderResult() : null}
+      <GameRouteBack gameId="digit-span" runId={runId} onAbandon={handleRouteBack} />
+      {renderGame()}
     </View>
   );
 }

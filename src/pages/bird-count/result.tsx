@@ -1,34 +1,50 @@
 import { useEffect, useState } from "react";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
-import GameRouteResult from "../../components/game-route/GameRouteResult";
-import StickerShareButton from "../../components/stickers/StickerShareButton";
+import { goBackToGameStart } from "../../utils/gameRoute";
+import { usePageShare } from "../../utils/share";
+import { getTrainingDifficultyLabel } from "../../utils/trainingStorage";
+import { BIRD_COUNT_TOTAL_QUESTIONS } from "./gameLogic";
+import {
+  HEAD_COUNT_SPEED_LABELS,
+  HEAD_COUNT_TOTAL_QUESTIONS,
+  getHeadCountRewardDifficulty,
+} from "../head-count/gameLogic";
+import FarmCountResult from "./components/FarmCountResult";
 import { readBirdCountRun } from "./run";
 import "./index.scss";
 
 export default function BirdCountResult() {
+  usePageShare("pages/bird-count/index");
   const runId = getCurrentInstance().router?.params?.runId ?? "";
   const [run] = useState(() => readBirdCountRun(runId));
   useEffect(() => {
-    if (!run || run.status !== "settled" || !run.result)
+    if (!run || run.status !== "settled" || !run.result) {
       void Taro.redirectTo({ url: "/pages/bird-count/index" });
+    }
   }, [run]);
   if (!run || run.status !== "settled" || !run.result) return null;
+
+  const isYard = run.payload.mode === "yard";
+  const totalQuestions = isYard ? HEAD_COUNT_TOTAL_QUESTIONS : BIRD_COUNT_TOTAL_QUESTIONS;
+  const rewardDifficulty = isYard
+    ? getHeadCountRewardDifficulty(run.payload.difficulty, run.payload.yardSpeed ?? "slow")
+    : run.payload.difficulty;
+  const modeTitle = isYard ? "农场进出" : "宠物速数";
+  const difficultyLabel = isYard
+    ? `${getTrainingDifficultyLabel(run.payload.difficulty)} · ${HEAD_COUNT_SPEED_LABELS[run.payload.yardSpeed ?? "slow"]} · 积分${getTrainingDifficultyLabel(rewardDifficulty)}`
+    : getTrainingDifficultyLabel(run.payload.difficulty);
   return (
-    <GameRouteResult
-      gameId="bird-count"
-      title="农场清点"
+    <FarmCountResult
       score={run.result.score}
+      modeTitle={modeTitle}
+      difficultyLabel={difficultyLabel}
+      accuracyText={`${run.result.correctCount}/${totalQuestions}`}
+      bestCombo={run.result.bestCombo}
       awardedPoints={run.result.awardedPoints}
       isNewBest={run.result.isNewBest}
-      details={`${run.result.correctCount} 题判断正确`}
-      share={
-        <StickerShareButton
-          gameTitle="农场清点"
-          score={run.result.score}
-          pagePath="pages/bird-count/index"
-          isGauntlet={false}
-        />
-      }
+      isGauntlet={false}
+      onBack={() => void goBackToGameStart("bird-count")}
+      onRestart={() => void Taro.redirectTo({ url: "/pages/bird-count/index" })}
     />
   );
 }

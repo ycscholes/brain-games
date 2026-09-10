@@ -29,7 +29,10 @@ describe("home game three-page route contract", () => {
         expect(playSource).toContain('routeRun.status !== "active"');
         expect(playSource).toContain(`redirectTo({ url: "/pages/${game.id}/index" })`);
       }
-      expect(resultSource).toContain("<StickerShareButton");
+      const resultOwnsSticker = resultSource.includes("<StickerShareButton");
+      const resultDelegatesToPanel =
+        resultSource.includes("ResultPanel") || resultSource.includes("FarmCountResult");
+      expect(resultOwnsSticker || resultDelegatesToPanel).toBe(true);
       expect(runSource).toContain("settleGameRun");
       expect(runSource).toContain("abandonGameRun");
     }

@@ -1,18 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
-import Taro, { getCurrentInstance, useLoad, useDidShow, useUnload } from "@tarojs/taro";
-import {
-  getAwardedPoints,
-  getTrainingDifficultyLabel,
-  MAX_POINTS_PER_SESSION,
-  type TrainingDifficulty,
-} from "../../utils/trainingStorage";
+import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
+import { MAX_POINTS_PER_SESSION, type TrainingDifficulty } from "../../utils/trainingStorage";
 import { isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import { settleGame } from "../../services/gameSettlementService";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
-import StickerShareButton from "../../components/stickers/StickerShareButton";
-import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playTap } from "../../services/audio/audioFeedbackService";
 import {
   readRockPaperScissorsHighScore,
@@ -25,7 +17,7 @@ import {
 } from "./run";
 import "./index.scss";
 
-type GameState = "start" | "playing" | "gameover";
+type GameState = "playing";
 type Difficulty = 1 | 2 | 3 | 4;
 type HandType = "rock" | "paper" | "scissors";
 type OutcomeType = "win" | "draw" | "lose";
@@ -60,7 +52,6 @@ const OUTCOME_CONFIG: Record<
 export default function RockPaperScissors() {
   usePageShare("pages/rock-paper-scissors/index");
   const gauntletPreset = readGameGauntletModePreset();
-  const isGauntletPreset = gauntletPreset !== null;
   const presetDifficulty =
     gauntletPreset?.mode === "3" || gauntletPreset?.difficulty === "hard" ? 3 : 1;
   const runId =
@@ -75,19 +66,16 @@ export default function RockPaperScissors() {
     }
   }, [routeRun, runId]);
 
-  const [gameState, setGameState] = useState<GameState>("start");
-  useAmbientMusic(gameState === "start");
+  const [gameState] = useState<GameState>("playing");
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
-  const [difficulty, setDifficulty] = useState<Difficulty>(presetDifficulty);
+  const difficulty: Difficulty = routeRun?.payload.level ?? presetDifficulty;
   const [timeLeft, setTimeLeft] = useState(5);
   const [currentHand, setCurrentHand] = useState<HandType | null>(null);
   const [targetOutcome, setTargetOutcome] = useState<OutcomeType | null>(null);
   const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">("none");
   const [selectedHand, setSelectedHand] = useState<HandType | null>(null);
-  const [highScore, setHighScore] = useState(0);
-  const [isNewRecord, setIsNewRecord] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const autoStartedRef = useRef(false);
@@ -110,42 +98,13 @@ export default function RockPaperScissors() {
           achievedAt: new Date().toISOString(),
         };
         Taro.setStorageSync(key, JSON.stringify(newRecord));
-        setIsNewRecord(true);
         return true;
       }
 
-      setIsNewRecord(false);
       return false;
     },
     [difficulty, getCurrentHighScore],
   );
-
-  const refreshHighScore = useCallback(() => {
-    const record = getCurrentHighScore();
-    if (record) {
-      setHighScore(record.score);
-    } else {
-      setHighScore(0);
-    }
-  }, [getCurrentHighScore]);
-
-  useLoad(() => {
-    const storedStreak = Taro.getStorageSync("rps_streak");
-    if (storedStreak) setStreak(parseInt(storedStreak, 10));
-    refreshHighScore();
-  });
-
-  useDidShow(() => {
-    refreshHighScore();
-  });
-
-  useEffect(() => {
-    refreshHighScore();
-  }, [difficulty, refreshHighScore]);
-
-  useEffect(() => {
-    if (gameState === "start") refreshHighScore();
-  }, [gameState, refreshHighScore]);
 
   const generateQuestion = useCallback(() => {
     const hands: HandType[] = ["rock", "paper", "scissors"];
@@ -178,23 +137,15 @@ export default function RockPaperScissors() {
     setScore(0);
     setStreak(0);
     setBestStreak(0);
-    setIsNewRecord(false);
     setTimeLeft(DIFFICULTY_CONFIG[difficulty].time);
-    setGameState("playing");
     generateQuestion();
   }, [difficulty, generateQuestion]);
 
   useEffect(() => {
-    if (
-      !routeRun ||
-      routeRun.status !== "active" ||
-      autoStartedRef.current ||
-      gameState !== "start"
-    )
-      return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
     startGame();
-  }, [gameState, routeRun, startGame]);
+  }, [routeRun, startGame]);
 
   const getRewardDifficulty = useCallback((): TrainingDifficulty => {
     return difficulty >= 3 ? "hard" : "normal";
@@ -213,6 +164,7 @@ export default function RockPaperScissors() {
       durationSeconds,
       outcome: "completed",
     } as const;
+    const isNewBest = updateHighScore(finalScore);
     const routeSettlement = runId
       ? settleRockPaperScissorsCompletion(
           runId,
@@ -220,28 +172,18 @@ export default function RockPaperScissors() {
             score: finalScore,
             awardedPoints: 0,
             durationSeconds,
-            correctCount: bestStreak,
-            isNewBest: false,
+            correctCount: Math.floor(finalScore / (DIFFICULTY_POINTS[difficulty] || 2)),
+            bestStreak,
+            isNewBest,
           },
           settlementInput,
         )
       : null;
-    const settlement = routeSettlement?.settlement ?? (runId ? null : settleGame(settlementInput));
-    if (!settlement) return;
-    if (settlement.gauntletHandled) {
-      return;
-    }
-
-    if (runId) {
-      void Taro.redirectTo({
-        url: `/pages/rock-paper-scissors/result?runId=${encodeURIComponent(runId)}`,
-      });
-      return;
-    }
-
-    Taro.setStorageSync("rps_last_score", finalScore);
-    setGameState("gameover");
-    updateHighScore(finalScore);
+    if (!routeSettlement) return;
+    if (routeSettlement.settlement.gauntletHandled) return;
+    void Taro.redirectTo({
+      url: `/pages/rock-paper-scissors/result?runId=${encodeURIComponent(runId)}`,
+    });
   }, [bestStreak, difficulty, getRewardDifficulty, runId, score, updateHighScore]);
 
   const handleRouteBack = useCallback(() => {
@@ -250,7 +192,7 @@ export default function RockPaperScissors() {
       gameId: "rock-paper-scissors",
       score: 0,
       durationSeconds: Math.max(1, Math.round((Date.now() - routeRun.payload.startedAt) / 1_000)),
-      mode: `D${routeRun.payload.rounds}`,
+      mode: `D${routeRun.payload.level}`,
       difficulty: routeRun.payload.difficulty,
       outcome: "interrupted",
     });
@@ -325,99 +267,6 @@ export default function RockPaperScissors() {
       <View className="ambient ambient-one" />
       <View className="ambient ambient-two" />
       <View className="ambient-grid" />
-
-      {gameState === "start" && (
-        <View className="screen start-screen">
-          <View className="header-section-rps">
-            <View className="logo-container-rps">
-              <View className="logo-icon-rps">
-                <Text className="hero-mark-emoji hero-mark-emoji-rock">✊</Text>
-                <Text className="hero-mark-emoji hero-mark-emoji-paper">📄</Text>
-                <Text className="hero-mark-emoji hero-mark-emoji-scissors">✌️</Text>
-              </View>
-            </View>
-            <Text className="game-title-rps">逆向猜拳</Text>
-            <Text className="game-subtitle-rps">根据目标结果倒推答案，挑战你的反应和判断！</Text>
-
-            <View className="high-score-badge-rps">
-              <View className="high-score-icon-rps">
-                <Text className="high-score-icon-text-rps">🏆</Text>
-              </View>
-              <View className="high-score-content-rps">
-                <Text className="high-score-label-rps">当前难度最高分</Text>
-                <Text className="high-score-value-rps">{highScore}</Text>
-              </View>
-            </View>
-          </View>
-
-          <View className="rules-card-rps">
-            <View className="rules-header-rps">
-              <View className="rules-icon-rps">
-                <Text className="rules-icon-text-rps">📋</Text>
-              </View>
-              <Text className="rules-title-rps">游戏规则</Text>
-            </View>
-            <View className="rules-list-rps">
-              <View className="rule-item-rps">
-                <Text className="rule-number-rps">1.</Text>
-                <Text className="rule-text-rps">先看电脑出的手势</Text>
-              </View>
-              <View className="rule-item-rps">
-                <Text className="rule-number-rps">2.</Text>
-                <Text className="rule-text-rps">再看本轮要求你赢、平或输</Text>
-              </View>
-              <View className="rule-item-rps">
-                <Text className="rule-number-rps">3.</Text>
-                <Text className="rule-text-rps">选出正确手势，答错或超时结束</Text>
-              </View>
-            </View>
-          </View>
-
-          {!isGauntletPreset && (
-            <View className="difficulty-section-rps">
-              <View className="difficulty-header-rps">
-                <View className="difficulty-icon-rps">
-                  <Text className="difficulty-icon-text-rps">⏱️</Text>
-                </View>
-                <Text className="difficulty-title-rps">答题时间</Text>
-              </View>
-              <View className="difficulty-grid-rps">
-                {([1, 2, 3, 4] as Difficulty[]).map((d) => {
-                  const isSelected = difficulty === d;
-                  const config = DIFFICULTY_CONFIG[d];
-                  return (
-                    <View
-                      key={`diff-${d}`}
-                      className={`difficulty-item ${isSelected ? "difficulty-item-selected" : ""}`}
-                      onClick={() => setDifficulty(d)}
-                    >
-                      <View
-                        className="difficulty-badge-rps"
-                        style={{ backgroundColor: config.color }}
-                      >
-                        <Text className="difficulty-badge-text-rps">{config.time}s</Text>
-                      </View>
-                      <View className="difficulty-copy-rps">
-                        <Text className="difficulty-label">{config.label}</Text>
-                        <Text className="difficulty-reward-rps">
-                          积分{getTrainingDifficultyLabel(d >= 3 ? "hard" : "normal")}
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-          )}
-
-          <View className="start-button-container-rps floating-start-action">
-            <View className="start-button-rps" onClick={startGame}>
-              <Text className="start-button-text-rps">开始游戏</Text>
-            </View>
-          </View>
-          <View className="floating-start-spacer" />
-        </View>
-      )}
 
       {gameState === "playing" && currentHand && targetOutcome && (
         <View className="screen play-screen">
@@ -494,55 +343,6 @@ export default function RockPaperScissors() {
                 </View>
               );
             })}
-          </View>
-        </View>
-      )}
-
-      {gameState === "gameover" && (
-        <View className="result-screen">
-          <View className="result-card">
-            <Text className="result-title">本局成绩</Text>
-            <Text className="result-score">{Math.min(MAX_POINTS_PER_SESSION, score)}</Text>
-            <Text className="result-desc">
-              答对 {Math.floor(score / (DIFFICULTY_POINTS[difficulty] || 2))} 题 · 最高连击{" "}
-              {bestStreak} · {DIFFICULTY_CONFIG[difficulty].label}
-            </Text>
-            <Text className="result-desc">
-              积分{getTrainingDifficultyLabel(getRewardDifficulty())} · 获得{" "}
-              {getAwardedPoints(
-                "rock-paper-scissors",
-                Math.min(MAX_POINTS_PER_SESSION, score),
-                getRewardDifficulty(),
-              )}{" "}
-              积分
-            </Text>
-            <Text className="result-desc">
-              历史最高 {highScore}
-              {isNewRecord && score > 0 ? (
-                <Text className="result-highlight">，刷新纪录</Text>
-              ) : null}
-            </Text>
-          </View>
-
-          <View className="result-actions">
-            <StickerShareButton
-              gameTitle="石头剪刀布"
-              score={score}
-              pagePath="pages/rock-paper-scissors/index"
-              isGauntlet={isGauntletPreset}
-            />
-            <View className="primary-button" onClick={startGame}>
-              <Text className="button-text">再来一局</Text>
-            </View>
-            <View className="secondary-button" onClick={() => setGameState("start")}>
-              <Text className="button-text">返回开始页</Text>
-            </View>
-            <View
-              className="secondary-button"
-              onClick={() => Taro.reLaunch({ url: "/pages/index/index" })}
-            >
-              <Text className="button-text">返回游戏主页</Text>
-            </View>
           </View>
         </View>
       )}

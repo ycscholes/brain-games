@@ -20,6 +20,7 @@ export interface LoopLineRunResult {
   awardedPoints: number;
   durationSeconds: number;
   moveCount: number;
+  hintCount: number;
   isNewBest: boolean;
 }
 export type LoopLineRun = GameRun<LoopLineRunPayload, LoopLineRunResult>;

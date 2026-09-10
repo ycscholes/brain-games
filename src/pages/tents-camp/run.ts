@@ -20,6 +20,8 @@ export interface TentsCampRunResult {
   awardedPoints: number;
   durationSeconds: number;
   placedCount: number;
+  correctPuzzles: number;
+  bestCombo: number;
   isNewBest: boolean;
 }
 export type TentsCampRun = GameRun<TentsCampRunPayload, TentsCampRunResult>;

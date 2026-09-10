@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
-import Taro, { getCurrentInstance, useDidShow, useLoad, useUnload } from "@tarojs/taro";
-import { useAmbientMusic } from "../../hooks/useAmbientMusic";
+import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
 import {
   playComplete,
   playCorrect,
@@ -9,11 +8,9 @@ import {
   playWrong,
 } from "../../services/audio/audioFeedbackService";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import { settleGame } from "../../services/gameSettlementService";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
-import { getTrainingDifficultyLabel, type TrainingDifficulty } from "../../utils/trainingStorage";
+import { type TrainingDifficulty } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
-import StickerShareButton from "../../components/stickers/StickerShareButton";
 import {
   TENTS_CAMP_TOTAL_PUZZLES,
   coordKey,
@@ -29,7 +26,7 @@ import {
 import { abandonTentsCampRun, readTentsCampRun, settleTentsCampCompletion } from "./run";
 import "./index.scss";
 
-type Phase = "start" | "playing" | "feedback" | "finished";
+type Phase = "playing" | "feedback";
 
 const STORAGE_KEY_PREFIX = "tents_camp_best";
 const FEEDBACK_MS = 820;
@@ -49,7 +46,6 @@ function toCoord(index: number, size: number): TentsCampCoord {
 export default function TentsCamp() {
   usePageShare("pages/tents-camp/index");
   const gauntletPreset = readGameGauntletModePreset();
-  const isGauntletPreset = gauntletPreset !== null;
   const runId =
     typeof getCurrentInstance().router?.params?.runId === "string"
       ? (getCurrentInstance().router?.params?.runId ?? "")
@@ -62,12 +58,9 @@ export default function TentsCamp() {
     }
   }, [routeRun, runId]);
 
-  const [phase, setPhase] = useState<Phase>("start");
-  useAmbientMusic(phase === "start");
-  const [difficulty, setDifficulty] = useState<TrainingDifficulty>(
-    gauntletPreset?.difficulty ?? "normal",
-  );
-  const [best, setBest] = useState(0);
+  const [phase, setPhase] = useState<Phase>("playing");
+  const difficulty: TrainingDifficulty =
+    routeRun?.payload.difficulty ?? gauntletPreset?.difficulty ?? "normal";
   const [puzzles, setPuzzles] = useState<TentsCampPuzzle[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedTents, setSelectedTents] = useState<TentsCampCoord[]>([]);
@@ -76,15 +69,13 @@ export default function TentsCamp() {
   const [bestCombo, setBestCombo] = useState(0);
   const [correctPuzzles, setCorrectPuzzles] = useState(0);
   const [lastResult, setLastResult] = useState<TentsCampResult | null>(null);
-  const [awardedPoints, setAwardedPoints] = useState(0);
-  const [isNewBest, setIsNewBest] = useState(false);
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const startedAtRef = useRef(0);
   const puzzleStartedAtRef = useRef(0);
   const finishedRef = useRef(false);
   const autoStartedRef = useRef(false);
-  const phaseRef = useRef<Phase>("start");
+  const phaseRef = useRef<Phase>("playing");
   const scoreRef = useRef(0);
   const comboRef = useRef(0);
   const bestComboRef = useRef(0);
@@ -112,18 +103,6 @@ export default function TentsCamp() {
     const timer = setTimeout(callback, delay);
     timersRef.current.push(timer);
   }, []);
-
-  const refreshBest = useCallback(() => {
-    setBest(readBestScore(difficulty));
-  }, [difficulty]);
-
-  useLoad(() => {
-    refreshBest();
-  });
-
-  useDidShow(() => {
-    refreshBest();
-  });
 
   useEffect(() => {
     return () => clearTimers();
@@ -173,6 +152,10 @@ export default function TentsCamp() {
         difficulty,
         outcome: "completed",
       } as const;
+      const isNewBest = finalScore > readBestScore(difficulty);
+      if (isNewBest) {
+        Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, finalScore);
+      }
       const routeSettlement = runId
         ? settleTentsCampCompletion(
             runId,
@@ -181,39 +164,20 @@ export default function TentsCamp() {
               awardedPoints: 0,
               durationSeconds,
               placedCount: finalCorrectPuzzles,
-              isNewBest: finalScore > best,
+              correctPuzzles: finalCorrectPuzzles,
+              bestCombo,
+              isNewBest,
             },
             settlementInput,
           )
         : null;
-      const settlement =
-        routeSettlement?.settlement ?? (runId ? null : settleGame(settlementInput));
-      if (!settlement) return;
-      if (settlement.gauntletHandled) {
-        return;
-      }
-      const nextAwardedPoints = settlement.awardedPoints;
-
-      if (runId) {
-        void Taro.redirectTo({
-          url: `/pages/tents-camp/result?runId=${encodeURIComponent(runId)}`,
-        });
-        return;
-      }
-
-      setAwardedPoints(nextAwardedPoints);
-      setCorrectPuzzles(finalCorrectPuzzles);
-      setPhase("finished");
-
-      if (finalScore > best) {
-        Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, finalScore);
-        setBest(finalScore);
-        setIsNewBest(true);
-      } else {
-        setIsNewBest(false);
-      }
+      if (!routeSettlement) return;
+      if (routeSettlement.settlement.gauntletHandled) return;
+      void Taro.redirectTo({
+        url: `/pages/tents-camp/result?runId=${encodeURIComponent(runId)}`,
+      });
     },
-    [best, clearTimers, difficulty, runId],
+    [bestCombo, clearTimers, difficulty, runId],
   );
 
   const beginPuzzle = useCallback(
@@ -242,14 +206,11 @@ export default function TentsCamp() {
     setBestCombo(0);
     setCorrectPuzzles(0);
     setLastResult(null);
-    setAwardedPoints(0);
-    setIsNewBest(false);
     beginPuzzle(0);
   }, [beginPuzzle, clearTimers, difficulty]);
 
   useEffect(() => {
-    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || phase !== "start")
-      return;
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current) return;
     autoStartedRef.current = true;
     startGame();
   }, [phase, routeRun, startGame]);
@@ -320,83 +281,12 @@ export default function TentsCamp() {
     }, FEEDBACK_MS);
   };
 
-  const backToStart = () => {
-    clearTimers();
-    setPhase("start");
-    setPuzzles([]);
-    setCurrentIndex(0);
-    setSelectedTents([]);
-    setScore(0);
-    setCombo(0);
-    setBestCombo(0);
-    setCorrectPuzzles(0);
-    setLastResult(null);
-    setAwardedPoints(0);
-    setIsNewBest(false);
-    finishedRef.current = false;
-    refreshBest();
-  };
-
-  const accuracyText = `${Math.round((correctPuzzles / TENTS_CAMP_TOTAL_PUZZLES) * 100)}%`;
-
-  const renderDifficultyCard = (nextDifficulty: TrainingDifficulty, copy: string) => (
-    <View
-      className={`summary-item ${difficulty === nextDifficulty ? "summary-item-active" : ""}`}
-      onClick={() => setDifficulty(nextDifficulty)}
-    >
-      <Text className="summary-value">{getTrainingDifficultyLabel(nextDifficulty)}</Text>
-      <Text className="summary-label">{copy}</Text>
-    </View>
-  );
-
   return (
     <View className="tents-camp-page">
       {runId ? (
         <GameRouteBack gameId="tents-camp" runId={runId} onAbandon={handleRouteBack} />
       ) : null}
-      {phase === "start" ? (
-        <View className="tents-start start-screen">
-          <View className="header-section">
-            <View className="logo-icon">
-              <Text className="logo-emoji">T</Text>
-            </View>
-            <Text className="game-title">帐篷营地</Text>
-            <Text className="game-subtitle">根据树和行列数字布置帐篷</Text>
-            <View className="high-score-badge">
-              <Text className="high-score-label">当前难度最高</Text>
-              <Text className="high-score-value">{best}</Text>
-            </View>
-          </View>
-
-          <View className="rules-card">
-            <Text className="section-title">游戏规则</Text>
-            <Text className="rule-item">
-              1. 每棵树旁边要有一个帐篷，帐篷只能放在上下左右相邻格。
-            </Text>
-            <Text className="rule-item">2. 帐篷之间不能相邻，包含斜向相邻。</Text>
-            <Text className="rule-item">3. 边缘数字表示该行或该列需要的帐篷数量。</Text>
-          </View>
-
-          {!isGauntletPreset && (
-            <View className="summary-card">
-              <Text className="section-title">难度</Text>
-              <View className="summary-grid">
-                {renderDifficultyCard("normal", "6x6 · 5 顶帐篷")}
-                {renderDifficultyCard("hard", "7x7 · 6 顶帐篷")}
-              </View>
-            </View>
-          )}
-
-          <View className="floating-start-action">
-            <View className="primary-button" onClick={startGame}>
-              <Text className="primary-button-text">开始训练</Text>
-            </View>
-          </View>
-          <View className="floating-start-spacer" />
-        </View>
-      ) : null}
-
-      {(phase === "playing" || phase === "feedback") && currentPuzzle ? (
+      {currentPuzzle ? (
         <View className="tents-play">
           <View className="status-row">
             <View className="status-card">
@@ -490,46 +380,6 @@ export default function TentsCamp() {
               </Text>
             </View>
           ) : null}
-        </View>
-      ) : null}
-
-      {phase === "finished" ? (
-        <View className="tents-result">
-          <View className="result-card">
-            <Text className="result-kicker">训练完成</Text>
-            <Text className="result-score">{score}</Text>
-            <Text className="result-copy">
-              帐篷营地 · {getTrainingDifficultyLabel(difficulty)} {isNewBest ? "· 新最高" : ""}
-            </Text>
-            <View className="result-grid">
-              <View className="result-item">
-                <Text className="result-item-value">{accuracyText}</Text>
-                <Text className="result-item-label">正确率</Text>
-              </View>
-              <View className="result-item">
-                <Text className="result-item-value">{bestCombo}</Text>
-                <Text className="result-item-label">最佳连击</Text>
-              </View>
-              <View className="result-item">
-                <Text className="result-item-value">+{awardedPoints}</Text>
-                <Text className="result-item-label">宠物积分</Text>
-              </View>
-            </View>
-            <View className="result-actions">
-              <StickerShareButton
-                gameTitle="帐篷营地"
-                score={score}
-                pagePath="pages/tents-camp/index"
-                isGauntlet={isGauntletPreset}
-              />
-              <View className="secondary-button" onClick={backToStart}>
-                <Text className="secondary-button-text">返回设置</Text>
-              </View>
-              <View className="primary-button" onClick={startGame}>
-                <Text className="primary-button-text">再练一局</Text>
-              </View>
-            </View>
-          </View>
         </View>
       ) : null}
     </View>

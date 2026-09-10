@@ -1,20 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "@tarojs/components";
-import Taro, { getCurrentInstance, useDidShow, useLoad, useUnload } from "@tarojs/taro";
+import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
 import { resolvePetSpriteUrl } from "../../config/remoteAssets";
 import { syncPetData } from "../../utils/petStorage";
 import { resolveCustomPetSpriteUrl } from "../../services/custom-pet/customPetService";
 import { type TrainingDifficulty, type TrainingRewardPolicy } from "../../utils/trainingStorage";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import { settleGame } from "../../services/gameSettlementService";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
-import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { playTap } from "../../services/audio/audioFeedbackService";
 import { buildPetDisplayPool } from "../pet/petDisplayPool";
 import MemoryChallengePlayPanel from "./components/MemoryChallengePlayPanel";
-import MemoryChallengeResultPanel from "./components/MemoryChallengeResultPanel";
-import MemoryChallengeStartPanel from "./components/MemoryChallengeStartPanel";
 import {
   addMemoryChallengeRoundScore,
   createCalculationItem,
@@ -22,7 +18,6 @@ import {
   createVisualOptions,
   getMemoryChallengeModeRecord,
   getMemoryChallengeRewardCap,
-  getMemoryChallengeRoundPoints,
   getNBackTarget,
   getUnlockedPetItems,
   loadPetMemoryItemsFromAssets,
@@ -50,7 +45,7 @@ import shape08 from "../../assets/shapes/shape_08.svg";
 import shape09 from "../../assets/shapes/shape_09.svg";
 import shape10 from "../../assets/shapes/shape_10.svg";
 
-type GameState = "start" | "memorize" | "playing" | "gameover";
+type GameState = "memorize" | "playing";
 
 interface HighScoreRecord {
   score: number;
@@ -106,20 +101,6 @@ const MODE_CONFIG: Record<
     icon: "➕",
     description: "记住算式答案",
   },
-};
-
-const MEMORY_CONFIG: Record<
-  MemoryChallengeN,
-  {
-    label: string;
-    color: string;
-    description: string;
-  }
-> = {
-  1: { label: "1-Back", color: "#22C55E", description: "每题基础 1 分" },
-  2: { label: "2-Back", color: "#EAB308", description: "每题基础 2 分" },
-  3: { label: "3-Back", color: "#F97316", description: "每题基础 4 分" },
-  4: { label: "4-Back", color: "#EF4444", description: "每题基础 8 分" },
 };
 
 function getHighScoreKey(mode: MemoryChallengeMode, n: MemoryChallengeN) {
@@ -180,7 +161,6 @@ function pickRandomItem(items: MemoryChallengeItem[]) {
 export default function MemoryChallenge() {
   usePageShare("pages/memory-challenge/index");
   const gauntletPreset = readGameGauntletModePreset();
-  const isGauntletPreset = gauntletPreset !== null;
   const presetMode = gauntletPreset?.memoryMode ?? "shape";
   const presetN: MemoryChallengeN = gauntletPreset?.memoryN === "3" ? 3 : 1;
   const runId =
@@ -195,13 +175,10 @@ export default function MemoryChallenge() {
     }
   }, [routeRun, runId]);
 
-  const [gameState, setGameState] = useState<GameState>("start");
-  useAmbientMusic(gameState === "start");
-  const [mode, setMode] = useState<MemoryChallengeMode>(presetMode);
-  const [memoryN, setMemoryN] = useState<MemoryChallengeN>(presetN);
+  const [gameState, setGameState] = useState<GameState>("memorize");
+  const mode: MemoryChallengeMode = routeRun?.payload.mode ?? presetMode;
+  const memoryN: MemoryChallengeN = routeRun?.payload.n ?? presetN;
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(0);
-  const [isNewRecord, setIsNewRecord] = useState(false);
   const [round, setRound] = useState(1);
   const [timeLeft, setTimeLeft] = useState(ANSWER_TIME_SECONDS);
   const [currentItem, setCurrentItem] = useState<MemoryChallengeItem | null>(null);
@@ -210,8 +187,6 @@ export default function MemoryChallenge() {
   const [options, setOptions] = useState<MemoryChallengeOption[]>([]);
   const [feedback, setFeedback] = useState<"none" | "correct" | "wrong">("none");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [awardedPoints, setAwardedPoints] = useState(0);
   const [isLoadingPets, setIsLoadingPets] = useState(false);
   const [petItems, setPetItems] = useState<MemoryChallengeItem[]>([]);
 
@@ -241,17 +216,6 @@ export default function MemoryChallenge() {
     const timeout = setTimeout(callback, delayMs);
     timeoutRefs.current.push(timeout);
   }, []);
-
-  const refreshHighScore = useCallback(() => {
-    setHighScore(readHighScore(mode, memoryN)?.score ?? 0);
-  }, [memoryN, mode]);
-
-  useLoad(refreshHighScore);
-  useDidShow(refreshHighScore);
-
-  useEffect(() => {
-    refreshHighScore();
-  }, [refreshHighScore]);
 
   useEffect(() => clearTimers, [clearTimers]);
 
@@ -316,8 +280,6 @@ export default function MemoryChallenge() {
       historyRef.current = initialItems;
       setScore(0);
       setRound(1);
-      setCorrectCount(0);
-      setAwardedPoints(0);
       setMemorizeIndex(0);
       setCurrentItem(initialItems[0]);
       setTargetItem(null);
@@ -368,13 +330,7 @@ export default function MemoryChallenge() {
   }, [beginSession, isLoadingPets, memoryN, mode, petItems]);
 
   useEffect(() => {
-    if (
-      !routeRun ||
-      routeRun.status !== "active" ||
-      autoStartedRef.current ||
-      gameState !== "start" ||
-      isLoadingPets
-    )
+    if (!routeRun || routeRun.status !== "active" || autoStartedRef.current || isLoadingPets)
       return;
     autoStartedRef.current = true;
     void startGame();
@@ -389,12 +345,9 @@ export default function MemoryChallenge() {
           achievedAt: new Date().toISOString(),
         };
         Taro.setStorageSync(getHighScoreKey(selectedMode, selectedN), JSON.stringify(nextRecord));
-        setHighScore(finalScore);
-        setIsNewRecord(true);
-        return;
+        return true;
       }
-      setHighScore(currentRecord.score);
-      setIsNewRecord(false);
+      return false;
     },
     [],
   );
@@ -419,6 +372,7 @@ export default function MemoryChallenge() {
       rewardPolicy,
       outcome: "completed",
     } as const;
+    const isNewBest = updateHighScore(finalScore, selectedMode, selectedN);
     const routeSettlement = runId
       ? settleMemoryChallengeCompletion(
           runId,
@@ -426,30 +380,18 @@ export default function MemoryChallenge() {
             score: finalScore,
             awardedPoints: 0,
             durationSeconds,
+            correctCount: correctCountRef.current,
             level: round,
-            isNewBest: false,
+            isNewBest,
           },
           settlementInput,
         )
       : null;
-    const settlement = routeSettlement?.settlement ?? (runId ? null : settleGame(settlementInput));
-    if (!settlement) return;
-    if (settlement.gauntletHandled) {
-      return;
-    }
-
-    if (runId) {
-      void Taro.redirectTo({
-        url: `/pages/memory-challenge/result?runId=${encodeURIComponent(runId)}`,
-      });
-      return;
-    }
-
-    Taro.setStorageSync("memory_last_score", finalScore);
-
-    setAwardedPoints(settlement.awardedPoints);
-    updateHighScore(finalScore, selectedMode, selectedN);
-    setGameState("gameover");
+    if (!routeSettlement) return;
+    if (routeSettlement.settlement.gauntletHandled) return;
+    void Taro.redirectTo({
+      url: `/pages/memory-challenge/result?runId=${encodeURIComponent(runId)}`,
+    });
   }, [clearTimers, round, runId, updateHighScore]);
 
   const handleRouteBack = useCallback(() => {
@@ -531,7 +473,6 @@ export default function MemoryChallenge() {
       setScore(nextScore);
       const nextCorrectCount = correctCountRef.current + 1;
       correctCountRef.current = nextCorrectCount;
-      setCorrectCount(nextCorrectCount);
       if (activeModeRef.current === "pet") {
         activePoolRef.current = getUnlockedPetItems(allPetItemsRef.current, nextCorrectCount);
       }
@@ -553,23 +494,6 @@ export default function MemoryChallenge() {
       {runId ? (
         <GameRouteBack gameId="memory-challenge" runId={runId} onAbandon={handleRouteBack} />
       ) : null}
-      {gameState === "start" && (
-        <MemoryChallengeStartPanel
-          memoryN={memoryN}
-          mode={mode}
-          highScore={highScore}
-          isGauntletPreset={isGauntletPreset}
-          isLoadingPets={isLoadingPets}
-          answerTimeSeconds={ANSWER_TIME_SECONDS}
-          modeConfig={MODE_CONFIG}
-          memoryConfig={MEMORY_CONFIG}
-          getRoundPoints={getMemoryChallengeRoundPoints}
-          onModeChange={setMode}
-          onMemoryNChange={setMemoryN}
-          onStart={startGame}
-        />
-      )}
-
       {(gameState === "memorize" || gameState === "playing") && currentItem && (
         <MemoryChallengePlayPanel
           gameState={gameState}
@@ -584,23 +508,6 @@ export default function MemoryChallenge() {
           selectedId={selectedId}
           feedback={feedback}
           onSelect={handleSelect}
-        />
-      )}
-
-      {gameState === "gameover" && (
-        <MemoryChallengeResultPanel
-          score={score}
-          correctCount={correctCount}
-          modeLabel={MODE_CONFIG[activeModeRef.current].label}
-          memoryLabel={MEMORY_CONFIG[activeNRef.current].label}
-          awardedPoints={awardedPoints}
-          rewardCap={getMemoryChallengeRewardCap(activeModeRef.current, activeNRef.current)}
-          highScore={highScore}
-          isNewRecord={isNewRecord}
-          isGauntlet={isGauntletPreset}
-          onRestart={startGame}
-          onBackToStart={() => setGameState("start")}
-          onBackHome={() => Taro.reLaunch({ url: "/pages/index/index" })}
         />
       )}
     </View>

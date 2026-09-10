@@ -20,6 +20,8 @@ export interface HidatoRunResult {
   awardedPoints: number;
   durationSeconds: number;
   moveCount: number;
+  mistakeCount: number;
+  hintCount: number;
   isNewBest: boolean;
 }
 export type HidatoRun = GameRun<HidatoRunPayload, HidatoRunResult>;
