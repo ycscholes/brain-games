@@ -54,14 +54,15 @@ Cici的脑部锻炼是一个基于 Taro 和 React 的微信小程序脑力训练
 ## 项目结构
 
 ```text
-src/pages/                    页面、游戏实现及对应说明
+src/pages/                    Taro 路由入口、游戏实现及对应说明
 src/utils/                    训练记录、积分、宠物存储、分享和资源预加载
 src/services/user-data/       本地数据仓库、事件通知和云同步
 src/config/                   远程素材地址解析
 cloudfunctions/               登录、读取与同步用户数据的云函数
 tests/unit/                   纯逻辑与存储单元测试
 docs/                         长期维护的全局规则和候选池
-docs/architecture.md          架构总览入口（Task 11 落地；当前为预留链接）
+docs/architecture.md          架构总览、依赖方向、生命周期和证据边界
+docs/game-module-contract.md  新增/迁移游戏的模块契约与验收清单
 docs/verification.md          快速检查与题库认证说明
 docs/superpowers/generation/  图片生成流程与提示词
 asset-backups/                CloudBase 远程图片的 Git 源文件备份
@@ -95,8 +96,8 @@ npm run build:weapp     # 仅生成微信小程序构建产物，不是真机证
 npm run build:h5        # H5 生产构建
 npm run lint            # ESLint 与项目规则检查
 npm run typecheck       # TypeScript 类型检查
-npm test                # 默认快速确定性测试（当前基线约 49 秒）
-npm run test:puzzle-certification # 车阵突围完整题库认证（约 11 分钟，按触发条件运行）
+npm test                # 默认快速确定性测试（排除认证套件）
+npm run test:puzzle-certification # 车阵突围完整题库认证（按触发条件运行）
 npm run verify          # 快速测试、类型、lint、素材、音频、密钥与 diff 检查
 npm run assets:check    # 校验 CloudBase 远程图片备份
 npm run assets:upload   # 上传远程图片，需要有效云环境配置
@@ -137,8 +138,10 @@ npm run deploy:cloudfunctions # 部署云函数与自定义宠物恢复定时器
 ## 文档维护
 
 - 根 README 负责项目总览与开发入口。
-- [架构指南](docs/architecture.md)是架构入口（Task 11 将落地正文；当前仅保留链接）。
+- [架构指南](docs/architecture.md)是新 GPT session 的架构、生命周期和验证证据入口。
+- [游戏模块契约](docs/game-module-contract.md)规定 route registration、gameCatalog、share metadata、pure logic、tests、points economy、gauntlet 和 result surface。
 - [验证与题库认证](docs/verification.md)记录默认测试、认证触发条件和证据边界。
+- [仓库清理清单](docs/repository-cleanup.md)记录仍有外部所有者的保留项和已完成的清理证据；Task 11 不删除其中的保留项。
 - 每个游戏目录的 README 是该游戏当前规则的唯一说明。
 - [积分系统](docs/points-economy.md)维护跨游戏奖励规则。
 - [游戏候选池](docs/game-candidate-pool.md)只记录尚未实现的候选方向。
