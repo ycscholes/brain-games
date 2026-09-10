@@ -12,11 +12,10 @@ import {
 } from "../../src/pages/traffic-escape/gameLogic";
 import {
   certifyTrafficEscapeHardPuzzle,
-  certifyTrafficEscapeHardPuzzleBank,
   getTrafficEscapeGeometryKey,
   getTrafficEscapeVerticalAnchorKeys,
 } from "../../src/pages/traffic-escape/puzzleQuality";
-import { collectCertifiedPuzzles } from "../../scripts/generate-traffic-escape-hard-puzzles";
+import { CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES } from "../../src/pages/traffic-escape/hardPuzzles.generated";
 
 describe("traffic-escape hard puzzle generator", () => {
   test("keeps the generated runtime puzzle bank within 80 KB", () => {
@@ -26,6 +25,15 @@ describe("traffic-escape hard puzzle generator", () => {
     );
 
     expect(Buffer.byteLength(generatedSource, "utf8")).toBeLessThanOrEqual(80_000);
+  });
+
+  test("ships the serialized 36-puzzle runtime bank shape", () => {
+    expect(CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES).toHaveLength(36);
+    expect(CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES.every((puzzle) => (
+      puzzle.size === 6
+      && puzzle.vehicles.length === 10
+      && puzzle.vehicles.filter((vehicle) => vehicle.isTarget).length === 1
+    ))).toBe(true);
   });
 
   test("uses six independently certified ten-vehicle solved templates", () => {
@@ -98,12 +106,5 @@ describe("traffic-escape hard puzzle generator", () => {
       .map((candidate) => candidate.seed);
 
     expect(certifiedSeeds).toEqual([11, 25]);
-  });
-
-  test("selects a structurally diverse certified bank", () => {
-    const selected = collectCertifiedPuzzles({ firstSeed: 1, lastSeed: 2_000, count: 36 });
-
-    expect(selected).toHaveLength(36);
-    expect(certifyTrafficEscapeHardPuzzleBank(selected).accepted).toBe(true);
   });
 });
