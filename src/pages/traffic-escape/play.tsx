@@ -2,15 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import { resolveTrafficVehicleAtlasUrl } from "../../config/remoteAssets";
-import { addPointsToPet } from "../../utils/petStorage";
-import { abandonGameRun } from "../../utils/gameFlowSession";
-import { completeGauntletLegIfNeeded } from "../../utils/gameGauntlet";
-import { getAwardedPoints, recordTrainingSession } from "../../utils/trainingStorage";
+import { abandonTrafficEscapeRun, readTrafficEscapeRun, settleTrafficEscapeCompletion, updateTrafficEscapeRun, type TrafficEscapeRun } from "./run";
 import { usePageShare } from "../../utils/share";
 import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import { applyTrafficEscapeMove, getTrafficEscapeHint, isTrafficEscapeSolved, scoreTrafficEscapeGame, type TrafficEscapeMove, type TrafficVehicle } from "./gameLogic";
 import { getTrafficVehicleAtlasClassName, getTrafficVehicleAtlasCropStyle, getTrafficVehicleAtlasMaskStyle } from "./vehicleAtlas";
-import { readTrafficEscapeRun, settleTrafficEscapeRun, updateTrafficEscapeRun, type TrafficEscapeRun } from "./run";
 import "./index.scss";
 
 const STORAGE_KEY_PREFIX = "traffic_escape_best";
@@ -39,14 +35,24 @@ export default function TrafficEscapePlay() {
     const { payload } = nextRun;
     const durationSeconds = Math.max(1, Math.round((Date.now() - payload.startedAt) / 1_000));
     const score = scoreTrafficEscapeGame({ difficulty: payload.difficulty, elapsedSeconds: durationSeconds, moveCount: payload.trafficState.moveCount, hintCount: nextHints, completed: true });
-    const awardedPoints = getAwardedPoints("traffic-escape", score, payload.difficulty);
     const best = Number(Taro.getStorageSync(`${STORAGE_KEY_PREFIX}_${payload.difficulty}`) || 0) || 0;
-    const settled = settleTrafficEscapeRun(runId, { score, awardedPoints, durationSeconds, moveCount: payload.trafficState.moveCount, hintCount: nextHints, isNewBest: score > best });
+    const settled = settleTrafficEscapeCompletion(runId, {
+      score,
+      awardedPoints: 0,
+      durationSeconds,
+      moveCount: payload.trafficState.moveCount,
+      hintCount: nextHints,
+      isNewBest: score > best,
+    }, {
+      gameId: "traffic-escape",
+      score,
+      durationSeconds,
+      difficulty: payload.difficulty,
+      outcome: "completed",
+    });
     if (!settled) return;
     playComplete();
-    if (completeGauntletLegIfNeeded({ gameId: "traffic-escape", score, awardedPoints, durationSeconds, difficulty: payload.difficulty, outcome: "completed" })) return;
-    addPointsToPet("traffic-escape", score, payload.difficulty);
-    recordTrainingSession({ gameId: "traffic-escape", score, awardedPoints, durationSeconds, difficulty: payload.difficulty, outcome: "completed" });
+    if (settled.settlement.gauntletHandled) return;
     if (score > best) Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${payload.difficulty}`, score);
     void Taro.redirectTo({ url: `/pages/traffic-escape/result?runId=${encodeURIComponent(runId)}` });
   }, [runId]);
@@ -66,9 +72,14 @@ export default function TrafficEscapePlay() {
   const backToStart = useCallback(() => {
     if (!run || run.status !== "active") return;
     const durationSeconds = Math.max(1, Math.round((Date.now() - run.payload.startedAt) / 1_000));
-    if (!abandonGameRun("traffic-escape", runId)) return;
-    if (completeGauntletLegIfNeeded({ gameId: "traffic-escape", score: 0, awardedPoints: 0, durationSeconds, difficulty: run.payload.difficulty, outcome: "interrupted" })) return;
-    recordTrainingSession({ gameId: "traffic-escape", score: 0, awardedPoints: 0, durationSeconds, difficulty: run.payload.difficulty, outcome: "interrupted" });
+    const settlement = abandonTrafficEscapeRun(runId, {
+      gameId: "traffic-escape",
+      score: 0,
+      durationSeconds,
+      difficulty: run.payload.difficulty,
+      outcome: "interrupted",
+    });
+    if (!settlement || settlement.gauntletHandled) return;
     void Taro.navigateBack();
   }, [run, runId]);
 

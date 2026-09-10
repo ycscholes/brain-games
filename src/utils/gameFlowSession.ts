@@ -111,3 +111,17 @@ export function abandonGameRun<TPayload extends object>(gameId: TrainingGameId, 
     updatedAt: new Date().toISOString(),
   });
 }
+
+export function updateSettledGameRunResult<TPayload extends object, TResult extends object>(
+  gameId: TrainingGameId,
+  runId: string,
+  patch: Partial<TResult>,
+): GameRun<TPayload, TResult> | null {
+  const run = readGameRun<TPayload, TResult>(gameId, runId);
+  if (!run || run.status !== "settled" || !run.result) return null;
+  return saveGameRun({
+    ...run,
+    updatedAt: new Date().toISOString(),
+    result: { ...run.result, ...patch },
+  });
+}

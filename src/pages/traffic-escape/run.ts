@@ -1,11 +1,15 @@
 import type { TrainingDifficulty } from "../../utils/trainingStorage";
 import {
+  abandonGameRun,
   createGameRun,
   readGameRun,
   settleGameRun,
+  updateSettledGameRunResult,
   updateGameRun,
   type GameRun,
 } from "../../utils/gameFlowSession";
+import { settleGame } from "../../services/gameSettlementService";
+import type { GameSettlementInput, GameSettlementResult } from "../../domain/training/settlement";
 import {
   createTrafficEscapePuzzle,
   createTrafficEscapeState,
@@ -58,4 +62,26 @@ export function updateTrafficEscapeRun(runId: string, patch: Partial<TrafficEsca
 
 export function settleTrafficEscapeRun(runId: string, result: TrafficEscapeRunResult) {
   return settleGameRun<TrafficEscapeRunPayload, TrafficEscapeRunResult>("traffic-escape", runId, result);
+}
+
+export function settleTrafficEscapeCompletion(
+  runId: string,
+  result: TrafficEscapeRunResult,
+  settlementInput: GameSettlementInput,
+): { run: TrafficEscapeRun; settlement: GameSettlementResult } | null {
+  const settled = settleTrafficEscapeRun(runId, result);
+  if (!settled) return null;
+  const settlement = settleGame(settlementInput);
+  const updated = updateSettledGameRunResult<TrafficEscapeRunPayload, TrafficEscapeRunResult>(
+    "traffic-escape",
+    runId,
+    { awardedPoints: settlement.awardedPoints },
+  );
+  return { run: updated ?? settled, settlement };
+}
+
+export function abandonTrafficEscapeRun(runId: string, settlementInput: GameSettlementInput): GameSettlementResult | null {
+  const abandoned = abandonGameRun<TrafficEscapeRunPayload>("traffic-escape", runId);
+  if (!abandoned) return null;
+  return settleGame(settlementInput);
 }
