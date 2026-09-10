@@ -109,7 +109,7 @@ durable architecture and module-contract docs.
 | `docs/superpowers/specs/2026-09-08-traffic-escape-official-account-article-design.md` (`b1f4760`) | Evidence-backed copy boundaries and no-unverified-media policy remain editorial rationale for the tracked article. |
 | `docs/superpowers/specs/2026-09-08-traffic-escape-structural-diversity-design.md` (`b78bae1`) | Template quotas, deterministic selection and offline-only metrics remain puzzle-generation rationale; visual acceptance remains open. |
 | `docs/superpowers/specs/2026-09-10-repository-architecture-cleanup-design.md` (`d797671`) | Retained as the approved cleanup rationale; the brief explicitly requires it to remain. |
-| `docs/superpowers/plans/2026-09-10-repository-architecture-cleanup.md` (`e389b35`) | Retained because later cleanup phases remain unfinished and the brief explicitly requires the execution plan to remain until final closeout. |
+| `docs/superpowers/plans/2026-09-10-repository-architecture-cleanup.md` (`e389b35`) | Deleted by the closeout commit after the final gate; the historical plan remains traceable in Git, while the durable cleanup design is retained above. |
 | `docs/reviews/2026-07-29-game-experience-ui-recommendations.md` (`60ad275`) | Proposal only; no implementation authority or completed migration proves the recommendations obsolete, so retain as product rationale. |
 | `docs/reviews/2026-07-29-timer-lifecycle-audit.md` (`590bdfa`) | Retain because it records four source-proven cancellation gaps requiring separate design approval and follow-up. |
 

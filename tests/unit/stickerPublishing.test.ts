@@ -192,6 +192,7 @@ describe("sticker publishing", () => {
     const pageFiles = [
       "mental-math/components/MentalMathResultPanel.tsx",
       "pattern-completion/components/PatternResultPanel.tsx",
+      "music-theory/components/MusicTheoryResultPanel.tsx",
       "digit-span/index.tsx",
       "twenty-four/index.tsx",
       "rock-paper-scissors/index.tsx",
