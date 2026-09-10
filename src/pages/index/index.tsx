@@ -222,6 +222,8 @@ export default function Index() {
   useUserDataChange(refreshDashboard);
 
   const activePet: PetData | null = petData.pets.find((pet) => pet.id === petData.activePetId) ?? null;
+  const activePetId = activePet?.id;
+  const activePetStatus = activePet?.status;
   const aliveCount = petData.pets.filter((pet) => pet.status !== "dead").length;
 
   useEffect(() => {
@@ -232,7 +234,7 @@ export default function Index() {
 
     setHomePetMotion("idle");
 
-    if (!activePet || activePet.status === "dead") {
+    if (!activePetId || activePetStatus === "dead") {
       return undefined;
     }
 
@@ -251,7 +253,7 @@ export default function Index() {
         homePetMotionTimerRef.current = null;
       }
     };
-  }, [activePet]);
+  }, [activePetId, activePetStatus]);
 
   const petHungerPercent = activePet
     ? Math.max(0, Math.min(100, Math.round((activePet.hunger / MAX_HUNGER) * 100)))

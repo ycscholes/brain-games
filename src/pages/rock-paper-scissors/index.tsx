@@ -117,8 +117,7 @@ export default function RockPaperScissors() {
     if (gameState === "start") refreshHighScore();
   }, [gameState, refreshHighScore]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const generateQuestion = () => {
+  const generateQuestion = useCallback(() => {
     const hands: HandType[] = ["rock", "paper", "scissors"];
     const outcomes: OutcomeType[] = ["win", "draw", "lose"];
 
@@ -129,7 +128,7 @@ export default function RockPaperScissors() {
     setTargetOutcome(randomOutcome);
     setFeedback("none");
     setSelectedHand(null);
-  };
+  }, []);
 
   const checkAnswer = (playerHand: HandType): boolean => {
     if (!currentHand || !targetOutcome) return false;
@@ -152,7 +151,7 @@ export default function RockPaperScissors() {
     setTimeLeft(DIFFICULTY_CONFIG[difficulty].time);
     setGameState("playing");
     generateQuestion();
-  }, [difficulty, generateQuestion]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [difficulty, generateQuestion]);
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || gameState !== "start") return;

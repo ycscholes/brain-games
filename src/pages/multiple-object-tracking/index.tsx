@@ -200,8 +200,7 @@ export default function MultipleObjectTracking() {
     refreshBest();
   }, [refreshBest]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const clearRoundRuntime = () => {
+  const clearRoundRuntime = useCallback(() => {
     if (previewTimerRef.current) {
       clearTimeout(previewTimerRef.current);
       previewTimerRef.current = null;
@@ -211,21 +210,20 @@ export default function MultipleObjectTracking() {
       cancelFrame(frameRef.current);
       frameRef.current = null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     return () => {
       clearRoundRuntime();
     };
-  }, []);
+  }, [clearRoundRuntime]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const syncCircles = (nextCircles: MovingCircle[]) => {
+  const syncCircles = useCallback((nextCircles: MovingCircle[]) => {
     circlesRef.current = nextCircles;
     setCircles(nextCircles.map((circle) => ({ ...circle })));
-  };
+  }, []);
 
-  const stopTracking = (nextCircles?: MovingCircle[]) => {
+  const stopTracking = useCallback((nextCircles?: MovingCircle[]) => {
     if (frameRef.current !== null) {
       cancelFrame(frameRef.current);
       frameRef.current = null;
@@ -240,9 +238,9 @@ export default function MultipleObjectTracking() {
     setSelectedIds([]);
     setRoundMessage(`请选择 ${targetCount} 个你一直在追踪的目标圆圈`);
     setPhase("selecting");
-  };
+  }, [syncCircles, targetCount]);
 
-  const stepCircles = (currentCircles: MovingCircle[], dt: number) => {
+  const stepCircles = useCallback((currentCircles: MovingCircle[], dt: number) => {
     const nextCircles = currentCircles.map((circle) => {
       const nextCircle = {
         ...circle,
@@ -309,10 +307,9 @@ export default function MultipleObjectTracking() {
     }
 
     return nextCircles;
-  };
+  }, [boardSize]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const startTracking = () => {
+  const startTracking = useCallback(() => {
     setPhase("tracking");
     setRoundMessage("所有圆圈将持续移动 5 秒，请保持专注");
     lastFrameTimeRef.current = 0;
@@ -347,7 +344,7 @@ export default function MultipleObjectTracking() {
     };
 
     frameRef.current = requestFrame(animate);
-  };
+  }, [rewardDifficulty, stepCircles, stopTracking, syncCircles]);
 
   const startRound = useCallback((nextTargetCount: number, nextSpeed: number) => {
     clearRoundRuntime();
@@ -363,7 +360,7 @@ export default function MultipleObjectTracking() {
     previewTimerRef.current = setTimeout(() => {
       startTracking();
     }, PREVIEW_DURATION[rewardDifficulty]);
-  }, [boardSize, clearRoundRuntime, rewardDifficulty, startTracking, syncCircles]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [boardSize, clearRoundRuntime, rewardDifficulty, startTracking, syncCircles]);
 
   const startGame = useCallback(() => {
     playTap();

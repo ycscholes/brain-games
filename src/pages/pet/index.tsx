@@ -207,6 +207,8 @@ export default function PetPage() {
     [pets],
   );
   const activePet = pets.find((pet) => pet.id === storageData.activePetId) || null;
+  const activePetId = activePet?.id;
+  const activePetStatus = activePet?.status;
   const nextAdoptionCost = getNextAdoptionCost(storageData);
   const foodItems = useMemo(
     () => getFoodItemsForPetSkin(activePet?.skin || selectedSkin),
@@ -265,11 +267,11 @@ export default function PetPage() {
   }, [clearFeedBurstTimer, clearFeedbackTimer, clearPetMotionTimer]);
 
   useEffect(() => {
-    if (activePet) {
-      playPetMotion(activePet.status === "dead" ? "idle" : "cuddle", 720);
+    if (activePetStatus) {
+      playPetMotion(activePetStatus === "dead" ? "idle" : "cuddle", 720);
       playFeedback("switch", 1100);
     }
-  }, [activePet, playFeedback, playPetMotion]);
+  }, [activePetId, activePetStatus, playFeedback, playPetMotion]);
 
   const closeAdoptionDialog = useCallback(() => {
     setShowAdoptionDialog(false);

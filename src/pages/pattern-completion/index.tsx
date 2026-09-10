@@ -172,13 +172,12 @@ export default function PatternCompletion() {
       ? currentQuestion.distractorExplanations?.[selectedOptionId] ?? ""
       : "";
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const clearTicker = () => {
+  const clearTicker = useCallback(() => {
     if (tickerRef.current) {
       clearInterval(tickerRef.current);
       tickerRef.current = null;
     }
-  };
+  }, []);
 
   const refreshBest = useCallback(() => {
     const value = Number(
@@ -204,7 +203,7 @@ export default function PatternCompletion() {
     return () => {
       clearTicker();
     };
-  }, []);
+  }, [clearTicker]);
 
   useEffect(() => {
     if (phase !== "playing" && phase !== "reveal") {
@@ -219,7 +218,7 @@ export default function PatternCompletion() {
     return () => {
       clearTicker();
     };
-  }, [phase]);
+  }, [clearTicker, phase]);
 
   const finishGame = useCallback(
     (settledFinalScore: number) => {
@@ -267,18 +266,17 @@ export default function PatternCompletion() {
         setIsNewBest(false);
       }
     },
-    [best, rewardDifficulty],
+    [best, clearTicker, rewardDifficulty],
   );
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const resetRoundState = () => {
+  const resetRoundState = useCallback(() => {
     setSelectedOptionId("");
     setHintVisible(false);
     setHintUsedForCurrent(false);
     setCurrentScoreResult(null);
     setLastAnswerCorrect(false);
     questionStartedAtRef.current = Date.now();
-  };
+  }, []);
 
   const startGame = useCallback(() => {
     playTap();
@@ -299,7 +297,7 @@ export default function PatternCompletion() {
     setFinalScore(0);
     setIsNewBest(false);
     resetRoundState();
-  }, [clearTicker, resetRoundState, rewardDifficulty]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [clearTicker, resetRoundState, rewardDifficulty]);
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;

@@ -245,7 +245,7 @@ export default function ColorTrap() {
     setAwardedPoints(0);
     setIsNewBest(false);
     beginQuestion(0, nextQuestions);
-  }, [beginQuestion, clearTimers, difficulty]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [beginQuestion, clearTimers, difficulty]);
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;

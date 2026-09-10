@@ -66,13 +66,12 @@ export default function TwentyFour() {
     scoreRef.current = score;
   }, [score]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const clearTimer = () => {
+  const clearTimer = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-  };
+  }, []);
 
   const refreshBest = useCallback(() => {
     const value = Number(
@@ -96,7 +95,7 @@ export default function TwentyFour() {
 
   useEffect(() => {
     return () => clearTimer();
-  }, []);
+  }, [clearTimer]);
 
   const finishGame = useCallback(() => {
     clearTimer();
@@ -135,7 +134,7 @@ export default function TwentyFour() {
     }
 
     setPhase("finished");
-  }, [best]);
+  }, [best, clearTimer]);
 
   useEffect(() => {
     if (phase !== "playing") return undefined;
@@ -151,7 +150,7 @@ export default function TwentyFour() {
     }, 1000);
 
     return () => clearTimer();
-  }, [finishGame, phase]);
+  }, [clearTimer, finishGame, phase]);
 
   const startGame = useCallback(() => {
     playTap();
@@ -165,7 +164,7 @@ export default function TwentyFour() {
     setIsNewBest(false);
     setHintUsed(false);
     setPhase("playing");
-  }, [clearTimer]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [clearTimer]);
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;

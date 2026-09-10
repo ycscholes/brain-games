@@ -446,8 +446,7 @@ export default function FarmCount() {
     }, READY_MS);
   }, [clearTimers, schedule, yardQuestions]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const startSpeedGame = async (currentPetDisplayPool = petDisplayPool) => {
+  const startSpeedGame = useCallback(async (currentPetDisplayPool = petDisplayPool) => {
     clearTimers();
     const preloadRunId = preloadRunIdRef.current + 1;
     preloadRunIdRef.current = preloadRunId;
@@ -478,10 +477,9 @@ export default function FarmCount() {
 
     startedAtRef.current = Date.now();
     beginSpeedQuestion(0, nextQuestions);
-  };
+  }, [beginSpeedQuestion, clearTimers, difficulty, petDisplayPool, resetRoundState]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const startYardGame = () => {
+  const startYardGame = useCallback(() => {
     clearTimers();
     preloadRunIdRef.current += 1;
     const nextQuestions = createHeadCountSession(yardDifficulty, speedDifficulty);
@@ -491,7 +489,7 @@ export default function FarmCount() {
     setYardQuestions(nextQuestions);
     setSpeedQuestions([]);
     beginYardQuestion(0, nextQuestions);
-  };
+  }, [beginYardQuestion, clearTimers, resetRoundState, speedDifficulty, yardDifficulty]);
 
   const startGame = useCallback(() => {
     playTap();
@@ -501,7 +499,7 @@ export default function FarmCount() {
       return;
     }
     void startSpeedGame(currentPetDisplayPool);
-  }, [mode, refreshPetSkinPool, startSpeedGame, startYardGame]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mode, refreshPetSkinPool, startSpeedGame, startYardGame]);
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;

@@ -103,22 +103,13 @@ export default function MentalMath() {
   };
 
   // 生成数学题
-  const generateProblem = (): MathProblem => {
-    return generateMathProblem(selectedStageId, customConfig);
-  };
-
-  // 生成选项
-  const generateOptions = (correctAnswer: number): number[] => {
-    return generateMathOptions(correctAnswer);
-  };
-
   // 获取存储键名 based on mode and stage
-  const getStorageKey = (): string => {
+  const getStorageKey = useCallback((): string => {
     return `mental_math_high_score_${gameMode}_${selectedStageId}`;
-  };
+  }, [gameMode, selectedStageId]);
 
   // 获取当前最高分
-  const getCurrentHighScore = (): HighScoreRecord | null => {
+  const getCurrentHighScore = useCallback((): HighScoreRecord | null => {
     const key = getStorageKey();
     const legacyKey = gameMode === "timed" ? "mental_math_high_score_timed" : "mental_math_high_score_death";
     const record = Taro.getStorageSync(key) || (selectedStageId === DEFAULT_MATH_STAGE_ID ? Taro.getStorageSync(legacyKey) : "");
@@ -136,11 +127,10 @@ export default function MentalMath() {
       }
     }
     return null;
-  };
+  }, [gameMode, getStorageKey, selectedStageId]);
 
   // 更新最高分
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const updateHighScore = (newScore: number): boolean => {
+  const updateHighScore = useCallback((newScore: number): boolean => {
     const key = getStorageKey();
     const currentRecord = getCurrentHighScore();
 
@@ -161,7 +151,7 @@ export default function MentalMath() {
     }
     setIsNewRecord(false);
     return false;
-  };
+  }, [gameMode, getCurrentHighScore, getStorageKey]);
 
   // 刷新最高分
   const refreshHighScore = useCallback(() => {
@@ -208,18 +198,16 @@ export default function MentalMath() {
 
   }, [selectedStageId]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const getEffectiveScoreForPoints = (rawScore: number) => {
+  const getEffectiveScoreForPoints = useCallback((rawScore: number) => {
     return isCustomStage ? rawScore * customProfile.coefficient : rawScore;
-  };
+  }, [customProfile.coefficient, isCustomStage]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const getTrainingModeRecord = () => {
+  const getTrainingModeRecord = useCallback(() => {
     if (!isCustomStage) {
       return `${gameMode}:${selectedStageId}`;
     }
     return `${gameMode}:${CUSTOM_MATH_STAGE_ID}:${customProfile.operationsKey}:${customProfile.rangeKey}:x${customProfile.coefficient}`;
-  };
+  }, [customProfile.coefficient, customProfile.operationsKey, customProfile.rangeKey, gameMode, isCustomStage, selectedStageId]);
 
   const handleToggleCustomOperation = (operation: CustomMathOperation | "all") => {
     if (operation === "all") {
@@ -273,15 +261,14 @@ useDidShow(() => {
 });
 
 // 下一题
-// eslint-disable-next-line react-hooks/exhaustive-deps
-const nextProblem = () => {
-  const problem = generateProblem();
-  const opts = generateOptions(problem.answer);
+const nextProblem = useCallback(() => {
+  const problem = generateMathProblem(selectedStageId, customConfig);
+  const opts = generateMathOptions(problem.answer);
   setCurrentProblem(problem);
   setOptions(opts);
   setSelectedAnswer(null);
   setFeedback("none");
-};
+}, [customConfig, selectedStageId]);
 
 // 开始新游戏
 const startGame = useCallback(() => {
@@ -296,7 +283,7 @@ const startGame = useCallback(() => {
   setFeedback("none");
   nextProblem();
   setGameState("playing");
-}, [clearAllTimers, nextProblem]); // eslint-disable-line react-hooks/exhaustive-deps
+}, [clearAllTimers, nextProblem]);
 
 useEffect(() => {
   if (!isGauntletPreset || autoStartedRef.current || gameState !== "start") return;
@@ -333,11 +320,11 @@ const handleGameOver = useCallback(() => {
   });
   setGameState("gameover");
   updateHighScore(finalScore);
-}, [clearAllTimers, gameMode, getEffectiveScoreForPoints, getTrainingModeRecord, rewardDifficulty, updateHighScore]); // eslint-disable-line react-hooks/exhaustive-deps
+}, [clearAllTimers, gameMode, getEffectiveScoreForPoints, getTrainingModeRecord, rewardDifficulty, updateHighScore]);
 
 // 计时器
 useEffect(() => {
-  if (gameState === "playing" && gameMode === "timed" && timeLeft > 0) {
+  if (gameState === "playing" && gameMode === "timed") {
     timerRef.current = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 0.1) {
@@ -353,7 +340,7 @@ useEffect(() => {
   return () => {
     if (timerRef.current) clearInterval(timerRef.current);
   };
-}, [gameState, gameMode, handleGameOver, timeLeft]);
+}, [gameState, gameMode, handleGameOver]);
 
 // 处理答案选择
 const handleSelect = (answer: number) => {

@@ -26,11 +26,14 @@ export default function TrafficEscapePlay() {
 
   useEffect(() => { if (!run || run.status !== "active") void Taro.redirectTo({ url: "/pages/traffic-escape/index" }); }, [run]);
   useEffect(() => { let active = true; void resolveTrafficVehicleAtlasUrl().then((url) => { if (active) setVehicleAtlasUrl(url); }).catch(() => { if (active) setVehicleAtlasUrl(""); }); return () => { active = false; }; }, []);
+  const runStartedAt = run?.payload.startedAt;
+  const runStatus = run?.status;
+
   useEffect(() => {
-    if (!run || run.status !== "active") return undefined;
-    const timer = setInterval(() => setElapsedSeconds(Math.max(1, Math.floor((Date.now() - run.payload.startedAt) / 1000))), 1_000);
+    if (!runStartedAt || runStatus !== "active") return undefined;
+    const timer = setInterval(() => setElapsedSeconds(Math.max(1, Math.floor((Date.now() - runStartedAt) / 1000))), 1_000);
     return () => clearInterval(timer);
-  }, [run]);
+  }, [runStartedAt, runStatus]);
 
   const finishGame = useCallback((nextRun: TrafficEscapeRun, nextHints: number) => {
     const { payload } = nextRun;

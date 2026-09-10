@@ -59,6 +59,7 @@ export default function WordScramble() {
   const questionStartedAtRef = useRef(0);
   const finishedRef = useRef(false);
   const autoStartedRef = useRef(false);
+  const beginQuestionRef = useRef<(questionIndex: number, nextQuestions?: WordScrambleQuestion[]) => void>(() => undefined);
   const phaseRef = useRef<Phase>("start");
   const selectedWordRef = useRef("");
   const scoreRef = useRef(0);
@@ -183,77 +184,7 @@ export default function WordScramble() {
     }
   }, [best, clearTimers, difficulty]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const beginQuestion = (questionIndex: number, nextQuestions = questions) => {
-    clearTimers();
-    const question = nextQuestions[questionIndex];
-    setCurrentIndex(questionIndex);
-    setSelectedWord("");
-    setSelectedCharIds([]);
-    setIsHintVisible(false);
-    setLastResult(null);
-    questionStartedAtRef.current = Date.now();
-    setPhase("playing");
-
-    schedule(() => {
-      setIsHintVisible(true);
-    }, question?.hintDelayMs ?? 0);
-
-    schedule(() => {
-      if (!question) {
-        return;
-      }
-
-      submitAnswer("", question, true);
-    }, question?.timeLimitMs ?? 6000);
-  };
-
-  const startGame = useCallback(() => {
-    playTap();
-    clearTimers();
-    const nextQuestions = createWordScrambleSession(difficulty);
-    finishedRef.current = false;
-    startedAtRef.current = Date.now();
-    setQuestions(nextQuestions);
-    setScore(0);
-    setCombo(0);
-    setBestCombo(0);
-    setCorrectQuestions(0);
-    setSelectedWord("");
-    setSelectedCharIds([]);
-    setIsHintVisible(false);
-    setLastResult(null);
-    setAwardedPoints(0);
-    setIsNewBest(false);
-    beginQuestion(0, nextQuestions);
-  }, [beginQuestion, clearTimers, difficulty]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
-    autoStartedRef.current = true;
-    startGame();
-  }, [isGauntletPreset, phase, startGame]);
-
-  const backToStart = () => {
-    clearTimers();
-    setPhase("start");
-    setQuestions([]);
-    setCurrentIndex(0);
-    setScore(0);
-    setCombo(0);
-    setBestCombo(0);
-    setCorrectQuestions(0);
-    setSelectedWord("");
-    setSelectedCharIds([]);
-    setIsHintVisible(false);
-    setLastResult(null);
-    setAwardedPoints(0);
-    setIsNewBest(false);
-    finishedRef.current = false;
-    refreshBest();
-  };
-
-  const submitAnswer = (word: string, question = currentQuestion, timedOut = false) => {
+  const submitAnswer = useCallback((word: string, question = currentQuestion, timedOut = false) => {
     if (phaseRef.current !== "playing" || !question || selectedWordRef.current) {
       return;
     }
@@ -287,8 +218,78 @@ export default function WordScramble() {
         return;
       }
 
-      beginQuestion(currentIndexRef.current + 1);
+      beginQuestionRef.current(currentIndexRef.current + 1);
     }, FEEDBACK_MS);
+  }, [clearTimers, currentQuestion, finishGame, schedule]);
+
+  const beginQuestion = useCallback((questionIndex: number, nextQuestions = questions) => {
+    clearTimers();
+    const question = nextQuestions[questionIndex];
+    setCurrentIndex(questionIndex);
+    setSelectedWord("");
+    setSelectedCharIds([]);
+    setIsHintVisible(false);
+    setLastResult(null);
+    questionStartedAtRef.current = Date.now();
+    setPhase("playing");
+
+    schedule(() => {
+      setIsHintVisible(true);
+    }, question?.hintDelayMs ?? 0);
+
+    schedule(() => {
+      if (!question) {
+        return;
+      }
+
+      submitAnswer("", question, true);
+    }, question?.timeLimitMs ?? 6000);
+  }, [clearTimers, questions, schedule, submitAnswer]);
+  beginQuestionRef.current = beginQuestion;
+
+  const startGame = useCallback(() => {
+    playTap();
+    clearTimers();
+    const nextQuestions = createWordScrambleSession(difficulty);
+    finishedRef.current = false;
+    startedAtRef.current = Date.now();
+    setQuestions(nextQuestions);
+    setScore(0);
+    setCombo(0);
+    setBestCombo(0);
+    setCorrectQuestions(0);
+    setSelectedWord("");
+    setSelectedCharIds([]);
+    setIsHintVisible(false);
+    setLastResult(null);
+    setAwardedPoints(0);
+    setIsNewBest(false);
+    beginQuestion(0, nextQuestions);
+  }, [beginQuestion, clearTimers, difficulty]);
+
+  useEffect(() => {
+    if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
+    autoStartedRef.current = true;
+    startGame();
+  }, [isGauntletPreset, phase, startGame]);
+
+  const backToStart = () => {
+    clearTimers();
+    setPhase("start");
+    setQuestions([]);
+    setCurrentIndex(0);
+    setScore(0);
+    setCombo(0);
+    setBestCombo(0);
+    setCorrectQuestions(0);
+    setSelectedWord("");
+    setSelectedCharIds([]);
+    setIsHintVisible(false);
+    setLastResult(null);
+    setAwardedPoints(0);
+    setIsNewBest(false);
+    finishedRef.current = false;
+    refreshBest();
   };
 
   const handleCharTap = (choiceId: string) => {
