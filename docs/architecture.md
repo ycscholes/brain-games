@@ -171,6 +171,21 @@ authority. The [cleanup checklist](repository-cleanup.md) records retained
 external entries and completed cleanup evidence; do not turn it into a license
 to delete user-owned output or active runtime assets.
 
+## Durable decision authority
+
+The following map is the extracted authority for decisions that used to be
+spread across historical plans and specs. When a historical document disagrees
+with one of these entries, the current source and its focused tests win.
+
+| Decision | Current authority | Focused evidence |
+| --- | --- | --- |
+| Traffic Escape start/play/result flow, serialized run payload and the local repeated-call settlement guard | `src/pages/traffic-escape/{index,play,result}.tsx`, `src/pages/traffic-escape/run.ts`, `src/utils/gameFlowSession.ts` | `tests/unit/gameFlowSession.test.ts`, `tests/unit/trafficEscapeRun.test.ts`, `tests/unit/trafficEscapeGameLogic.test.ts` |
+| Shared points conversion, ordinary settlement order and gauntlet exception | `src/utils/trainingStorage.ts`, `src/utils/gameGauntlet.ts`, `docs/points-economy.md` | `tests/unit/trainingStorage.test.ts`, `tests/unit/gameGauntlet.test.ts`, `tests/unit/stickerRewards.test.ts` |
+| Route/catalog/share registration and compatibility IDs/storage | `src/app.config.ts`, `src/config/gameCatalog.ts`, `src/utils/share.ts`, `src/utils/trainingStorage.ts` | `tests/unit/gameCatalog.test.ts`, `tests/unit/readmeGameCatalog.test.ts`, `tests/unit/trainingStorage.test.ts` |
+| Versioned CloudBase-backed image/audio paths and source backups | `config/remote-assets.json`, `src/config/remoteAssets.ts`, `asset-backups/cloudbase-*`, `scripts/sync-cloudbase-images.sh`, `scripts/sync-cloudbase-audio.sh` | `tests/unit/remoteAssets.test.ts`, `npm run assets:check`, `npm run audio:check` |
+| Certified hard-puzzle source of truth and deterministic offline generation | `scripts/generate-traffic-escape-hard-puzzles.ts`, `src/pages/traffic-escape/hardPuzzles.generated.ts`, `package.json` (`traffic-escape:puzzles`) | `tests/unit/trafficEscapePuzzleGenerator.test.ts`, `tests/unit/trafficEscapePuzzleQuality.test.ts`, `tests/certification/trafficEscapePuzzleCertification.test.ts` |
+| Local/static verification versus live WeChat, device, CloudBase and CDN evidence | `package.json` scripts, `docs/verification.md`, this guide | `tests/unit/architectureDocs.test.ts`; commands below prove only their stated local/static boundary |
+
 ## Verification commands and evidence boundaries
 
 Use the smallest relevant command during development, then the phase gate:

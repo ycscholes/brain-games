@@ -88,6 +88,20 @@ suite. The generator filters the finite `CURATED_HARD_CANDIDATE_SEEDS` list by
 an approved range and selects structurally diverse entries. It is not an
 exhaustive scan of every integer seed in that range.
 
+## Current authority map
+
+These source and test locations are the durable evidence behind the contract;
+historical implementation plans are not a second contract.
+
+| Contract decision | Current source | Focused tests |
+| --- | --- | --- |
+| Route, catalog and share registration | `src/app.config.ts`, `src/config/gameCatalog.ts`, `src/utils/share.ts` | `tests/unit/gameCatalog.test.ts`, `tests/unit/readmeGameCatalog.test.ts` |
+| Pure rules, score boundaries and state transitions | each game's `gameLogic.ts` (or equivalent domain file) | `tests/unit/*GameLogic.test.ts`, including `trafficEscapeGameLogic.test.ts` and `trafficEscapeRun.test.ts` |
+| Shared points pipeline and gauntlet short-circuit | `src/utils/trainingStorage.ts`, `src/utils/gameGauntlet.ts` | `tests/unit/trainingStorage.test.ts`, `tests/unit/gameGauntlet.test.ts` |
+| Ordinary result-only sticker action and reward safety | `src/components/stickers/StickerShareButton.tsx`, `src/utils/stickerPublishing.ts`, `src/utils/stickerRewards.ts` | `tests/unit/stickerPublishing.test.ts`, `tests/unit/stickerRewards.test.ts` |
+| Compatibility aliases and storage shape | `src/utils/trainingStorage.ts`, each route's existing storage constants | `tests/unit/trainingStorage.test.ts` and the affected game's focused suite |
+| Generated runtime inputs | generator named by the generated-file header and `package.json` script | generator/quality unit tests plus the explicit certification suite |
+
 ## Validation checklist
 
 Before committing a game change, run the focused logic/route tests and the
