@@ -65,6 +65,7 @@ export default function ColorTrap() {
   const bestComboRef = useRef(0);
   const correctQuestionsRef = useRef(0);
   const currentIndexRef = useRef(0);
+  const beginQuestionRef = useRef<(questionIndex: number, nextQuestions?: ColorTrapQuestion[]) => void>(() => undefined);
   const currentQuestion = questions[currentIndex] ?? null;
 
   const clearTimers = useCallback(() => {
@@ -207,9 +208,9 @@ export default function ColorTrap() {
         return;
       }
 
-      beginQuestion(currentIndexRef.current + 1);
+      beginQuestionRef.current(currentIndexRef.current + 1);
     }, FEEDBACK_MS);
-  }, [clearTimers, currentQuestion, finishGame, schedule, selectedColorId]);
+  }, [clearTimers, currentQuestion, finishGame, schedule]);
 
   const beginQuestion = useCallback((questionIndex: number, nextQuestions = questions) => {
     clearTimers();
@@ -225,8 +226,9 @@ export default function ColorTrap() {
       submitAnswer("", question, true);
     }, question?.timeLimitMs ?? 4000);
   }, [clearTimers, questions, schedule, submitAnswer]);
+  beginQuestionRef.current = beginQuestion;
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     playTap();
     clearTimers();
     const nextQuestions = createColorTrapSession(difficulty);
@@ -243,7 +245,7 @@ export default function ColorTrap() {
     setAwardedPoints(0);
     setIsNewBest(false);
     beginQuestion(0, nextQuestions);
-  };
+  }, [beginQuestion, clearTimers, difficulty]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;

@@ -1,6 +1,6 @@
+import Taro from "@tarojs/taro";
 import { resolveAudioAssetUrl, type AudioAssetId } from "../../config/remoteAssets";
 import { readAppSettings, type AppSettings } from "../../utils/trainingStorage";
-import Taro from "@tarojs/taro";
 
 type AudioContext = ReturnType<typeof Taro.createInnerAudioContext>;
 type SoundCue = "tap" | "correct" | "wrong" | "complete";

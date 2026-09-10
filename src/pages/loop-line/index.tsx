@@ -301,7 +301,7 @@ export default function LoopLinePage() {
           </View>
 
           <View className={`loop-line-board loop-line-board-${puzzle.size}`} style={boardStyle}>
-            {Array.from({ length: puzzle.size + 1 }, (_, row) => Array.from({ length: puzzle.size + 1 }, (_, col) => (
+            {Array.from({ length: puzzle.size + 1 }, (_, row) => Array.from({ length: puzzle.size + 1 }, (_dotIndex, col) => (
               <View key={`dot-${row}-${col}`} className="loop-line-dot" style={{ gridRowStart: row * 2 + 1, gridColumnStart: col * 2 + 1 }} />
             )))}
             {puzzle.clues.map((clue) => {

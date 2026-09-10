@@ -221,7 +221,7 @@ export default function NumberOrder() {
     score,
   ]);
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     playTap();
     clearTimers();
     const nextQuestions = createNumberOrderSession(rewardDifficulty);
@@ -244,7 +244,7 @@ export default function NumberOrder() {
       setPhase("revealing");
       scheduleEchoPlayback(nextQuestions[0]);
     }, READY_MS);
-  };
+  }, [clearTimers, rewardDifficulty, schedule, scheduleEchoPlayback]);
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;

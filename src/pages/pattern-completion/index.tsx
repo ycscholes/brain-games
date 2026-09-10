@@ -172,6 +172,7 @@ export default function PatternCompletion() {
       ? currentQuestion.distractorExplanations?.[selectedOptionId] ?? ""
       : "";
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const clearTicker = () => {
     if (tickerRef.current) {
       clearInterval(tickerRef.current);
@@ -269,6 +270,7 @@ export default function PatternCompletion() {
     [best, rewardDifficulty],
   );
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const resetRoundState = () => {
     setSelectedOptionId("");
     setHintVisible(false);
@@ -278,7 +280,7 @@ export default function PatternCompletion() {
     questionStartedAtRef.current = Date.now();
   };
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     playTap();
     clearTicker();
 
@@ -297,13 +299,13 @@ export default function PatternCompletion() {
     setFinalScore(0);
     setIsNewBest(false);
     resetRoundState();
-  };
+  }, [clearTicker, resetRoundState, rewardDifficulty]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
     autoStartedRef.current = true;
     startGame();
-  }, [isGauntletPreset, phase]);
+  }, [isGauntletPreset, phase, startGame]);
 
   const backToStart = () => {
     clearTicker();

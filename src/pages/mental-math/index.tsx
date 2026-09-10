@@ -86,16 +86,16 @@ export default function MentalMath() {
   }, [score]);
 
   // Clear all pending timers
-  const clearAllTimers = () => {
+  const clearAllTimers = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-  };
+  }, []);
 
   useEffect(() => {
     return () => {
       clearAllTimers();
     };
-  }, []);
+  }, [clearAllTimers]);
 
   // Get current high score based on selected mode
   const getHighScore = () => {
@@ -139,6 +139,7 @@ export default function MentalMath() {
   };
 
   // 更新最高分
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const updateHighScore = (newScore: number): boolean => {
     const key = getStorageKey();
     const currentRecord = getCurrentHighScore();
@@ -205,12 +206,14 @@ export default function MentalMath() {
       setHighScoreDeath(0);
     }
 
-  }, [gameMode, selectedStageId]);
+  }, [selectedStageId]);
 
-  const getEffectiveScoreForPoints = (score: number) => {
-    return isCustomStage ? score * customProfile.coefficient : score;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const getEffectiveScoreForPoints = (rawScore: number) => {
+    return isCustomStage ? rawScore * customProfile.coefficient : rawScore;
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const getTrainingModeRecord = () => {
     if (!isCustomStage) {
       return `${gameMode}:${selectedStageId}`;
@@ -269,8 +272,19 @@ useDidShow(() => {
   refreshHighScore();
 });
 
+// 下一题
+// eslint-disable-next-line react-hooks/exhaustive-deps
+const nextProblem = () => {
+  const problem = generateProblem();
+  const opts = generateOptions(problem.answer);
+  setCurrentProblem(problem);
+  setOptions(opts);
+  setSelectedAnswer(null);
+  setFeedback("none");
+};
+
 // 开始新游戏
-const startGame = () => {
+const startGame = useCallback(() => {
   playTap();
   clearAllTimers();
   setTimeLeft(30);
@@ -282,23 +296,44 @@ const startGame = () => {
   setFeedback("none");
   nextProblem();
   setGameState("playing");
-};
+}, [clearAllTimers, nextProblem]); // eslint-disable-line react-hooks/exhaustive-deps
 
 useEffect(() => {
   if (!isGauntletPreset || autoStartedRef.current || gameState !== "start") return;
   autoStartedRef.current = true;
   startGame();
-}, [gameState, isGauntletPreset]);
+}, [gameState, isGauntletPreset, startGame]);
 
-// 下一题
-const nextProblem = () => {
-  const problem = generateProblem();
-  const opts = generateOptions(problem.answer);
-  setCurrentProblem(problem);
-  setOptions(opts);
-  setSelectedAnswer(null);
-  setFeedback("none");
-};
+// 游戏结束
+const handleGameOver = useCallback(() => {
+  clearAllTimers();
+  const finalScore = gameMode === "timed" ? scoreRef.current : correctCountRef.current;
+  const effectiveScore = getEffectiveScoreForPoints(finalScore);
+  const awardedPoints = getAwardedPoints("mental-math", effectiveScore, rewardDifficulty);
+  if (completeGauntletLegIfNeeded({
+    gameId: "mental-math",
+    score: finalScore,
+    awardedPoints,
+    mode: getTrainingModeRecord(),
+    difficulty: rewardDifficulty,
+    outcome: "completed",
+  })) {
+    return;
+  }
+
+  Taro.setStorageSync("mental_math_last_score", finalScore);
+  addPointsToPet("mental-math", effectiveScore, rewardDifficulty);
+  recordTrainingSession({
+    gameId: "mental-math",
+    score: finalScore,
+    awardedPoints,
+    mode: getTrainingModeRecord(),
+    difficulty: rewardDifficulty,
+    outcome: "completed",
+  });
+  setGameState("gameover");
+  updateHighScore(finalScore);
+}, [clearAllTimers, gameMode, getEffectiveScoreForPoints, getTrainingModeRecord, rewardDifficulty, updateHighScore]); // eslint-disable-line react-hooks/exhaustive-deps
 
 // 计时器
 useEffect(() => {
@@ -318,7 +353,7 @@ useEffect(() => {
   return () => {
     if (timerRef.current) clearInterval(timerRef.current);
   };
-}, [gameState, gameMode]);
+}, [gameState, gameMode, handleGameOver, timeLeft]);
 
 // 处理答案选择
 const handleSelect = (answer: number) => {
@@ -359,37 +394,6 @@ const handleSelect = (answer: number) => {
       }, 500);
     }
   }
-};
-
-// 游戏结束
-const handleGameOver = () => {
-  clearAllTimers();
-  const finalScore = gameMode === "timed" ? scoreRef.current : correctCountRef.current;
-  const effectiveScore = getEffectiveScoreForPoints(finalScore);
-  const awardedPoints = getAwardedPoints("mental-math", effectiveScore, rewardDifficulty);
-  if (completeGauntletLegIfNeeded({
-    gameId: "mental-math",
-    score: finalScore,
-    awardedPoints,
-    mode: getTrainingModeRecord(),
-    difficulty: rewardDifficulty,
-    outcome: "completed",
-  })) {
-    return;
-  }
-
-  Taro.setStorageSync("mental_math_last_score", finalScore);
-  addPointsToPet("mental-math", effectiveScore, rewardDifficulty);
-  recordTrainingSession({
-    gameId: "mental-math",
-    score: finalScore,
-    awardedPoints,
-    mode: getTrainingModeRecord(),
-    difficulty: rewardDifficulty,
-    outcome: "completed",
-  });
-  setGameState("gameover");
-  updateHighScore(finalScore);
 };
 
 // 获取选项样式

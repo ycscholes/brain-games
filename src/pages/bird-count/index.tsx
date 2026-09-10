@@ -446,6 +446,7 @@ export default function FarmCount() {
     }, READY_MS);
   }, [clearTimers, schedule, yardQuestions]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const startSpeedGame = async (currentPetDisplayPool = petDisplayPool) => {
     clearTimers();
     const preloadRunId = preloadRunIdRef.current + 1;
@@ -479,6 +480,7 @@ export default function FarmCount() {
     beginSpeedQuestion(0, nextQuestions);
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const startYardGame = () => {
     clearTimers();
     preloadRunIdRef.current += 1;
@@ -491,7 +493,7 @@ export default function FarmCount() {
     beginYardQuestion(0, nextQuestions);
   };
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     playTap();
     const currentPetDisplayPool = refreshPetSkinPool();
     if (mode === "yard") {
@@ -499,13 +501,13 @@ export default function FarmCount() {
       return;
     }
     void startSpeedGame(currentPetDisplayPool);
-  };
+  }, [mode, refreshPetSkinPool, startSpeedGame, startYardGame]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
     autoStartedRef.current = true;
     startGame();
-  }, [isGauntletPreset, phase]);
+  }, [isGauntletPreset, phase, startGame]);
 
   const advanceAfterSpeedQuestion = useCallback((nextScore: number, nextCorrectQuestions: number) => {
     if (currentIndex >= BIRD_COUNT_TOTAL_QUESTIONS - 1) {

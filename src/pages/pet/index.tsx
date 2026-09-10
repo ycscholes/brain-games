@@ -269,7 +269,7 @@ export default function PetPage() {
       playPetMotion(activePet.status === "dead" ? "idle" : "cuddle", 720);
       playFeedback("switch", 1100);
     }
-  }, [activePet?.id, activePet?.status, playFeedback, playPetMotion]);
+  }, [activePet, playFeedback, playPetMotion]);
 
   const closeAdoptionDialog = useCallback(() => {
     setShowAdoptionDialog(false);

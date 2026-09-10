@@ -30,7 +30,7 @@ export default function TrafficEscapePlay() {
     if (!run || run.status !== "active") return undefined;
     const timer = setInterval(() => setElapsedSeconds(Math.max(1, Math.floor((Date.now() - run.payload.startedAt) / 1000))), 1_000);
     return () => clearInterval(timer);
-  }, [run?.payload.startedAt, run?.status]);
+  }, [run]);
 
   const finishGame = useCallback((nextRun: TrafficEscapeRun, nextHints: number) => {
     const { payload } = nextRun;

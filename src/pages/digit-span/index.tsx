@@ -151,18 +151,18 @@ export default function DigitSpan() {
     timeoutsRef.current.push(doneTimer);
   }, [rewardDifficulty]);
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     playTap();
     setScore(0);
     setIsNewBest(false);
     startRound(INITIAL_LENGTH[rewardDifficulty]);
-  };
+  }, [rewardDifficulty, startRound]);
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
     autoStartedRef.current = true;
     startGame();
-  }, [isGauntletPreset, phase]);
+  }, [isGauntletPreset, phase, startGame]);
 
   const appendDigit = (digit: string) => {
     if (phase !== "input" || inputValue.length >= roundLength) {

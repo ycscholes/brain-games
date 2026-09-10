@@ -200,6 +200,7 @@ export default function MultipleObjectTracking() {
     refreshBest();
   }, [refreshBest]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const clearRoundRuntime = () => {
     if (previewTimerRef.current) {
       clearTimeout(previewTimerRef.current);
@@ -218,6 +219,7 @@ export default function MultipleObjectTracking() {
     };
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const syncCircles = (nextCircles: MovingCircle[]) => {
     circlesRef.current = nextCircles;
     setCircles(nextCircles.map((circle) => ({ ...circle })));
@@ -309,6 +311,7 @@ export default function MultipleObjectTracking() {
     return nextCircles;
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const startTracking = () => {
     setPhase("tracking");
     setRoundMessage("所有圆圈将持续移动 5 秒，请保持专注");
@@ -346,7 +349,7 @@ export default function MultipleObjectTracking() {
     frameRef.current = requestFrame(animate);
   };
 
-  const startRound = (nextTargetCount: number, nextSpeed: number) => {
+  const startRound = useCallback((nextTargetCount: number, nextSpeed: number) => {
     clearRoundRuntime();
     setTargetCount(nextTargetCount);
     setSpeed(nextSpeed);
@@ -360,20 +363,20 @@ export default function MultipleObjectTracking() {
     previewTimerRef.current = setTimeout(() => {
       startTracking();
     }, PREVIEW_DURATION[rewardDifficulty]);
-  };
+  }, [boardSize, clearRoundRuntime, rewardDifficulty, startTracking, syncCircles]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     playTap();
     setScore(0);
     setIsNewBest(false);
     startRound(INITIAL_TARGET_COUNT[rewardDifficulty], BASE_SPEED + (rewardDifficulty === "hard" ? HARD_SPEED_BONUS : 0));
-  };
+  }, [rewardDifficulty, startRound]);
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
     autoStartedRef.current = true;
     startGame();
-  }, [isGauntletPreset, phase]);
+  }, [isGauntletPreset, phase, startGame]);
 
   const backToStart = () => {
     clearRoundRuntime();

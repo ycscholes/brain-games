@@ -78,6 +78,7 @@ export default function SpatialRotation() {
   const [isNewBest, setIsNewBest] = useState(false);
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const beginPuzzleRef = useRef<(puzzleIndex: number, nextPuzzles?: SpatialRotationPuzzle[]) => void>(() => undefined);
   const startedAtRef = useRef(0);
   const puzzleStartedAtRef = useRef(0);
   const finishedRef = useRef(false);
@@ -231,7 +232,7 @@ export default function SpatialRotation() {
         return;
       }
 
-      beginPuzzle(currentIndexRef.current + 1);
+      beginPuzzleRef.current(currentIndexRef.current + 1);
     }, FEEDBACK_MS);
   }, [clearTimers, currentPuzzle, finishGame, schedule]);
 
@@ -249,8 +250,9 @@ export default function SpatialRotation() {
       submitAnswer(null, puzzle, true);
     }, puzzle?.timeLimitMs ?? 6000);
   }, [clearTimers, puzzles, schedule, submitAnswer]);
+  beginPuzzleRef.current = beginPuzzle;
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     playTap();
     clearTimers();
     const nextPuzzles = createSpatialRotationSession(difficulty);
@@ -267,7 +269,7 @@ export default function SpatialRotation() {
     setAwardedPoints(0);
     setIsNewBest(false);
     beginPuzzle(0, nextPuzzles);
-  };
+  }, [beginPuzzle, clearTimers, difficulty]);
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;

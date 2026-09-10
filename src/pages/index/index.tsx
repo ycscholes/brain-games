@@ -251,7 +251,7 @@ export default function Index() {
         homePetMotionTimerRef.current = null;
       }
     };
-  }, [activePet?.id, activePet?.status]);
+  }, [activePet]);
 
   const petHungerPercent = activePet
     ? Math.max(0, Math.min(100, Math.round((activePet.hunger / MAX_HUNGER) * 100)))

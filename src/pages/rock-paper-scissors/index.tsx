@@ -66,16 +66,14 @@ export default function RockPaperScissors() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const autoStartedRef = useRef(false);
 
-  const getHighScoreKey = () => `rps_highscore_D${difficulty}`;
-
-  const getCurrentHighScore = (): RockPaperScissorsHighScore | null => {
-    const key = getHighScoreKey();
+  const getCurrentHighScore = useCallback((): RockPaperScissorsHighScore | null => {
+    const key = `rps_highscore_D${difficulty}`;
     const record = Taro.getStorageSync(key);
     return readRockPaperScissorsHighScore(record);
-  };
+  }, [difficulty]);
 
-  const updateHighScore = (newScore: number) => {
-    const key = getHighScoreKey();
+  const updateHighScore = useCallback((newScore: number) => {
+    const key = `rps_highscore_D${difficulty}`;
     const currentRecord = getCurrentHighScore();
 
     if (!currentRecord || newScore > currentRecord.score) {
@@ -90,7 +88,7 @@ export default function RockPaperScissors() {
 
     setIsNewRecord(false);
     return false;
-  };
+  }, [difficulty, getCurrentHighScore]);
 
   const refreshHighScore = useCallback(() => {
     const record = getCurrentHighScore();
@@ -99,7 +97,7 @@ export default function RockPaperScissors() {
     } else {
       setHighScore(0);
     }
-  }, [difficulty]);
+  }, [getCurrentHighScore]);
 
   useLoad(() => {
     const storedStreak = Taro.getStorageSync("rps_streak");
@@ -119,6 +117,7 @@ export default function RockPaperScissors() {
     if (gameState === "start") refreshHighScore();
   }, [gameState, refreshHighScore]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const generateQuestion = () => {
     const hands: HandType[] = ["rock", "paper", "scissors"];
     const outcomes: OutcomeType[] = ["win", "draw", "lose"];
@@ -144,7 +143,7 @@ export default function RockPaperScissors() {
     return result === targetOutcome;
   };
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     playTap();
     setScore(0);
     setStreak(0);
@@ -153,17 +152,17 @@ export default function RockPaperScissors() {
     setTimeLeft(DIFFICULTY_CONFIG[difficulty].time);
     setGameState("playing");
     generateQuestion();
-  };
+  }, [difficulty, generateQuestion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || gameState !== "start") return;
     autoStartedRef.current = true;
     startGame();
-  }, [gameState, isGauntletPreset]);
+  }, [gameState, isGauntletPreset, startGame]);
 
-  const getRewardDifficulty = (): TrainingDifficulty => {
+  const getRewardDifficulty = useCallback((): TrainingDifficulty => {
     return difficulty >= 3 ? "hard" : "normal";
-  };
+  }, [difficulty]);
 
   const handleGameOver = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -193,7 +192,7 @@ export default function RockPaperScissors() {
     });
     setGameState("gameover");
     updateHighScore(finalScore);
-  }, [difficulty, score]);
+  }, [difficulty, getRewardDifficulty, score, updateHighScore]);
 
   const handleSelect = (hand: HandType) => {
     if (gameState !== "playing" || feedback !== "none") return;

@@ -183,6 +183,7 @@ export default function WordScramble() {
     }
   }, [best, clearTimers, difficulty]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const beginQuestion = (questionIndex: number, nextQuestions = questions) => {
     clearTimers();
     const question = nextQuestions[questionIndex];
@@ -207,7 +208,7 @@ export default function WordScramble() {
     }, question?.timeLimitMs ?? 6000);
   };
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     playTap();
     clearTimers();
     const nextQuestions = createWordScrambleSession(difficulty);
@@ -225,7 +226,7 @@ export default function WordScramble() {
     setAwardedPoints(0);
     setIsNewBest(false);
     beginQuestion(0, nextQuestions);
-  };
+  }, [beginQuestion, clearTimers, difficulty]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;

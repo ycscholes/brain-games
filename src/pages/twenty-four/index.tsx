@@ -66,6 +66,7 @@ export default function TwentyFour() {
     scoreRef.current = score;
   }, [score]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const clearTimer = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -152,7 +153,7 @@ export default function TwentyFour() {
     return () => clearTimer();
   }, [finishGame, phase]);
 
-  const startGame = () => {
+  const startGame = useCallback(() => {
     playTap();
     clearTimer();
     setRound(generateRound());
@@ -164,7 +165,7 @@ export default function TwentyFour() {
     setIsNewBest(false);
     setHintUsed(false);
     setPhase("playing");
-  };
+  }, [clearTimer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isGauntletPreset || autoStartedRef.current || phase !== "start") return;
