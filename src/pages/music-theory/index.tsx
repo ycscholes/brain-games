@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro from "@tarojs/taro";
-import { addPointsToPet } from "../../utils/petStorage";
-import { getAwardedPoints, recordTrainingSession, type TrainingDifficulty } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { type TrainingDifficulty } from "../../utils/trainingStorage";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { playComplete, playCorrect, playTap, playWrong } from "../../services/audio/audioFeedbackService";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
 import { usePageShare } from "../../utils/share";
@@ -51,13 +51,18 @@ export default function MusicTheory() {
     finished.current = true;
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
     const finalScore = evaluateMusicTheoryScore({ difficulty, quizCorrectCount: quizCorrect, placementCorrectCount: placementCorrect, hintCount, elapsedSeconds: durationSeconds, completed: true });
-    const points = getAwardedPoints("music-theory", finalScore, difficulty);
     playComplete();
-    if (completeGauntletLegIfNeeded({ gameId: "music-theory", score: finalScore, awardedPoints: points, durationSeconds, difficulty, mode: "music-island-a", outcome: "completed" })) return;
-    addPointsToPet("music-theory", finalScore, difficulty);
-    recordTrainingSession({ gameId: "music-theory", score: finalScore, awardedPoints: points, durationSeconds, difficulty, mode: "music-island-a", outcome: "completed" });
+    const settlement = settleGame({
+      gameId: "music-theory",
+      score: finalScore,
+      durationSeconds,
+      difficulty,
+      mode: "music-island-a",
+      outcome: "completed",
+    });
+    if (settlement.gauntletHandled) return;
     const key = `${BEST_PREFIX}_${difficulty}`; const best = Number(Taro.getStorageSync(key) || 0); if (finalScore > best) Taro.setStorageSync(key, finalScore);
-    setScore(finalScore); setAwarded(points); setPagePhase("finished");
+    setScore(finalScore); setAwarded(settlement.awardedPoints); setPagePhase("finished");
   }, [difficulty, hintCount, placementCorrect, quizCorrect]);
 
   useEffect(() => { if (isGauntlet && pagePhase === "start") startGame(); }, [isGauntlet, pagePhase, startGame]);

@@ -110,6 +110,23 @@ describe("gameSettlementService", () => {
     expect(mockAddPointsToPet).toHaveBeenCalledWith("hidato", 32, "hard", rewardPolicy);
   });
 
+  test("uses an explicit reward score while recording the raw score", () => {
+    settleGame({
+      gameId: "mental-math",
+      score: 20,
+      rewardScore: 30,
+      difficulty: "hard",
+      outcome: "completed",
+    });
+
+    expect(mockGetAwardedPoints).toHaveBeenCalledWith("mental-math", 30, "hard", undefined);
+    expect(mockAddPointsToPet).toHaveBeenCalledWith("mental-math", 30, "hard", undefined);
+    expect(mockRecordTrainingSession).toHaveBeenCalledWith(expect.objectContaining({
+      score: 20,
+      awardedPoints: 48,
+    }));
+  });
+
   test("computes awarded points exactly once", () => {
     settleGame({ gameId: "hidato", score: 32, outcome: "completed" });
 

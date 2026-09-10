@@ -2,15 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Image, Text, View } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
 import { resolvePetSpriteUrl } from "../../config/remoteAssets";
-import { addPointsToPet, syncPetData } from "../../utils/petStorage";
+import { syncPetData } from "../../utils/petStorage";
 import { resolveCustomPetSpriteUrl } from "../../services/custom-pet/customPetService";
 import {
-  getAwardedPoints,
-  recordTrainingSession,
   type TrainingDifficulty,
   type TrainingRewardPolicy,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
@@ -379,38 +378,23 @@ export default function MemoryChallenge() {
     const finalScore = scoreRef.current;
     const rewardDifficulty = getRewardDifficulty(selectedN);
     const rewardPolicy = getRewardPolicy(selectedMode, selectedN);
-    const finalAwardedPoints = getAwardedPoints(
-      "memory-challenge",
-      finalScore,
-      rewardDifficulty,
-      rewardPolicy,
-    );
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
-    if (completeGauntletLegIfNeeded({
+    const settlement = settleGame({
       gameId: "memory-challenge",
       score: finalScore,
-      awardedPoints: finalAwardedPoints,
       mode: getMemoryChallengeModeRecord(selectedMode, selectedN),
       difficulty: rewardDifficulty,
       durationSeconds,
+      rewardPolicy,
       outcome: "completed",
-    })) {
+    });
+    if (settlement.gauntletHandled) {
       return;
     }
 
     Taro.setStorageSync("memory_last_score", finalScore);
-    addPointsToPet("memory-challenge", finalScore, rewardDifficulty, rewardPolicy);
-    recordTrainingSession({
-      gameId: "memory-challenge",
-      score: finalScore,
-      awardedPoints: finalAwardedPoints,
-      mode: getMemoryChallengeModeRecord(selectedMode, selectedN),
-      difficulty: rewardDifficulty,
-      durationSeconds,
-      outcome: "completed",
-    });
 
-    setAwardedPoints(finalAwardedPoints);
+    setAwardedPoints(settlement.awardedPoints);
     updateHighScore(finalScore, selectedMode, selectedN);
     setGameState("gameover");
   }, [clearTimers, updateHighScore]);

@@ -9,6 +9,7 @@ import type {
 export interface GameSettlementInput {
   gameId: TrainingGameId;
   score: number;
+  rewardScore?: number;
   difficulty?: TrainingDifficulty;
   durationSeconds?: number;
   mode?: string;

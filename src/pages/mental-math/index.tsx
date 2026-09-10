@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
-import { addPointsToPet } from "../../utils/petStorage";
 import {
   getAwardedPoints,
   getTrainingDifficultyLabel,
-  recordTrainingSession,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
@@ -296,28 +295,19 @@ const handleGameOver = useCallback(() => {
   clearAllTimers();
   const finalScore = gameMode === "timed" ? scoreRef.current : correctCountRef.current;
   const effectiveScore = getEffectiveScoreForPoints(finalScore);
-  const awardedPoints = getAwardedPoints("mental-math", effectiveScore, rewardDifficulty);
-  if (completeGauntletLegIfNeeded({
+  const settlement = settleGame({
     gameId: "mental-math",
     score: finalScore,
-    awardedPoints,
-    mode: getTrainingModeRecord(),
-    difficulty: rewardDifficulty,
-    outcome: "completed",
-  })) {
-    return;
-  }
-
-  Taro.setStorageSync("mental_math_last_score", finalScore);
-  addPointsToPet("mental-math", effectiveScore, rewardDifficulty);
-  recordTrainingSession({
-    gameId: "mental-math",
-    score: finalScore,
-    awardedPoints,
+    rewardScore: effectiveScore,
     mode: getTrainingModeRecord(),
     difficulty: rewardDifficulty,
     outcome: "completed",
   });
+  if (settlement.gauntletHandled) {
+    return;
+  }
+
+  Taro.setStorageSync("mental_math_last_score", finalScore);
   setGameState("gameover");
   updateHighScore(finalScore);
 }, [clearAllTimers, gameMode, getEffectiveScoreForPoints, getTrainingModeRecord, rewardDifficulty, updateHighScore]);

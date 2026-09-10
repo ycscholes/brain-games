@@ -1,15 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useLoad, useDidShow } from "@tarojs/taro";
-import { addPointsToPet } from "../../utils/petStorage";
 import {
   getAwardedPoints,
   getTrainingDifficultyLabel,
   MAX_POINTS_PER_SESSION,
-  recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
@@ -167,28 +166,18 @@ export default function RockPaperScissors() {
     if (timerRef.current) clearInterval(timerRef.current);
     const finalScore = Math.min(MAX_POINTS_PER_SESSION, score);
     const rewardDifficulty = getRewardDifficulty();
-    const awardedPoints = getAwardedPoints("rock-paper-scissors", finalScore, rewardDifficulty);
-    if (completeGauntletLegIfNeeded({
+    const settlement = settleGame({
       gameId: "rock-paper-scissors",
       score: finalScore,
-      awardedPoints,
-      mode: `D${difficulty}`,
-      difficulty: rewardDifficulty,
-      outcome: "completed",
-    })) {
-      return;
-    }
-
-    Taro.setStorageSync("rps_last_score", finalScore);
-    addPointsToPet("rock-paper-scissors", finalScore, rewardDifficulty);
-    recordTrainingSession({
-      gameId: "rock-paper-scissors",
-      score: finalScore,
-      awardedPoints,
       mode: `D${difficulty}`,
       difficulty: rewardDifficulty,
       outcome: "completed",
     });
+    if (settlement.gauntletHandled) {
+      return;
+    }
+
+    Taro.setStorageSync("rps_last_score", finalScore);
     setGameState("gameover");
     updateHighScore(finalScore);
   }, [difficulty, getRewardDifficulty, score, updateHighScore]);

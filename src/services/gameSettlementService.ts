@@ -10,9 +10,10 @@ import {
 import { completeGauntletLegIfNeeded } from "../utils/gameGauntlet";
 
 export function settleGame(input: GameSettlementInput): GameSettlementResult {
+  const rewardScore = input.rewardScore ?? input.score;
   const awardedPoints = getAwardedPoints(
     input.gameId,
-    input.score,
+    rewardScore,
     input.difficulty,
     input.rewardPolicy,
   );
@@ -33,7 +34,7 @@ export function settleGame(input: GameSettlementInput): GameSettlementResult {
     };
   }
 
-  addPointsToPet(input.gameId, input.score, input.difficulty, input.rewardPolicy);
+  addPointsToPet(input.gameId, rewardScore, input.difficulty, input.rewardPolicy);
   const record = recordTrainingSession({
     gameId: input.gameId,
     score: input.score,

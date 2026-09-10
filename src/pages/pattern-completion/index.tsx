@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
-import { addPointsToPet } from "../../utils/petStorage";
 import {
   getAwardedPoints,
   getTrainingDifficultyLabel,
-  recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
@@ -232,30 +231,20 @@ export default function PatternCompletion() {
       playComplete();
 
       const settledElapsedMs = Date.now() - startTimeRef.current;
-      const awardedPoints = getAwardedPoints("pattern-completion", settledFinalScore, rewardDifficulty);
       const durationSeconds = Math.round(settledElapsedMs / 1000);
-      if (completeGauntletLegIfNeeded({
+      const settlement = settleGame({
         gameId: "pattern-completion",
         score: settledFinalScore,
-        awardedPoints,
         durationSeconds,
         difficulty: rewardDifficulty,
         outcome: "completed",
-      })) {
+      });
+      if (settlement.gauntletHandled) {
         return;
       }
 
       setElapsedMs(settledElapsedMs);
       setFinalScore(settledFinalScore);
-      addPointsToPet("pattern-completion", settledFinalScore, rewardDifficulty);
-      recordTrainingSession({
-        gameId: "pattern-completion",
-        score: settledFinalScore,
-        awardedPoints,
-        durationSeconds,
-        difficulty: rewardDifficulty,
-        outcome: "completed",
-      });
       setPhase("finished");
 
       if (settledFinalScore > best) {

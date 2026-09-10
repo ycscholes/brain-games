@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
-import { addPointsToPet } from "../../utils/petStorage";
 import {
   getAwardedPoints,
-  recordTrainingSession,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
@@ -101,29 +100,17 @@ export default function TwentyFour() {
     clearTimer();
     playComplete();
     const finalScore = scoreRef.current;
-    const awardedPoints = getAwardedPoints("twenty-four", finalScore, REWARD_DIFFICULTY);
-    if (completeGauntletLegIfNeeded({
+    const settlement = settleGame({
       gameId: "twenty-four",
       score: finalScore,
-      awardedPoints,
-      durationSeconds: GAME_SECONDS,
-      mode: `${GAME_SECONDS}s`,
-      difficulty: REWARD_DIFFICULTY,
-      outcome: "completed",
-    })) {
-      return;
-    }
-
-    addPointsToPet("twenty-four", finalScore, REWARD_DIFFICULTY);
-    recordTrainingSession({
-      gameId: "twenty-four",
-      score: finalScore,
-      awardedPoints,
       durationSeconds: GAME_SECONDS,
       mode: `${GAME_SECONDS}s`,
       difficulty: REWARD_DIFFICULTY,
       outcome: "completed",
     });
+    if (settlement.gauntletHandled) {
+      return;
+    }
 
     if (finalScore > best) {
       Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${REWARD_DIFFICULTY}`, finalScore);
