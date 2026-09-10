@@ -216,3 +216,54 @@ Build output proves that Taro produced a package. It is not live WeChat
 Developer Tools evidence, a physical-device interaction check, a CloudBase
 deployment proof, or a production CDN/cache proof. Report those live/device
 checks separately and only when actually performed.
+
+## Repository architecture cleanup closeout
+
+The repository architecture cleanup reached its final local/static gate on
+2026-09-10. The verification baseline was the clean implementation tree at
+`a3fdba8` (`test: follow extracted result share views`), with the final
+documentation and closeout commits intentionally following this verification.
+
+The completed deletion inventory is:
+
+- 5 unreferenced source/fixture/asset candidates from the Task 7 audit,
+  including the obsolete audio hook, custom-pet fixture, food asset and two
+  pose-reference assets;
+- 7 obsolete app-icon variants, while the two manifest-selected icons remain;
+- 23 broken `.claude/skills/` symlinks;
+- 2 stale repository metadata files (`.trae/documents/plan_20260212_094742.md`
+  and the completed Traffic Escape task report); and
+- 12 historical plan/spec documents whose implementation authority and
+  rationale were already extracted into current source/tests and durable docs.
+
+The retained inventory is deliberate: `CLAUDE.MD`, `.claude/settings.json`,
+and `skills-lock.json` remain possible external tool entry points; the cleanup
+design spec remains the approved rationale; runtime asset backups and the
+certified generated puzzle source remain active authorities; and the two
+user-owned `output/official-account/hidato/` and
+`output/official-account/memory-challenge/` directories remain untouched and
+untracked. Historical documents that still carry unfinished device,
+CloudBase, upload, or product rationale also remain listed in the cleanup
+checklist.
+
+Formatting is an incremental gate, not a claim of zero repository debt. The
+Task 19 full-glob baseline measured 157 files with existing formatting debt.
+The current `format`/`format:check` scripts use an explicit allowlist covering
+the durable docs/config and every route/panel touched through Task 21; future
+formatting work can extend that allowlist in scoped batches.
+
+The final verification command was:
+
+```bash
+npm test && npm run test:puzzle-certification && npm run typecheck && npm run lint && npm run format:check && npm run assets:check && npm run audio:check && npm run secrets:check && npm run build:weapp && git diff --check
+```
+
+It passed on 2026-09-10: the fast suite reported 56 suites and 427 tests,
+Traffic Escape certification reported 1 suite and 6 tests in 673.535 seconds,
+and typecheck, lint, format, asset/audio/secrets checks, build and diff check
+all exited successfully. The architecture scan found no forbidden inward
+imports from `src/config`, `src/services`, `src/utils` or `src/domain` into
+`src/pages`; settlement ownership remains in the shared service/gauntlet
+pipeline. These are repository/build/mocked local results only, not live
+WeChat Developer Tools, device, CloudBase deployment, upload or publication
+evidence.

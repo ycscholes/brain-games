@@ -34,10 +34,9 @@ The audit index was generated outside the repository at
 `/tmp/brain-games-history-index.txt` from HEAD `c7225c8`:
 
 The approved rationale remains in
-[`docs/superpowers/specs/2026-09-10-repository-architecture-cleanup-design.md`](superpowers/specs/2026-09-10-repository-architecture-cleanup-design.md),
-and the execution plan remains in
-[`docs/superpowers/plans/2026-09-10-repository-architecture-cleanup.md`](superpowers/plans/2026-09-10-repository-architecture-cleanup.md)
-until final cleanup closeout.
+[`docs/superpowers/specs/2026-09-10-repository-architecture-cleanup-design.md`](superpowers/specs/2026-09-10-repository-architecture-cleanup-design.md).
+The execution plan was retained through the final cleanup gate and then
+removed as a separate closeout commit.
 
 ```text
 for f in docs/superpowers/plans/*.md docs/superpowers/specs/*.md docs/reviews/*.md; do
@@ -116,5 +115,6 @@ durable architecture and module-contract docs.
 
 The two protected untracked `output/official-account/hidato/` and
 `output/official-account/memory-challenge/` directories were not opened,
-modified, staged or deleted. The cleanup design and execution plan remain
-linked by this audit and are not deletion candidates in Task 12.
+modified, staged or deleted. The cleanup design remains linked by this audit;
+the execution plan was closed only after all six phases and the final gate
+were complete.
