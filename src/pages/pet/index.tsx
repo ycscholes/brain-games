@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, Input, ScrollView, Image } from "@tarojs/components";
+import { View } from "@tarojs/components";
 import Taro, { useDidShow } from "@tarojs/taro";
 import { useUserDataChange } from "../../services/user-data/hooks/useUserDataChange";
 import {
@@ -11,92 +11,21 @@ import {
 } from "../../utils/petStorage";
 import { usePageShare } from "../../utils/share";
 import {
-  FoodItem,
-  PetData,
-  PetSkin,
-  PetStorageData,
+  type FoodItem,
+  type PetData,
+  type PetSkin,
+  type PetStorageData,
   getFoodItemsForPetSkin,
-  PET_SKIN_NAME,
   MAX_HUNGER,
 } from "../../domain/pet/types";
-import PetSprite from "./components/PetSprite";
 import CustomPetFlow from "./components/CustomPetFlow";
+import PetAdoptionPanel from "./components/PetAdoptionPanel";
+import PetOverviewPanel, { type PetFeedBurst } from "./components/PetOverviewPanel";
 import type { PetSpriteMood } from "../../domain/pet/sprite";
 import { deleteCustomPet } from "../../services/custom-pet/customPetService";
-import { resolveCachedFoodIconUrl, resolveFoodIconUrl } from "../../config/remoteAssets";
 import "./index.scss";
 
 type PetFeedbackKind = "idle" | "switch" | "feed" | "cuddle" | "error";
-
-interface FeedBurst {
-  id: number;
-  food: FoodItem;
-}
-
-function FoodIcon({ food }: { food: FoodItem }) {
-  const [iconUrl, setIconUrl] = useState(() => resolveCachedFoodIconUrl(food.imageId));
-  const [imageFailed, setImageFailed] = useState(false);
-  const hasRetriedRef = useRef(false);
-
-  useEffect(() => {
-    let isCurrent = true;
-    hasRetriedRef.current = false;
-    setImageFailed(false);
-    setIconUrl(resolveCachedFoodIconUrl(food.imageId));
-
-    void resolveFoodIconUrl(food.imageId)
-      .then((url) => {
-        if (isCurrent) {
-          setIconUrl(url);
-        }
-      })
-      .catch(() => {
-        if (isCurrent) {
-          setImageFailed(true);
-        }
-      });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [food.imageId]);
-
-  const handleImageError = useCallback(() => {
-    if (hasRetriedRef.current) {
-      setImageFailed(true);
-      return;
-    }
-
-    hasRetriedRef.current = true;
-
-    void resolveFoodIconUrl(food.imageId, { forceRefresh: true })
-      .then((url) => {
-        if (url) {
-          setImageFailed(false);
-          setIconUrl(url);
-          return;
-        }
-
-        setImageFailed(true);
-      })
-      .catch(() => {
-        setImageFailed(true);
-      });
-  }, [food.imageId]);
-
-  if (iconUrl && !imageFailed) {
-    return (
-      <Image
-        className="food-image"
-        src={iconUrl}
-        mode="aspectFit"
-        onError={handleImageError}
-      />
-    );
-  }
-
-  return <View className="food-image-placeholder" />;
-}
 
 export default function PetPage() {
   usePageShare("pages/pet/index");
@@ -109,7 +38,7 @@ export default function PetPage() {
   const [showCustomPetFlow, setShowCustomPetFlow] = useState(false);
   const [petMotion, setPetMotion] = useState<PetSpriteMood>("idle");
   const [feedbackKind, setFeedbackKind] = useState<PetFeedbackKind>("idle");
-  const [feedBurst, setFeedBurst] = useState<FeedBurst | null>(null);
+  const [feedBurst, setFeedBurst] = useState<PetFeedBurst | null>(null);
   const petMotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedBurstTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -175,9 +104,7 @@ export default function PetPage() {
   );
 
   const loadAndRefreshPets = useCallback((options?: { syncPets?: boolean }) => {
-    const nextData = options?.syncPets
-      ? syncPetData({ markChanged: false })
-      : readPetData();
+    const nextData = options?.syncPets ? syncPetData({ markChanged: false }) : readPetData();
     setStorageData(nextData);
     if (nextData.pets.length === 0) {
       setShowAdoptionDialog(true);
@@ -199,11 +126,12 @@ export default function PetPage() {
 
   const pets = storageData.pets;
   const orderedPets = useMemo(
-    () => [...pets].sort((left, right) => {
-      if (left.status === "dead" && right.status !== "dead") return 1;
-      if (left.status !== "dead" && right.status === "dead") return -1;
-      return 0;
-    }),
+    () =>
+      [...pets].sort((left, right) => {
+        if (left.status === "dead" && right.status !== "dead") return 1;
+        if (left.status !== "dead" && right.status === "dead") return -1;
+        return 0;
+      }),
     [pets],
   );
   const activePet = pets.find((pet) => pet.id === storageData.activePetId) || null;
@@ -361,269 +289,72 @@ export default function PetPage() {
     }
   }, [activePet, playFeedback, playPetMotion]);
 
-  const handleDeleteCustomPet = useCallback(async (pet: PetData) => {
-    const confirmed = await Taro.showModal({
-      title: `永久删除 ${pet.name}？`,
-      content: "原图、生成图片和宠物数据都会删除。之后仍可重新生成新的自定义宠物。",
-      confirmText: "永久删除",
-      confirmColor: "#b33a2f",
-    });
-    if (!confirmed.confirm) return;
-    try {
-      await deleteCustomPet(pet.id);
-      loadAndRefreshPets();
-      setShowPetPickerDialog(false);
-      Taro.showToast({ title: "已提交永久删除", icon: "success" });
-    } catch (error) {
-      Taro.showToast({
-        title: error instanceof Error ? error.message : "删除失败",
-        icon: "none",
+  const handleDeleteCustomPet = useCallback(
+    async (pet: PetData) => {
+      const confirmed = await Taro.showModal({
+        title: `永久删除 ${pet.name}？`,
+        content: "原图、生成图片和宠物数据都会删除。之后仍可重新生成新的自定义宠物。",
+        confirmText: "永久删除",
+        confirmColor: "#b33a2f",
       });
-    }
-  }, [loadAndRefreshPets]);
-
-  const renderAdoptionDialog = () => {
-    if (!showAdoptionDialog) {
-      return null;
-    }
-
-    return (
-      <View className="dialog-layer">
-        <View className="dialog-backdrop" onClick={closeAdoptionDialog} />
-        <View className="game-dialog adoption-dialog">
-          <View className="dialog-header">
-            <View>
-              <Text className="dialog-title">领养新宠物</Text>
-              <Text className="dialog-subtitle">
-                {nextAdoptionCost === 0 ? "第一位伙伴免费加入小院" : `本次需要 ${nextAdoptionCost} 积分`}
-              </Text>
-            </View>
-            <View className="dialog-close" onClick={closeAdoptionDialog}>
-              <Text className="dialog-close-text">×</Text>
-            </View>
-          </View>
-
-          <View className="skin-rail">
-            <View className="skin-rail-track">
-              {(Object.keys(PET_SKIN_NAME) as PetSkin[]).map((skin) => (
-                <View
-                  key={skin}
-                  className={`skin-token ${selectedSkin === skin ? "skin-token-selected" : ""}`}
-                  onClick={() => setSelectedSkin(skin)}
-                >
-                  <PetSprite
-                    skin={skin}
-                    size="sm"
-                    selected={selectedSkin === skin}
-                  />
-                  <Text className="skin-name">{PET_SKIN_NAME[skin]}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          <Input
-            className="name-input"
-            placeholder="给新伙伴起个名字"
-            value={newName}
-            onInput={(e) => setNewName(e.detail.value)}
-            maxlength={10}
-          />
-
-          <View
-            className={`stage-button confirm-button ${!newName.trim() ? "button-disabled" : ""}`}
-            onClick={handleAdoptPet}
-          >
-            <Text className="stage-button-text">
-              {nextAdoptionCost === 0 ? "免费领养" : `${nextAdoptionCost} 积分领养`}
-            </Text>
-          </View>
-          <View
-            className="stage-button custom-adoption-button"
-            onClick={() => {
-              setShowAdoptionDialog(false);
-              setShowCustomPetFlow(true);
-            }}
-          >
-            <Text className="stage-button-text">AI 自定义宠物 · 300 积分</Text>
-          </View>
-        </View>
-      </View>
-    );
-  };
-
-  const renderPetPickerDialog = () => {
-    if (!showPetPickerDialog) {
-      return null;
-    }
-
-    return (
-      <View className="dialog-layer">
-        <View className="dialog-backdrop" onClick={() => setShowPetPickerDialog(false)} />
-        <View className="game-dialog picker-dialog">
-          <View className="dialog-header">
-            <View>
-              <Text className="dialog-title">选择伙伴</Text>
-              <Text className="dialog-subtitle">让谁来到小院中央？</Text>
-            </View>
-            <View className="dialog-close" onClick={() => setShowPetPickerDialog(false)}>
-              <Text className="dialog-close-text">×</Text>
-            </View>
-          </View>
-
-          <ScrollView className="pet-picker-list" scrollY enhanced showScrollbar={false}>
-            {orderedPets.map((pet) => (
-              <View
-                key={pet.id}
-                className={`pet-picker-item ${storageData.activePetId === pet.id ? "pet-picker-item-active" : ""} ${pet.status === "dead" ? "pet-picker-item-dead" : ""
-                  }`}
-                onClick={() => handleSelectPet(pet.id)}
-              >
-                <View className="pet-picker-avatar">
-                  <PetSprite
-                    skin={pet.skin}
-                    assetRef={pet.assetRef}
-                    size="sm"
-                    status={pet.status}
-                    selected={storageData.activePetId === pet.id}
-                  />
-                </View>
-                <View className="pet-picker-copy">
-                  <Text className="pet-picker-name">{pet.name}</Text>
-                  <Text className="pet-picker-status">{getStatusText(pet)}</Text>
-                </View>
-                {storageData.activePetId === pet.id ? (
-                  <Text className="pet-picker-current">当前</Text>
-                ) : null}
-                {pet.assetRef?.kind === "custom" ? (
-                  <View
-                    className="pet-picker-delete"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      void handleDeleteCustomPet(pet);
-                    }}
-                  >
-                    <Text>删除</Text>
-                  </View>
-                ) : null}
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      </View>
-    );
-  };
+      if (!confirmed.confirm) return;
+      try {
+        await deleteCustomPet(pet.id);
+        loadAndRefreshPets();
+        setShowPetPickerDialog(false);
+        Taro.showToast({ title: "已提交永久删除", icon: "success" });
+      } catch (error) {
+        Taro.showToast({
+          title: error instanceof Error ? error.message : "删除失败",
+          icon: "none",
+        });
+      }
+    },
+    [loadAndRefreshPets],
+  );
 
   const hungerPercent = getHungerPercent(activePet);
   const statusText = activePet ? getStatusText(activePet) : "等待领养";
-  const canFeed = Boolean(activePet && activePet.status !== "dead");
-
   return (
     <View className="pet-page">
-      <View className="pet-stage">
-        <View className="stage-sky">
-          <View className="stage-cloud stage-cloud-left" />
-          <View className="stage-cloud stage-cloud-right" />
-        </View>
-        <View className="stage-hills" />
-
-        <View className="stage-hud" onClick={() => pets.length > 0 && setShowPetPickerDialog(true)}>
-          <View className="stage-hud-panel">
-            <View className="pet-hud-main">
-              <Text className="pet-name-text">{activePet?.name || "空的小院"}</Text>
-              <Text className={`pet-state-text pet-state-${activePet?.status || "empty"}`}>{statusText}</Text>
-            </View>
-            <View className="pet-hud-metrics">
-              <View className="mini-hunger">
-                <Text className="mini-hunger-label">饱食</Text>
-                <View className="mini-hunger-track">
-                  <View className="mini-hunger-fill" style={{ width: `${hungerPercent}%` }} />
-                </View>
-                <Text className="mini-hunger-value">{Math.round(hungerPercent)}%</Text>
-              </View>
-              <View className="resource-pill">
-                <Text className="resource-label">积分</Text>
-                <Text className="resource-value">{storageData.balance}</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        <View className="stage-pet-zone" onClick={handleCuddle}>
-          <View className={`stage-speech speech-${feedbackKind}`}>
-            <Text className="stage-speech-text">{activePetLine}</Text>
-          </View>
-
-          <View className="stage-pet-shadow" />
-          {activePet ? (
-            <PetSprite
-              skin={activePet.skin}
-              assetRef={activePet.assetRef}
-              size="xl"
-              status={activePet.status}
-              mood={petMotion}
-              selected
-              className="stage-pet-sprite"
-            />
-          ) : (
-              <PetSprite skin={selectedSkin} size="xl" mood="idle" className="stage-pet-sprite stage-pet-empty" />
-            )}
-
-          {feedBurst ? (
-            <View key={feedBurst.id} className="feed-burst stage-feed-burst">
-              <View className="feed-burst-food">
-                <FoodIcon food={feedBurst.food} />
-              </View>
-              <Text className="feed-burst-value">+{feedBurst.food.restoreHunger}</Text>
-              <Text className="feed-burst-cost">-{feedBurst.food.cost}分</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <View className="stage-controls">
-          {canFeed ? (
-            <View className="food-dock">
-              {foodItems.map((food) => (
-                <View
-                  key={food.id}
-                  className={`food-button ${storageData.balance >= food.cost ? "food-button-ready" : "food-button-disabled"}`}
-                  onClick={() => handleFeed(food.id)}
-                >
-                  <View className="food-button-icon">
-                    <FoodIcon food={food} />
-                  </View>
-                  <View className="food-button-copy">
-                    <Text className="food-button-name">{food.name}</Text>
-                    <Text className="food-button-cost">{food.cost}分</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : null}
-
-          <View className="stage-actions">
-            {canFeed ? (
-              <View className="stage-button action-cuddle" onClick={handleCuddle}>
-                <Text className="stage-button-icon">♡</Text>
-                <Text className="stage-button-text">抚摸</Text>
-              </View>
-            ) : null}
-            {pets.length > 0 ? (
-              <View className="stage-button action-pick" onClick={() => setShowPetPickerDialog(true)}>
-                <Text className="stage-button-icon">⇄</Text>
-                <Text className="stage-button-text">选择宠物</Text>
-              </View>
-            ) : null}
-            <View className="stage-button adopt-button" onClick={() => setShowAdoptionDialog(true)}>
-              <Text className="stage-button-icon">＋</Text>
-              <Text className="stage-button-text">领养</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {renderAdoptionDialog()}
-      {renderPetPickerDialog()}
+      <PetOverviewPanel
+        pets={pets}
+        orderedPets={orderedPets}
+        activePet={activePet}
+        activePetId={storageData.activePetId ?? undefined}
+        selectedSkin={selectedSkin}
+        balance={storageData.balance}
+        hungerPercent={hungerPercent}
+        statusText={statusText}
+        activePetLine={activePetLine}
+        feedbackKind={feedbackKind}
+        petMotion={petMotion}
+        feedBurst={feedBurst}
+        foodItems={foodItems}
+        showPetPickerDialog={showPetPickerDialog}
+        getStatusText={getStatusText}
+        onOpenPetPicker={() => setShowPetPickerDialog(true)}
+        onOpenAdoption={() => setShowAdoptionDialog(true)}
+        onClosePetPicker={() => setShowPetPickerDialog(false)}
+        onSelectPet={handleSelectPet}
+        onDeleteCustomPet={handleDeleteCustomPet}
+        onCuddle={handleCuddle}
+        onFeed={(food) => handleFeed(food.id)}
+      />
+      <PetAdoptionPanel
+        visible={showAdoptionDialog}
+        nextAdoptionCost={nextAdoptionCost}
+        selectedSkin={selectedSkin}
+        newName={newName}
+        onClose={closeAdoptionDialog}
+        onSkinChange={setSelectedSkin}
+        onNameChange={setNewName}
+        onAdopt={handleAdoptPet}
+        onOpenCustomPet={() => {
+          setShowAdoptionDialog(false);
+          setShowCustomPetFlow(true);
+        }}
+      />
       {showCustomPetFlow ? (
         <CustomPetFlow
           onClose={() => setShowCustomPetFlow(false)}
