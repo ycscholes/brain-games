@@ -35,9 +35,7 @@ function expectHintLeadsToCertifiedSolution(
   expect(hintedResult.moved).toBe(true);
   const remainingSolve = solveTrafficEscapePuzzleDetailed(puzzle, hintedResult.state);
   expect(remainingSolve).not.toBeNull();
-  expect(remainingSolve!.visitedStateCount).toBeLessThanOrEqual(
-    HARD_PUZZLE_QUALITY_RULES.maximumVisitedStates * 3,
-  );
+  expect(remainingSolve!.visitedStateCount).toBeLessThanOrEqual(30_000);
 }
 
 describe("traffic-escape puzzle certification", () => {
@@ -56,10 +54,11 @@ describe("traffic-escape puzzle certification", () => {
     expect(certifyTrafficEscapeHardPuzzleBank(selected).accepted).toBe(true);
   });
 
-  test("evaluates the fixed seed corpus against the current hard quality rules", () => {
+  test("locks the current authoritative fixed-seed quality baseline to accepted seed [25]", () => {
     const results = [4, 11, 20, 25].map((seed) => {
       const candidate = createTrafficEscapeHardCandidate(seed);
       return {
+        seed,
         candidate,
         certification: candidate ? certifyTrafficEscapeHardPuzzle(candidate.puzzle) : null,
       };
@@ -68,7 +67,8 @@ describe("traffic-escape puzzle certification", () => {
 
     expect(results).toHaveLength(4);
     expect(results.every(({ candidate }) => candidate !== null)).toBe(true);
-    expect(accepted.length).toBeGreaterThan(0);
+    // Current authoritative quality baseline: only seed 25 is accepted.
+    expect(accepted.map(({ seed }) => seed)).toEqual([25]);
     expect(accepted.every(({ certification }) => {
       const analysis = certification?.analysis;
       return certification?.accepted === true
