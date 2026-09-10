@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
-import { addPointsToPet } from "../../utils/petStorage";
 import {
   getAwardedPoints,
   getTrainingDifficultyLabel,
-  recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
@@ -89,26 +88,17 @@ export default function DigitSpan() {
   const finishGame = useCallback(
     (finalScore: number) => {
       clearTimers();
-      const awardedPoints = getAwardedPoints("digit-span", finalScore, rewardDifficulty);
-      if (completeGauntletLegIfNeeded({
+      const settlement = settleGame({
         gameId: "digit-span",
         score: finalScore,
-        awardedPoints,
         difficulty: rewardDifficulty,
         outcome: "completed",
-      })) {
+      });
+      if (settlement.gauntletHandled) {
         return;
       }
 
       setScore(finalScore);
-      addPointsToPet("digit-span", finalScore, rewardDifficulty);
-      recordTrainingSession({
-        gameId: "digit-span",
-        score: finalScore,
-        awardedPoints,
-        difficulty: rewardDifficulty,
-        outcome: "completed",
-      });
       setPhase("finished");
 
       if (finalScore > best) {

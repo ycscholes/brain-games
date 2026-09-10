@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
-import { addPointsToPet } from "../../utils/petStorage";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import {
-  getAwardedPoints,
   getTrainingDifficultyLabel,
-  recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
@@ -113,28 +111,17 @@ export default function LoopLinePage() {
       hintCount: nextHintCount,
       completed: true,
     });
-    const nextAwardedPoints = getAwardedPoints("loop-line", nextScore, difficulty);
-
-    if (completeGauntletLegIfNeeded({
+    const settlement = settleGame({
       gameId: "loop-line",
       score: nextScore,
-      awardedPoints: nextAwardedPoints,
-      durationSeconds,
-      difficulty,
-      outcome: "completed",
-    })) {
-      return;
-    }
-
-    addPointsToPet("loop-line", nextScore, difficulty);
-    recordTrainingSession({
-      gameId: "loop-line",
-      score: nextScore,
-      awardedPoints: nextAwardedPoints,
       durationSeconds,
       difficulty,
       outcome: "completed",
     });
+    if (settlement.gauntletHandled) {
+      return;
+    }
+    const nextAwardedPoints = settlement.awardedPoints;
     const nextBest = Math.max(best, nextScore);
     if (nextScore > best) {
       Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, nextScore);

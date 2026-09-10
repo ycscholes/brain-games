@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
-import { addPointsToPet } from "../../utils/petStorage";
 import {
-  getAwardedPoints,
   getTrainingDifficultyLabel,
-  recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
@@ -149,27 +147,17 @@ export default function WordScramble() {
     playComplete();
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
-    const nextAwardedPoints = getAwardedPoints("word-scramble", finalScore, difficulty);
-    if (completeGauntletLegIfNeeded({
+    const settlement = settleGame({
       gameId: "word-scramble",
       score: finalScore,
-      awardedPoints: nextAwardedPoints,
-      durationSeconds,
-      difficulty,
-      outcome: "completed",
-    })) {
-      return;
-    }
-
-    addPointsToPet("word-scramble", finalScore, difficulty);
-    recordTrainingSession({
-      gameId: "word-scramble",
-      score: finalScore,
-      awardedPoints: nextAwardedPoints,
       durationSeconds,
       difficulty,
       outcome: "completed",
     });
+    if (settlement.gauntletHandled) {
+      return;
+    }
+    const nextAwardedPoints = settlement.awardedPoints;
 
     setAwardedPoints(nextAwardedPoints);
     setCorrectQuestions(finalCorrectQuestions);

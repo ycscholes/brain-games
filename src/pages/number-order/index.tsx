@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { useDidShow, useLoad } from "@tarojs/taro";
-import { addPointsToPet } from "../../utils/petStorage";
 import {
-  getAwardedPoints,
   getTrainingDifficultyLabel,
-  recordTrainingSession,
   type TrainingDifficulty,
 } from "../../utils/trainingStorage";
-import { completeGauntletLegIfNeeded, readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { settleGame } from "../../services/gameSettlementService";
 import { usePageShare } from "../../utils/share";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { useAmbientMusic } from "../../hooks/useAmbientMusic";
@@ -123,27 +121,17 @@ export default function NumberOrder() {
     playComplete();
 
     const durationSeconds = Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000));
-    const nextAwardedPoints = getAwardedPoints("number-order", finalScore, rewardDifficulty);
-    if (completeGauntletLegIfNeeded({
+    const settlement = settleGame({
       gameId: "number-order",
       score: finalScore,
-      awardedPoints: nextAwardedPoints,
-      durationSeconds,
-      difficulty: rewardDifficulty,
-      outcome: "completed",
-    })) {
-      return;
-    }
-
-    addPointsToPet("number-order", finalScore, rewardDifficulty);
-    recordTrainingSession({
-      gameId: "number-order",
-      score: finalScore,
-      awardedPoints: nextAwardedPoints,
       durationSeconds,
       difficulty: rewardDifficulty,
       outcome: "completed",
     });
+    if (settlement.gauntletHandled) {
+      return;
+    }
+    const nextAwardedPoints = settlement.awardedPoints;
 
     setAwardedPoints(nextAwardedPoints);
     setCorrectQuestions(finalCorrectQuestions);
