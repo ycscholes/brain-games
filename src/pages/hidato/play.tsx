@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
+import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import { type TrainingDifficulty } from "../../utils/trainingStorage";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
@@ -44,9 +45,10 @@ export default function HidatoPage() {
       ? (getCurrentInstance().router?.params?.runId ?? "")
       : "";
   const routeRun = readHidatoRun(runId);
+  const allowSettledRef = useRef(false);
 
   useEffect(() => {
-    if (!runId || !routeRun || routeRun.status !== "active") {
+    if (shouldRedirectInvalidGameRun(runId, routeRun?.status, allowSettledRef.current)) {
       void Taro.redirectTo({ url: "/pages/hidato/index" });
     }
   }, [routeRun, runId]);
@@ -165,6 +167,7 @@ export default function HidatoPage() {
         outcome: "completed",
       } as const;
       const isNewBest = nextScore > readBestScore(difficulty);
+      allowSettledRef.current = true;
       if (isNewBest) {
         Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, nextScore);
       }

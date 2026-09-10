@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { View } from "@tarojs/components";
 import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
+import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
@@ -46,9 +47,10 @@ export default function MentalMath() {
       ? (getCurrentInstance().router?.params?.runId ?? "")
       : "";
   const routeRun = readMentalMathRun(runId);
+  const allowSettledRef = useRef(false);
 
   useEffect(() => {
-    if (!runId || !routeRun || routeRun.status !== "active") {
+    if (shouldRedirectInvalidGameRun(runId, routeRun?.status, allowSettledRef.current)) {
       void Taro.redirectTo({ url: "/pages/mental-math/index" });
     }
   }, [routeRun, runId]);
@@ -90,6 +92,9 @@ export default function MentalMath() {
   const feedbackTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoStartedRef = useRef(false);
   const startedAtRef = useRef(persistedState?.clockStartedAt ?? routeRun?.payload.startedAt ?? 0);
+  const restoredTransientRef = useRef(persistedState?.feedback !== "none");
+  const nextProblemRef = useRef<((nextTimeLeft?: number) => void) | null>(null);
+  const handleGameOverRef = useRef<(() => void) | null>(null);
   const selectedStage = useMemo(() => getMathStage(selectedStageId), [selectedStageId]);
   const customProfile = useMemo(() => getCustomMathProfile(customConfig), [customConfig]);
   const isCustomStage = selectedStageId === CUSTOM_MATH_STAGE_ID;
@@ -254,6 +259,7 @@ export default function MentalMath() {
     scoreRef.current = persistedState.score;
     setSelectedAnswer(persistedState.selectedAnswer);
     setFeedback(persistedState.feedback);
+    restoredTransientRef.current = persistedState.feedback !== "none";
   }, [clearAllTimers, gameMode, persistedState, startGame]);
 
   useEffect(() => {
@@ -276,6 +282,7 @@ export default function MentalMath() {
       outcome: "completed",
     } as const;
     const nextIsNewBest = updateHighScore(finalScore);
+    allowSettledRef.current = true;
     const routeSettlement = runId
       ? settleMentalMathCompletion(
           runId,
@@ -305,6 +312,30 @@ export default function MentalMath() {
     runId,
     updateHighScore,
   ]);
+
+  useEffect(() => {
+    nextProblemRef.current = nextProblem;
+  }, [nextProblem]);
+
+  useEffect(() => {
+    handleGameOverRef.current = handleGameOver;
+  }, [handleGameOver]);
+
+  useEffect(() => {
+    if (!restoredTransientRef.current || feedback === "none") return undefined;
+    restoredTransientRef.current = false;
+    const timeout = setTimeout(
+      () => {
+        if (feedback === "wrong" && gameMode === "death") {
+          handleGameOverRef.current?.();
+          return;
+        }
+        nextProblemRef.current?.();
+      },
+      feedback === "correct" ? 300 : 500,
+    );
+    return () => clearTimeout(timeout);
+  }, [feedback, gameMode]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;

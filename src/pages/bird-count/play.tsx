@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View } from "@tarojs/components";
 import Taro, { getCurrentInstance, useDidShow, useUnload } from "@tarojs/taro";
+import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import { resolvePetSpriteUrl } from "../../config/remoteAssets";
 import { resolveCustomPetSpriteUrl } from "../../services/custom-pet/customPetService";
 import { syncPetData } from "../../utils/petStorage";
@@ -199,9 +200,10 @@ export default function FarmCount() {
       ? (getCurrentInstance().router?.params?.runId ?? "")
       : "";
   const routeRun = readBirdCountRun(runId);
+  const allowSettledRef = useRef(false);
 
   useEffect(() => {
-    if (!runId || !routeRun || routeRun.status !== "active") {
+    if (shouldRedirectInvalidGameRun(runId, routeRun?.status, allowSettledRef.current)) {
       void Taro.redirectTo({ url: "/pages/bird-count/index" });
     }
   }, [routeRun, runId]);
@@ -369,6 +371,7 @@ export default function FarmCount() {
         outcome: "completed",
       } as const;
       const isNewBest = finalScore > best;
+      allowSettledRef.current = true;
       if (isNewBest) {
         Taro.setStorageSync(getSpeedBestScoreKey(difficulty), finalScore);
       }
@@ -416,6 +419,7 @@ export default function FarmCount() {
         outcome: "completed",
       } as const;
       const isNewBest = finalScore > best;
+      allowSettledRef.current = true;
       if (isNewBest) {
         Taro.setStorageSync(getYardBestScoreKey(yardDifficulty, speedDifficulty), finalScore);
       }
@@ -704,42 +708,19 @@ export default function FarmCount() {
     finishedRef.current = false;
     setPetDisplayPool(currentPetPool);
 
-    if (persistedState.phase === "loading") {
-      if (mode === "yard" && persistedState.yardQuestions.length > 0) {
-        beginYardQuestion(persistedState.currentIndex, persistedState.yardQuestions);
-      } else if (persistedState.speedQuestions.length > 0) {
-        beginSpeedQuestion(persistedState.currentIndex, persistedState.speedQuestions);
-      }
-      return;
-    }
-
     if (
+      persistedState.phase === "loading" ||
       persistedState.phase === "ready" ||
       persistedState.phase === "watching" ||
       persistedState.phase === "playing-event"
     ) {
-      answerStartedAtRef.current = Date.now();
-      setEventIndex(-1);
-      setPhase("answering");
-      persistRunState({
-        speedQuestions: persistedState.speedQuestions,
-        yardQuestions: persistedState.yardQuestions,
-        currentIndex: persistedState.currentIndex,
-        eventIndex: -1,
-        displayCount:
-          mode === "yard"
-            ? (persistedState.yardQuestions[persistedState.currentIndex]?.answer ??
-              persistedState.displayCount)
-            : persistedState.displayCount,
-        selectedAnswer: null,
-        score: persistedState.score,
-        combo: persistedState.combo,
-        bestCombo: persistedState.bestCombo,
-        correctQuestions: persistedState.correctQuestions,
-        phase: "answering",
-        lastSpeedResult: persistedState.lastSpeedResult,
-        lastYardResult: persistedState.lastYardResult,
-      });
+      if (mode === "yard" && persistedState.yardQuestions.length > 0) {
+        beginYardQuestion(persistedState.currentIndex, persistedState.yardQuestions);
+      } else if (persistedState.speedQuestions.length > 0) {
+        beginSpeedQuestion(persistedState.currentIndex, persistedState.speedQuestions);
+      } else {
+        startGame();
+      }
       return;
     }
 
@@ -771,7 +752,6 @@ export default function FarmCount() {
     finishSpeedGame,
     finishYardGame,
     mode,
-    persistRunState,
     persistedState,
     refreshPetSkinPool,
     schedule,

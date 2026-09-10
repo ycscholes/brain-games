@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
-import { goBackToGameStart } from "../../utils/gameRoute";
+import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
 import { usePageShare } from "../../utils/share";
 import { getTrainingDifficultyLabel } from "../../utils/trainingStorage";
 import { BIRD_COUNT_TOTAL_QUESTIONS } from "./gameLogic";
@@ -10,7 +10,7 @@ import {
   getHeadCountRewardDifficulty,
 } from "../head-count/gameLogic";
 import FarmCountResult from "./components/FarmCountResult";
-import { readBirdCountRun } from "./run";
+import { createBirdCountRun, readBirdCountRun } from "./run";
 import "./index.scss";
 
 export default function BirdCountResult() {
@@ -33,6 +33,14 @@ export default function BirdCountResult() {
   const difficultyLabel = isYard
     ? `${getTrainingDifficultyLabel(run.payload.difficulty)} · ${HEAD_COUNT_SPEED_LABELS[run.payload.yardSpeed ?? "slow"]} · 积分${getTrainingDifficultyLabel(rewardDifficulty)}`
     : getTrainingDifficultyLabel(run.payload.difficulty);
+  const restart = () => {
+    const nextRun = createBirdCountRun({
+      difficulty: run.payload.difficulty,
+      mode: run.payload.mode,
+      yardSpeed: run.payload.yardSpeed,
+    });
+    void replaceWithGamePlay("bird-count", nextRun.runId, readGameRouteParams());
+  };
   return (
     <FarmCountResult
       score={run.result.score}
@@ -44,7 +52,7 @@ export default function BirdCountResult() {
       isNewBest={run.result.isNewBest}
       isGauntlet={false}
       onBack={() => void goBackToGameStart("bird-count")}
-      onRestart={() => void Taro.redirectTo({ url: "/pages/bird-count/index" })}
+      onRestart={restart}
     />
   );
 }

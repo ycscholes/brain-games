@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { getCurrentInstance, useDidShow, useLoad, useUnload } from "@tarojs/taro";
+import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
 import {
@@ -52,9 +53,10 @@ export default function TwentyFour() {
       ? (getCurrentInstance().router?.params?.runId ?? "")
       : "";
   const routeRun = readTwentyFourRun(runId);
+  const allowSettledRef = useRef(false);
 
   useEffect(() => {
-    if (!runId || !routeRun || routeRun.status !== "active") {
+    if (shouldRedirectInvalidGameRun(runId, routeRun?.status, allowSettledRef.current)) {
       void Taro.redirectTo({ url: "/pages/twenty-four/index" });
     }
   }, [routeRun, runId]);
@@ -156,6 +158,7 @@ export default function TwentyFour() {
       outcome: "completed",
     } as const;
     const nextIsNewBest = finalScore > best;
+    allowSettledRef.current = true;
     const routeSettlement = settleTwentyFourCompletion(
       runId,
       {

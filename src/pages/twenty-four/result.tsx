@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
-import { goBackToGameStart } from "../../utils/gameRoute";
+import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
 import { usePageShare } from "../../utils/share";
-import { readTwentyFourRun } from "./run";
+import { createTwentyFourRun, readTwentyFourRun } from "./run";
 import "./index.scss";
 
 export default function TwentyFourResult() {
@@ -17,6 +17,10 @@ export default function TwentyFourResult() {
     }
   }, [run]);
   if (!run || run.status !== "settled" || !run.result) return null;
+  const restart = () => {
+    const nextRun = createTwentyFourRun(run.payload.difficulty);
+    void replaceWithGamePlay("twenty-four", nextRun.runId, readGameRouteParams());
+  };
   return (
     <View className="twenty-four-page">
       <View className="tf-result">
@@ -34,10 +38,7 @@ export default function TwentyFourResult() {
             pagePath="pages/twenty-four/index"
             isGauntlet={false}
           />
-          <View
-            className="tf-primary-button"
-            onClick={() => void Taro.redirectTo({ url: "/pages/twenty-four/index" })}
-          >
+          <View className="tf-primary-button" onClick={restart}>
             <Text className="tf-primary-button-text">再来一局</Text>
           </View>
           <View

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
+import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import { resolveTrafficVehicleAtlasUrl } from "../../config/remoteAssets";
 import {
   abandonTrafficEscapeRun,
@@ -38,14 +39,15 @@ export default function TrafficEscapePlay() {
   const params = getCurrentInstance().router?.params ?? {};
   const runId = typeof params.runId === "string" ? params.runId : "";
   const [run, setRun] = useState<TrafficEscapeRun | null>(() => readTrafficEscapeRun(runId));
+  const allowSettledRef = useRef(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [feedback, setFeedback] = useState("红车驶向右侧出口。先腾出它前方的车道。");
   const [vehicleAtlasUrl, setVehicleAtlasUrl] = useState("");
 
   useEffect(() => {
-    if (!run || run.status !== "active")
+    if (shouldRedirectInvalidGameRun(runId, run?.status, allowSettledRef.current))
       void Taro.redirectTo({ url: "/pages/traffic-escape/index" });
-  }, [run]);
+  }, [run, runId]);
   useEffect(() => {
     let active = true;
     void resolveTrafficVehicleAtlasUrl()
@@ -84,6 +86,7 @@ export default function TrafficEscapePlay() {
       });
       const best =
         Number(Taro.getStorageSync(`${STORAGE_KEY_PREFIX}_${payload.difficulty}`) || 0) || 0;
+      allowSettledRef.current = true;
       const settled = settleTrafficEscapeCompletion(
         runId,
         {

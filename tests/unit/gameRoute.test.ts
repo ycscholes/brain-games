@@ -17,6 +17,7 @@ import {
   goToGamePlay,
   goToGameResult,
   replaceWithGamePlay,
+  shouldRedirectInvalidGameRun,
 } from "../../src/utils/gameRoute";
 import Taro from "@tarojs/taro";
 
@@ -56,5 +57,20 @@ describe("game route navigation", () => {
 
     await goBackToGameStart("hidato");
     expect(mockNavigateBack).toHaveBeenCalledTimes(1);
+  });
+
+  test("suppresses the invalid-run fallback after completion has started", () => {
+    expect(shouldRedirectInvalidGameRun("run_1", "settled")).toBe(true);
+    expect(shouldRedirectInvalidGameRun("run_1", "settled", true)).toBe(false);
+    expect(shouldRedirectInvalidGameRun("run_1", "active", false)).toBe(false);
+    expect(shouldRedirectInvalidGameRun("", "active", true)).toBe(true);
+  });
+
+  test("falls back to the existing game start when the result has no back stack", async () => {
+    mockNavigateBack.mockRejectedValueOnce(new Error("no page stack"));
+
+    await goBackToGameStart("hidato");
+
+    expect(mockRedirectTo).toHaveBeenCalledWith({ url: "/pages/hidato/index" });
   });
 });

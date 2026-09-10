@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
-import { goBackToGameStart } from "../../utils/gameRoute";
+import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
 import { usePageShare } from "../../utils/share";
 import { getTrainingDifficultyLabel, MAX_POINTS_PER_SESSION } from "../../utils/trainingStorage";
 import { readRockPaperScissorsHighScore } from "./highScoreStorage";
-import { readRockPaperScissorsRun } from "./run";
+import { createRockPaperScissorsRun, readRockPaperScissorsRun } from "./run";
 import "./index.scss";
 
 const DIFFICULTY_CONFIG = {
@@ -25,12 +25,18 @@ export default function RockPaperScissorsResult() {
     }
   }, [run]);
   if (!run || run.status !== "settled" || !run.result) return null;
+  const restart = () => {
+    const nextRun = createRockPaperScissorsRun(
+      run.payload.difficulty,
+      run.payload.rounds,
+      run.payload.level,
+    );
+    void replaceWithGamePlay("rock-paper-scissors", nextRun.runId, readGameRouteParams());
+  };
   const level = run.payload.level;
   const score = Math.min(MAX_POINTS_PER_SESSION, run.result.score);
   const rewardDifficulty = run.payload.difficulty;
-  const storedBest = readRockPaperScissorsHighScore(
-    Taro.getStorageSync(`rps_highscore_D${level}`),
-  );
+  const storedBest = readRockPaperScissorsHighScore(Taro.getStorageSync(`rps_highscore_D${level}`));
   const best = run.result.isNewBest ? score : (storedBest?.score ?? 0);
   return (
     <View className="rps-game">
@@ -60,10 +66,7 @@ export default function RockPaperScissorsResult() {
             pagePath="pages/rock-paper-scissors/index"
             isGauntlet={false}
           />
-          <View
-            className="primary-button"
-            onClick={() => void Taro.redirectTo({ url: "/pages/rock-paper-scissors/index" })}
-          >
+          <View className="primary-button" onClick={restart}>
             <Text className="button-text">再来一局</Text>
           </View>
           <View

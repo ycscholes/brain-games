@@ -3,8 +3,8 @@ import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
 import { usePageShare } from "../../utils/share";
-import { goBackToGameStart } from "../../utils/gameRoute";
-import { readTrafficEscapeRun } from "./run";
+import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
+import { createTrafficEscapeRun, readTrafficEscapeRun } from "./run";
 import "./index.scss";
 
 export default function TrafficEscapeResult() {
@@ -17,6 +17,10 @@ export default function TrafficEscapeResult() {
   }, [run]);
   if (!run || run.status !== "settled" || !run.result) return null;
   const { result } = run;
+  const restart = () => {
+    const nextRun = createTrafficEscapeRun(run.payload.difficulty);
+    void replaceWithGamePlay("traffic-escape", nextRun.runId, readGameRouteParams());
+  };
   return (
     <View className="traffic-escape-page">
       <View className="traffic-finish">
@@ -37,10 +41,7 @@ export default function TrafficEscapeResult() {
               pagePath="pages/traffic-escape/index"
               isGauntlet={false}
             />
-            <View
-              className="traffic-primary-button"
-              onClick={() => void Taro.redirectTo({ url: "/pages/traffic-escape/index" })}
-            >
+            <View className="traffic-primary-button" onClick={restart}>
               <Text className="traffic-primary-button-text">再闯一条路线</Text>
             </View>
             <View

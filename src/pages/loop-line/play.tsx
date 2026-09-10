@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
+import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
 import { usePageShare } from "../../utils/share";
@@ -63,9 +64,10 @@ export default function LoopLinePage() {
       ? (getCurrentInstance().router?.params?.runId ?? "")
       : "";
   const routeRun = readLoopLineRun(runId);
+  const allowSettledRef = useRef(false);
 
   useEffect(() => {
-    if (!runId || !routeRun || routeRun.status !== "active") {
+    if (shouldRedirectInvalidGameRun(runId, routeRun?.status, allowSettledRef.current)) {
       void Taro.redirectTo({ url: "/pages/loop-line/index" });
     }
   }, [routeRun, runId]);
@@ -141,6 +143,7 @@ export default function LoopLinePage() {
         outcome: "completed",
       } as const;
       const isNewBest = nextScore > readBestScore(difficulty);
+      allowSettledRef.current = true;
       if (isNewBest) {
         Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, nextScore);
       }

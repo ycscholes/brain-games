@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
-import { goBackToGameStart } from "../../utils/gameRoute";
+import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
 import { usePageShare } from "../../utils/share";
 import { getMemoryChallengeRewardCap } from "./gameLogic";
 import MemoryChallengeResultPanel from "./components/MemoryChallengeResultPanel";
-import { readMemoryChallengeRun } from "./run";
+import { createMemoryChallengeRun, readMemoryChallengeRun } from "./run";
 import "./index.scss";
 
 const MODE_LABELS = { shape: "图形", pet: "宠物", calculation: "计算" } as const;
@@ -33,6 +33,14 @@ export default function MemoryChallengeResult() {
   if (!run || run.status !== "settled" || !run.result) return null;
   const mode = run.payload.mode;
   const memoryN = run.payload.n;
+  const restart = () => {
+    const nextRun = createMemoryChallengeRun({
+      difficulty: run.payload.difficulty,
+      mode,
+      n: memoryN,
+    });
+    void replaceWithGamePlay("memory-challenge", nextRun.runId, readGameRouteParams());
+  };
   return (
     <MemoryChallengeResultPanel
       score={run.result.score}
@@ -44,7 +52,7 @@ export default function MemoryChallengeResult() {
       highScore={readHighScore(mode, memoryN)}
       isNewRecord={run.result.isNewBest}
       isGauntlet={false}
-      onRestart={() => void Taro.redirectTo({ url: "/pages/memory-challenge/index" })}
+      onRestart={restart}
       onBackToStart={() => void goBackToGameStart("memory-challenge")}
       onBackHome={() => void Taro.reLaunch({ url: "/pages/index/index" })}
     />

@@ -33,6 +33,8 @@ describe("home game three-page route contract", () => {
       const resultDelegatesToPanel =
         resultSource.includes("ResultPanel") || resultSource.includes("FarmCountResult");
       expect(resultOwnsSticker || resultDelegatesToPanel).toBe(true);
+      expect(resultSource).toContain("replaceWithGamePlay");
+      expect(resultSource).toContain("create");
       expect(runSource).toContain("settleGameRun");
       expect(runSource).toContain("abandonGameRun");
     }

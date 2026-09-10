@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
+import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import { MAX_POINTS_PER_SESSION, type TrainingDifficulty } from "../../utils/trainingStorage";
 import { isGameGauntletRun, readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import GameRouteBack from "../../components/game-route/GameRouteBack";
@@ -60,9 +61,10 @@ export default function RockPaperScissors() {
       ? (getCurrentInstance().router?.params?.runId ?? "")
       : "";
   const routeRun = readRockPaperScissorsRun(runId);
+  const allowSettledRef = useRef(false);
 
   useEffect(() => {
-    if (!runId || !routeRun || routeRun.status !== "active") {
+    if (shouldRedirectInvalidGameRun(runId, routeRun?.status, allowSettledRef.current)) {
       void Taro.redirectTo({ url: "/pages/rock-paper-scissors/index" });
     }
   }, [routeRun, runId]);
@@ -98,7 +100,9 @@ export default function RockPaperScissors() {
   const scoreRef = useRef(persistedState?.score ?? 0);
   const streakRef = useRef(persistedState?.streak ?? 0);
   const bestStreakRef = useRef(persistedState?.bestStreak ?? 0);
-  const restoredTransientRef = useRef(false);
+  const restoredTransientRef = useRef(persistedState?.feedback !== "none");
+  const generateQuestionRef = useRef<(() => void) | null>(null);
+  const handleGameOverRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     scoreRef.current = score;
@@ -229,6 +233,7 @@ export default function RockPaperScissors() {
     setTargetOutcome(persistedState.targetOutcome);
     setSelectedHand(persistedState.selectedHand);
     setFeedback(persistedState.feedback);
+    restoredTransientRef.current = persistedState.feedback !== "none";
     setTimeLeft(
       Math.max(
         0,
@@ -265,6 +270,7 @@ export default function RockPaperScissors() {
       outcome: "completed",
     } as const;
     const isNewBest = updateHighScore(finalScore);
+    allowSettledRef.current = true;
     const routeSettlement = runId
       ? settleRockPaperScissorsCompletion(
           runId,
@@ -287,28 +293,28 @@ export default function RockPaperScissors() {
   }, [difficulty, getRewardDifficulty, runId, updateHighScore]);
 
   useEffect(() => {
-    if (
-      restoredTransientRef.current ||
-      !persistedState ||
-      !routeRun ||
-      routeRun.status !== "active" ||
-      feedback === "none"
-    ) {
-      return undefined;
-    }
-    restoredTransientRef.current = true;
+    generateQuestionRef.current = generateQuestion;
+  }, [generateQuestion]);
+
+  useEffect(() => {
+    handleGameOverRef.current = handleGameOver;
+  }, [handleGameOver]);
+
+  useEffect(() => {
+    if (!restoredTransientRef.current || feedback === "none") return undefined;
+    restoredTransientRef.current = false;
     const timer = setTimeout(
       () => {
         if (feedback === "wrong") {
-          handleGameOver();
+          handleGameOverRef.current?.();
           return;
         }
-        generateQuestion();
+        generateQuestionRef.current?.();
       },
       feedback === "wrong" ? 520 : 420,
     );
     return () => clearTimeout(timer);
-  }, [feedback, generateQuestion, handleGameOver, persistedState, routeRun]);
+  }, [feedback]);
 
   const handleRouteBack = useCallback(() => {
     if (!runId || !routeRun || routeRun.status !== "active") return;

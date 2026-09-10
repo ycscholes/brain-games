@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance, useUnload } from "@tarojs/taro";
+import { shouldRedirectInvalidGameRun } from "../../utils/gameRoute";
 import {
   playComplete,
   playCorrect,
@@ -56,9 +57,10 @@ export default function TentsCamp() {
       ? (getCurrentInstance().router?.params?.runId ?? "")
       : "";
   const routeRun = readTentsCampRun(runId);
+  const allowSettledRef = useRef(false);
 
   useEffect(() => {
-    if (!runId || !routeRun || routeRun.status !== "active") {
+    if (shouldRedirectInvalidGameRun(runId, routeRun?.status, allowSettledRef.current)) {
       void Taro.redirectTo({ url: "/pages/tents-camp/index" });
     }
   }, [routeRun, runId]);
@@ -195,6 +197,7 @@ export default function TentsCamp() {
         outcome: "completed",
       } as const;
       const isNewBest = finalScore > readBestScore(difficulty);
+      allowSettledRef.current = true;
       if (isNewBest) {
         Taro.setStorageSync(`${STORAGE_KEY_PREFIX}_${difficulty}`, finalScore);
       }

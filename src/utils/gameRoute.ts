@@ -3,6 +3,16 @@ import type { TrainingGameId } from "../domain/training/types";
 
 export type GameRouteParams = Record<string, string>;
 
+export type GameRunRouteStatus = "active" | "settled" | "abandoned";
+
+export function shouldRedirectInvalidGameRun(
+  runId: string,
+  status: GameRunRouteStatus | undefined,
+  allowSettled = false,
+) {
+  return !runId || !status || (status !== "active" && !allowSettled);
+}
+
 export function readGameRouteParams(): GameRouteParams {
   const params = getCurrentInstance().router?.params ?? {};
   return Object.fromEntries(

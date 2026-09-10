@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
-import { goBackToGameStart } from "../../utils/gameRoute";
+import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
 import { usePageShare } from "../../utils/share";
 import { getTrainingDifficultyLabel } from "../../utils/trainingStorage";
-import { readNetwalkRun } from "./run";
+import { createNetwalkRun, readNetwalkRun } from "./run";
 import "./index.scss";
 
 export default function NetwalkResult() {
@@ -18,6 +18,10 @@ export default function NetwalkResult() {
     }
   }, [run]);
   if (!run || run.status !== "settled" || !run.result) return null;
+  const restart = () => {
+    const nextRun = createNetwalkRun(run.payload.difficulty);
+    void replaceWithGamePlay("netwalk", nextRun.runId, readGameRouteParams());
+  };
   return (
     <View className="netwalk-page">
       <View className="netwalk-finish finish-screen">
@@ -40,10 +44,7 @@ export default function NetwalkResult() {
               pagePath="pages/netwalk/index"
               isGauntlet={false}
             />
-            <View
-              className="netwalk-primary-button"
-              onClick={() => void Taro.redirectTo({ url: "/pages/netwalk/index" })}
-            >
+            <View className="netwalk-primary-button" onClick={restart}>
               <Text className="netwalk-primary-button-text">再接一张网络</Text>
             </View>
             <View

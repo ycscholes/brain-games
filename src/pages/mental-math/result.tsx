@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import MentalMathResultPanel from "./components/MentalMathResultPanel";
 import { getCustomMathProfile, getMathStage, CUSTOM_MATH_STAGE_ID } from "./mathStages";
-import { goBackToGameStart } from "../../utils/gameRoute";
+import { readGameRouteParams, replaceWithGamePlay, goBackToGameStart } from "../../utils/gameRoute";
 import { usePageShare } from "../../utils/share";
 import { getTrainingDifficultyLabel } from "../../utils/trainingStorage";
-import { readMentalMathRun } from "./run";
+import { createMentalMathRun, readMentalMathRun } from "./run";
 import "./index.scss";
 
 function readBest(run: NonNullable<ReturnType<typeof readMentalMathRun>>) {
@@ -34,6 +34,16 @@ export default function MentalMathResult() {
   }, [run]);
   if (!run || run.status !== "settled" || !run.result) return null;
 
+  const restart = () => {
+    const nextRun = createMentalMathRun({
+      difficulty: run.payload.difficulty,
+      mode: run.payload.mode,
+      stageId: run.payload.stageId,
+      customConfig: run.payload.customConfig,
+    });
+    void replaceWithGamePlay("mental-math", nextRun.runId, readGameRouteParams());
+  };
+
   const isCustom = run.payload.stageId === CUSTOM_MATH_STAGE_ID;
   const stage = getMathStage(run.payload.stageId);
   const customProfile = getCustomMathProfile(
@@ -54,7 +64,7 @@ export default function MentalMathResult() {
       highScore={readBest(run)}
       isNewRecord={run.result.isNewBest}
       isGauntlet={false}
-      onRestart={() => void Taro.redirectTo({ url: "/pages/mental-math/index" })}
+      onRestart={restart}
       onBackToStart={() => void goBackToGameStart("mental-math")}
       onBackHome={() => void Taro.reLaunch({ url: "/pages/index/index" })}
     />

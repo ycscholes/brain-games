@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { Text, View } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
-import { goBackToGameStart } from "../../utils/gameRoute";
+import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
 import { usePageShare } from "../../utils/share";
-import { readLoopLineRun } from "./run";
+import { createLoopLineRun, readLoopLineRun } from "./run";
 import "./index.scss";
 
 export default function LoopLineResult() {
@@ -17,6 +17,10 @@ export default function LoopLineResult() {
     }
   }, [run]);
   if (!run || run.status !== "settled" || !run.result) return null;
+  const restart = () => {
+    const nextRun = createLoopLineRun(run.payload.difficulty);
+    void replaceWithGamePlay("loop-line", nextRun.runId, readGameRouteParams());
+  };
   return (
     <View className="loop-line-page">
       <View className="loop-line-finished summary-card">
@@ -44,7 +48,7 @@ export default function LoopLineResult() {
         />
         <View
           className="loop-line-start-button floating-start-action audio-pressable"
-          onClick={() => void Taro.redirectTo({ url: "/pages/loop-line/index" })}
+          onClick={restart}
         >
           <Text className="loop-line-start-button-text">再来一局</Text>
         </View>
