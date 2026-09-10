@@ -12,12 +12,12 @@
 
 ## 全局执行约束
 
-- 开始执行前确认 `git branch --show-current` 为 `master`，并记录 `git rev-parse HEAD`；本设计的起点是 `d797671`（`docs: design repository architecture cleanup`）。如果 HEAD 不是该提交或其后续的本分支提交，先暂停并重新确认基线。
+- 执行从当前已提交的计划基线 `99cc1b3` 开始。先在当前主检出中运行 `git status --short --untracked-files=all`，确认只有用户 output 文件，再创建普通分支 `git switch -c codex/repository-architecture-cleanup`；禁止创建或使用 Git worktree。随后记录 `BASE_SHA="$(git rev-parse HEAD)"` 并执行 `test "$BASE_SHA" = 99cc1b3`。所有阶段 diff 都使用这个 recorded `BASE_SHA`，不使用更早的设计提交作为基线。
 - 当前已知用户文件为 `output/official-account/hidato/` 与 `output/official-account/memory-challenge/`。每个任务开始和提交前都运行 `git status --short --untracked-files=all`；这两个目录必须始终保持未跟踪、未暂存、内容不变。任何 `git add` 都使用明确文件列表，禁止 `git add .`、`git add -A` 和 `git clean`。
 - 不删除或修改 `asset-backups/cloudbase-images/games/traffic-escape/vehicle-atlas.png`、运行时宠物素材、`.env.*`、`project.private.config.json`、CloudBase 线上路径或云函数部署配置；本计划不上传、不部署、不发布、不推送。
 - 六个阶段按顺序执行，每个任务先红后绿，再运行该阶段门槛并提交。任务失败时只回滚该任务的新增文件和修改，不通过放宽断言、屏蔽规则或把慢测试重新塞回默认 suite 来恢复绿色。
 - 任何奖励行为都继续经过 `getAwardedPoints()` 与 `addPointsToPet()`；闯关子局仍只调用 `completeGauntletLegIfNeeded()`，不写普通训练记录、不二次发放积分。Traffic Escape 的 run 先由 `settleTrafficEscapeRun()` 标记为 settled，结算服务只能在该返回值非空时继续。
-- 所有路径均相对于仓库根目录。每次代码提交后至少运行受影响的 focused Jest、`npm run typecheck` 和 `npm run lint`；阶段收尾再运行阶段门槛。计划执行阶段不使用 worktree。
+- 所有路径均相对于仓库根目录。每次代码提交后至少运行受影响的 focused Jest、`npm run typecheck` 和 `npm run lint`；阶段收尾再运行阶段门槛。计划执行阶段不使用 worktree；每次 review checkpoint 都运行 `git diff "$BASE_SHA"..HEAD --name-only`。
 
 ## 文件地图与交叉依赖
 
@@ -85,7 +85,7 @@ Run: `npx jest tests/unit/eslintConfig.test.js --runInBand`
 
 Expected: FAIL because the current `eslint.config.mjs` exports `rules: {}` and does not expose the Taro/React/Hooks/TypeScript rules.
 
-- [ ] **Step 3: 编写唯一 flat 配置。** 在 `eslint.config.mjs` 里使用 `FlatCompat` 转换 `taro/react`，显式注册 `@typescript-eslint`、`react`、`react-hooks` 和 `import` 插件；用 `files` 区分 `src/config/**/*.ts`、`src/services/**/*.ts`、`src/utils/**/*.ts`、`scripts/**/*.{js,ts,mjs}`、`tests/**/*.{js,ts,tsx}`、`cloudfunctions/**/*.js` 和 React TSX。保留 `react/jsx-uses-react`、`react/react-in-jsx-scope` 关闭项与 `jsx-quotes: ["error", "prefer-double"]`，对 Jest globals、Node globals、CommonJS cloud functions 分别设置环境，不使用 `/* eslint-disable */` 全局豁免。
+- [ ] **Step 3: 编写候选 flat 配置并先测量新增规则的 baseline。** 在 `eslint.config.mjs` 里使用 `FlatCompat` 转换 `taro/react`，显式注册 `@typescript-eslint`、`react`、`react-hooks` 和 `import` 插件；用 `files` 区分 `src/config/**/*.ts`、`src/services/**/*.ts`、`src/utils/**/*.ts`、`scripts/**/*.{js,ts,mjs}`、`tests/**/*.{js,ts,tsx}`、`cloudfunctions/**/*.js` 和 React TSX。保留 `react/jsx-uses-react`、`react/react-in-jsx-scope` 关闭项与 `jsx-quotes: ["error", "prefer-double"]`，对 Jest globals、Node globals、CommonJS cloud functions 分别设置环境，不使用 `/* eslint-disable */` 全局豁免。候选配置写入工作树后，先测量当前源码在新增规则下的 violations，不假设 lint 已经变绿：
 
 ```js
 import { FlatCompat } from "@eslint/eslintrc";
@@ -143,13 +143,29 @@ export default [
 
 The implementation worker must remove the unused `require` helper if the final config does not need it; the printed-config regression test, not the snippet's incidental imports, is the acceptance authority.
 
-- [ ] **Step 4: 将必要的 flat-config bridge 作为直接开发依赖锁定，并运行 focused checks。** 若 `@eslint/eslintrc` 不是 `package.json` 的直接依赖，执行 `npm install --save-dev --save-exact @eslint/eslintrc@3.3.1`，保留现有 ESLint 8.57 范围，不升级 ESLint 或 Taro。
+- [ ] **Step 4: 输出新增规则的 baseline 报告。**
+
+Run: `npx eslint src config scripts tests .trae/rules --format json > /tmp/brain-games-eslint-new-rules.json; eslint_status=$?; node -e 'const r=require("/tmp/brain-games-eslint-new-rules.json"); const rows=r.flatMap((f)=>f.messages.map((m)=>({file:f.filePath,rule:m.ruleId,severity:m.severity,line:m.line}))); console.log(JSON.stringify({eslintStatus:process.argv[1],count:rows.length,byRule:Object.groupBy(rows,(x)=>x.rule)},null,2))' "$eslint_status"; exit 0`
+
+Expected: the command always writes a complete report and prints the exact pre-existing violation count grouped by rule; a non-zero ESLint status is evidence to act on, not a reason to weaken the candidate configuration. Save the report outside the repository and do not commit it.
+
+- [ ] **Step 5: 若 baseline 暴露既有 lint debt，先修 debt 并独立提交。** 只修报告中已存在的 source/test/script violations；保持 rule severity，不添加全局 ignore、file-wide disable 或 broad override。每次修复后，用 baseline JSON 中的明确文件路径运行 ESLint、相关 focused Jest 和 `npm run typecheck`，再只暂存这些明确文件：
+
+```bash
+node -e 'const {execFileSync}=require("node:child_process"); const r=require("/tmp/brain-games-eslint-new-rules.json"); const files=[...new Set(r.filter((f)=>f.messages.length>0).map((f)=>f.filePath.replace(process.cwd()+"/","")))]; execFileSync("git",["add","--",...files],{stdio:"inherit"})'
+git diff --cached --check
+git commit -m "fix: clear existing eslint baseline debt"
+```
+
+Expected: the Node command stages only the literal files present in the baseline JSON; this commit contains only pre-existing lint-debt fixes. If baseline count is zero, skip the commit and record `0 violations` in the task review note. Do not use `git add src`, `git add tests`, or another directory-wide staging command.
+
+- [ ] **Step 6: 将必要的 flat-config bridge 作为直接开发依赖锁定，并运行 focused checks。** 若 `@eslint/eslintrc` 不是 `package.json` 的直接依赖，执行 `npm install --save-dev --save-exact @eslint/eslintrc@3.3.1`，保留现有 ESLint 8.57 范围，不升级 ESLint 或 Taro。
 
 Run: `npx jest tests/unit/eslintConfig.test.js --runInBand && npx eslint src/pages/mental-math/index.tsx scripts/generate-traffic-escape-hard-puzzles.ts tests/unit/eslintConfig.test.js --max-warnings=0`
 
 Expected: PASS; `--print-config` shows non-zero React/Hooks/TypeScript/import rules and the focused lint command exits 0. If the installed lockfile resolves a different compatible `@eslint/eslintrc` patch, record that exact resolved version in `package-lock.json` rather than broadening the dependency range.
 
-- [ ] **Step 5: 确认旧配置不再被读取并提交。**
+- [ ] **Step 7: 确认旧配置不再被读取并提交配置恢复。**
 
 Run: `test ! -e .eslintrc && npm run lint:code -- --debug 2>&1 | rg "eslint.config.mjs|Using flat config"`
 
@@ -213,7 +229,7 @@ Expected: focused Jest、TypeScript、ESLint 与既有项目规则检查全部 P
 
 - [ ] **Step 2: 检查阶段提交范围和用户文件。**
 
-Run: `git status --short --untracked-files=all && git diff d797671..HEAD --name-only`
+Run: `git status --short --untracked-files=all && git diff "$BASE_SHA"..HEAD --name-only`
 
 Expected: 只出现 Phase 1 文件；两个 `output/official-account/hidato/`、`output/official-account/memory-challenge/` 仍是未跟踪项且未出现在任何 commit 中。
 
@@ -230,14 +246,14 @@ Expected: 只出现 Phase 1 文件；两个 `output/official-account/hidato/`、
 - Modify: `package.json`
 - Modify: `jest.config.js`
 
-- [ ] **Step 1: 先锁定默认 suite 的快速断言。** 保留 `tests/unit/trafficEscapePuzzleGenerator.test.ts` 中的 generated source byte-size、六个独立模板、seed determinism、trace replay、48–72 reverse moves 和固定 seed corpus；保留 `tests/unit/trafficEscapePuzzleQuality.test.ts` 中纯分析/规则/失败信息/geometry key/anchor 规则。新增一个默认测试直接读取 `src/pages/traffic-escape/hardPuzzles.generated.ts` 的导出，断言 `HARD_TRAFFIC_ESCAPE_PUZZLES` 长度为 36、每题 10 车且每题有一个 target，不执行 BFS 全库重算。
+- [ ] **Step 1: 先锁定默认 suite 的快速断言。** 保留 `tests/unit/trafficEscapePuzzleGenerator.test.ts` 中的 generated source byte-size、六个独立模板、seed determinism、trace replay、48–72 reverse moves 和固定 seed corpus；保留 `tests/unit/trafficEscapePuzzleQuality.test.ts` 中纯分析/规则/失败信息/geometry key/anchor 规则。新增一个默认测试直接读取 `src/pages/traffic-escape/hardPuzzles.generated.ts` 的导出，断言 `CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES` 长度为 36、每题 10 车且每题有一个 target，不执行 BFS 全库重算。
 
 ```ts
-import { HARD_TRAFFIC_ESCAPE_PUZZLES } from "../../src/pages/traffic-escape/hardPuzzles.generated";
+import { CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES } from "../../src/pages/traffic-escape/hardPuzzles.generated";
 
 test("ships the serialized 36-puzzle runtime bank shape", () => {
-  expect(HARD_TRAFFIC_ESCAPE_PUZZLES).toHaveLength(36);
-  expect(HARD_TRAFFIC_ESCAPE_PUZZLES.every((puzzle) => (
+  expect(CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES).toHaveLength(36);
+  expect(CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES.every((puzzle) => (
     puzzle.size === 6
     && puzzle.vehicles.length === 10
     && puzzle.vehicles.filter((vehicle) => vehicle.isTarget).length === 1
@@ -245,16 +261,15 @@ test("ships the serialized 36-puzzle runtime bank shape", () => {
 });
 ```
 
-- [ ] **Step 2: 将昂贵认证移入独立文件。** 从 `tests/unit/trafficEscapePuzzleGenerator.test.ts` 移出 `collectCertifiedPuzzles({ firstSeed: 1, lastSeed: 2_000, count: 36 })` 的 36 题 BFS/结构多样性测试，放入 `tests/certification/trafficEscapePuzzleCertification.test.ts`，并在该文件中同时验证 36 题逐题 `certifyTrafficEscapeHardPuzzle()`、`certifyTrafficEscapeHardPuzzleBank()` 和 2,000 seed 扫描结果。
+- [ ] **Step 2: 将昂贵认证移入独立文件。** 从 `tests/unit/trafficEscapePuzzleGenerator.test.ts` 移出 `collectCertifiedPuzzles({ firstSeed: 1, lastSeed: 2_000, count: 36 })` 的 36 题 BFS/结构多样性测试，放入 `tests/certification/trafficEscapePuzzleCertification.test.ts`。运行时序列化导出只逐题调用 `certifyTrafficEscapeHardPuzzle()`；完整 bank diversity 必须使用 `collectCertifiedPuzzles()` 返回的原始带真实 `templateId` 数据调用 `certifyTrafficEscapeHardPuzzleBank()`，禁止把所有 template id 改写成 `runtime-bank`。
 
 ```ts
-import { HARD_TRAFFIC_ESCAPE_PUZZLES } from "../../src/pages/traffic-escape/hardPuzzles.generated";
+import { CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES } from "../../src/pages/traffic-escape/hardPuzzles.generated";
 import { collectCertifiedPuzzles } from "../../scripts/generate-traffic-escape-hard-puzzles";
 import { certifyTrafficEscapeHardPuzzle, certifyTrafficEscapeHardPuzzleBank } from "../../src/pages/traffic-escape/puzzleQuality";
 
-test("certifies every generated runtime puzzle and the complete bank", () => {
-  expect(HARD_TRAFFIC_ESCAPE_PUZZLES.every((puzzle) => certifyTrafficEscapeHardPuzzle(puzzle).accepted)).toBe(true);
-  expect(certifyTrafficEscapeHardPuzzleBank(HARD_TRAFFIC_ESCAPE_PUZZLES.map((puzzle) => ({ puzzle, templateId: "runtime-bank" }))).accepted).toBe(true);
+test("certifies every serialized runtime puzzle individually", () => {
+  expect(CERTIFIED_TRAFFIC_ESCAPE_HARD_PUZZLES.every((puzzle) => certifyTrafficEscapeHardPuzzle(puzzle).accepted)).toBe(true);
 });
 
 test("scans the approved 2,000-seed collection range", () => {
@@ -348,7 +363,7 @@ Expected: 两类测试均 PASS；默认 suite 不隐式执行 2,000 seed 扫描�
 
 - [ ] **Step 2: 检查命令和用户文件范围。**
 
-Run: `git status --short --untracked-files=all && git diff d797671..HEAD --name-only`
+Run: `git status --short --untracked-files=all && git diff "$BASE_SHA"..HEAD --name-only`
 
 Expected: 仅出现 Phase 1/2 计划内文件；用户 `output/official-account/hidato` 与 `memory-challenge` 仍未跟踪且未暂存。
 
@@ -367,11 +382,19 @@ Expected: 仅出现 Phase 1/2 计划内文件；用户 `output/official-account/
 - Modify: `scripts/sync-cloudbase-images.sh`
 - Modify: focused asset/custom-pet tests only if the reference search finds an assertion tied to a deleted candidate
 
-- [ ] **Step 1: 对每个候选运行仓库引用审计。**
+- [ ] **Step 1: 对每个候选运行三层仓库引用审计。** 第一层搜索完整相对路径；第二层搜索 basename、import symbol 和源文件名；第三层搜索运行时 remote key/manifest key。三层都必须没有 active source、test、config、script 或 CloudBase manifest 引用后才允许删除，历史 plans/specs/reviews 命中必须单独分类而不能直接当作活跃引用。
 
 Run: `for f in src/hooks/useAudioFeedback.ts scripts/fixtures/custom-pet-user-reference-dog.jpg asset-backups/cloudbase-images/pets/food-steak.png asset-backups/cloudbase-images/pets/pose-reference-sheet.png cloudfunctions/shared/assets/pose-reference-sheet.png; do echo "--- $f"; rg -n --hidden --glob '!node_modules/**' --glob '!output/**' --fixed-strings "$f" . || true; done`
 
-Expected: 只有 `scripts/sync-cloudbase-images.sh` 中的 manifest 行需要移除；`useAudioFeedback.ts`、fixture、steak 与两张 obsolete pose sheet 不被运行时代码或测试导入。若审计发现实际引用，停止该删除批次并先更新其合法 owner/test，不以删除断言规避引用。
+Expected: the full-path scan identifies every textual path occurrence. Continue with the basename/symbol scan:
+
+Run: `rg -n --hidden --glob '!node_modules/**' --glob '!output/**' --glob '!docs/superpowers/plans/**' --glob '!docs/superpowers/specs/**' --glob '!docs/reviews/**' "useAudioFeedback|custom-pet-user-reference-dog|food-steak|pose-reference-sheet|cat-reference-sheet|food-steak\.png|pose-reference-sheet\.png" . || true`
+
+Expected: no active source/test/config/script import symbol or basename remains for the deletion candidates; any `cat-reference-sheet` hit is classified separately because the custom-pet worker currently owns that key. Finish with remote-key scan:
+
+Run: `rg -n --hidden --glob '!node_modules/**' --glob '!output/**' "pets/food-steak\.png|pets/pose-reference-sheet\.png|previews/pet-sheet-preview\.png|app-icons/.*(barbell|-[vV][123])" src scripts cloudfunctions project.config.json tests asset-backups || true`
+
+Expected: only the deliberately removed manifest entries are present for candidates; `food-steak`, pose sheets and fixture have no active remote key. If any of the three scans finds a real active reference, stop this deletion batch and update its legitimate owner/test first; do not delete a file to make a test pass.
 
 - [ ] **Step 2: 运行删除前的相关测试。**
 
@@ -383,7 +406,7 @@ Expected: PASS；这是删除前的行为基线。
 
 - [ ] **Step 4: 运行删除后检查。**
 
-Run: `rg -n --hidden --glob '!node_modules/**' --glob '!output/**' "useAudioFeedback|food-steak|pose-reference-sheet" . || true; npm run assets:check; npx jest tests/unit/audioFeedbackService.test.ts tests/unit/customPetWorker.test.js tests/unit/remoteAssets.test.ts tests/unit/petAssets.test.ts --runInBand`
+Run: `rg -n --hidden --glob '!node_modules/**' --glob '!output/**' --glob '!docs/superpowers/plans/**' --glob '!docs/superpowers/specs/**' --glob '!docs/reviews/**' "useAudioFeedback|custom-pet-user-reference-dog|food-steak|pose-reference-sheet" src scripts cloudfunctions project.config.json tests asset-backups || true; npm run assets:check; npx jest tests/unit/audioFeedbackService.test.ts tests/unit/customPetWorker.test.js tests/unit/remoteAssets.test.ts tests/unit/petAssets.test.ts --runInBand`
 
 Expected: 仅保留历史文档中不构成运行时引用的文字（若有）；asset check 与 focused tests PASS。若 `audioFeedbackService.test.ts` 仍直接测试 deleted hook，则按当前服务 API 改为测试 `src/services/audio/audioFeedbackService.ts`，不恢复 hook。
 
@@ -439,16 +462,15 @@ Expected: staged status lists exactly seven deletions and no `output/` path.
 **Files:**
 - Delete: `.trae/documents/plan_20260212_094742.md`
 - Delete: `.superpowers/sdd/2026-09-07-traffic-escape-ten-vehicle-atlas/task-4-report.md`
-- Delete: `.claude/settings.json`
-- Delete: `skills-lock.json`
 - Delete: every broken symlink under `.claude/skills/` listed by `find .claude/skills -type l ! -exec test -e {} \; -print`
-- Delete: `CLAUDE.MD`
+- Modify: `docs/architecture.md` to record deferred external-entry candidates
+- Defer deletion: `.claude/settings.json`, `skills-lock.json`, `CLAUDE.MD` until external-tool ownership is disproven
 
-- [ ] **Step 1: 验证这些文件没有被 active repository command 使用。**
+- [ ] **Step 1: 验证内部引用、symlink 状态和外部工具入口。**
 
-Run: `find .claude/skills -type l ! -exec test -e {} \; -print; rg -n --hidden --glob '!node_modules/**' --glob '!output/**' "\.claude/settings\.json|skills-lock\.json|CLAUDE\.MD|\.trae/documents|\.superpowers/sdd" package.json package-lock.json .github scripts src tests docs project.config.json AGENTS.md || true`
+Run: `find .claude/skills -type l ! -exec test -e {} \; -print; rg -n --hidden --glob '!node_modules/**' --glob '!output/**' "\.claude/settings\.json|skills-lock\.json|CLAUDE\.MD|\.trae/documents|\.superpowers/sdd" package.json package-lock.json .github scripts src tests docs project.config.json AGENTS.md || true; git ls-files -s .claude/settings.json skills-lock.json CLAUDE.MD`
 
-Expected: broken symlink list contains only the duplicate repository skill-link farm; no active package script, CI workflow, source, test or project instruction reads the files selected for deletion. Keep `.trae/rules/`, its validator and `.trae/rules/tests/` because `lint:rules` depends on them.
+Expected: broken symlink list contains only the duplicate repository skill-link farm; internal search is not treated as proof that the three external-entry candidates are obsolete. Read each candidate and inspect any configured external tool entry points available on the host (for example Claude/Codex skill discovery paths and the symlink targets) without editing outside the repository. Keep `.trae/rules/`, its validator and `.trae/rules/tests/` because `lint:rules` depends on them.
 
 - [ ] **Step 2: 运行删除前规则门槛。**
 
@@ -456,36 +478,40 @@ Run: `npm run lint:rules && npx jest .trae/rules/tests/validator.test.js --runIn
 
 Expected: PASS; this proves the active `.trae/rules` path is unrelated to the stale `.trae/documents` and broken `.claude` links.
 
-- [ ] **Step 3: 删除历史/链接文件并运行全局引用扫描。** 删除前一步精确列出的 files/symlinks，执行：
+- [ ] **Step 3: 记录外部入口结论；对未证明确认废弃的文件暂不删除。** 如果 host inspection 明确证明 `.claude/settings.json`、`skills-lock.json` 或 `CLAUDE.MD` 仍是外部工具入口，保留原文件；如果没有足够证据证明其废弃，也保留原文件。只把三者列入 `docs/architecture.md` 的“建议删除、暂不执行”清单，写明外部 owner 未确认、当前 commit 不删除。只有明确完成外部入口审计且确认废弃时，才另开后续任务，不在本 cleanup 计划里删除它们。
+
+- [ ] **Step 4: 删除已确认的历史/断链文件并运行引用扫描。** 删除前一步精确列出的 `.trae/documents`、`.superpowers/sdd` 文件和 broken symlinks，执行：
 
 Run: `rg -n --hidden --glob '!node_modules/**' --glob '!output/**' "\.claude/skills|skills-lock|CLAUDE\.MD|\.trae/documents|\.superpowers/sdd" . || true`
 
-Expected: no active repository reference remains. Do not delete any current `docs/superpowers/specs/2026-09-10-repository-architecture-cleanup-design.md` file.
+Expected: no active repository reference remains for the deleted history/links; `.claude/settings.json`, `skills-lock.json` and `CLAUDE.MD` remain present unless the separate external-entry audit produced proof and a separately reviewed scope change. Do not delete any current `docs/superpowers/specs/2026-09-10-repository-architecture-cleanup-design.md` file.
 
-- [ ] **Step 4: 提交历史噪声清理。**
+- [ ] **Step 5: 提交历史噪声清理。**
 
 ```bash
-git add -u .trae/documents .superpowers/sdd .claude skills-lock.json CLAUDE.MD
+git add -u .trae/documents .superpowers/sdd .claude/skills
+git add docs/architecture.md
 git diff --cached --name-status
 git diff --cached --check
 git commit -m "chore: remove stale repository metadata"
 ```
 
-Expected: commit contains only stale metadata and broken links; `.trae/rules` remains tracked and both user `output/` directories remain untracked.
+Expected: commit contains only confirmed stale metadata, broken links and the deferred-candidate note; `.trae/rules` remains tracked, the three external-entry candidates are not staged, and both user `output/` directories remain untracked.
 
 ### Task 10: 清理 ignored local artifacts（不提交）并完成 Phase 3 gate
 
 **Files:**
-- Verify/possibly remove locally: `dist/`, `.temp/`, `.rn_temp/`, `tmp/`, `node_modules/`
+- Verify/possibly remove locally: `dist/`, `.temp/`, `.rn_temp/`, `tmp/`
+- Never remove in this phase: `node_modules/`
 - Never stage: any ignored local directory or `output/official-account/*`
 
-- [ ] **Step 1: 记录当前依赖树和忽略产物。**
+- [ ] **Step 1: 记录清理前目录大小和忽略产物。**
 
-Run: `git status --short --ignored --untracked-files=all | sed -n '1,160p'; find dist .temp .rn_temp tmp -maxdepth 0 -type d -print 2>/dev/null || true`
+Run: `git status --short --ignored --untracked-files=all | sed -n '1,160p'; for d in dist .temp .rn_temp tmp; do if test -d "$d"; then du -sh -- "$d"; else echo "$d absent"; fi; done; test -d node_modules && du -sh -- node_modules`
 
-Expected: only explicitly ignored build/cache directories are candidates; no command may traverse or remove `output/official-account/hidato` or `output/official-account/memory-challenge`.
+Expected: only explicitly ignored build/cache directories are candidates; the size lines are captured in the task review; `node_modules/` is observed but never a deletion target. No command may traverse or remove `output/official-account/hidato` or `output/official-account/memory-challenge`.
 
-- [ ] **Step 2: 只有在所有依赖验证结束后清理缓存。** 若需要释放空间，逐个对已存在的 `dist/`、`.temp/`、`.rn_temp/`、`tmp/` 使用 `rm -rf -- <explicit-path>`；不要删除 `node_modules/` 直到 Phase 6 全部需要依赖的命令完成。若确实删除 `node_modules/`，立即运行 `npm ci` 并重新运行 `npm test`、`npm run typecheck`、`npm run lint`。
+- [ ] **Step 2: 只有在所有依赖验证结束后清理可重建缓存。** 若需要释放空间，只对仓库根目录下明确列出的 `dist/`、`.temp/`、`.rn_temp/`、`tmp/` 执行：`for d in dist .temp .rn_temp tmp; do test -d "$d" && rm -rf -- "$d"; done`；绝不删除 `node_modules/`，也不运行 `npm ci` 作为本地清理副作用。清理后重新运行相同的 size loop，记录每个目录的新大小或 `absent`。
 
 - [ ] **Step 3: 运行 Phase 3 完整门槛。**
 
@@ -674,74 +700,45 @@ git diff --cached --check
 git commit -m "refactor: move pet contracts out of pages"
 ```
 
-### Task 15: 定义并测试 typed settlement service
+### Task 15: Move canonical training contracts before settlement work
 
 **Files:**
 - Create: `src/domain/training/types.ts`
+- Modify: `src/utils/trainingStorage.ts`
+- Modify: `src/utils/gameFlowSession.ts`
+- Modify: `src/utils/gameGauntlet.ts`
+- Modify: `src/utils/petStorage.ts`
+- Verify: `tests/unit/trainingStorage.test.ts`, `tests/unit/gameGauntlet.test.ts`, `tests/unit/petStorage.test.ts`
+
+- [ ] **Step 1: 先运行当前 characterization tests，并列出源码中的全部 canonical exports。**
+
+Run: `npx jest tests/unit/trainingStorage.test.ts tests/unit/gameGauntlet.test.ts tests/unit/petStorage.test.ts --runInBand && rg -n '^export (type|interface) ' src/utils/trainingStorage.ts`
+
+Expected: existing behavior is green and the `rg` output, not a hand-written example, is the authoritative list of every type to move. Include all current `TrainingGameId`, outcome/difficulty/reward policy, record, summary, dashboard and settings declarations that are exported by the source; do not replace the declaration with a shortened union.
+
+- [ ] **Step 2: 只移动 canonical declarations，不改变字段或 literals。** Copy the exact current exported declarations from `src/utils/trainingStorage.ts` into `src/domain/training/types.ts`, preserving every union member, optional field, alias and property type. Update `trainingStorage.ts` to import the domain types and re-export them for compatibility; update `gameFlowSession.ts`, `gameGauntlet.ts` and `petStorage.ts` to import from domain where they are domain consumers. Do not add settlement orchestration in this pure type move.
+
+- [ ] **Step 3: 运行类型/行为回归并提交纯重构。**
+
+Run: `npx jest tests/unit/trainingStorage.test.ts tests/unit/gameGauntlet.test.ts tests/unit/petStorage.test.ts --runInBand && npm run typecheck && git diff --check`
+
+Expected: PASS; `git diff -- src/utils/trainingStorage.ts src/domain/training/types.ts` shows only relocation/re-export changes and no scoring/storage behavior change.
+
+```bash
+git add src/domain/training/types.ts src/utils/trainingStorage.ts src/utils/gameFlowSession.ts src/utils/gameGauntlet.ts src/utils/petStorage.ts tests/unit/trainingStorage.test.ts tests/unit/gameGauntlet.test.ts tests/unit/petStorage.test.ts
+git diff --cached --check
+git commit -m "refactor: move canonical training contracts"
+```
+
+### Task 16: Write the settlement RED test, then implement the typed service
+
+**Files:**
 - Create: `src/domain/training/settlement.ts`
 - Create: `src/services/gameSettlementService.ts`
 - Create: `tests/unit/gameSettlementService.test.ts`
-- Modify: `src/utils/trainingStorage.ts`
-- Modify: `src/utils/gameFlowSession.ts`
-- Modify: `src/utils/petStorage.ts`
-- Modify: `src/utils/gameGauntlet.ts`
 - Verify: `src/utils/trainingStorage.ts`, `src/utils/petStorage.ts`, `src/utils/gameGauntlet.ts`
 
-- [ ] **Step 1: 写 service 的失败测试和精确 contract。** 先把 canonical `TrainingGameId`、`TrainingOutcome`、`TrainingDifficulty`、`TrainingRewardPolicy`、`TrainingRecord` 类型从 `src/utils/trainingStorage.ts` 移到 `src/domain/training/types.ts`；`trainingStorage.ts` 暂时从 domain re-export 它们，保证已有调用方可以分批迁移。
-
-```ts
-// src/domain/training/types.ts
-export type TrainingGameId =
-  | "memory-challenge" | "rock-paper-scissors" | "mental-math" | "twenty-four"
-  | "digit-span" | "multiple-object-tracking" | "pattern-completion" | "number-order"
-  | "head-count" | "word-scramble" | "bird-count" | "color-trap" | "spatial-rotation"
-  | "hidato" | "tents-camp" | "sumplete-grid" | "traffic-escape" | "music-theory"
-  | "netwalk" | "loop-line" | "game-gauntlet" | "memory" | "rps" | "mot" | "pattern";
-
-export type TrainingOutcome = "completed" | "interrupted";
-export type TrainingDifficulty = "normal" | "hard";
-
-export interface TrainingRewardPolicy {
-  applyDifficultyMultiplier?: boolean;
-  maxPoints?: number;
-}
-
-export interface TrainingRecord {
-  id: string;
-  gameId: TrainingGameId;
-  score: number;
-  awardedPoints: number;
-  playedAt: string;
-  durationSeconds?: number;
-  mode?: string;
-  difficulty?: TrainingDifficulty;
-  outcome: TrainingOutcome;
-}
-```
-
-Then `src/domain/training/settlement.ts` defines:
-
-```ts
-import type { TrainingDifficulty, TrainingGameId, TrainingOutcome, TrainingRecord, TrainingRewardPolicy } from "./types";
-
-export interface GameSettlementInput {
-  gameId: TrainingGameId;
-  score: number;
-  difficulty?: TrainingDifficulty;
-  durationSeconds?: number;
-  mode?: string;
-  outcome: TrainingOutcome;
-  rewardPolicy?: TrainingRewardPolicy;
-}
-
-export interface GameSettlementResult {
-  awardedPoints: number;
-  gauntletHandled: boolean;
-  record: TrainingRecord | null;
-}
-```
-
-In `tests/unit/gameSettlementService.test.ts`, mock `getAwardedPoints`, `addPointsToPet`, `recordTrainingSession`, and `completeGauntletLegIfNeeded`. Add tests for: ordinary completed game calls points then one record; interrupted game records zero score with provided duration/difficulty; gauntlet returns `gauntletHandled: true` and does not call pet/record; reward policy is forwarded unchanged; awarded points are computed exactly once.
+- [ ] **Step 1: 先只写 service RED test，不修改 production service 或 route。** In `tests/unit/gameSettlementService.test.ts`, mock `getAwardedPoints`, `addPointsToPet`, `recordTrainingSession`, and `completeGauntletLegIfNeeded`. Add tests for one ordinary completed settlement, one interrupted settlement with zero score, a gauntlet short-circuit, reward-policy forwarding, and exactly one points calculation.
 
 ```ts
 test("ordinary completion awards once and records once", () => {
@@ -761,97 +758,112 @@ test("gauntlet leg stops before ordinary reward and record", () => {
 });
 ```
 
-- [ ] **Step 2: 运行 focused test，确认 service 不存在。**
+- [ ] **Step 2: 运行 RED test，确认 service 缺失而非类型迁移缺失。**
 
 Run: `npx jest tests/unit/gameSettlementService.test.ts --runInBand`
 
-Expected: FAIL because `src/services/gameSettlementService.ts` and its typed input/output do not yet exist.
+Expected: FAIL because `src/services/gameSettlementService.ts` and `src/domain/training/settlement.ts` do not yet exist; the canonical type migration from Task 15 is already green and is not part of this RED result.
 
-- [ ] **Step 3: 实现最小编排。** `settleGame(input)` 必须先计算 `const awardedPoints = getAwardedPoints(input.gameId, input.score, input.difficulty, input.rewardPolicy)`；再调用 `completeGauntletLegIfNeeded`，参数包含 gameId/score/awardedPoints/durationSeconds/difficulty/mode/outcome；若返回 true，返回 `{ awardedPoints, gauntletHandled: true, record: null }`；否则调用 `addPointsToPet`，再调用 `recordTrainingSession`，返回 record。不要在 service 中复制倍率、封顶、game id alias 或 `game-gauntlet` 汇总逻辑。
+- [ ] **Step 3: 定义 typed contract 并实现最小编排。** `src/domain/training/settlement.ts` imports the exact types from `./types` and defines `GameSettlementInput` with `gameId`, `score`, optional `difficulty`, `durationSeconds`, `mode`, `outcome`, and optional `rewardPolicy`; it defines `GameSettlementResult` with `awardedPoints`, `gauntletHandled`, and nullable `TrainingRecord`. `settleGame(input)` computes `getAwardedPoints()` once, calls `completeGauntletLegIfNeeded()` first, returns `{ awardedPoints, gauntletHandled: true, record: null }` when handled, otherwise calls `addPointsToPet()` and `recordTrainingSession()`. Do not duplicate caps, aliases or final `game-gauntlet` aggregation.
 
-- [ ] **Step 4: 运行 service test、points economy tests 和 typecheck。**
+- [ ] **Step 4: 运行 focused tests/typecheck 并提交 service。**
 
 Run: `npx jest tests/unit/gameSettlementService.test.ts tests/unit/trainingStorage.test.ts tests/unit/gameGauntlet.test.ts tests/unit/petStorage.test.ts --runInBand && npm run typecheck`
 
-Expected: PASS; `getAwardedPoints()` remains the sole score-to-points authority, `gameGauntlet.ts` continues to own final aggregated reward policy.
-
-- [ ] **Step 5: 提交 contract/service。**
+Expected: PASS; shared points pipeline and gauntlet final aggregation remain unchanged.
 
 ```bash
-git add src/domain/training/types.ts src/domain/training/settlement.ts src/services/gameSettlementService.ts src/utils/trainingStorage.ts src/utils/gameFlowSession.ts src/utils/gameGauntlet.ts src/utils/petStorage.ts tests/unit/gameSettlementService.test.ts
+git add src/domain/training/settlement.ts src/services/gameSettlementService.ts tests/unit/gameSettlementService.test.ts
 git diff --cached --check
 git commit -m "refactor: add shared game settlement service"
 ```
 
-### Task 16: 分批迁移 ordinary routes，并保留 Traffic Escape exactly-once
+### Task 17A: Migrate ordinary settlement batch 1
 
 **Files:**
-- Modify in Batch A: `src/pages/{color-trap,multiple-object-tracking,netwalk,spatial-rotation,hidato,word-scramble,digit-span,sumplete-grid,number-order,loop-line,tents-camp,twenty-four,rock-paper-scissors,music-theory,mental-math,pattern-completion,bird-count,memory-challenge}/index.tsx`
-- Modify in Batch B: `src/pages/traffic-escape/play.tsx`, `src/pages/traffic-escape/run.ts`
-- Modify: `tests/unit/trafficEscapeRun.test.ts`, `tests/unit/gameSettlementService.test.ts`, affected route logic tests
+- Modify: `src/pages/color-trap/index.tsx`, `src/pages/spatial-rotation/index.tsx`, `src/pages/hidato/index.tsx`, `src/pages/tents-camp/index.tsx`, `src/pages/sumplete-grid/index.tsx`
+- Verify: `tests/unit/colorTrapGameLogic.test.ts`, `tests/unit/spatialRotationGameLogic.test.ts`, `tests/unit/hidatoGameLogic.test.ts`, `tests/unit/tentsCampGameLogic.test.ts`, `tests/unit/sumpleteGridGameLogic.test.ts`, `tests/unit/gameSettlementService.test.ts`
 
-- [ ] **Step 1: 建立 route settlement characterization matrix。** 对每个 route 记录现有 `gameId`、raw score、reward difficulty/mode、duration、outcome、best-score side effect 和 gauntlet return behavior；以当前 source 为基线，不改变 `docs/points-economy.md` 中的 caps/multipliers。先运行：
-
-Run: `rg -n "getAwardedPoints|addPointsToPet|recordTrainingSession|completeGauntletLegIfNeeded" src/pages/*/index.tsx src/pages/traffic-escape/play.tsx`
-
-Expected: 输出成为迁移清单；任何已有自定义 `rewardPolicy`（尤其 memory challenge）必须进入 service input，不能被默认策略覆盖。
-
-- [ ] **Step 2: Batch A 先改测试 seam 再替换重复编排。** 在每个 selected route 的 completion handler 中以 `settleGame({ ... })` 替换重复的 get/add/record sequence，保留 `isNewBest`、storage writes、view state 和 navigation；对 `multiple-object-tracking`、`bird-count` 的不同 modes 使用现有 reward difficulty/mode values；对 `memory-challenge` 透传自定义 reward policy；不把 sticker reward 或 gauntlet finalization 搬进 service。
-
-```ts
-const settlement = settleGame({
-  gameId: "hidato",
-  score: nextScore,
-  difficulty,
-  durationSeconds,
-  mode,
-  outcome: "completed",
-});
-if (settlement.gauntletHandled) return;
-```
-
-The final route call must typecheck exactly as `settleGame({ gameId, score, difficulty, durationSeconds, mode, outcome, rewardPolicy })`; `awardedPoints` is returned by the service and is never supplied by a page.
-
-- [ ] **Step 3: 运行每批 focused tests，确认 score/reward/gauntlet invariants。**
-
-Run: `npx jest tests/unit/{colorTrapGameLogic,musicTheoryGameLogic,patternCompletionPatterns,mentalMathStages,birdCountGameLogic,gameGauntlet,trainingStorage,petStorage}.test.ts --runInBand && npm run typecheck`
-
-Expected: PASS; ordinary routes still use shared points pipeline, gauntlet routes do not write ordinary records, and no score/difficulty/mode constants change.
-
-- [ ] **Step 4: 迁移 Traffic Escape only after its run state tests are green.** Keep `settleTrafficEscapeRun(runId, result)` as the exactly-once storage transition. In `finishGame`, compute score and `isNewBest`, call `settleTrafficEscapeRun`, return if null, then call `settleGame` exactly once; redirect to `/pages/traffic-escape/result?runId=...` only after ordinary settlement. In `backToStart`, keep `abandonGameRun` first and call `settleGame` with score/points 0 and outcome interrupted only once; preserve gauntlet interrupted-leg behavior and `Taro.navigateBack()`.
-
-```ts
-const settled = settleTrafficEscapeRun(runId, result);
-if (!settled) return;
-const settlement = settleGame({
-  gameId: "traffic-escape",
-  score,
-  difficulty: payload.difficulty,
-  durationSeconds,
-  outcome: "completed",
-});
-if (settlement.gauntletHandled) return;
-```
-
-- [ ] **Step 5: 增加 exactly-once regression并运行 Traffic focused tests。**
-
-Run: `npx jest tests/unit/trafficEscapeRun.test.ts tests/unit/gameSettlementService.test.ts tests/unit/trafficEscapeGameLogic.test.ts --runInBand && rg -n "getAwardedPoints|addPointsToPet|recordTrainingSession|completeGauntletLegIfNeeded" src/pages/traffic-escape/play.tsx`
-
-Expected: tests PASS; `play.tsx` has no direct duplicate reward/record imports after migration, and second completion/abandon attempt produces no second settlement.
-
-- [ ] **Step 6: 分批提交。** Batch A and Batch B are separate commits; each staged list must contain only the routes/tests in that batch.
+- [ ] **Step 1: 记录这五个 route 的 current settlement arguments。** Run `rg -n "getAwardedPoints|addPointsToPet|recordTrainingSession|completeGauntletLegIfNeeded" src/pages/color-trap/index.tsx src/pages/spatial-rotation/index.tsx src/pages/hidato/index.tsx src/pages/tents-camp/index.tsx src/pages/sumplete-grid/index.tsx` and preserve each current game id, score, difficulty, duration, mode, outcome and best-score side effect.
+- [ ] **Step 2: 用 `settleGame({ gameId, score, difficulty, durationSeconds, mode, outcome, rewardPolicy })` 替换重复编排。** Keep view state/navigation and return immediately when `gauntletHandled` is true; do not change any score/cap constant.
+- [ ] **Step 3: 运行 focused tests、typecheck、lint 和 review checkpoint。** Run: `npx jest tests/unit/colorTrapGameLogic.test.ts tests/unit/spatialRotationGameLogic.test.ts tests/unit/hidatoGameLogic.test.ts tests/unit/tentsCampGameLogic.test.ts tests/unit/sumpleteGridGameLogic.test.ts tests/unit/gameSettlementService.test.ts --runInBand && npm run typecheck && npm run lint && git diff "$BASE_SHA"..HEAD --name-only`
+- [ ] **Step 4: 提交只包含本批文件。**
 
 ```bash
-git add src/pages/{color-trap,multiple-object-tracking,netwalk,spatial-rotation,hidato,word-scramble,digit-span,sumplete-grid,number-order,loop-line,tents-camp,twenty-four,rock-paper-scissors,music-theory,mental-math,pattern-completion,bird-count,memory-challenge}/index.tsx tests/unit
+git add src/pages/color-trap/index.tsx src/pages/spatial-rotation/index.tsx src/pages/hidato/index.tsx src/pages/tents-camp/index.tsx src/pages/sumplete-grid/index.tsx tests/unit/colorTrapGameLogic.test.ts tests/unit/spatialRotationGameLogic.test.ts tests/unit/hidatoGameLogic.test.ts tests/unit/tentsCampGameLogic.test.ts tests/unit/sumpleteGridGameLogic.test.ts tests/unit/gameSettlementService.test.ts
 git diff --cached --check
-git commit -m "refactor: route ordinary games through settlement service"
+git commit -m "refactor: migrate reasoning routes to settlement service"
+```
 
-git add src/pages/traffic-escape/play.tsx src/pages/traffic-escape/run.ts tests/unit/trafficEscapeRun.test.ts tests/unit/gameSettlementService.test.ts
+### Task 17B: Migrate ordinary settlement batch 2
+
+**Files:**
+- Modify: `src/pages/netwalk/index.tsx`, `src/pages/loop-line/index.tsx`, `src/pages/word-scramble/index.tsx`, `src/pages/digit-span/index.tsx`, `src/pages/number-order/index.tsx`
+- Verify: `tests/unit/netwalkGameLogic.test.ts`, `tests/unit/loopLineGameLogic.test.ts`, `tests/unit/wordScrambleGameLogic.test.ts`, `tests/unit/numberOrderGameLogic.test.ts`, `tests/unit/gameSettlementService.test.ts`
+
+- [ ] **Step 1: 先运行这五个 route 的 characterization suite。** Run: `npx jest tests/unit/netwalkGameLogic.test.ts tests/unit/loopLineGameLogic.test.ts tests/unit/wordScrambleGameLogic.test.ts tests/unit/numberOrderGameLogic.test.ts --runInBand`.
+- [ ] **Step 2: 迁移 settlement 并保留每个 route 的 mode/difficulty/storage/navigation semantics。** Use the typed service; do not introduce a generic route wrapper.
+- [ ] **Step 3: 运行 focused tests、typecheck、lint 和 review checkpoint。** Run: `npx jest tests/unit/netwalkGameLogic.test.ts tests/unit/loopLineGameLogic.test.ts tests/unit/wordScrambleGameLogic.test.ts tests/unit/numberOrderGameLogic.test.ts tests/unit/gameSettlementService.test.ts --runInBand && npm run typecheck && npm run lint && git diff "$BASE_SHA"..HEAD --name-only`.
+- [ ] **Step 4: 提交明确文件列表。**
+
+```bash
+git add src/pages/netwalk/index.tsx src/pages/loop-line/index.tsx src/pages/word-scramble/index.tsx src/pages/digit-span/index.tsx src/pages/number-order/index.tsx tests/unit/netwalkGameLogic.test.ts tests/unit/loopLineGameLogic.test.ts tests/unit/wordScrambleGameLogic.test.ts tests/unit/numberOrderGameLogic.test.ts tests/unit/gameSettlementService.test.ts
+git diff --cached --check
+git commit -m "refactor: migrate memory routes to settlement service"
+```
+
+### Task 17C: Migrate multi-mode ordinary settlement batch 3
+
+**Files:**
+- Modify: `src/pages/multiple-object-tracking/index.tsx`, `src/pages/bird-count/index.tsx`
+- Verify: `tests/unit/birdCountGameLogic.test.ts`, `tests/unit/gameGauntlet.test.ts`, `tests/unit/gameSettlementService.test.ts`
+
+- [ ] **Step 1: 先运行 multi-mode characterization tests 和 source audit。** Run: `npx jest tests/unit/birdCountGameLogic.test.ts tests/unit/gameGauntlet.test.ts --runInBand && rg -n "getAwardedPoints|addPointsToPet|recordTrainingSession|completeGauntletLegIfNeeded|mode|difficulty" src/pages/multiple-object-tracking/index.tsx src/pages/bird-count/index.tsx`.
+- [ ] **Step 2: 迁移所有 normal/gauntlet branches。** Preserve Farm Count `speed`/`yard` mode, reward difficulty, and both ordinary/gauntlet completion branches; service calls must be one per completion path and must short-circuit before ordinary record/reward for gauntlet.
+- [ ] **Step 3: 运行 focused tests、typecheck、lint 和 review checkpoint。** Run: `npx jest tests/unit/birdCountGameLogic.test.ts tests/unit/gameGauntlet.test.ts tests/unit/gameSettlementService.test.ts --runInBand && npm run typecheck && npm run lint && git diff "$BASE_SHA"..HEAD --name-only`.
+- [ ] **Step 4: 提交明确文件列表。**
+
+```bash
+git add src/pages/multiple-object-tracking/index.tsx src/pages/bird-count/index.tsx tests/unit/birdCountGameLogic.test.ts tests/unit/gameGauntlet.test.ts tests/unit/gameSettlementService.test.ts
+git diff --cached --check
+git commit -m "refactor: migrate multi-mode routes to settlement service"
+```
+
+### Task 17D: Migrate scoring/mode ordinary settlement batch 4
+
+**Files:**
+- Modify: `src/pages/rock-paper-scissors/index.tsx`, `src/pages/mental-math/index.tsx`, `src/pages/music-theory/index.tsx`, `src/pages/pattern-completion/index.tsx`, `src/pages/memory-challenge/index.tsx`, `src/pages/twenty-four/index.tsx`
+- Verify: `tests/unit/rockPaperScissorsHighScore.test.ts`, `tests/unit/mentalMathStages.test.ts`, `tests/unit/musicTheoryGameLogic.test.ts`, `tests/unit/patternCompletionPatterns.test.ts`, `tests/unit/memoryChallengeGameLogic.test.ts`, `tests/unit/twentyFourGameLogic.test.ts`, `tests/unit/gameSettlementService.test.ts`
+
+- [ ] **Step 1: 先运行 characterization tests 并记录 custom reward policies。** Run: `npx jest tests/unit/rockPaperScissorsHighScore.test.ts tests/unit/mentalMathStages.test.ts tests/unit/musicTheoryGameLogic.test.ts tests/unit/patternCompletionPatterns.test.ts tests/unit/memoryChallengeGameLogic.test.ts tests/unit/twentyFourGameLogic.test.ts --runInBand && rg -n "rewardPolicy|getAwardedPoints|addPointsToPet|recordTrainingSession|completeGauntletLegIfNeeded" src/pages/rock-paper-scissors/index.tsx src/pages/mental-math/index.tsx src/pages/music-theory/index.tsx src/pages/pattern-completion/index.tsx src/pages/memory-challenge/index.tsx src/pages/twenty-four/index.tsx`.
+- [ ] **Step 2: 迁移六个 route，透传自定义 strategy。** Preserve timed/challenge score derivation, high-score writes, Memory Challenge custom caps, mode strings and gauntlet behavior; pages never calculate points themselves.
+- [ ] **Step 3: 运行 focused tests、typecheck、lint 和 review checkpoint。** Run: `npx jest tests/unit/rockPaperScissorsHighScore.test.ts tests/unit/mentalMathStages.test.ts tests/unit/musicTheoryGameLogic.test.ts tests/unit/patternCompletionPatterns.test.ts tests/unit/memoryChallengeGameLogic.test.ts tests/unit/twentyFourGameLogic.test.ts tests/unit/gameSettlementService.test.ts --runInBand && npm run typecheck && npm run lint && git diff "$BASE_SHA"..HEAD --name-only`.
+- [ ] **Step 4: 提交明确文件列表。**
+
+```bash
+git add src/pages/rock-paper-scissors/index.tsx src/pages/mental-math/index.tsx src/pages/music-theory/index.tsx src/pages/pattern-completion/index.tsx src/pages/memory-challenge/index.tsx src/pages/twenty-four/index.tsx tests/unit/rockPaperScissorsHighScore.test.ts tests/unit/mentalMathStages.test.ts tests/unit/musicTheoryGameLogic.test.ts tests/unit/patternCompletionPatterns.test.ts tests/unit/memoryChallengeGameLogic.test.ts tests/unit/twentyFourGameLogic.test.ts tests/unit/gameSettlementService.test.ts
+git diff --cached --check
+git commit -m "refactor: migrate scoring routes to settlement service"
+```
+
+### Task 17E: Migrate Traffic Escape as a separate exactly-once task
+
+**Files:**
+- Modify: `src/pages/traffic-escape/play.tsx`
+- Verify: `src/pages/traffic-escape/run.ts`, `tests/unit/trafficEscapeRun.test.ts`, `tests/unit/trafficEscapeGameLogic.test.ts`, `tests/unit/gameSettlementService.test.ts`
+
+- [ ] **Step 1: 先运行 run-state characterization。** Run: `npx jest tests/unit/trafficEscapeRun.test.ts tests/unit/trafficEscapeGameLogic.test.ts --runInBand`; keep `settleTrafficEscapeRun(runId, result)` as the only active-to-settled transition.
+- [ ] **Step 2: migrate completion only after the RED/GREEN service contract exists.** In `finishGame`, compute score and `isNewBest`, call `settleTrafficEscapeRun`, return on null, then call `settleGame` once; redirect to `/pages/traffic-escape/result?runId=...` only after ordinary settlement. In `backToStart`, keep `abandonGameRun` first and call `settleGame` with score 0 and outcome interrupted once; preserve gauntlet interruption and `Taro.navigateBack()`.
+- [ ] **Step 3: add exactly-once regression and run focused review checkpoint.** Run: `npx jest tests/unit/trafficEscapeRun.test.ts tests/unit/trafficEscapeGameLogic.test.ts tests/unit/gameSettlementService.test.ts --runInBand && npm run typecheck && npm run lint && ! rg -n "getAwardedPoints|addPointsToPet|recordTrainingSession|completeGauntletLegIfNeeded" src/pages/traffic-escape/play.tsx && git diff "$BASE_SHA"..HEAD --name-only`.
+- [ ] **Step 4: commit only Traffic Escape files.**
+
+```bash
+git add src/pages/traffic-escape/play.tsx src/pages/traffic-escape/run.ts tests/unit/trafficEscapeRun.test.ts tests/unit/trafficEscapeGameLogic.test.ts tests/unit/gameSettlementService.test.ts
 git diff --cached --check
 git commit -m "refactor: preserve traffic escape exactly once settlement"
 ```
 
-### Task 17: Phase 5 dependency and reward gate
+### Task 18: Phase 5 dependency and reward gate
 
 - [ ] **Step 1: 证明配置、服务、工具、domain 均不依赖 pages。**
 
@@ -875,7 +887,7 @@ Expected: all checks/build PASS; build only proves package generation and is not
 
 ## Phase 6 — 路由可读性与增量拆分
 
-### Task 18: 建立格式化门槛并先格式化 Traffic Escape
+### Task 19: 建立格式化门槛并先格式化 Traffic Escape
 
 **Files:**
 - Create: `.prettierrc.json`
@@ -930,7 +942,7 @@ git diff --cached --check
 git commit -m "style: enforce route formatting"
 ```
 
-### Task 19: 拆分 Music Theory、Memory Challenge、Bird Count
+### Task 20: 拆分 Music Theory、Memory Challenge、Bird Count
 
 **Files:**
 - Modify: `src/pages/music-theory/index.tsx`
@@ -978,7 +990,7 @@ git commit -m "refactor: split music theory route views"
 
 Repeat the same command and commit pattern for `src/pages/memory-challenge` (`refactor: split memory challenge route views`) and the Bird Count prop-only batch (`refactor: clarify bird count route views`).
 
-### Task 20: 拆分 Pet、Pattern Completion、Mental Math
+### Task 21: 拆分 Pet、Pattern Completion、Mental Math
 
 **Files:**
 - Modify: `src/pages/pet/index.tsx`
@@ -1030,7 +1042,7 @@ git diff --cached --check
 git commit -m "refactor: split mental math route views"
 ```
 
-### Task 21: Phase 6 final gate and cleanup-plan closeout
+### Task 22: Phase 6 final gate and cleanup-plan closeout
 
 **Files:**
 - Verify all changed files in Phases 1–6
@@ -1050,11 +1062,11 @@ Expected: no forbidden inward imports; settlement call sites match the documente
 
 - [ ] **Step 3: 审核每个 commit 的范围。**
 
-Run: `git log --oneline d797671..HEAD; git diff --stat d797671..HEAD; git diff --name-only d797671..HEAD | rg '^output/' && exit 1 || true`
+Run: `git log --oneline "$BASE_SHA"..HEAD; git diff --stat "$BASE_SHA"..HEAD; git diff --name-only "$BASE_SHA"..HEAD | rg '^output/' && exit 1 || true`
 
 Expected: commits are phase/task scoped, no `output/` file appears in the diff, and no CloudBase upload/deploy command was run.
 
-- [ ] **Step 4: 完成 plan closeout。** 保留 design rationale；只有当所有 completion criteria 均满足且 final verification 已通过时，才删除本 execution plan，并在删除前将 architecture docs 的历史索引与 final verification commands 保留。删除计划必须是单独提交：
+- [ ] **Step 4: 先写完成摘要、保留/删除清单和验证命令，再决定是否 close plan。** 在 `docs/architecture.md` 写入本 cleanup 的完成摘要、实际保留项（包括外部入口候选）和实际删除项，并写入最终 verification 命令及其日期/commit。只有当该摘要、清单和命令已落盘，所有 completion criteria 均满足且 final verification 已通过时，才删除本 execution plan；任何一项缺失或仍有未完成批次时，保留计划并报告未完成项。始终保留 `docs/superpowers/specs/2026-09-10-repository-architecture-cleanup-design.md` 作为 rationale。若满足删除条件，删除计划必须是单独提交：
 
 ```bash
 git add -u docs/superpowers/plans/2026-09-10-repository-architecture-cleanup.md
@@ -1065,13 +1077,17 @@ git commit -m "chore: close repository architecture cleanup plan"
 ## Self-review checklist for the implementation worker
 
 - [ ] Six design phases each have an independently green, scoped commit boundary.
+- [ ] Execution started from `99cc1b3` on ordinary branch `codex/repository-architecture-cleanup`; all phase diffs use recorded `BASE_SHA`, with no worktree.
 - [ ] Every behavior-changing/refactoring batch starts with a focused characterization or regression test and records the expected red result before implementation.
 - [ ] The two user-owned untracked output directories were never opened for editing, added, removed, or included in a commit.
+- [ ] ESLint baseline violations were measured before activation; any existing debt was fixed in a separate scoped commit, without broad disables.
 - [ ] ESLint uses one active flat configuration with meaningful React, Hooks, TypeScript, Node, Jest and Taro rules; `.eslintrc` is gone.
 - [ ] Fast Jest and full puzzle certification are separate commands; `verify` does not upload/deploy/build implicitly.
 - [ ] Every tracked deletion had a repository-wide reference audit and paired manifest/test update where applicable.
+- [ ] Deletion audits covered full paths, basenames/import symbols and remote keys; `.claude/settings.json`, `skills-lock.json` and `CLAUDE.MD` were deleted only with external-entry proof, otherwise documented as deferred.
 - [ ] `docs/architecture.md` and `docs/game-module-contract.md` are sufficient without reading historical plans.
 - [ ] No `src/config`, `src/services`, `src/utils`, or `src/domain` module imports from `src/pages`.
 - [ ] Settlement still computes points once, completes gauntlet first, and records ordinary games only; Traffic Escape remains exactly-once.
+- [ ] Canonical training types came from the current source declarations without a shortened replacement union; the service RED test ran after the pure type move.
 - [ ] Route extraction changes readability only; score, difficulty, mode, storage, rewards, run state and navigation behavior are covered by focused tests.
 - [ ] Final report distinguishes tests/build/mocks from live WeChat/device/CloudBase evidence.
