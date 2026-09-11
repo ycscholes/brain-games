@@ -43,6 +43,8 @@ export default defineAppConfig({
     "pages/tents-camp/play",
     "pages/tents-camp/result",
     "pages/sumplete-grid/index",
+    "pages/sumplete-grid/play",
+    "pages/sumplete-grid/result",
     "pages/traffic-escape/index",
     "pages/traffic-escape/play",
     "pages/traffic-escape/result",
