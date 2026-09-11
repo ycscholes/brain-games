@@ -15,6 +15,8 @@ const MIGRATED_GAME_IDS = [
   "tents-camp",
   "loop-line",
   "netwalk",
+  "pattern-completion",
+  "music-theory",
 ] as const;
 
 const CONFIG_INHERITED_GAME_IDS = [
@@ -26,6 +28,8 @@ const CONFIG_INHERITED_GAME_IDS = [
   "bird-count",
   "hidato",
   "netwalk",
+  "pattern-completion",
+  "music-theory",
 ] as const;
 
 const ORIGINAL_RESULT_MARKERS: Record<(typeof MIGRATED_GAME_IDS)[number], string[]> = {
@@ -39,6 +43,8 @@ const ORIGINAL_RESULT_MARKERS: Record<(typeof MIGRATED_GAME_IDS)[number], string
   "tents-camp": ["tents-result", "result-grid", "返回设置"],
   "loop-line": ["loop-line-finished", "loop-line-result-grid", "再来一局"],
   netwalk: ["netwalk-finish", "netwalk-finish-actions", "返回难度选择"],
+  "pattern-completion": ["PatternResultPanel", "onBackToStart", "onBackHome"],
+  "music-theory": ["MusicTheoryResultPanel", "onRestart"],
 };
 
 const ORIGINAL_RESULT_ROOTS: Record<(typeof MIGRATED_GAME_IDS)[number], string> = {
@@ -52,6 +58,8 @@ const ORIGINAL_RESULT_ROOTS: Record<(typeof MIGRATED_GAME_IDS)[number], string> 
   "tents-camp": 'className="tents-camp-page',
   "loop-line": '<View className="loop-line-page">',
   netwalk: '<View className="netwalk-page">',
+  "pattern-completion": '<View className="pattern-page">',
+  "music-theory": '<View className="music-theory-page">',
 };
 
 const GENERIC_RESULT_STYLE_ROOTS = {
