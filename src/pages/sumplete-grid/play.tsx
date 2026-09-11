@@ -120,7 +120,7 @@ export default function SumpleteGridPlay() {
   const toggleCell = useCallback(
     (target: SumpleteGridCell) => {
       const activeRun = runRef.current;
-      if (!activeRun || activeRun.status !== "active") return;
+      if (!activeRun || activeRun.status !== "active" || finishedRef.current) return;
       playTap();
       const cells = activeRun.payload.cells.map((cell) =>
         cell.row === target.row && cell.col === target.col
@@ -138,7 +138,7 @@ export default function SumpleteGridPlay() {
 
   const submitPuzzle = useCallback(() => {
     const activeRun = runRef.current;
-    if (!activeRun || activeRun.status !== "active") return;
+    if (!activeRun || activeRun.status !== "active" || finishedRef.current) return;
     const evaluation = evaluateSumpleteGrid(activeRun.payload.puzzle, activeRun.payload.cells);
     const updated = updateSumpleteGridRun(runId, { evaluation });
     if (updated) {
@@ -171,7 +171,7 @@ export default function SumpleteGridPlay() {
 
   const backToStart = useCallback(() => {
     const activeRun = runRef.current;
-    if (!activeRun || activeRun.status !== "active") return;
+    if (!activeRun || activeRun.status !== "active" || finishedRef.current) return;
     const settlement = abandonSumpleteGridRun(runId, {
       gameId: "sumplete-grid",
       score: 0,
