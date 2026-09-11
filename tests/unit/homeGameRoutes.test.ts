@@ -141,6 +141,10 @@ describe("home game three-page route contract", () => {
       expect(styleSource).toMatch(new RegExp(`\\.${resultRoot} \\.(?:result|finish)`));
       expect(styleSource).toContain(`.${resultRoot} .primary-button`);
     }
+
+    const digitSpanStyles = readFileSync(resolve(root, "digit-span", "index.scss"), "utf8");
+    expect(digitSpanStyles).toContain(".digit-span-result-page .result-card");
+    expect(digitSpanStyles).not.toMatch(/^\.result-card\s*\{/m);
   });
 
   test("inherits the original page config on result routes only where the index had one", () => {
