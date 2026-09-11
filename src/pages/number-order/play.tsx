@@ -38,6 +38,7 @@ export default function NumberOrderPlay() {
       ? (getCurrentInstance().router?.params?.runId ?? "")
       : "";
   const [run, setRun] = useState<NumberOrderRun | null>(() => readNumberOrderRun(runId));
+  const routeRun = run;
   const runRef = useRef(run);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const initializedRef = useRef(false);
@@ -48,9 +49,12 @@ export default function NumberOrderPlay() {
     runRef.current = run;
   }, [run]);
   useEffect(() => {
-    if (shouldRedirectInvalidGameRun(runId, run?.status, allowSettledRef.current))
+    if (
+      shouldRedirectInvalidGameRun(runId, routeRun?.status, allowSettledRef.current) ||
+      (routeRun && routeRun.status !== "active" && !allowSettledRef.current)
+    )
       void Taro.redirectTo({ url: "/pages/number-order/index" });
-  }, [run, runId]);
+  }, [routeRun, runId]);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach((timer) => clearTimeout(timer));

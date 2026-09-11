@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
 import { getTrainingDifficultyLabel } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
@@ -18,6 +19,7 @@ export default function SumpleteGridResult() {
   usePageShare("pages/sumplete-grid/index");
   const runId = getCurrentInstance().router?.params?.runId ?? "";
   const [run] = useState(() => readSumpleteGridRun(runId));
+  const isGauntletPreset = readGameGauntletModePreset() !== null;
   useEffect(() => {
     if (!run || run.status !== "settled" || !run.result)
       void Taro.redirectTo({ url: "/pages/sumplete-grid/index" });
@@ -57,7 +59,7 @@ export default function SumpleteGridResult() {
               gameTitle="删数求和"
               score={result.score}
               pagePath="pages/sumplete-grid/index"
-              isGauntlet={false}
+              isGauntlet={isGauntletPreset}
             />
             <View
               className="secondary-button"

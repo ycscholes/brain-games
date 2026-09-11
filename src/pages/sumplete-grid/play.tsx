@@ -40,6 +40,7 @@ export default function SumpleteGridPlay() {
       ? (getCurrentInstance().router?.params?.runId ?? "")
       : "";
   const [run, setRun] = useState<SumpleteGridRun | null>(() => readSumpleteGridRun(runId));
+  const routeRun = run;
   const runRef = useRef(run);
   const finishedRef = useRef(false);
   const allowSettledRef = useRef(false);
@@ -49,9 +50,12 @@ export default function SumpleteGridPlay() {
     runRef.current = run;
   }, [run]);
   useEffect(() => {
-    if (shouldRedirectInvalidGameRun(runId, run?.status, allowSettledRef.current))
+    if (
+      shouldRedirectInvalidGameRun(runId, routeRun?.status, allowSettledRef.current) ||
+      (routeRun && routeRun.status !== "active" && !allowSettledRef.current)
+    )
       void Taro.redirectTo({ url: "/pages/sumplete-grid/index" });
-  }, [run, runId]);
+  }, [routeRun, runId]);
 
   const startedAt = run?.payload.startedAt;
   const runStatus = run?.status;

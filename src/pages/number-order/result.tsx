@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Text } from "@tarojs/components";
 import Taro, { getCurrentInstance } from "@tarojs/taro";
 import StickerShareButton from "../../components/stickers/StickerShareButton";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
 import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
 import { getTrainingDifficultyLabel } from "../../utils/trainingStorage";
 import { usePageShare } from "../../utils/share";
@@ -13,6 +14,7 @@ export default function NumberOrderResult() {
   usePageShare("pages/number-order/index");
   const runId = getCurrentInstance().router?.params?.runId ?? "";
   const [run] = useState(() => readNumberOrderRun(runId));
+  const isGauntletPreset = readGameGauntletModePreset() !== null;
   useEffect(() => {
     if (!run || run.status !== "settled" || !run.result)
       void Taro.redirectTo({ url: "/pages/number-order/index" });
@@ -76,7 +78,7 @@ export default function NumberOrderResult() {
           gameTitle="星链回响"
           score={result.score}
           pagePath="pages/number-order/index"
-          isGauntlet={false}
+          isGauntlet={isGauntletPreset}
         />
         <View className="secondary-button" onClick={() => void goBackToGameStart("number-order")}>
           <Text className="secondary-button-text">返回设置</Text>
