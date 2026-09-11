@@ -45,7 +45,7 @@ export default function MemoryChallengeResult() {
     void replaceWithGamePlay("memory-challenge", nextRun.runId, readGameRouteParams());
   };
   return (
-    <View className="game-container">
+    <View className="game-container memory-challenge-result-page">
       <MemoryChallengeResultPanel
         score={run.result.score}
         correctCount={run.result.correctCount}

@@ -53,7 +53,7 @@ $color-warning: #f59e0b;
 
 .start-screen,
 .game-screen,
-.result-screen {
+.digit-span-result-page .result-screen {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -70,7 +70,7 @@ $color-warning: #f59e0b;
 }
 
 .game-screen,
-.result-screen {
+.digit-span-result-page .result-screen {
   animation: bounceIn 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -146,7 +146,7 @@ $color-warning: #f59e0b;
 .display-card,
 .keyboard-card,
 .status-card,
-.result-card {
+.digit-span-result-page .result-card {
   background-color: $color-bg-card;
   border-radius: 24px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
@@ -369,7 +369,7 @@ $color-warning: #f59e0b;
   margin-bottom: auto;
 }
 
-.result-title {
+.digit-span-result-page .result-title {
   display: block;
   font-size: 34px;
   font-weight: 800;
@@ -377,7 +377,7 @@ $color-warning: #f59e0b;
   margin-bottom: 12px;
 }
 
-.result-score {
+.digit-span-result-page .result-score {
   display: block;
   font-size: 88px;
   line-height: 1;
@@ -386,7 +386,7 @@ $color-warning: #f59e0b;
   margin-bottom: 12px;
 }
 
-.result-desc {
+.digit-span-result-page .result-desc {
   display: block;
   font-size: 22px;
   line-height: 1.5;
@@ -394,15 +394,44 @@ $color-warning: #f59e0b;
   margin-bottom: 10px;
 }
 
-.result-highlight {
+.digit-span-result-page .result-highlight {
   color: $color-warning;
   font-weight: 700;
 }
 
-.result-actions {
+.digit-span-result-page .result-actions {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.digit-span-result-page .primary-button,
+.digit-span-result-page .secondary-button {
+  min-height: 64px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.digit-span-result-page .primary-button {
+  margin-top: auto;
+  background: linear-gradient(90deg, $color-primary 0%, $color-primary-dark 100%);
+  box-shadow: 0 12px 20px rgba(37, 99, 235, 0.22);
+}
+
+.digit-span-result-page .secondary-button {
+  background-color: $color-primary-light;
+}
+
+.digit-span-result-page .button-text {
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.digit-span-result-page .secondary-button .button-text {
+  color: $color-primary-dark;
 }
 
 .footer-gap {

@@ -8,7 +8,7 @@
 
 .hidato-start,
 .hidato-play,
-.finish-screen {
+.hidato-result-page .finish-screen {
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -17,7 +17,7 @@
 .hidato-hero,
 .info-panel,
 .play-hud,
-.finish-panel {
+.hidato-result-page .finish-panel {
   border: 2px solid rgba(31, 78, 70, 0.1);
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.86);
@@ -34,7 +34,7 @@
 }
 
 .hero-kicker,
-.finish-kicker {
+.hidato-result-page .finish-kicker {
   color: #0f766e;
   font-size: 24px;
   font-weight: 800;
@@ -42,7 +42,7 @@
 }
 
 .hero-title,
-.finish-title {
+.hidato-result-page .finish-title {
   display: block;
   margin-top: 10px;
   color: #17312d;
@@ -413,17 +413,17 @@
   color: #0f766e;
 }
 
-.finish-screen {
+.hidato-result-page .finish-screen {
   min-height: 72vh;
   justify-content: center;
 }
 
-.finish-panel {
+.hidato-result-page .finish-panel {
   padding: 40px 32px;
   text-align: center;
 }
 
-.finish-score {
+.hidato-result-page .finish-score {
   display: block;
   margin-top: 22px;
   color: #0f766e;
@@ -432,7 +432,7 @@
   line-height: 1;
 }
 
-.finish-copy {
+.hidato-result-page .finish-copy {
   display: block;
   margin-top: 18px;
   color: #49645f;
@@ -441,11 +441,49 @@
   line-height: 1.45;
 }
 
-.finish-actions {
+.hidato-result-page .finish-actions {
   display: flex;
   flex-direction: column;
   gap: 14px;
   margin-top: 34px;
+}
+
+.hidato-result-page .primary-button,
+.hidato-result-page .secondary-button {
+  min-height: 74px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.hidato-result-page .primary-button {
+  background: #1d4ed8;
+  box-shadow: 0 16px 28px rgba(15, 118, 110, 0.22);
+}
+
+.hidato-result-page .secondary-button {
+  border: 2px solid rgba(15, 118, 110, 0.18);
+  background: #ffffff;
+}
+
+.hidato-result-page .secondary-button-quiet {
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.hidato-result-page .primary-button-text,
+.hidato-result-page .secondary-button-text {
+  font-size: 29px;
+  font-weight: 900;
+}
+
+.hidato-result-page .primary-button-text {
+  color: #ffffff;
+}
+
+.hidato-result-page .secondary-button-text {
+  color: #0f766e;
 }
 
 .hidato-page .start-screen {

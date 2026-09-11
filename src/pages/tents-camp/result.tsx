@@ -27,7 +27,7 @@ export default function TentsCampResult() {
   };
   const accuracyText = `${Math.round((run.result.correctPuzzles / TENTS_CAMP_TOTAL_PUZZLES) * 100)}%`;
   return (
-    <View className="tents-camp-page">
+    <View className="tents-camp-page tents-camp-result-page">
       <View className="tents-result">
         <View className="result-card">
           <Text className="result-kicker">训练完成</Text>

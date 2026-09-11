@@ -32,7 +32,7 @@ $page: #f7fee7;
 .prompt-card,
 .farm-pen,
 .feedback-card,
-.result-card {
+.bird-count-result-page .result-card {
   border-radius: 22px;
   background: $card;
   border: 2px solid rgba(63, 98, 18, 0.12);
@@ -49,7 +49,7 @@ $page: #f7fee7;
 }
 
 .hero-kicker,
-.result-kicker {
+.bird-count-result-page .result-kicker {
   display: block;
   font-size: 22px;
   line-height: 1.2;
@@ -122,7 +122,7 @@ $page: #f7fee7;
 .mode-grid,
 .difficulty-grid,
 .option-grid,
-.result-grid,
+.bird-count-result-page .result-grid,
 .status-row {
   display: grid;
   gap: 14px;
@@ -139,7 +139,7 @@ $page: #f7fee7;
 }
 
 .status-row,
-.result-grid {
+.bird-count-result-page .result-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
@@ -147,7 +147,7 @@ $page: #f7fee7;
 .difficulty-card,
 .status-card,
 .option-card,
-.result-item {
+.bird-count-result-page .result-item {
   border-radius: 18px;
   background: #ffffff;
   border: 2px solid rgba(132, 204, 22, 0.34);
@@ -169,7 +169,7 @@ $page: #f7fee7;
 .mode-name,
 .difficulty-name,
 .status-value,
-.result-item-value {
+.bird-count-result-page .result-item-value {
   display: block;
   color: $primary-dark;
   font-size: 30px;
@@ -181,7 +181,7 @@ $page: #f7fee7;
 .mode-copy,
 .difficulty-copy,
 .status-label,
-.result-item-label {
+.bird-count-result-page .result-item-label {
   display: block;
   margin-top: 8px;
   color: $muted;
@@ -227,7 +227,7 @@ $page: #f7fee7;
 }
 
 .status-card,
-.result-item {
+.bird-count-result-page .result-item {
   min-height: 104px;
   text-align: center;
 }
@@ -696,16 +696,16 @@ $page: #f7fee7;
   font-weight: 750;
 }
 
-.farm-result {
+.bird-count-result-page .farm-result {
   justify-content: center;
 }
 
-.result-card {
+.bird-count-result-page .result-card {
   padding: 28px;
   text-align: center;
 }
 
-.result-score {
+.bird-count-result-page .result-score {
   display: block;
   margin-top: 10px;
   font-size: 84px;
@@ -714,7 +714,7 @@ $page: #f7fee7;
   font-weight: 950;
 }
 
-.result-copy {
+.bird-count-result-page .result-copy {
   display: block;
   margin: 14px 0 22px;
   color: $muted;
@@ -723,11 +723,46 @@ $page: #f7fee7;
   font-weight: 750;
 }
 
-.result-actions {
+.bird-count-result-page .result-actions {
   margin-top: 22px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.bird-count-result-page .primary-button,
+.bird-count-result-page .secondary-button {
+  min-height: 82px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.bird-count-result-page .primary-button {
+  background: #1d4ed8;
+  box-shadow: 0 12px 28px rgba(63, 98, 18, 0.24);
+}
+
+.bird-count-result-page .secondary-button {
+  background: #ecfccb;
+  border: 2px solid rgba(63, 98, 18, 0.12);
+}
+
+.bird-count-result-page .primary-button-text,
+.bird-count-result-page .secondary-button-text {
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 950;
+}
+
+.bird-count-result-page .primary-button-text {
+  color: #ffffff;
+}
+
+.bird-count-result-page .secondary-button-text {
+  color: $primary-dark;
 }
 
 @keyframes farm-world-scroll {

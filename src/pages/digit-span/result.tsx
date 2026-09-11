@@ -28,7 +28,7 @@ export default function DigitSpanResult() {
     ? run.result.score
     : Number(Taro.getStorageSync(`digit_span_best_${run.payload.difficulty}`) || 0);
   return (
-    <View className="digit-span-page">
+    <View className="digit-span-page digit-span-result-page">
       <View className="result-screen">
         <View className="result-card">
           <Text className="result-title">本局成绩</Text>

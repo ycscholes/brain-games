@@ -93,7 +93,7 @@
 .tents-camp-page .summary-card,
 .board-panel,
 .feedback-card,
-.result-card {
+.tents-camp-result-page .result-card {
   border-radius: 24rpx;
   background: rgba(255, 255, 255, 0.9);
   border: 2rpx solid rgba(35, 50, 56, 0.08);
@@ -113,7 +113,7 @@
 
 .section-title,
 .question-kicker,
-.result-kicker {
+.tents-camp-result-page .result-kicker {
   display: block;
   font-size: 24rpx;
   font-weight: 800;
@@ -134,7 +134,7 @@
 
 .tents-camp-page .summary-grid,
 .status-row,
-.result-grid {
+.tents-camp-result-page .result-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12rpx;
@@ -146,7 +146,7 @@
 
 .tents-camp-page .summary-item,
 .status-card,
-.result-item {
+.tents-camp-result-page .result-item {
   border-radius: 18rpx;
   background: #f7fbf1;
   border: 2rpx solid rgba(35, 50, 56, 0.08);
@@ -164,7 +164,7 @@
 
 .tents-camp-page .summary-value,
 .status-value,
-.result-item-value {
+.tents-camp-result-page .result-item-value {
   display: block;
   font-size: 31rpx;
   font-weight: 900;
@@ -173,7 +173,7 @@
 
 .tents-camp-page .summary-label,
 .status-label,
-.result-item-label {
+.tents-camp-result-page .result-item-label {
   display: block;
   margin-top: 6rpx;
   font-size: 20rpx;
@@ -229,13 +229,13 @@
 }
 
 .status-row,
-.result-grid {
+.tents-camp-result-page .result-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16rpx;
 }
 
 .status-card,
-.result-item {
+.tents-camp-result-page .result-item {
   padding: 18rpx 10rpx;
 }
 
@@ -378,17 +378,17 @@
   font-weight: 700;
 }
 
-.tents-result {
+.tents-camp-result-page .tents-result {
   min-height: calc(100vh - 64rpx);
   justify-content: center;
 }
 
-.result-card {
+.tents-camp-result-page .result-card {
   padding: 34rpx;
   text-align: center;
 }
 
-.result-score {
+.tents-camp-result-page .result-score {
   display: block;
   margin-top: 10rpx;
   font-size: 92rpx;
@@ -397,7 +397,7 @@
   color: #233238;
 }
 
-.result-copy {
+.tents-camp-result-page .result-copy {
   display: block;
   margin-top: 14rpx;
   color: #68766f;
@@ -406,13 +406,47 @@
   font-weight: 700;
 }
 
-.result-grid {
+.tents-camp-result-page .result-grid {
   margin-top: 26rpx;
 }
 
-.result-actions {
+.tents-camp-result-page .result-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16rpx;
   margin-top: 26rpx;
+}
+
+.tents-camp-result-page .primary-button,
+.tents-camp-result-page .secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  border-radius: 18rpx;
+  box-sizing: border-box;
+}
+
+.tents-camp-result-page .primary-button {
+  background: #233238;
+  box-shadow: 0 14rpx 28rpx rgba(35, 50, 56, 0.18);
+}
+
+.tents-camp-result-page .secondary-button {
+  background: #fff9ed;
+  border: 2rpx solid rgba(35, 50, 56, 0.12);
+}
+
+.tents-camp-result-page .primary-button-text,
+.tents-camp-result-page .secondary-button-text {
+  font-size: 30rpx;
+  font-weight: 900;
+}
+
+.tents-camp-result-page .primary-button-text {
+  color: #fff9ed;
+}
+
+.tents-camp-result-page .secondary-button-text {
+  color: #233238;
 }

@@ -25,7 +25,7 @@ export default function HidatoResult() {
     void replaceWithGamePlay("hidato", nextRun.runId, readGameRouteParams());
   };
   return (
-    <View className="hidato-page">
+    <View className="hidato-page hidato-result-page">
       <View className="finish-screen">
         <View className="finish-panel">
           <Text className="finish-kicker">

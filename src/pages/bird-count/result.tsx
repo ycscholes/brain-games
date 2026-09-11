@@ -45,7 +45,7 @@ export default function BirdCountResult() {
     void replaceWithGamePlay("bird-count", nextRun.runId, readGameRouteParams());
   };
   return (
-    <View className="farm-count-page">
+    <View className="farm-count-page bird-count-result-page">
       <FarmCountResult
         score={run.result.score}
         modeTitle={modeTitle}

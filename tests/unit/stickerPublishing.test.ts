@@ -242,6 +242,21 @@ describe("sticker publishing", () => {
     expect(source).not.toContain("await exportStickerScorePoster");
   });
 
+  test("keeps the score share action visible when the current runtime cannot publish", () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, "../../src/components/stickers/StickerShareButton.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain(
+      "const canShowShare = canShareCompletedGameResult({ completed: true, isGauntlet });",
+    );
+    expect(source).toContain("if (!canShowShare)");
+    expect(source).not.toContain(
+      "const canShare = isOfficialAccountStickerRuntimeSupported() && canShareCompletedGameResult",
+    );
+  });
+
   test("uses one configured topic and homepage return link for the native feed", () => {
     expect(getOfficialAccountPublishFeedProps()).toEqual({
       topic: "Cici脑力训练打卡",

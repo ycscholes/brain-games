@@ -44,15 +44,25 @@ const ORIGINAL_RESULT_MARKERS: Record<(typeof MIGRATED_GAME_IDS)[number], string
 const ORIGINAL_RESULT_ROOTS: Record<(typeof MIGRATED_GAME_IDS)[number], string> = {
   "mental-math": 'className="game-container',
   "twenty-four": '<View className="twenty-four-page">',
-  "digit-span": '<View className="digit-span-page">',
-  "rock-paper-scissors": '<View className="rps-game">',
+  "digit-span": 'className="digit-span-page',
+  "rock-paper-scissors": 'className="rps-game',
   "memory-challenge": 'className="game-container',
-  "bird-count": '<View className="farm-count-page">',
-  hidato: '<View className="hidato-page">',
-  "tents-camp": '<View className="tents-camp-page">',
+  "bird-count": 'className="farm-count-page',
+  hidato: 'className="hidato-page',
+  "tents-camp": 'className="tents-camp-page',
   "loop-line": '<View className="loop-line-page">',
   netwalk: '<View className="netwalk-page">',
 };
+
+const GENERIC_RESULT_STYLE_ROOTS = {
+  "mental-math": "mental-math-result-page",
+  "digit-span": "digit-span-result-page",
+  "rock-paper-scissors": "rock-paper-scissors-result-page",
+  "memory-challenge": "memory-challenge-result-page",
+  "bird-count": "bird-count-result-page",
+  hidato: "hidato-result-page",
+  "tents-camp": "tents-camp-result-page",
+} as const;
 
 describe("home game three-page route contract", () => {
   test("removes the obsolete visible back component after migrating native back handling", () => {
@@ -120,6 +130,17 @@ describe("home game three-page route contract", () => {
   test("keeps the original loop-line result surface without adding a new visual return control", () => {
     const resultSource = readFileSync(resolve(root, "loop-line", "result.tsx"), "utf8");
     expect(resultSource).not.toContain("返回开始页");
+  });
+
+  test("isolates generic result styles so one game cannot restyle another result page", () => {
+    for (const [gameId, resultRoot] of Object.entries(GENERIC_RESULT_STYLE_ROOTS)) {
+      const resultSource = readFileSync(resolve(root, gameId, "result.tsx"), "utf8");
+      const styleSource = readFileSync(resolve(root, gameId, "index.scss"), "utf8");
+
+      expect(resultSource).toContain(resultRoot);
+      expect(styleSource).toMatch(new RegExp(`\\.${resultRoot} \\.(?:result|finish)`));
+      expect(styleSource).toContain(`.${resultRoot} .primary-button`);
+    }
   });
 
   test("inherits the original page config on result routes only where the index had one", () => {

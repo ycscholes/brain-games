@@ -41,7 +41,7 @@ export default function RockPaperScissorsResult() {
   const storedBest = readRockPaperScissorsHighScore(Taro.getStorageSync(`rps_highscore_D${level}`));
   const best = run.result.isNewBest ? score : (storedBest?.score ?? 0);
   return (
-    <View className="rps-game">
+    <View className="rps-game rock-paper-scissors-result-page">
       <View className="result-screen">
         <View className="result-card">
           <Text className="result-title">本局成绩</Text>

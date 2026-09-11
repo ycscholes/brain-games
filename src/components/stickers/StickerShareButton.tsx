@@ -50,10 +50,12 @@ export default function StickerShareButton({
   const [isPreparingPoster, setIsPreparingPoster] = useState(true);
   const canvasIdRef = useRef("sticker-score-poster");
   const imagePathRef = useRef<string>();
-  const canShare = isOfficialAccountStickerRuntimeSupported() && canShareCompletedGameResult({ completed: true, isGauntlet });
+  const canShowShare = canShareCompletedGameResult({ completed: true, isGauntlet });
+  const canPreparePoster = canShowShare && isOfficialAccountStickerRuntimeSupported();
 
   useEffect(() => {
-    if (!canShare) {
+    if (!canPreparePoster) {
+      setIsPreparingPoster(false);
       return undefined;
     }
 
@@ -80,9 +82,9 @@ export default function StickerShareButton({
     return () => {
       isCurrent = false;
     };
-  }, [canShare, gameTitle, score]);
+  }, [canPreparePoster, gameTitle, score]);
 
-  if (!canShare) {
+  if (!canShowShare) {
     return null;
   }
 
@@ -113,7 +115,9 @@ export default function StickerShareButton({
 
   return (
     <View className="sticker-share-wrap">
-      {isPreparingPoster ? <StickerScorePoster canvasId={canvasIdRef.current} /> : null}
+      {canPreparePoster && isPreparingPoster ? (
+        <StickerScorePoster canvasId={canvasIdRef.current} />
+      ) : null}
       <View className="sticker-share-button" onClick={handlePublish}>
         <Text className="sticker-share-button-text">{isPublishing ? "正在打开发表页…" : "晒出本局成绩"}</Text>
         <Text className="sticker-share-button-reward">发表成功可得 30 积分（每日 3 次）</Text>

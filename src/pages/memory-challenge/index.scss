@@ -681,7 +681,7 @@ $color-expert: #EF4444;
 // ============================================
 // 结束页面样式 - Result Screen
 // ============================================
-.result-screen {
+.memory-challenge-result-page .result-screen {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -694,7 +694,7 @@ $color-expert: #EF4444;
   animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.result-card {
+.memory-challenge-result-page .result-card {
   background-color: $color-bg-card;
   padding: 28px 24px;
   margin-bottom: 16px;
@@ -705,7 +705,7 @@ $color-expert: #EF4444;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
-.result-title {
+.memory-challenge-result-page .result-title {
   display: block;
   font-size: 34px;
   font-weight: 800;
@@ -713,7 +713,7 @@ $color-expert: #EF4444;
   margin-bottom: 12px;
 }
 
-.result-score {
+.memory-challenge-result-page .result-score {
   display: block;
   font-size: 72px;
   line-height: 1;
@@ -722,7 +722,7 @@ $color-expert: #EF4444;
   margin-bottom: 16px;
 }
 
-.result-desc {
+.memory-challenge-result-page .result-desc {
   display: block;
   font-size: 21px;
   line-height: 1.6;
@@ -733,7 +733,7 @@ $color-expert: #EF4444;
   }
 }
 
-.result-highlight {
+.memory-challenge-result-page .result-highlight {
   display: block;
   margin-top: 10px;
   font-size: 20px;
@@ -741,15 +741,15 @@ $color-expert: #EF4444;
   color: #F59E0B;
 }
 
-.result-actions {
+.memory-challenge-result-page .result-actions {
   display: flex;
   flex-direction: column;
   gap: 12px;
   width: 100%;
 }
 
-.primary-button,
-.secondary-button {
+.memory-challenge-result-page .primary-button,
+.memory-challenge-result-page .secondary-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -762,27 +762,27 @@ $color-expert: #EF4444;
   }
 }
 
-.primary-button {
+.memory-challenge-result-page .primary-button {
   background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
   box-shadow: 0 8px 24px rgba(139, 92, 246, 0.35);
 }
 
-.secondary-button {
+.memory-challenge-result-page .secondary-button {
   background-color: #ffffff;
   border: 2px solid $color-border;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 
-.button-text {
+.memory-challenge-result-page .button-text {
   font-size: 26px;
   font-weight: 800;
   letter-spacing: 1px;
 }
 
-.primary-button .button-text {
+.memory-challenge-result-page .primary-button .button-text {
   color: #ffffff;
 }
 
-.secondary-button .button-text {
+.memory-challenge-result-page .secondary-button .button-text {
   color: $color-text-primary;
 }

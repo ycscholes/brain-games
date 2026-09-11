@@ -87,7 +87,7 @@ $color-border: #E2E8F0;
   animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.result-screen {
+.rock-paper-scissors-result-page .result-screen {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -623,7 +623,7 @@ $color-border: #E2E8F0;
   color: $color-text-primary;
 }
 
-.result-card {
+.rock-paper-scissors-result-page .result-card {
   background-color: $color-bg-card;
   border-radius: 24px;
   width: 100%;
@@ -637,7 +637,7 @@ $color-border: #E2E8F0;
   text-align: center;
 }
 
-.result-title {
+.rock-paper-scissors-result-page .result-title {
   display: block;
   font-size: 34px;
   font-weight: 800;
@@ -645,7 +645,7 @@ $color-border: #E2E8F0;
   margin-bottom: 12px;
 }
 
-.result-score {
+.rock-paper-scissors-result-page .result-score {
   display: block;
   font-size: 72px;
   line-height: 1;
@@ -654,7 +654,7 @@ $color-border: #E2E8F0;
   margin-bottom: 16px;
 }
 
-.result-desc {
+.rock-paper-scissors-result-page .result-desc {
   display: block;
   font-size: 21px;
   line-height: 1.6;
@@ -665,7 +665,7 @@ $color-border: #E2E8F0;
   }
 }
 
-.result-highlight {
+.rock-paper-scissors-result-page .result-highlight {
   display: block;
   margin-top: 10px;
   font-size: 20px;
@@ -673,15 +673,15 @@ $color-border: #E2E8F0;
   color: #F59E0B;
 }
 
-.result-actions {
+.rock-paper-scissors-result-page .result-actions {
   display: flex;
   flex-direction: column;
   gap: 12px;
   width: 100%;
 }
 
-.primary-button,
-.secondary-button {
+.rock-paper-scissors-result-page .primary-button,
+.rock-paper-scissors-result-page .secondary-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -694,27 +694,27 @@ $color-border: #E2E8F0;
   }
 }
 
-.primary-button {
+.rock-paper-scissors-result-page .primary-button {
   background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
   box-shadow: 0 8px 24px rgba(139, 92, 246, 0.35);
 }
 
-.secondary-button {
+.rock-paper-scissors-result-page .secondary-button {
   background-color: #ffffff;
   border: 2px solid $color-border;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 
-.button-text {
+.rock-paper-scissors-result-page .button-text {
   font-size: 26px;
   font-weight: 800;
   letter-spacing: 1px;
 }
 
-.primary-button .button-text {
+.rock-paper-scissors-result-page .primary-button .button-text {
   color: #ffffff;
 }
 
-.secondary-button .button-text {
+.rock-paper-scissors-result-page .secondary-button .button-text {
   color: $color-text-primary;
 }
