@@ -47,6 +47,7 @@ describe("number-order run", () => {
     const run = createNumberOrderRun("normal", 1_000);
     const result = {
       score: 88,
+      best: 88,
       awardedPoints: 0,
       durationSeconds: 49,
       correctQuestions: 7,
@@ -109,6 +110,7 @@ describe("number-order run", () => {
     expect(
       settleNumberOrderRun(run.runId, {
         score: 10,
+        best: 10,
         awardedPoints: 0,
         durationSeconds: 1,
         correctQuestions: 0,

@@ -106,6 +106,7 @@ export default function NumberOrderPlay() {
       const durationSeconds = Math.max(1, Math.round((Date.now() - finalState.startedAt) / 1000));
       const result = {
         score: finalState.score,
+        best: Math.max(best, finalState.score),
         awardedPoints: 0,
         durationSeconds,
         correctQuestions: finalState.correctQuestions,
@@ -227,7 +228,7 @@ export default function NumberOrderPlay() {
 
   const backToStart = useCallback(() => {
     const current = runRef.current;
-    if (!current || current.status !== "active") return;
+    if (!current || current.status !== "active" || finishedRef.current) return;
     clearTimers();
     const settlement = abandonNumberOrderRun(runId, {
       gameId: "number-order",

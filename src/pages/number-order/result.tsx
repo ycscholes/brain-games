@@ -46,10 +46,7 @@ export default function NumberOrderResult() {
             <Text className="result-label">整题正确率</Text>
           </View>
           <View className="result-item">
-            <Text className="result-value">
-              {Number(Taro.getStorageSync(`number_order_best_${run.payload.difficulty}`) || 0) ||
-                result.score}
-            </Text>
+            <Text className="result-value">{result.best}</Text>
             <Text className="result-label">历史最高</Text>
           </View>
           <View className="result-item">

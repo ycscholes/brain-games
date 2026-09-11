@@ -35,6 +35,7 @@ export interface NumberOrderRunPayload {
 
 export interface NumberOrderRunResult {
   score: number;
+  best: number;
   awardedPoints: number;
   durationSeconds: number;
   correctQuestions: number;
