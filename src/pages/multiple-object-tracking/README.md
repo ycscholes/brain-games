@@ -6,9 +6,9 @@
 
 ## 入口与状态
 
-- 路由：`/pages/multiple-object-tracking/index`
+- 路由：`/pages/multiple-object-tracking/index`、`/pages/multiple-object-tracking/play`、`/pages/multiple-object-tracking/result`
 - `gameId`：`multiple-object-tracking`
-- 状态：开始、目标预览、移动追踪、选择、结算
+- 状态：开始页、目标预览、移动追踪、选择、结算；活动局面持久化在 `run.ts`
 
 ## 完整玩法
 
@@ -32,4 +32,4 @@
 
 ## 实现与测试
 
-场地、运动、碰撞、计时和选择逻辑集中在 `index.tsx`。当前没有独立追踪逻辑测试；积分与旧 ID 兼容由 `tests/unit/trainingStorage.test.ts` 覆盖。
+场地、运动、碰撞、计时和选择逻辑集中在 `gameLogic.ts` 与 `play.tsx`。run 生命周期由 `run.ts` 管理，路由和结算契约由 `tests/unit/homeGameRoutes.test.ts` 与 `tests/unit/multipleObjectTrackingRun.test.ts` 覆盖；积分与旧 ID 兼容由 `tests/unit/trainingStorage.test.ts` 覆盖。

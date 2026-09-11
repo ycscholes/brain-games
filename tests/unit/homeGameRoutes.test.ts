@@ -17,6 +17,7 @@ const MIGRATED_GAME_IDS = [
   "netwalk",
   "pattern-completion",
   "music-theory",
+  "multiple-object-tracking",
 ] as const;
 
 const CONFIG_INHERITED_GAME_IDS = [
@@ -30,6 +31,7 @@ const CONFIG_INHERITED_GAME_IDS = [
   "netwalk",
   "pattern-completion",
   "music-theory",
+  "multiple-object-tracking",
 ] as const;
 
 const ORIGINAL_RESULT_MARKERS: Record<(typeof MIGRATED_GAME_IDS)[number], string[]> = {
@@ -45,6 +47,7 @@ const ORIGINAL_RESULT_MARKERS: Record<(typeof MIGRATED_GAME_IDS)[number], string
   netwalk: ["netwalk-finish", "netwalk-finish-actions", "返回难度选择"],
   "pattern-completion": ["PatternResultPanel", "onBackToStart", "onBackHome"],
   "music-theory": ["MusicTheoryResultPanel", "onRestart"],
+  "multiple-object-tracking": ["result-screen", "result-actions", "本局成绩"],
 };
 
 const ORIGINAL_RESULT_ROOTS: Record<(typeof MIGRATED_GAME_IDS)[number], string> = {
@@ -60,6 +63,7 @@ const ORIGINAL_RESULT_ROOTS: Record<(typeof MIGRATED_GAME_IDS)[number], string> 
   netwalk: '<View className="netwalk-page">',
   "pattern-completion": '<View className="pattern-page">',
   "music-theory": '<View className="music-theory-page">',
+  "multiple-object-tracking": 'className="mot-page multiple-object-tracking-result-page',
 };
 
 const GENERIC_RESULT_STYLE_ROOTS = {

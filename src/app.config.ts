@@ -19,6 +19,8 @@ export default defineAppConfig({
     "pages/digit-span/play",
     "pages/digit-span/result",
     "pages/multiple-object-tracking/index",
+    "pages/multiple-object-tracking/play",
+    "pages/multiple-object-tracking/result",
     "pages/pattern-completion/index",
     "pages/pattern-completion/play",
     "pages/pattern-completion/result",
