@@ -34,6 +34,8 @@ export default defineAppConfig({
     "pages/color-trap/play",
     "pages/color-trap/result",
     "pages/spatial-rotation/index",
+    "pages/spatial-rotation/play",
+    "pages/spatial-rotation/result",
     "pages/hidato/index",
     "pages/hidato/play",
     "pages/hidato/result",

@@ -124,9 +124,9 @@ describe("routed quiz game runs", () => {
 });
 
 describe("routed quiz game route contract", () => {
-  test("registers color-trap pages and keeps its result root isolated", () => {
+  test("registers all quiz pages and keeps their result roots isolated", () => {
     const config = readFileSync(resolve(process.cwd(), "src/app.config.ts"), "utf8");
-    for (const gameId of ["color-trap"]) {
+    for (const gameId of ["color-trap", "spatial-rotation", "word-scramble"]) {
       expect(config).toContain(`pages/${gameId}/index`);
       expect(config).toContain(`pages/${gameId}/play`);
       expect(config).toContain(`pages/${gameId}/result`);
