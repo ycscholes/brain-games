@@ -24,8 +24,14 @@
 }
 
 .hero-kicker,
-.result-kicker,
 .question-kicker {
+  display: block;
+  color: #5f7568;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.color-trap-result-page .result-kicker {
   display: block;
   color: #5f7568;
   font-size: 24rpx;
@@ -73,7 +79,7 @@
 .info-panel,
 .stimulus-card,
 .feedback-card,
-.result-card {
+.color-trap-result-page .result-card {
   border: 2rpx solid rgba(36, 49, 42, 0.08);
   border-radius: 16rpx;
   padding: 28rpx;
@@ -92,9 +98,14 @@
 .difficulty-copy,
 .stimulus-copy,
 .feedback-copy,
-.result-copy,
-.status-label,
-.result-item-label {
+.status-label {
+  color: #65776b;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.color-trap-result-page .result-copy,
+.color-trap-result-page .result-item-label {
   color: #65776b;
   font-size: 24rpx;
   line-height: 1.5;
@@ -163,15 +174,19 @@
   color: #2f9b6a;
 }
 
-.status-row,
-.result-grid {
+.status-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16rpx;
 }
 
-.status-card,
-.result-item {
+.color-trap-result-page .result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16rpx;
+}
+
+.status-card {
   min-height: 116rpx;
   border-radius: 14rpx;
   padding: 18rpx;
@@ -180,8 +195,23 @@
   box-shadow: 0 10rpx 24rpx rgba(36, 49, 42, 0.05);
 }
 
-.status-value,
-.result-item-value {
+.color-trap-result-page .result-item {
+  min-height: 116rpx;
+  border-radius: 14rpx;
+  padding: 18rpx;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 10rpx 24rpx rgba(36, 49, 42, 0.05);
+}
+
+.status-value {
+  display: block;
+  color: #24312a;
+  font-size: 34rpx;
+  font-weight: 800;
+}
+
+.color-trap-result-page .result-item-value {
   display: block;
   color: #24312a;
   font-size: 34rpx;
@@ -260,12 +290,12 @@
   font-weight: 800;
 }
 
-.result-card {
+.color-trap-result-page .result-card {
   margin-top: 12vh;
   text-align: center;
 }
 
-.result-score {
+.color-trap-result-page .result-score {
   display: block;
   margin: 14rpx 0;
   font-size: 104rpx;
@@ -273,7 +303,7 @@
   line-height: 1;
 }
 
-.result-actions {
+.color-trap-result-page .result-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16rpx;

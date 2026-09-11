@@ -1,0 +1,70 @@
+import { useEffect, useState } from "react";
+import { View, Text } from "@tarojs/components";
+import Taro, { getCurrentInstance } from "@tarojs/taro";
+import StickerShareButton from "../../components/stickers/StickerShareButton";
+import { readGameGauntletModePreset } from "../../utils/gameGauntlet";
+import { goBackToGameStart, readGameRouteParams, replaceWithGamePlay } from "../../utils/gameRoute";
+import { getTrainingDifficultyLabel } from "../../utils/trainingStorage";
+import { usePageShare } from "../../utils/share";
+import { createColorTrapRun, readColorTrapRun } from "./run";
+import { COLOR_TRAP_TOTAL_QUESTIONS } from "./gameLogic";
+import "./index.scss";
+
+export default function ColorTrapResult() {
+  usePageShare("pages/color-trap/index");
+  const runId = getCurrentInstance().router?.params?.runId ?? "";
+  const [run] = useState(() => readColorTrapRun(runId));
+  const isGauntletPreset = readGameGauntletModePreset() !== null;
+  useEffect(() => {
+    if (!run || run.status !== "settled" || !run.result)
+      void Taro.redirectTo({ url: "/pages/color-trap/index" });
+  }, [run]);
+  if (!run || run.status !== "settled" || !run.result) return null;
+  const accuracyText = `${Math.round((run.result.correctQuestions / COLOR_TRAP_TOTAL_QUESTIONS) * 100)}%`;
+  const restart = () => {
+    const nextRun = createColorTrapRun(run.payload.difficulty);
+    void replaceWithGamePlay("color-trap", nextRun.runId, readGameRouteParams());
+  };
+  return (
+    <View className="color-trap-page color-trap-result-page">
+      <View className="trap-result">
+        <View className="result-card">
+          <Text className="result-kicker">训练完成</Text>
+          <Text className="result-score">{run.result.score}</Text>
+          <Text className="result-copy">
+            颜色陷阱 · {getTrainingDifficultyLabel(run.payload.difficulty)}{" "}
+            {run.result.isNewBest ? "· 新最高" : ""}
+          </Text>
+          <View className="result-grid">
+            <View className="result-item">
+              <Text className="result-item-value">{accuracyText}</Text>
+              <Text className="result-item-label">正确率</Text>
+            </View>
+            <View className="result-item">
+              <Text className="result-item-value">{run.result.bestCombo}</Text>
+              <Text className="result-item-label">最佳连击</Text>
+            </View>
+            <View className="result-item">
+              <Text className="result-item-value">+{run.result.awardedPoints}</Text>
+              <Text className="result-item-label">宠物积分</Text>
+            </View>
+          </View>
+          <View className="result-actions">
+            <StickerShareButton
+              gameTitle="颜色陷阱"
+              score={run.result.score}
+              pagePath="pages/color-trap/index"
+              isGauntlet={isGauntletPreset}
+            />
+            <View className="secondary-button" onClick={() => void goBackToGameStart("color-trap")}>
+              <Text className="secondary-button-text">返回设置</Text>
+            </View>
+            <View className="primary-button" onClick={restart}>
+              <Text className="primary-button-text">再练一局</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
