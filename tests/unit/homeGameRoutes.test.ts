@@ -42,11 +42,11 @@ const ORIGINAL_RESULT_MARKERS: Record<(typeof MIGRATED_GAME_IDS)[number], string
 };
 
 const ORIGINAL_RESULT_ROOTS: Record<(typeof MIGRATED_GAME_IDS)[number], string> = {
-  "mental-math": '<View className="game-container">',
+  "mental-math": 'className="game-container',
   "twenty-four": '<View className="twenty-four-page">',
   "digit-span": '<View className="digit-span-page">',
   "rock-paper-scissors": '<View className="rps-game">',
-  "memory-challenge": '<View className="game-container">',
+  "memory-challenge": 'className="game-container',
   "bird-count": '<View className="farm-count-page">',
   hidato: '<View className="hidato-page">',
   "tents-camp": '<View className="tents-camp-page">',
@@ -103,7 +103,16 @@ describe("home game three-page route contract", () => {
         expect(resultSource).toContain(
           ORIGINAL_RESULT_ROOTS[game.id as (typeof MIGRATED_GAME_IDS)[number]],
         );
-        expect(resultSource).toContain("isGauntletPreset");
+        if (game.id === "mental-math") {
+          expect(resultSource).toContain("mental-math-result-page");
+          expect(resultSource).toContain("isGauntlet={false}");
+          const styleSource = readFileSync(resolve(root, game.id, "index.scss"), "utf8");
+          expect(styleSource).toContain(".mental-math-result-page .result-actions");
+          expect(styleSource).toContain(".mental-math-result-page .primary-button");
+          expect(styleSource).toContain(".mental-math-result-page .result-score");
+        } else {
+          expect(resultSource).toContain("isGauntletPreset");
+        }
       }
     }
   });

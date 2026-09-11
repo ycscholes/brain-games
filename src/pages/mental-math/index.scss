@@ -660,7 +660,7 @@ $color-wrong: #EF4444;
 // ============================================
 // 游戏结束页面样式 - Game Over Screen
 // ============================================
-.result-screen {
+.mental-math-result-page .result-screen {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -705,7 +705,7 @@ $color-wrong: #EF4444;
 }
 
 // 得分卡片
-.result-card {
+.mental-math-result-page .result-card {
   background-color: $color-bg-card;
   border-radius: 24px;
   width: 100%;
@@ -719,7 +719,7 @@ $color-wrong: #EF4444;
   text-align: center;
 }
 
-.result-title {
+.mental-math-result-page .result-title {
   display: block;
   font-size: 34px;
   font-weight: 800;
@@ -727,7 +727,7 @@ $color-wrong: #EF4444;
   margin-bottom: 12px;
 }
 
-.result-score {
+.mental-math-result-page .result-score {
   display: block;
   font-size: 72px;
   line-height: 1;
@@ -736,7 +736,7 @@ $color-wrong: #EF4444;
   margin-bottom: 16px;
 }
 
-.result-desc {
+.mental-math-result-page .result-desc {
   display: block;
   font-size: 21px;
   line-height: 1.6;
@@ -747,7 +747,7 @@ $color-wrong: #EF4444;
   }
 }
 
-.result-highlight {
+.mental-math-result-page .result-highlight {
   display: block;
   margin-top: 10px;
   font-size: 20px;
@@ -755,15 +755,15 @@ $color-wrong: #EF4444;
   color: #F59E0B;
 }
 
-.result-actions {
+.mental-math-result-page .result-actions {
   display: flex;
   flex-direction: column;
   gap: 12px;
   width: 100%;
 }
 
-.primary-button,
-.secondary-button {
+.mental-math-result-page .primary-button,
+.mental-math-result-page .secondary-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -776,27 +776,27 @@ $color-wrong: #EF4444;
   }
 }
 
-.primary-button {
+.mental-math-result-page .primary-button {
   background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
   box-shadow: 0 8px 24px rgba(14, 165, 233, 0.35);
 }
 
-.secondary-button {
-  background-color: #ffffff;
+.mental-math-result-page .secondary-button {
+  background-color: #FFFFFF;
   border: 2px solid $color-border;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 
-.button-text {
+.mental-math-result-page .button-text {
   font-size: 26px;
   font-weight: 800;
   letter-spacing: 1px;
 }
 
-.primary-button .button-text {
-  color: #ffffff;
+.mental-math-result-page .primary-button .button-text {
+  color: #FFFFFF;
 }
 
-.secondary-button .button-text {
+.mental-math-result-page .secondary-button .button-text {
   color: $color-text-primary;
 }
