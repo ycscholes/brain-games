@@ -17,6 +17,17 @@ const MIGRATED_GAME_IDS = [
   "netwalk",
 ] as const;
 
+const CONFIG_INHERITED_GAME_IDS = [
+  "mental-math",
+  "twenty-four",
+  "digit-span",
+  "rock-paper-scissors",
+  "memory-challenge",
+  "bird-count",
+  "hidato",
+  "netwalk",
+] as const;
+
 const ORIGINAL_RESULT_MARKERS: Record<(typeof MIGRATED_GAME_IDS)[number], string[]> = {
   "mental-math": ["MentalMathResultPanel", "onBackToStart", "onBackHome"],
   "twenty-four": ["tf-result", "tf-result-actions", "本局结束"],
@@ -100,6 +111,18 @@ describe("home game three-page route contract", () => {
   test("keeps the original loop-line result surface without adding a new visual return control", () => {
     const resultSource = readFileSync(resolve(root, "loop-line", "result.tsx"), "utf8");
     expect(resultSource).not.toContain("返回开始页");
+  });
+
+  test("inherits the original page config on result routes only where the index had one", () => {
+    for (const gameId of CONFIG_INHERITED_GAME_IDS) {
+      const indexConfigPath = resolve(root, gameId, "index.config.ts");
+      const resultConfigPath = resolve(root, gameId, "result.config.ts");
+      expect(existsSync(resultConfigPath)).toBe(true);
+      expect(readFileSync(resultConfigPath, "utf8")).toBe(readFileSync(indexConfigPath, "utf8"));
+    }
+
+    expect(existsSync(resolve(root, "tents-camp", "result.config.ts"))).toBe(false);
+    expect(existsSync(resolve(root, "loop-line", "result.config.ts"))).toBe(false);
   });
 
   test("keeps every home catalog entry pointed at its start page", () => {
