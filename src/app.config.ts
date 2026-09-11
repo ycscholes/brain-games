@@ -23,6 +23,8 @@ export default defineAppConfig({
     "pages/pattern-completion/play",
     "pages/pattern-completion/result",
     "pages/number-order/index",
+    "pages/number-order/play",
+    "pages/number-order/result",
     "pages/head-count/index",
     "pages/word-scramble/index",
     "pages/word-scramble/play",
