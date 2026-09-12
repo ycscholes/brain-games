@@ -22,49 +22,49 @@
 
 ### Task 1: Generate the A candidates
 
-- [ ] **Step 1: Generate A1 with built-in `image_gen`**
+- [x] **Step 1: Generate A1 with built-in `image_gen`**
 
 Use the approved common constraints: `logo-brand`, square mobile mini-program app icon, simple white monoline with thick rounded strokes, no text or face, central silhouette, 16% safe padding, full-bleed blue-to-cyan background, no baked rounded corners, no border, no watermark. A1 uniquely shows a brain character symmetrically lifting one simple barbell overhead.
 
-- [ ] **Step 2: Generate A2 with built-in `image_gen`**
+- [x] **Step 2: Generate A2 with built-in `image_gen`**
 
 Repeat the common constraints. A2 uniquely shows the outlined brain using one arm for a dynamic dumbbell curl, echoing the existing brand concept without facial features.
 
-- [ ] **Step 3: Save the generated masters**
+- [x] **Step 3: Save the generated masters**
 
 Copy the generated outputs from their `$CODEX_HOME/generated_images/` locations to the two exact A paths in the file map. Do not overwrite the existing `app-icon-daily-brain-training*.png` files.
 
 ### Task 2: Generate the B candidates
 
-- [ ] **Step 1: Generate B1 with built-in `image_gen`**
+- [x] **Step 1: Generate B1 with built-in `image_gen`**
 
 Use the same line weight, safe area, exclusions, and square format. Use a restrained violet-to-coral full-bleed background. B1 embeds one unmistakable puzzle piece into a simple brain outline; it contains no other symbols.
 
-- [ ] **Step 2: Generate B2 with built-in `image_gen`**
+- [x] **Step 2: Generate B2 with built-in `image_gen`**
 
 Use the same common constraints and violet-to-coral background. B2 shows one continuous path inside a brain outline terminating in a single clean four-point spark.
 
-- [ ] **Step 3: Save the generated masters**
+- [x] **Step 3: Save the generated masters**
 
 Copy the outputs to the two exact B paths in the file map.
 
 ### Task 3: Generate the C candidates
 
-- [ ] **Step 1: Generate C1 with built-in `image_gen`**
+- [x] **Step 1: Generate C1 with built-in `image_gen`**
 
 Use the same common constraints and a green-to-warm-yellow full-bleed background. C1 is a single continuous infinity loop subtly shaped like two brain hemispheres, with at most two small circuit nodes.
 
-- [ ] **Step 2: Generate C2 with built-in `image_gen`**
+- [x] **Step 2: Generate C2 with built-in `image_gen`**
 
 Use the same common constraints and green-to-warm-yellow background. C2 combines two simple sprout leaves with one circular neural-growth loop; avoid light bulbs, faces, hands, and extra decoration.
 
-- [ ] **Step 3: Save the generated masters**
+- [x] **Step 3: Save the generated masters**
 
 Copy the outputs to the two exact C paths in the file map.
 
 ### Task 4: Validate the six masters and build the preview
 
-- [ ] **Step 1: Check file type and dimensions**
+- [x] **Step 1: Check file type and dimensions**
 
 Run:
 
@@ -75,15 +75,15 @@ identify asset-backups/cloudbase-images/app-icons/cici-line-logo-*-v1.png
 
 Expected: exactly six valid PNG images, each 1024×1024.
 
-- [ ] **Step 2: Inspect full-size images**
+- [x] **Step 2: Inspect full-size images**
 
 Open all six masters and reject any candidate containing text, unintended faces, thin/broken lines, baked corner masks, borders, watermarks, unsafe edge placement, or a concept different from its specification. Regenerate only the failing candidate with one targeted prompt correction.
 
-- [ ] **Step 3: Build and inspect a contact sheet**
+- [x] **Step 3: Build and inspect a contact sheet**
 
 Create `docs/superpowers/generation/cici-line-logo-v1-preview.png` as a 3×2 grid with each source reduced to 256×256 and a small filename label outside the artwork. Inspect the sheet once at normal size and once reduced to 50% to approximate 128px-per-logo readability.
 
-- [ ] **Step 4: Run repository asset checks**
+- [x] **Step 4: Run repository asset checks**
 
 Run:
 
@@ -97,11 +97,11 @@ Expected: all commands exit 0. Do not run `assets:upload`; the approved scope ex
 
 ### Task 5: Commit the generated assets
 
-- [ ] **Step 1: Confirm task-only Git scope**
+- [x] **Step 1: Confirm task-only Git scope**
 
 Run `git status --short` and confirm only the six Logo masters, the preview, and this task's already-approved design/plan documents are selected for the Logo commit. Leave all pre-existing source and `output/official-account/` changes unstaged.
 
-- [ ] **Step 2: Stage exact generated paths**
+- [x] **Step 2: Stage exact generated paths**
 
 ```bash
 git add \
@@ -115,10 +115,14 @@ git add \
   docs/superpowers/plans/2026-09-12-cici-line-logo.md
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git commit -m "feat: add Cici line logo candidates"
 ```
 
 Expected: the commit contains only the plan, six masters, and the preview.
+
+## Execution Note
+
+The environment did not provide ImageMagick's `identify` or `montage`. The equivalent checks used macOS `sips` for PNG dimensions, format, alpha, and downscaling, plus AppKit for the contact sheet. All six masters were confirmed as 1024×1024 opaque RGB PNG files and visually inspected at full, approximately 128px, and approximately 64px display sizes.
